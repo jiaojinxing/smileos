@@ -44,6 +44,27 @@
 #include <stdio.h>
 
 /*
+ * 进程退出
+ */
+int exit(int error_code)
+{
+    int ret;
+
+    __asm__(
+        "mov    r0, %1\n"                                               /*  r0 是参数 1                 */
+        "mov    r7, %2\n"                                               /*  r7 是系统调用号             */
+        "stmdb  sp!, {lr}\n"                                            /*  保存 LR 到堆栈              */
+        "swi    0\n"                                                    /*  软件中断                    */
+        "ldmia  sp!, {lr}\n"                                            /*  从堆栈恢复 LR               */
+        "mov    %0, r0\n"                                               /*  r0 是返回值                 */
+        :"=r"(ret)
+        :"r"(error_code), "M"(SYS_CALL_EXIT)
+        :"r0"
+        );
+    return ret;
+}
+
+/*
  * 进程休眠
  */
 int sleep(int time)

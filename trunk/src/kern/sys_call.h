@@ -47,6 +47,11 @@
 
 #ifndef __ASSEMBLER__
 /*
+ * 进程退出
+ */
+int exit(int error_code);
+
+/*
  * 进程休眠
  */
 int sleep(int time);

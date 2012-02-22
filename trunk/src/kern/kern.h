@@ -134,7 +134,10 @@ unsigned char kgetc(void);
  */
 static inline uint32_t virt_to_phy(uint32_t va)
 {
-    return PROCESS_MEM_BASE + PROCESS_MEM_SIZE * (current->pid - 1) + va;
+    if (current->pid)
+        return PROCESS_MEM_BASE + PROCESS_MEM_SIZE * (current->pid - 1) + va;
+    else
+        return va;
 }
 
 /*
@@ -142,7 +145,10 @@ static inline uint32_t virt_to_phy(uint32_t va)
  */
 static inline uint32_t __virt_to_phy(uint32_t va, int pid)
 {
-    return PROCESS_MEM_BASE + PROCESS_MEM_SIZE * (pid - 1) + va;
+    if (pid)
+        return PROCESS_MEM_BASE + PROCESS_MEM_SIZE * (pid - 1) + va;
+    else
+        return va;
 }
 
 #endif                                                                  /*  KERN_H_                     */

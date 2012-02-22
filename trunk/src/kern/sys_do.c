@@ -74,7 +74,7 @@ static int do_sleep(int time)
  */
 static int do_write(char *str)
 {
-    printk(str);
+    printk((char *)virt_to_phy((uint32_t)str));
 
     return 0;
 }
