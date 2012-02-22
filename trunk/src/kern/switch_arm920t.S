@@ -1,0 +1,234 @@
+/*********************************************************************************************************
+**
+** Copyright (c) 2011 - 2012  Jiao JinXing <JiaoJinXing1987@gmail.com>
+**
+** Licensed under the Academic Free License version 2.1
+**
+** This program is free software; you can redistribute it and/or modify
+** it under the terms of the GNU General Public License as published by
+** the Free Software Foundation; either version 2 of the License, or
+** (at your option) any later version.
+**
+** This program is distributed in the hope that it will be useful,
+** but WITHOUT ANY WARRANTY; without even the implied warranty of
+** MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+** GNU General Public License for more details.
+**
+** You should have received a copy of the GNU General Public License
+** along with this program; if not, write to the Free Software
+** Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+**
+**--------------------------------------------------------------------------------------------------------
+** File name:               switch_arm920t.s
+** Last modified Date:      2012-2-2
+** Last Version:            1.0.0
+** Descriptions:            ARM920T 任务切换
+**
+**--------------------------------------------------------------------------------------------------------
+** Created by:              JiaoJinXing
+** Created date:            2012-2-2
+** Version:                 1.0.0
+** Descriptions:            创建文件
+**
+**--------------------------------------------------------------------------------------------------------
+** Modified by:
+** Modified date:
+** Version:
+** Descriptions:
+**
+*********************************************************************************************************/
+#include "config.h"
+#include "arm.h"
+/*********************************************************************************************************
+  成员变量在 task_t 结构中的偏移量
+*********************************************************************************************************/
+#define PID_OFFSET          0
+#define TID_OFFSET          4
+#define STATE_OFFSET        8
+#define COUNT_OFFSET        12
+#define TIMER_OFFSET        16
+#define PRIORITY_OFFSET     20
+#define CONTENT_OFFSET      24
+#define STACK_OFFSET        104
+
+#undef  ARM_MODE_MASK
+#define ARM_MODE_MASK       0xFFFFFFE0
+/*********************************************************************************************************
+  任务切换
+*********************************************************************************************************/
+.text
+.code 32
+.align 2
+.global __switch_to
+__switch_to:                                    /*  __switch_to 可能在 irq 和 svc 模式下调用            */
+    mrs    r2, cpsr
+    bic    r2, r2, #ARM_MODE_MASK
+
+    cmp    r2, #ARM_IRQ_MODE                    /*  判断是否在 irq 模式下                               */
+    beq    irq_mode_save
+
+    cmp    r2, #ARM_SVC_MODE                    /*  判断是否在 svc 模式下                               */
+    beq    svc_mode_save
+
+    mov    pc, lr
+/*********************************************************************************************************
+  irq 模式保存任务上下文
+*********************************************************************************************************/
+irq_mode_save:
+/*
+              +--------------------------------------+
+              | pc                                   |
+              +--------------------------------------+
+              |                                      |
+              | r0 - r12                             |
+              |                                      |
+              +--------------------------------------+
+              | 中断时的 spsr = 0x13, svc 模式(无效) |
+              +--------------------------------------+
+              | 中断时的 sp (sys 模式)               |
+              +--------------------------------------+
+              | 中断时的 cpsr (sys 模式)             |
+              +--------------------------------------+
+              | 原有值                               |
+              +--------------------------------------+
+*/
+    add     r0, r0, #CONTENT_OFFSET             /*  R0 = current->content                               */
+    ldr     sp, =(IRQ_STACK_P_BASE - 14 * 4)    /*  SP 指向中断进入时保存的寄存器                       */
+
+    add     r0, r0, #4                          /*  不修改 sp_backup                                    */
+
+    mrs     r2, spsr                            /*  中断时的 cpsr (sys 模式)                            */
+    stmia   r0!, {r2}
+
+    stmia   r0!, {sp}^                          /*  中断时的 sp (sys 模式)                              */
+
+    mov     r2, #ARM_SVC_MODE                   /*  中断时的 spsr = 0x13, svc 模式(无效)                */
+    stmia   r0!, {r2}
+
+    ldmia   sp!, {r2-r8}                        /*  把中断进入时保存的寄存器转移到 current->content 中  */
+    stmia   r0!, {r2-r8}
+    ldmia   sp!, {r2-r8}
+    stmia   r0!, {r2-r8}
+
+    b       do_switch                           /*  执行任务切换                                        */
+/*********************************************************************************************************
+  svc 模式保存任务上下文
+*********************************************************************************************************/
+svc_mode_save:
+/*
+              +--------------------------------------+
+              | pc                                   |
+              +--------------------------------------+
+              |                                      |
+              | r0 - r12                             |
+              |                                      |
+              +--------------------------------------+
+              | 中断时的 spsr (sys 模式 cpsr != 0x13)|
+              +--------------------------------------+
+              | 中断时的 sp (svc 模式)               |
+              +--------------------------------------+
+              | 中断时的 cpsr (svc 模式)             |
+              +--------------------------------------+
+              | 系统调用时的 sp (sys 模式)           |
+              +--------------------------------------+
+*/
+    add     r0, r0, #CONTENT_OFFSET             /*  R0 = current->content                               */
+
+    stmia   r0!, {sp}^                          /*  系统调用时的 sp (sys 模式)                          */
+
+    mrs     r2, cpsr                            /*  中断时的 cpsr (svc 模式)                            */
+    stmia   r0!, {r2}
+
+    stmia   r0!, {sp}                           /*  中断时的 sp (svc 模式)                              */
+
+    mrs     r2, spsr                            /*  中断时的 spsr                                       */
+    stmia   r0!, {r2}
+
+    stmia   r0!, {r0-r12, lr}                   /*  保存寄存器到 current->content 中                    */
+
+    b       do_switch                           /*  执行任务切换                                        */
+/*********************************************************************************************************
+  执行任务切换
+*********************************************************************************************************/
+do_switch:
+/*
+              +--------------------------------------+
+              | pc                                   |
+              +--------------------------------------+
+              |                                      |
+              | r0 - r12                             |
+              |                                      |
+              +--------------------------------------+
+              | 中断时的 spsr = 0x13, svc 模式(无效) |
+              +--------------------------------------+
+              | 中断时的 sp (sys 模式)               |
+              +--------------------------------------+
+              | 中断时的 cpsr (sys 模式)             |
+              +--------------------------------------+
+              | 原有值                               |
+              +--------------------------------------+
+
+              +--------------------------------------+
+              | pc                                   |
+              +--------------------------------------+
+              |                                      |
+              | r0 - r12                             |
+              |                                      |
+              +--------------------------------------+
+              | 中断时的 spsr (sys 模式 cpsr != 0x13)|
+              +--------------------------------------+
+              | 中断时的 sp (svc 模式)               |
+              +--------------------------------------+
+              | 中断时的 cpsr (svc 模式)             |
+              +--------------------------------------+
+              | 系统调用时的 sp (sys 模式)           |
+              +--------------------------------------+
+*/
+    ldr     r0, [r1, #PID_OFFSET]               /*  要切换到的任务的 PID                                */
+    mov     r0, r0, lsl #25                     /*  PID 在寄存器的最高 7 位                             */
+    mcr     p15, 0, r0, c13, c0, 0              /*  写 PID, MVA 发生变化了!!!                           */
+
+    add     r1, r1, #CONTENT_OFFSET             /*  r1 = task[next].content                             */
+
+    ldmia   r1!, {r2-r5}                        /*  r2=sp_backup, r3=cpsr_int, r4=sp_int, r5=spsr_int   */
+
+    mov     r0, r5
+    bic     r0, r0, #ARM_MODE_MASK
+    cmp     r0, #ARM_SVC_MODE                   /*  判断 spsr_int 中的模式是否为 svc 模式               */
+
+    /*
+     *    irq_mode_save 时, 即被中断剥夺 CPU 使用权的任务, spsr_int 中的模式为 svc 模式
+     * 而 svc_mode_save 时, 即  主动释放 CPU 使用权的任务, spsr_int 中的模式为 sys 模式
+     *                                       新创建的任务, spsr_int 中的模式为 svc 模式
+     */
+     /*
+      * 被中断剥夺使用权的任务和新创建的任务都会设置 svc 模式的 sp, 用于系统调用时的软件中断堆栈
+      * 主动释放使用权的任务会设置 sys 模式的 sp, 用于系统调用完毕后在 sys 模式下运行的堆栈
+      */
+    msreq   cpsr_c, #(ARM_FIQ_NO + ARM_IRQ_NO + ARM_SVC_MODE)   /*  若是, 进入 svc 模式, 关中断         */
+    msrne   cpsr_c, #(ARM_FIQ_NO + ARM_IRQ_NO + ARM_SYS_MODE)   /*  否则, 进入 sys 模式, 关中断         */
+    mov     sp, r2                              /*  设置 sys 或 svc 模式的sp                            */
+
+    msr     cpsr_cxsf, r3                       /*  中断时的 cpsr                                       */
+    mov     sp, r4                              /*  中断时的 sp                                         */
+
+    msrne   spsr_cxsf, r5                       /*  sys 模式下没有 spsr                                 */
+
+    mov     r0, r1
+    ldmia   r0, {r0-r12, pc}                    /*  切换到新的任务                                      */
+/*********************************************************************************************************
+  切换到进程 0
+*********************************************************************************************************/
+.global __switch_to_process0
+__switch_to_process0:
+    mov     r1, lr
+    mov     sp, r0
+    msr     spsr_cxsf, #(ARM_SVC_MODE)
+    msr     cpsr_cxsf, #(ARM_FIQ_NO + ARM_IRQ_EN + ARM_SYS_MODE)        /*  进入 sys 模式, 开 IRQ 中断  */
+    ldr     sp, =(KERN_MEM_BASE + KERN_MEM_SIZE)                        /*  设置堆栈指针                */
+    mov     lr, r1
+    mov     pc, lr
+    b       .
+/*********************************************************************************************************
+  END FILE
+*********************************************************************************************************/
