@@ -28,7 +28,7 @@
 ** Created by:              JiaoJinXing
 ** Created date:            2012-2-2
 ** Version:                 1.0.0
-** Descriptions:            初始化
+** Descriptions:            创建文件
 **
 **--------------------------------------------------------------------------------------------------------
 ** Modified by:
@@ -77,7 +77,7 @@ int main(void)
 
     mmu_init();
 
-    memcpy((char *)VECTOR_V_ADDR, (char *)KERN_LOAD_ADDR, PAGE);
+    memcpy((void *)VECTOR_V_ADDR, (void *)KERN_LOAD_ADDR, PAGE);
 
     sched_init();
 
