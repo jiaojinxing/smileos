@@ -63,7 +63,9 @@
 
 #define TASK_NR             (PROCESS_NR + 1 + THREAD_NR)                /*  任务数                      */
 
-#define MMU_TBL_BASE        (KERN_MEM_BASE + KERN_MEM_SIZE - 32 * KB)   /*  MMU 转换表基址              */
+#define MMU_TBL_ALIGNED     (32 * KB)                                   /*  MMU 转换表基址对齐大小      */
+                                                                        /*  MMU 转换表基址              */
+#define MMU_TBL_BASE        (KERN_MEM_BASE + KERN_MEM_SIZE - MMU_TBL_ALIGNED)
 #define MMU_TBL_SIZE        (16 * KB)                                   /*  MMU 转换表大小              */
 
 #define KERN_LOAD_ADDR      (KERN_MEM_BASE)                             /*  内核加载地址                */

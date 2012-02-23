@@ -77,7 +77,7 @@ int main(void)
 
     mmu_init();
 
-    memcpy((void *)VECTOR_V_ADDR, (void *)KERN_LOAD_ADDR, PAGE);
+    memcpy((void *)VECTOR_P_ADDR, (void *)KERN_LOAD_ADDR, PAGE);
 
     sched_init();
 

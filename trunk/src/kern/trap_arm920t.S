@@ -98,10 +98,13 @@ swi_handler:
                                             /*  根据 ATPCS, 前四个参数使用 r0 - r3, 后面的参数使用堆栈  */
                                             /*  因为切换了处理器模式, SP 也切换了, 所以多于 4 个参数时, */
                                             /*  会有问题                                                */
+
     cmp     r7, #SYS_CALL_NR                /*  根据 EABI, 系统调用号使用 r7                            */
 
     ldrls   r5, =sys_do_table               /*  系统调用处理跳转表                                      */
+
     ldrls   lr, =sys_do_return              /*  返回地址                                                */
+
     ldrls   pc, [r5, r7, lsl #2]            /*  跳转到相应系统调用处理                                  */
 
     mov     r0, #-1                         /*  出错, 返回 -1, r0 用于返回值                            */
