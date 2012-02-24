@@ -40,6 +40,7 @@
 #include "config.h"
 #include "types.h"
 #include "kern.h"
+#include "mem.h"
 /*********************************************************************************************************
   系统调用处理
 *********************************************************************************************************/
@@ -89,7 +90,7 @@ static void *do_free(void *ptr)
     return mem_heap_free(&task[current->pid].heap, ptr);
 }
 
-static void *do_heap_init(uint8_t *base, uint32_t size)
+static int do_heap_init(uint8_t *base, uint32_t size)
 {
     return mem_heap_init(&task[current->pid].heap, base, size);
 }
@@ -102,7 +103,10 @@ sys_do_t sys_do_table[] = {
          */
         (sys_do_t)do_exit,
         (sys_do_t)do_sleep,
-        (sys_do_t)do_write
+        (sys_do_t)do_write,
+        (sys_do_t)do_malloc,
+        (sys_do_t)do_free,
+        (sys_do_t)do_heap_init,
 };
 /*********************************************************************************************************
   END FILE

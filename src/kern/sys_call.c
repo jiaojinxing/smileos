@@ -125,6 +125,70 @@ int printf(const char *fmt, ...)
     return 0;
 }
 
+/*
+ * malloc
+ */
+void *malloc(uint32_t size)
+{
+    void *ret;
+
+    __asm__(
+        "mov    r0, %1\n"
+        "mov    r7, %2\n"
+        "stmdb  sp!, {lr}\n"
+        "swi    0\n"
+        "ldmia  sp!, {lr}\n"
+        "mov    %0, r0\n"
+        :"=r"(ret)
+        :"r"(size), "M"(SYS_CALL_MALLOC)
+        :"r0"
+        );
+    return ret;
+}
+
+/*
+ * free
+ */
+void *free(void *ptr)
+{
+    void *ret;
+
+    __asm__(
+        "mov    r0, %1\n"
+        "mov    r7, %2\n"
+        "stmdb  sp!, {lr}\n"
+        "swi    0\n"
+        "ldmia  sp!, {lr}\n"
+        "mov    %0, r0\n"
+        :"=r"(ret)
+        :"r"(ptr), "M"(SYS_CALL_FREE)
+        :"r0"
+        );
+    return ret;
+}
+
+/*
+ * heap_init
+ */
+int heap_init(uint8_t *base, uint32_t size)
+{
+    void *ret;
+
+    __asm__(
+        "mov    r0, %1\n"
+        "mov    r1, %2\n"
+        "mov    r7, %3\n"
+        "stmdb  sp!, {lr}\n"
+        "swi    0\n"
+        "ldmia  sp!, {lr}\n"
+        "mov    %0, r0\n"
+        :"=r"(ret)
+        :"r"(base), "r"(size), "M"(SYS_CALL_HEAP_INIT)
+        :"r0"
+        );
+    return ret;
+}
+
 void _sbrk(void)
 {
 

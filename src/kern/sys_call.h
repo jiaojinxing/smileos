@@ -43,7 +43,10 @@
 #define SYS_CALL_EXIT       0
 #define SYS_CALL_SLEEP      1
 #define SYS_CALL_WRITE      2
-#define SYS_CALL_NR         3                                           /*  系统调用数                  */
+#define SYS_CALL_MALLOC     3
+#define SYS_CALL_FREE       4
+#define SYS_CALL_HEAP_INIT  5
+#define SYS_CALL_NR         6                                           /*  系统调用数                  */
 
 #ifndef __ASSEMBLER__
 /*
@@ -65,6 +68,21 @@ int write(char *str);
  * printf
  */
 int printf(const char *fmt, ...);
+
+/*
+ * malloc
+ */
+void *malloc(uint32_t size);
+
+/*
+ * free
+ */
+void *free(void *ptr);
+
+/*
+ * heap_init
+ */
+int heap_init(uint8_t *base, uint32_t size);
 #endif
 
 #endif                                                                  /*  SYS_CALL_H_                 */

@@ -1,10 +1,42 @@
-/*
- * mem.c
- *
- *  Created on: 2012-2-23
- *      Author: Administrator
- */
-
+/*********************************************************************************************************
+**
+** Copyright (c) 2011 - 2012  Jiao JinXing <JiaoJinXing1987@gmail.com>
+**
+** Licensed under the Academic Free License version 2.1
+**
+** This program is free software; you can redistribute it and/or modify
+** it under the terms of the GNU General Public License as published by
+** the Free Software Foundation; either version 2 of the License, or
+** (at your option) any later version.
+**
+** This program is distributed in the hope that it will be useful,
+** but WITHOUT ANY WARRANTY; without even the implied warranty of
+** MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+** GNU General Public License for more details.
+**
+** You should have received a copy of the GNU General Public License
+** along with this program; if not, write to the Free Software
+** Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+**
+**--------------------------------------------------------------------------------------------------------
+** File name:               mem.c
+** Last modified Date:      2012-2-23
+** Last Version:            1.0.0
+** Descriptions:            内存管理
+**
+**--------------------------------------------------------------------------------------------------------
+** Created by:              JiaoJinXing
+** Created date:            2012-2-23
+** Version:                 1.0.0
+** Descriptions:            创建文件
+**
+**--------------------------------------------------------------------------------------------------------
+** Modified by:
+** Modified date:
+** Version:
+** Descriptions:
+**
+*********************************************************************************************************/
 #include "config.h"
 #include "types.h"
 #include "kern.h"
@@ -73,7 +105,7 @@ void *mem_heap_alloc(mem_heap *heap, uint32_t size)
         }
 
         if (blk == NULL) {                                              /*  没找到                      */
-            return NULL;
+            goto error0;
         }
 
         if (blk->size <= MEM_ALIGN_SIZE(sizeof(mem_block)) + size) {    /*  如果内存块切割后, 剩余的大小*/
@@ -117,6 +149,9 @@ void *mem_heap_alloc(mem_heap *heap, uint32_t size)
         return (char *)new_blk + MEM_ALIGN_SIZE(sizeof(mem_block));
     }
 
+    error0:
+    printk("%s: process %d low memory!\n", __func__, current->pid);
+
     return NULL;
 }
 
@@ -130,19 +165,23 @@ void *mem_heap_free(mem_heap *heap, void *ptr)
     mem_block *next;
 
     if (ptr == NULL) {
+        printk("%s: memory pointer is null!\n", __func__, current->tid);
         return ptr;
     }
 
     if (ptr != MEM_ALIGN(ptr)) {
+        printk("%s: memory pointer is unalignment!\n", __func__, current->tid);
         return ptr;
     }
                                                                         /*  指针所在的内存块节点        */
     blk  = (mem_block *)((char *)ptr - MEM_ALIGN_SIZE(sizeof(mem_block)));
     if (blk == NULL) {
+        printk("%s: memory pointer is null!\n", __func__, current->tid);
         return ptr;
     }
 
     if (blk->magic0 != MEM_BLK_MAGIC0 || blk->status != MEM_BLK_STAT_USED) {
+        printk("%s: memory pointer is invaild!\n", __func__, current->tid);
         return ptr;
     }
 
@@ -150,6 +189,7 @@ void *mem_heap_free(mem_heap *heap, void *ptr)
     next = blk->next;
 
     if (next != NULL && next->magic0 != MEM_BLK_MAGIC0) {               /*  写缓冲区溢出                */
+        printk("%s: write buffer over!\n", __func__, current->tid);
         return ptr;
     }
 
@@ -200,19 +240,6 @@ void *mem_heap_free(mem_heap *heap, void *ptr)
 
     return NULL;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+/*********************************************************************************************************
+  END FILE
+*********************************************************************************************************/
