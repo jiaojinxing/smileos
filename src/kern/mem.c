@@ -16,7 +16,12 @@
 #define MEM_BLK_STAT_FREE           0
 #define MEM_BLK_STAT_USED           (1 << 4)
 
-#define MEM_BLK_MAGIC0              0x12345678
+#define MEM_BLK_MAGIC0              0xA71B26E5
+
+#define MEM_ALIGNMENT               4
+#define MEM_ALIGN_SIZE(size)        (((size) + MEM_ALIGNMENT - 1) & ~(MEM_ALIGNMENT - 1))
+#define MEM_ALIGN_SIZE_LESS(size)   (((size) & ~(MEM_ALIGNMENT - 1)))
+#define MEM_ALIGN(addr)             ((void *)(((uint32_t)(addr) + MEM_ALIGNMENT - 1) & ~(uint32_t)(MEM_ALIGNMENT - 1)))
 
 struct _mem_block {
     uint32_t        magic0;
@@ -27,13 +32,6 @@ struct _mem_block {
     uint32_t        size;
     uint8_t         status;
 };
-
-#define MEM_ALIGNMENT               4
-#define MEM_ALIGN_SIZE(size)        (((size) + MEM_ALIGNMENT - 1) & ~(MEM_ALIGNMENT - 1))
-#define MEM_ALIGN_SIZE_LESS(size)   (((size) & ~(MEM_ALIGNMENT - 1)))
-#define MEM_ALIGN(addr)             ((void *)(((uint32_t)(addr) + MEM_ALIGNMENT - 1) & ~(uint32_t)(MEM_ALIGNMENT - 1)))
-
-
 
 /*
  * ³õÊ¼»¯ÄÚ´æ¶Ñ

@@ -42,6 +42,7 @@
 
 #include "config.h"
 #include "types.h"
+#include "mem.h"
 
 /*
  * 任务类型
@@ -72,12 +73,18 @@ typedef struct _task {
     struct _task   *child;
     struct _task   *next;
     struct _task   *father;
+    mem_heap        heap;
 } task_t;
 
 /*
  * 当前运行的任务
  */
 extern task_t *current;
+
+/*
+ * 任务控制块
+ */
+extern task_t task[TASK_NR];
 
 /*
  * 系统调用处理
