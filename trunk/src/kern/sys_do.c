@@ -58,7 +58,7 @@ static int do_exit(int error_code)
 /*
  * 进程休眠
  */
-static int do_sleep(int time)
+static int do_sleep(uint32_t time)
 {
     current->timer = time;
 
@@ -74,9 +74,24 @@ static int do_sleep(int time)
  */
 static int do_write(char *str)
 {
-    printk((char *)virt_to_phy((uint32_t)str));
+    printk(str);
 
     return 0;
+}
+
+static void *do_malloc(uint32_t size)
+{
+    return mem_heap_alloc(&task[current->pid].heap, size);
+}
+
+static void *do_free(void *ptr)
+{
+    return mem_heap_free(&task[current->pid].heap, ptr);
+}
+
+static void *do_heap_init(uint8_t *base, uint32_t size)
+{
+    return mem_heap_init(&task[current->pid].heap, base, size);
 }
 /*********************************************************************************************************
   系统调用处理表
