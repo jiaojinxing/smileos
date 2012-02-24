@@ -48,14 +48,25 @@
 static uint32_t test_thread1_stack[1024];
 static uint32_t test_thread2_stack[1024];
 
+static uint8_t heap[2 * MB];
+
 void test_thread1(void *arg)
 {
     int i = 0;
+    void *ptr;
 
     while (1) {
         printf("thread 1, i = %d\n", i++);
 
-        sleep(TICK_PER_SECOND);
+        ptr = malloc(i);
+
+        printf("thread 1 addr = %p\n", ptr);
+
+        sleep(TICK_PER_SECOND / 2);
+
+        free(ptr);
+
+        sleep(TICK_PER_SECOND / 2);
     }
 }
 
@@ -66,7 +77,9 @@ void test_thread2(void *arg)
     while (1) {
         printf("thread 2, i = %d\n", i++);
 
-        sleep(TICK_PER_SECOND);
+        printf("thread 2 addr = %p\n", malloc(1024));
+
+        sleep(TICK_PER_SECOND / 4);
     }
 }
 
@@ -89,6 +102,8 @@ int main(void)
     create_process(code, size, 15);
 
     __switch_to_process0(current->content[0]);
+
+    heap_init(heap, 2 * MB);
 
     while (1) {
         //mmu_wait_for_interrupt();
