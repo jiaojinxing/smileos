@@ -42,6 +42,7 @@
 #include "sys_call.h"
 #include <stdarg.h>
 #include <stdio.h>
+#include <sys/time.h>
 
 /*
  * ½ø³ÌÍË³ö
@@ -201,6 +202,12 @@ int heap_init(uint8_t *base, uint32_t size)
         :"r0"
         );
     return ret;
+}
+
+int select(int maxfdp1, fd_set *readset, fd_set *writeset, fd_set *exceptset,
+            struct timeval *timeout)
+{
+    return 0;
 }
 
 void _sbrk(void)
