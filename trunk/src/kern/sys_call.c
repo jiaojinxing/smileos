@@ -64,6 +64,20 @@ int exit(int error_code)
     return ret;
 }
 
+void abort(void)
+{
+
+}
+
+void usleep(uint32_t us)
+{
+
+}
+
+int getpid(void)
+{
+    return 0;
+}
 /*
  * ½ø³ÌÐÝÃß
  */
