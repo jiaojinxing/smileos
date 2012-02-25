@@ -38,7 +38,7 @@ intern pth_pqueue_t pth_DQ;         /* queue of terminated threads           */
 intern int          pth_favournew;  /* favour new threads on startup         */
 intern float        pth_loadval;    /* average scheduler load value          */
 
-#ifndef SMILEOS
+#ifdef SMILEOS_SINGAL
 static int          pth_sigpipe[2]; /* internal signal occurrence pipe       */
 static sigset_t     pth_sigpending; /* mask of pending signals               */
 static sigset_t     pth_sigblock;   /* mask of signals we block in scheduler */
@@ -52,7 +52,7 @@ static pth_time_t   pth_loadtickgap = PTH_TIME(1,0);
 /* initialize the scheduler ingredients */
 intern int pth_scheduler_init(void)
 {
-#ifndef SMILEOS
+#ifdef SMILEOS_SINGAL
     /* create the internal signal pipe */
     if (pipe(pth_sigpipe) == -1)
         return pth_error(FALSE, errno);
@@ -121,7 +121,7 @@ intern void pth_scheduler_kill(void)
     /* drop all threads */
     pth_scheduler_drop();
 
-#ifndef SMILEOS
+#ifdef SMILEOS_SINGAL
     /* remove the internal signal pipe */
     close(pth_sigpipe[0]);
     close(pth_sigpipe[1]);
@@ -161,12 +161,12 @@ intern void pth_scheduler_kill(void)
 /* the heart of this library: the thread scheduler */
 intern void *pth_scheduler(void *dummy)
 {
-#ifndef SMILEOS
+#ifdef SMILEOS_SINGAL
     sigset_t sigs;
 #endif
     pth_time_t running;
     pth_time_t snapshot;
-#ifndef SMILEOS
+#ifdef SMILEOS_SINGAL
     struct sigaction sa;
     sigset_t ss;
     int sig;
@@ -181,7 +181,7 @@ intern void *pth_scheduler(void *dummy)
     /* mark this thread as the special scheduler thread */
     pth_sched->state = PTH_STATE_SCHEDULER;
 
-#ifndef SMILEOS
+#ifdef SMILEOS_SINGAL
     /* block all signals in the scheduler thread */
     sigfillset(&sigs);
     pth_sc(sigprocmask)(SIG_SETMASK, &sigs, NULL);
@@ -218,14 +218,16 @@ intern void *pth_scheduler(void *dummy)
          */
         pth_current = pth_pqueue_delmax(&pth_RQ);
         if (pth_current == NULL) {
+#ifdef SMILEOS_STDIO
             fprintf(stderr, "**Pth** SCHEDULER INTERNAL ERROR: "
                             "no more thread(s) available to schedule!?!?\n");
+#endif
             abort();
         }
         pth_debug4("pth_scheduler: thread \"%s\" selected (prio=%d, qprio=%d)",
                    pth_current->name, pth_current->prio, pth_current->q_prio);
 
-#ifndef SMILEOS
+#ifdef SMILEOS_SINGAL
         /*
          * Raise additionally thread-specific signals
          * (they are delivered when we switch the context)
@@ -278,7 +280,7 @@ intern void *pth_scheduler(void *dummy)
         pth_debug3("pth_scheduler: thread \"%s\" ran %.6f",
                    pth_current->name, pth_time_t2d(&running));
 
-#ifndef SMILEOS
+#ifdef SMILEOS_SINGAL
         /*
          * Remove still pending thread-specific signals
          * (they are re-delivered next time)
@@ -310,7 +312,7 @@ intern void *pth_scheduler(void *dummy)
         }
 #endif
 
-#ifndef SMILEOS
+#ifdef SMILEOS_SINGAL
         /*
          * Check for stack overflow
          */
@@ -414,7 +416,7 @@ intern void pth_sched_eventmanager(pth_time_t *now, int dopoll)
     fd_set efds;
     struct timeval delay;
     struct timeval *pdelay;
-#ifndef SMILEOS
+#ifdef SMILEOS_SINGAL
     sigset_t oss;
     struct sigaction sa;
     struct sigaction osa[1+PTH_NSIG];
@@ -423,7 +425,7 @@ intern void pth_sched_eventmanager(pth_time_t *now, int dopoll)
     int loop_repeat;
     int fdmax;
     int rc;
-#ifndef SMILEOS
+#ifdef SMILEOS_SINGAL
     int sig;
 #endif
     int n;
@@ -441,7 +443,7 @@ intern void pth_sched_eventmanager(pth_time_t *now, int dopoll)
     FD_ZERO(&efds);
     fdmax = -1;
 
-#ifndef SMILEOS
+#ifdef SMILEOS_SINGAL
     /* initialize signal status */
     sigpending(&pth_sigpending);
     sigfillset(&pth_sigblock);
@@ -459,7 +461,7 @@ intern void pth_sched_eventmanager(pth_time_t *now, int dopoll)
     for (t = pth_pqueue_head(&pth_WQ); t != NULL;
          t = pth_pqueue_walk(&pth_WQ, t, PTH_WALK_NEXT)) {
 
-#ifndef SMILEOS
+#ifdef SMILEOS_SINGAL
         /* determine signals we block */
         for (sig = 1; sig < PTH_NSIG; sig++)
             if (!sigismember(&(t->mctx.sigs), sig))
@@ -503,7 +505,7 @@ intern void pth_sched_eventmanager(pth_time_t *now, int dopoll)
                     if (fdmax < ev->ev_args.SELECT.nfd-1)
                         fdmax = ev->ev_args.SELECT.nfd-1;
                 }
-#ifndef SMILEOS
+#ifdef SMILEOS_SINGAL
                 /* Signal Set */
                 else if (ev->ev_type == PTH_EVENT_SIGS) {
                     for (sig = 1; sig < PTH_NSIG; sig++) {
@@ -625,7 +627,7 @@ intern void pth_sched_eventmanager(pth_time_t *now, int dopoll)
         pdelay = NULL;
     }
 
-#ifndef SMILEOS
+#ifdef SMILEOS_SINGAL
     /* clear pipe and let select() wait for the read-part of the pipe */
     while (pth_sc(read)(pth_sigpipe[0], minibuf, sizeof(minibuf)) > 0) ;
     FD_SET(pth_sigpipe[0], &rfds);
@@ -655,7 +657,7 @@ intern void pth_sched_eventmanager(pth_time_t *now, int dopoll)
         while ((rc = pth_sc(select)(fdmax+1, &rfds, &wfds, &efds, pdelay)) < 0
                && errno == EINTR) ;
 
-#ifndef SMILEOS
+#ifdef SMILEOS_SINGAL
     /* restore signal mask and actions and handle signals */
     pth_sc(sigprocmask)(SIG_SETMASK, &oss, NULL);
     for (sig = 1; sig < PTH_NSIG; sig++)
@@ -678,7 +680,7 @@ intern void pth_sched_eventmanager(pth_time_t *now, int dopoll)
         }
     }
 
-#ifndef SMILEOS
+#ifdef SMILEOS_SINGAL
     /* if the internal signal pipe was used, adjust the select() results */
     if (!dopoll && rc > 0 && FD_ISSET(pth_sigpipe[0], &rfds)) {
         FD_CLR(pth_sigpipe[0], &rfds);
@@ -799,7 +801,7 @@ intern void pth_sched_eventmanager(pth_time_t *now, int dopoll)
                             }
                         }
                     }
-#ifndef SMILEOS
+#ifdef SMILEOS_SINGAL
                     /* Signal Set */
                     else if (ev->ev_type == PTH_EVENT_SIGS) {
                         for (sig = 1; sig < PTH_NSIG; sig++) {
@@ -875,7 +877,7 @@ intern void pth_sched_eventmanager(pth_time_t *now, int dopoll)
     return;
 }
 
-#ifndef SMILEOS
+#ifdef SMILEOS_SINGAL
 intern void pth_sched_eventmanager_sighandler(int sig)
 {
     char c;
@@ -889,4 +891,3 @@ intern void pth_sched_eventmanager_sighandler(int sig)
     return;
 }
 #endif
-

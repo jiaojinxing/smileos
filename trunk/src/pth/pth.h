@@ -844,9 +844,6 @@ intern void pth_ring_init(pth_ring_t *r);
 
 intern pth_ringnode_t *pth_ring_pop(pth_ring_t *r);
 
-char *_pth_compat_strerror(int);
-#define strerror(errnum) _pth_compat_strerror(errnum)
-
 intern void *pth_scheduler(void *dummy);
 
 #endif /* _PTH_H_ */

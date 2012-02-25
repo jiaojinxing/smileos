@@ -80,7 +80,7 @@ intern void pth_debug(const char *file, int line, int argc, const char *fmt, ...
 /* dump out a page to stderr summarizing the internal state of Pth */
 intern void pth_dumpstate(FILE *fp)
 {
-#ifndef SMILEOS
+#ifdef SMILEOS_STDIO
     fprintf(fp, "+----------------------------------------------------------------------\n");
     fprintf(fp, "| Pth Version: %s\n", PTH_VERSION_STR);
     fprintf(fp, "| Load Average: %.2f\n", pth_loadval);
@@ -99,7 +99,7 @@ intern void pth_dumpstate(FILE *fp)
 
 intern void pth_dumpqueue(FILE *fp, const char *qn, pth_pqueue_t *q)
 {
-#ifndef SMILEOS
+#ifdef SMILEOS_STDIO
     pth_t t;
     int n;
     int i;
