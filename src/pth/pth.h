@@ -551,8 +551,7 @@ struct pth_cleanup_st {
 
 typedef struct pth_mctx_st pth_mctx_t;
 struct pth_mctx_st {
-    sigset_t sigs;
-    int error;
+    unsigned int sp;
 };
 
 #define PTH_TCB_NAMELEN 40

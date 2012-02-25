@@ -40,84 +40,99 @@
 #include "config.h"
 #include "types.h"
 #include "sys_call.h"
+#include "mem.h"
 #include <stdarg.h>
 #include <stdio.h>
+#include <string.h>
 #include <sys/time.h>
 
 /*
- * 进程退出
+ * 系统调用模板
  */
-int exit(int error_code)
+int syscall_template(void)
 {
+    int param1 = 0;
+    int param2 = 0;
+    int param3 = 0;
+    int param4 = 0;
     int ret;
 
-    __asm__(
-        "mov    r0, %1\n"                                               /*  r0 是参数 1                 */
-        "mov    r7, %2\n"                                               /*  r7 是系统调用号             */
-        "stmdb  sp!, {lr}\n"                                            /*  保存 LR 到堆栈              */
-        "swi    0\n"                                                    /*  软件中断                    */
-        "ldmia  sp!, {lr}\n"                                            /*  从堆栈恢复 LR               */
-        "mov    %0, r0\n"                                               /*  r0 是返回值                 */
-        :"=r"(ret)
-        :"r"(error_code), "M"(SYS_CALL_EXIT)
-        :"r0"
-        );
+    __asm__("mov    r0,  %0": :"r"(param1));
+    __asm__("mov    r1,  %0": :"r"(param2));
+    __asm__("mov    r2,  %0": :"r"(param3));
+    __asm__("mov    r3,  %0": :"r"(param4));
+    __asm__("mov    r7,  %0": :"M"(SYS_CALL_EXIT));
+    __asm__("stmdb  sp!, {lr}");
+    __asm__("swi    0");
+    __asm__("ldmia  sp!, {lr}");
+    __asm__("mov    %0,  r0": "=r"(ret));
+
     return ret;
 }
 
+/*
+ * exit
+ */
+void exit(int error_code) __attribute__ ((noreturn));
+void exit(int error_code)
+{
+    __asm__("mov    r0,  %0": :"r"(error_code));
+    __asm__("mov    r7,  %0": :"M"(SYS_CALL_EXIT));
+    __asm__("swi    0");
+}
+
+/*
+ * abort
+ */
 void abort(void)
 {
-
-}
-
-void usleep(uint32_t us)
-{
-
-}
-
-int getpid(void)
-{
-    return 0;
-}
-/*
- * 进程休眠
- */
-int sleep(int time)
-{
-    int ret;
-
-    __asm__(
-        "mov    r0, %1\n"                                               /*  r0 是参数 1                 */
-        "mov    r7, %2\n"                                               /*  r7 是系统调用号             */
-        "stmdb  sp!, {lr}\n"                                            /*  保存 LR 到堆栈              */
-        "swi    0\n"                                                    /*  软件中断                    */
-        "ldmia  sp!, {lr}\n"                                            /*  从堆栈恢复 LR               */
-        "mov    %0, r0\n"                                               /*  r0 是返回值                 */
-        :"=r"(ret)
-        :"r"(time), "M"(SYS_CALL_SLEEP)
-        :"r0"
-        );
-    return ret;
+    exit(0);
 }
 
 /*
- * 写
+ * tick_sleep
  */
-int write(char *str)
+static void tick_sleep(unsigned int t)
+{
+    __asm__("mov    r0,  %0": :"r"(t));
+    __asm__("mov    r7,  %0": :"M"(SYS_CALL_SLEEP));
+    __asm__("stmdb  sp!, {lr}");
+    __asm__("swi    0");
+    __asm__("ldmia  sp!, {lr}");
+}
+
+/*
+ * sleep
+ */
+void sleep(unsigned int s)
+{
+    tick_sleep(TICK_PER_SECOND * s);
+}
+
+/*
+ * usleep
+ */
+void usleep(unsigned int us)
+{
+    tick_sleep(TICK_PER_SECOND * us / 1000000);
+}
+
+/*
+ * write
+ */
+int write(int fd, char *data, unsigned int size)
 {
     int ret;
 
-    __asm__(
-        "mov    r0, %1\n"
-        "mov    r7, %2\n"
-        "stmdb  sp!, {lr}\n"
-        "swi    0\n"
-        "ldmia  sp!, {lr}\n"
-        "mov    %0, r0\n"
-        :"=r"(ret)
-        :"r"(str), "M"(SYS_CALL_WRITE)
-        :"r0"
-        );
+    __asm__("mov    r0,  %0": :"r"(fd));
+    __asm__("mov    r1,  %0": :"r"(data));
+    __asm__("mov    r2,  %0": :"r"(size));
+    __asm__("mov    r7,  %0": :"M"(SYS_CALL_WRITE));
+    __asm__("stmdb  sp!, {lr}");
+    __asm__("swi    0");
+    __asm__("ldmia  sp!, {lr}");
+    __asm__("mov    %0,  r0": "=r"(ret));
+
     return ret;
 }
 
@@ -133,7 +148,7 @@ int printf(const char *fmt, ...)
 
     vsprintf(buf, fmt, va);
 
-    write(buf);
+    write(0, buf, strlen(buf));
 
     va_end(va);
 
@@ -143,76 +158,132 @@ int printf(const char *fmt, ...)
 /*
  * malloc
  */
-void *malloc(uint32_t size)
+void *malloc(unsigned int size)
 {
     void *ret;
 
-    __asm__(
-        "mov    r0, %1\n"
-        "mov    r7, %2\n"
-        "stmdb  sp!, {lr}\n"
-        "swi    0\n"
-        "ldmia  sp!, {lr}\n"
-        "mov    %0, r0\n"
-        :"=r"(ret)
-        :"r"(size), "M"(SYS_CALL_MALLOC)
-        :"r0"
-        );
+    __asm__("mov    r0,  %0": :"r"(size));
+    __asm__("mov    r7,  %0": :"M"(SYS_CALL_MALLOC));
+    __asm__("stmdb  sp!, {lr}");
+    __asm__("swi    0");
+    __asm__("ldmia  sp!, {lr}");
+    __asm__("mov    %0,  r0": "=r"(ret));
+
     return ret;
+}
+
+/*
+ * calloc
+ */
+void *calloc(unsigned int nelem, unsigned int elsize)
+{
+    void *ptr = malloc(nelem * MEM_ALIGN_SIZE(elsize));
+    if (ptr != NULL) {
+        memset(ptr, 0, nelem * MEM_ALIGN_SIZE(elsize));
+    }
+    return ptr;
 }
 
 /*
  * free
  */
-void *free(void *ptr)
+void free(void *ptr)
 {
-    void *ret;
-
-    __asm__(
-        "mov    r0, %1\n"
-        "mov    r7, %2\n"
-        "stmdb  sp!, {lr}\n"
-        "swi    0\n"
-        "ldmia  sp!, {lr}\n"
-        "mov    %0, r0\n"
-        :"=r"(ret)
-        :"r"(ptr), "M"(SYS_CALL_FREE)
-        :"r0"
-        );
-    return ret;
+    __asm__("mov    r0,  %0": :"r"(ptr));
+    __asm__("mov    r7,  %0": :"M"(SYS_CALL_FREE));
+    __asm__("stmdb  sp!, {lr}");
+    __asm__("swi    0");
+    __asm__("ldmia  sp!, {lr}");
 }
 
 /*
  * heap_init
  */
-int heap_init(uint8_t *base, uint32_t size)
+int heap_init(void *base, unsigned int size)
 {
-    void *ret;
+    int ret;
 
-    __asm__(
-        "mov    r0, %1\n"
-        "mov    r1, %2\n"
-        "mov    r7, %3\n"
-        "stmdb  sp!, {lr}\n"
-        "swi    0\n"
-        "ldmia  sp!, {lr}\n"
-        "mov    %0, r0\n"
-        :"=r"(ret)
-        :"r"(base), "r"(size), "M"(SYS_CALL_HEAP_INIT)
-        :"r0"
-        );
+    __asm__("mov    r0,  %0": :"r"(base));
+    __asm__("mov    r1,  %0": :"r"(size));
+    __asm__("mov    r7,  %0": :"M"(SYS_CALL_HEAP_INIT));
+    __asm__("stmdb  sp!, {lr}");
+    __asm__("swi    0");
+    __asm__("ldmia  sp!, {lr}");
+    __asm__("mov    %0,  r0": "=r"(ret));
+
     return ret;
 }
 
-int select(int maxfdp1, fd_set *readset, fd_set *writeset, fd_set *exceptset,
-            struct timeval *timeout)
+/*
+ * select
+ */
+int select(int maxfdp1, fd_set *readset, fd_set *writeset, fd_set *exceptset, struct timeval *timeout)
 {
-    return 0;
+    printf("can't call %s()!, kill process %d\n", __func__, getpid());
+
+    abort();
+
+    return -1;
 }
 
+/*
+ * getpid
+ */
+int getpid(void)
+{
+    int ret;
+
+    __asm__("mov    r7,  %0": :"M"(SYS_CALL_GETPID));
+    __asm__("stmdb  sp!, {lr}");
+    __asm__("swi    0");
+    __asm__("ldmia  sp!, {lr}");
+    __asm__("mov    %0,  r0": "=r"(ret));
+
+    return ret;
+}
+
+/*
+ * gettimeofday
+ */
+int _gettimeofday(struct timeval *tv, void *tzp)
+{
+    int ret;
+
+    __asm__("mov    r0,  %0": :"r"(tv));
+    __asm__("mov    r1,  %0": :"r"(tzp));
+    __asm__("mov    r7,  %0": :"M"(SYS_CALL_GETTIME));
+    __asm__("stmdb  sp!, {lr}");
+    __asm__("swi    0");
+    __asm__("ldmia  sp!, {lr}");
+    __asm__("mov    %0,  r0": "=r"(ret));
+
+    return ret;
+}
+
+/*
+ * 获得 errno 指针
+ */
+int *__errno(void)
+{
+    int *ret;
+
+    __asm__("mov    r7,  %0": :"M"(SYS_CALL_ERRNO));
+    __asm__("stmdb  sp!, {lr}");
+    __asm__("swi    0");
+    __asm__("ldmia  sp!, {lr}");
+    __asm__("mov    %0,  r0": "=r"(ret));
+
+    return ret;
+}
+
+/*
+ * _sbrk
+ */
 void _sbrk(void)
 {
+    printf("can't call %s()!, kill process %d\n", __func__, getpid());
 
+    abort();
 }
 /*********************************************************************************************************
   END FILE

@@ -19,10 +19,10 @@
 ** Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 **
 **--------------------------------------------------------------------------------------------------------
-** File name:               s3c2440_timer.h
+** File name:               config.h
 ** Last modified Date:      2012-2-2
 ** Last Version:            1.0.0
-** Descriptions:            s3c2440 定时器
+** Descriptions:            配置头文件
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing
@@ -37,16 +37,14 @@
 ** Descriptions:
 **
 *********************************************************************************************************/
-#ifndef S3C2440_TIMER_H_
-#define S3C2440_TIMER_H_
+#ifndef CONFIG_H_
+#define CONFIG_H_
 
-#include "types.h"
+#ifdef S3C2440_BSP
+#include "../bsp/s3c2440/s3c2440_config.h"
+#endif
 
-int timer4_isr(uint32_t interrupt);
-
-void timer_init(void);
-
-#endif                                                                  /*  S3C2440_TIMER_H_            */
+#endif                                                                  /*  CONFIG_H_                   */
 /*********************************************************************************************************
   END FILE
 *********************************************************************************************************/

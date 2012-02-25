@@ -41,19 +41,20 @@
 #include "types.h"
 #include "kern.h"
 #include "mem.h"
+#include <sys/time.h>
 /*********************************************************************************************************
   系统调用处理
 *********************************************************************************************************/
 /*
  * 进程退出
  */
-static int do_exit(int error_code)
+static void do_exit(int error_code)
 {
+    printk("process %d exit!\n", current->pid);
+
     current->state = TASK_UNALLOCATE;
 
     schedule();
-
-    return 0;
 }
 
 /*
@@ -71,28 +72,64 @@ static int do_sleep(uint32_t time)
 }
 
 /*
- * 进程写
+ * 写
  */
-static int do_write(char *str)
+static int32_t do_write(int fd, uint8_t *data, uint32_t len)
 {
-    printk(str);
+    printk((char *)data);
 
-    return 0;
+    return (int32_t)len;
 }
 
+/*
+ * 内存分配
+ */
 static void *do_malloc(uint32_t size)
 {
     return mem_heap_alloc(&task[current->pid].heap, size);
 }
 
+/*
+ * 内存释放
+ */
 static void *do_free(void *ptr)
 {
     return mem_heap_free(&task[current->pid].heap, ptr);
 }
 
+/*
+ * 初始化堆
+ */
 static int do_heap_init(uint8_t *base, uint32_t size)
 {
     return mem_heap_init(&task[current->pid].heap, base, size);
+}
+
+/*
+ * 获得时间
+ */
+static int do_gettimeofday(struct timeval *tv, void *tzp)
+{
+    tv->tv_sec  = (tick / TICK_PER_SECOND);
+    tv->tv_usec = (tick % TICK_PER_SECOND) * 1000000;
+
+    return 0;
+}
+
+/*
+ * 获得 PID
+ */
+static int do_getpid(void)
+{
+    return current->pid;
+}
+
+/*
+ * 获得 errno 指针
+ */
+static int *do_errno(void)
+{
+    return &current->errno;
 }
 /*********************************************************************************************************
   系统调用处理表
@@ -107,6 +144,9 @@ sys_do_t sys_do_table[] = {
         (sys_do_t)do_malloc,
         (sys_do_t)do_free,
         (sys_do_t)do_heap_init,
+        (sys_do_t)do_gettimeofday,
+        (sys_do_t)do_getpid,
+        (sys_do_t)do_errno,
 };
 /*********************************************************************************************************
   END FILE

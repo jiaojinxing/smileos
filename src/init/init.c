@@ -44,49 +44,38 @@
 #include "sys_call.h"
 #include "sbin.h"
 #include <string.h>
+#include <pthread.h>
 
-static uint32_t test_thread1_stack[1024];
-static uint32_t test_thread2_stack[1024];
+#define HEAP_SIZE       (2 * MB)
 
-static uint8_t heap[2 * MB];
+static uint8_t heap[HEAP_SIZE];
 
-void test_thread1(void *arg)
+static void *test_thread(void *arg)
 {
     int i = 0;
     void *ptr;
 
     while (1) {
-        printf("thread 1, i = %d\n", i++);
+        printf("thread %d, i = %d\n", (int)arg, i++);
 
         ptr = malloc(i);
 
-        printf("thread 1 addr = %p\n", ptr);
-
-        sleep(TICK_PER_SECOND / 2);
+        printf("thread %d addr = %p\n", (int)arg, ptr);
 
         free(ptr);
 
-        sleep(TICK_PER_SECOND / 2);
+        __pthread_sleep(1);
     }
-}
 
-void test_thread2(void *arg)
-{
-    int i = 0;
-
-    while (1) {
-        printf("thread 2, i = %d\n", i++);
-
-        printf("thread 2 addr = %p\n", malloc(1024));
-
-        sleep(TICK_PER_SECOND / 4);
-    }
+    return NULL;
 }
 
 int main(void)
 {
     uint8_t  *code;
     uint32_t  size;
+    pthread_t tid1;
+    pthread_t tid2;
 
     mmu_init();
 
@@ -94,18 +83,21 @@ int main(void)
 
     sched_init();
 
-    create_thread((uint32_t)test_thread1, (uint32_t)&test_thread1_stack[1024], 15);
-
-    create_thread((uint32_t)test_thread2, (uint32_t)&test_thread2_stack[1024], 15);
-
     code = sbin_lookup("/2440_P1.hex", &size);
     create_process(code, size, 15);
 
     __switch_to_process0(current->content[0]);
 
-    heap_init(heap, 2 * MB);
+    heap_init(heap, sizeof(heap));
+
+    pthread_create(&tid1, NULL, test_thread, 1);
+
+    pthread_create(&tid2, NULL, test_thread, 2);
 
     while (1) {
+
+        pthread_yield_np();
+
         //mmu_wait_for_interrupt();
     }
 

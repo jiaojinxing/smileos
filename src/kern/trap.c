@@ -19,14 +19,14 @@
 ** Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 **
 **--------------------------------------------------------------------------------------------------------
-** File name:               s3c2440_int.h
-** Last modified Date:      2012-2-2
+** File name:               trap.c
+** Last modified Date:      2012-2-25
 ** Last Version:            1.0.0
-** Descriptions:            s3c2440 中断
+** Descriptions:            异常处理程序
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing
-** Created date:            2012-2-2
+** Created date:            2012-2-25
 ** Version:                 1.0.0
 ** Descriptions:            创建文件
 **
@@ -37,26 +37,34 @@
 ** Descriptions:
 **
 *********************************************************************************************************/
-#ifndef S3C2440_INT_H_
-#define S3C2440_INT_H_
-
+#include "config.h"
 #include "types.h"
+#include "kern.h"
 
-typedef int (*isr_t)(uint32_t interrupt);
+void undf_c_handler(void)
+{
+    printk("%s\n", __func__);
 
-void irq_c_handler(void);
+    while (1);
+}
 
-int isr_invaild(uint32_t interrupt);
+void pabt_c_handler(void)
+{
+    printk("%s, current pid = %d\n", __func__, current->pid);
 
-void interrupt_init(void);
+    while (1);
+}
 
-void interrupt_mask(uint32_t interrupt);
+void dabt_c_handler(void)
+{
+    printk("%s\n", __func__);
 
-void interrupt_umask(uint32_t interrupt);
+    while (1);
+}
 
-void interrupt_install(uint32_t interrupt, isr_t new_isr, isr_t *old_isr);
+void fiq_c_handler(void)
+{
+    printk("%s\n", __func__);
 
-#endif                                                                  /*  S3C2440_INT_H_              */
-/*********************************************************************************************************
-  END FILE
-*********************************************************************************************************/
+    while (1);
+}

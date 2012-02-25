@@ -42,24 +42,65 @@
 /*********************************************************************************************************
   系统数据类型定义
 *********************************************************************************************************/
-typedef unsigned char   uint8_t;
-typedef          char    int8_t;
-typedef unsigned short  uint16_t;
-typedef          short   int16_t;
-typedef unsigned int    uint32_t;
-typedef          int     int32_t;
+typedef unsigned char               uint8_t;
+typedef          char               int8_t;
+typedef unsigned short              uint16_t;
+typedef          short              int16_t;
+typedef unsigned int                uint32_t;
+typedef          int                int32_t;
+typedef unsigned long long          uint64_t;
+typedef          long long          int64_t;
 
 #ifndef NULL
-#define NULL    0
+#define NULL                        0
 #endif
 
 #ifndef TRUE
-#define TRUE    1
+#define TRUE                        1
 #endif
 
 #ifndef FALSE
-#define FALSE   0
+#define FALSE                       0
 #endif
+/*********************************************************************************************************
+  为了更好地移植 LwIP, 加入以下数据类型定义
+*********************************************************************************************************/
+typedef uint8_t                     u8_t;
+typedef int8_t                      s8_t;
+typedef uint16_t                    u16_t;
+typedef int16_t                     s16_t;
+typedef uint32_t                    u32_t;
+typedef int32_t                     s32_t;
+
+typedef uint32_t                    mem_ptr_t;
+
+#define U16_F                       "u"
+#define U32_F                       "u"
+#define S16_F                       "d"
+#define S32_F                       "d"
+#define X16_F                       "X"
+#define X32_F                       "X"
+#define SZT_F                       "u"
+#define X8_F                        "02X"
+/*********************************************************************************************************
+  编译器结构缩排
+*********************************************************************************************************/
+#define PACK_STRUCT_FIELD(x)        x
+#define PACK_STRUCT_STRUCT          __attribute__((packed))
+#define PACK_STRUCT_BEGIN                                               /*  单字节缩排结构体            */
+#define PACK_STRUCT_END                                                 /*  结束单字节缩排结构体        */
+/*********************************************************************************************************
+  字节序
+*********************************************************************************************************/
+#ifndef LITTLE_ENDIAN
+#define LITTLE_ENDIAN 1234
+#endif
+
+#ifndef BIG_ENDIAN
+#define BIG_ENDIAN 4321
+#endif
+
+#define BYTE_ORDER                  LITTLE_ENDIAN
 
 #endif                                                                  /*  TYPES_H_                    */
 /*********************************************************************************************************

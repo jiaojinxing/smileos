@@ -419,7 +419,7 @@ void mmu_clean_tt(register uint32_t ttb)
     }
 }
 
-extern void bsp_mmu_map_sections(void);
+extern void bsp_mem_map(void);
 
 /*
  * 建立转换表, 初始化 MMU Cache 等
@@ -534,9 +534,9 @@ void mmu_init(void)
     }
 
     /*
-     * mmu map sections by bsp
+     * BSP 内存映射
      */
-    bsp_mmu_map_sections();
+    bsp_mem_map();
 
     /*
      * 设置转换表基址
