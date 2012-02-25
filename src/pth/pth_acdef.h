@@ -28,7 +28,7 @@
 #undef HAVE_GETCONTEXT
 
 /* Define to 1 if you have the `gettimeofday' function. */
-#undef HAVE_GETTIMEOFDAY
+#define HAVE_GETTIMEOFDAY 1
 
 /* define if gettimeofday(2) wants a single-argument only */
 #undef HAVE_GETTIMEOFDAY_ARGS1
