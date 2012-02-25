@@ -122,10 +122,12 @@ struct timespec {
 #define COMPILER_HAPPYNESS(name) \
     int __##name##_unit = 0;
 
+#ifndef SMILEOS
 /* generated contents */
 BEGIN_DECLARATION
-
+==#==
 END_DECLARATION
+#endif
 
 #endif /* _PTH_P_H_ */
 

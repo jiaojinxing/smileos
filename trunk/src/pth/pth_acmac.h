@@ -26,9 +26,25 @@
 #ifndef _PTH_ACMAC_H_
 #define _PTH_ACMAC_H_
 
+#ifndef SMILEOS
+/* sig{set,long}jmp macros */
+@pth_sigjmpbuf@
+@pth_sigsetjmp@
+@pth_siglongjmp@
+#endif
+
 /* stack setup macros */
 #define pth_skaddr(func,skaddr,sksize) pth_skaddr_##func(skaddr,sksize)
 #define pth_sksize(func,skaddr,sksize) pth_sksize_##func(skaddr,sksize)
+
+#ifndef SMILEOS
+@pth_skaddr_sigstack@
+@pth_sksize_sigstack@
+@pth_skaddr_sigaltstack@
+@pth_sksize_sigaltstack@
+@pth_skaddr_makecontext@
+@pth_sksize_makecontext@
+#endif
 
 /* mctx compile defines */
 #define PTH_MCTX_MTH(which)  (PTH_MCTX_MTH_use == (PTH_MCTX_MTH_##which))

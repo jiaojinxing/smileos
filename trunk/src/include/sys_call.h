@@ -19,14 +19,14 @@
 ** Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 **
 **--------------------------------------------------------------------------------------------------------
-** File name:               s3c2440_uart.h
-** Last modified Date:      2012-2-2
+** File name:               sys_call.h
+** Last modified Date:      2012-2-22
 ** Last Version:            1.0.0
-** Descriptions:            s3c2440 UART
+** Descriptions:            系统调用
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing
-** Created date:            2012-2-2
+** Created date:            2012-2-22
 ** Version:                 1.0.0
 ** Descriptions:            创建文件
 **
@@ -37,12 +37,85 @@
 ** Descriptions:
 **
 *********************************************************************************************************/
-#ifndef S3C2440_UART_H_
-#define S3C2440_UART_H_
+#ifndef SYS_CALL_H_
+#define SYS_CALL_H_
 
-void uart_init(void);
+#define SYS_CALL_EXIT       0
+#define SYS_CALL_SLEEP      1
+#define SYS_CALL_WRITE      2
+#define SYS_CALL_MALLOC     3
+#define SYS_CALL_FREE       4
+#define SYS_CALL_HEAP_INIT  5
+#define SYS_CALL_GETTIME    6
+#define SYS_CALL_GETPID     7
+#define SYS_CALL_ERRNO      8
+#define SYS_CALL_NR         9                                           /*  系统调用数                  */
 
-#endif                                                                  /*  S3C2440_UART_H_             */
+#ifndef __ASSEMBLER__
+#include <sys/time.h>
+
+/*
+ * exit
+ */
+void exit(int error_code);
+
+/*
+ * abort
+ */
+void abort(void);
+
+/*
+ * sleep
+ */
+void sleep(unsigned int s);
+
+/*
+ * usleep
+ */
+void usleep(unsigned int us);
+
+/*
+ * write
+ */
+int write(int fd, char *data, unsigned int size);
+
+/*
+ * printf
+ */
+int printf(const char *fmt, ...);
+
+/*
+ * malloc
+ */
+void *malloc(unsigned int size);
+
+/*
+ * calloc
+ */
+void *calloc(unsigned int nelem, unsigned int elsize);
+
+/*
+ * free
+ */
+void free(void *ptr);
+
+/*
+ * heap_init
+ */
+int heap_init(void *base, unsigned int size);
+
+/*
+ * select
+ */
+int select(int maxfdp1, fd_set *readset, fd_set *writeset, fd_set *exceptset, struct timeval *timeout);
+
+/*
+ * getpid
+ */
+int getpid(void);
+#endif
+
+#endif                                                                  /*  SYS_CALL_H_                 */
 /*********************************************************************************************************
   END FILE
 *********************************************************************************************************/

@@ -19,14 +19,14 @@
 ** Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 **
 **--------------------------------------------------------------------------------------------------------
-** File name:               s3c2440_clock.c
-** Last modified Date:      2012-2-2
+** File name:               mem.h
+** Last modified Date:      2012-2-24
 ** Last Version:            1.0.0
-** Descriptions:            s3c2440 时钟
+** Descriptions:            内存管理
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing
-** Created date:            2012-2-2
+** Created date:            2012-2-24
 ** Version:                 1.0.0
 ** Descriptions:            创建文件
 **
@@ -37,36 +37,52 @@
 ** Descriptions:
 **
 *********************************************************************************************************/
-#include "config.h"
+#ifndef MEM_H_
+#define MEM_H_
+
 #include "types.h"
-#include "s3c2440.h"
-#include "s3c2440_clock.h"
 
-void set_mpll_clock(uint32_t sdiv, uint32_t pdiv, uint32_t mdiv)
-{
-    MPLLCON = (mdiv << 12) | (pdiv << 4) | (sdiv << 0);
-}
+/*
+ * 处理内存对齐
+ */
+#define MEM_ALIGNMENT               4
+#define MEM_ALIGN_SIZE(size)        (((size) + MEM_ALIGNMENT - 1) & ~(MEM_ALIGNMENT - 1))
+#define MEM_ALIGN_SIZE_LESS(size)   (((size) & ~(MEM_ALIGNMENT - 1)))
+#define MEM_ALIGN(addr)             ((void *)(((uint32_t)(addr) + MEM_ALIGNMENT - 1) & ~(uint32_t)(MEM_ALIGNMENT - 1)))
+#define MEM_ALIGN_LESS(addr)        ((void *)(((uint32_t)(addr)) & ~(uint32_t)(MEM_ALIGNMENT - 1)))
 
-void set_upll_clock(uint32_t sdiv, uint32_t pdiv, uint32_t mdiv)
-{
-    UPLLCON = (mdiv << 12) | (pdiv << 4) | (sdiv << 0);
-}
+/*
+ * 内存块
+ */
+struct _mem_block;
+typedef struct _mem_block mem_block;
 
-void set_divider(uint32_t divn_upll, uint32_t hdivn, uint32_t pdivn)
-{
-    CLKDIVN = (divn_upll << 3) | (hdivn << 1) | (pdivn << 0);
-}
+/*
+ * 内存堆
+ */
+typedef struct {
+    mem_block      *free_list;
+    mem_block      *block_list;
+    uint8_t        *base;
+    uint32_t        size;
+} mem_heap;
 
-void clock_init(void)
-{
-    LOCKTIME = 0xFFFFFFFF;
+/*
+ * 初始化内存堆
+ */
+int mem_heap_init(mem_heap *heap, uint8_t *base, uint32_t size);
 
-    set_mpll_clock(MPLL_SDIV, MPLL_PDIV, MPLL_MIDV);
+/*
+ * 分配内存
+ */
+void *mem_heap_alloc(mem_heap *heap, uint32_t size);
 
-    set_upll_clock(UPLL_SDIV, UPLL_PDIV, UPLL_MDIV);
+/*
+ * 释放内存
+ */
+void *mem_heap_free(mem_heap *heap, void *ptr);
 
-    set_divider(DIVN_UPLL, HDIVN, PDIVN);
-}
+#endif                                                                  /*  MEM_H_                      */
 /*********************************************************************************************************
   END FILE
 *********************************************************************************************************/

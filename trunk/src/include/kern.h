@@ -48,7 +48,9 @@
  * 任务类型
  */
 #define TASK_TYPE_PROCESS 0
+#ifdef SMILEOS_KTHREAD
 #define TASK_TYPE_THREAD  1
+#endif
 
 /*
  * 任务状态
@@ -69,11 +71,11 @@ typedef struct _task {
     uint32_t        priority;
     uint32_t        content[20];
     uint32_t        kstack[KERN_STACK_SIZE];
+#ifdef SMILEOS_KTHREAD
     int             type;
-    struct _task   *child;
-    struct _task   *next;
-    struct _task   *father;
+#endif
     mem_heap        heap;
+    int             errno;
 } task_t;
 
 /*
@@ -85,6 +87,11 @@ extern task_t *current;
  * 任务控制块
  */
 extern task_t task[TASK_NR];
+
+/*
+ * TICK
+ */
+extern uint64_t tick;;
 
 /*
  * 系统调用处理
@@ -116,10 +123,12 @@ void __switch_to_process0(uint32_t sp_svc);
  */
 int create_process(uint8_t *code, uint32_t size, uint32_t priority);
 
+#ifdef SMILEOS_KTHREAD
 /*
  * 创建线程
  */
 int create_thread(uint32_t pc, uint32_t sp, uint32_t priority);
+#endif
 
 /*
  * printk
@@ -141,10 +150,11 @@ unsigned char kgetc(void);
  */
 static inline uint32_t virt_to_phy(uint32_t va)
 {
-    if (current->pid)
+    if (current->pid) {
         return PROCESS_MEM_BASE + PROCESS_MEM_SIZE * (current->pid - 1) + va;
-    else
+    } else {
         return va;
+    }
 }
 
 /*
@@ -152,10 +162,11 @@ static inline uint32_t virt_to_phy(uint32_t va)
  */
 static inline uint32_t __virt_to_phy(uint32_t va, int pid)
 {
-    if (pid)
+    if (pid) {
         return PROCESS_MEM_BASE + PROCESS_MEM_SIZE * (pid - 1) + va;
-    else
+    } else {
         return va;
+    }
 }
 
 #endif                                                                  /*  KERN_H_                     */

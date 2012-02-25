@@ -370,6 +370,7 @@ int pthread_once(
     return OK;
 }
 
+#ifdef SMILEOS_SIGNAL
 int pthread_sigmask(int how, const sigset_t *set, sigset_t *oset)
 {
     pthread_initialize();
@@ -382,6 +383,7 @@ int pthread_kill(pthread_t thread, int sig)
         return errno;
     return OK;
 }
+#endif
 
 /*
 **  CONCURRENCY ROUTINES
@@ -541,6 +543,7 @@ void pthread_cleanup_pop(int execute)
     return;
 }
 
+#ifndef SMILEOS
 /*
 **  AT-FORK SUPPORT
 */
@@ -588,6 +591,7 @@ int pthread_atfork(void (*prepare)(void), void (*parent)(void), void (*child)(vo
         return errno;
     return OK;
 }
+#endif
 
 /*
 **  MUTEX ATTRIBUTE ROUTINES
@@ -1034,26 +1038,10 @@ int pthread_abort(pthread_t thread)
     return OK;
 }
 
-/*
-**  THREAD-SAFE REPLACEMENT FUNCTIONS
-*/
-
-pid_t __pthread_fork(void)
-{
-    pthread_initialize();
-    return pth_fork();
-}
-
 unsigned int __pthread_sleep(unsigned int sec)
 {
     pthread_initialize();
     return pth_sleep(sec);
-}
-
-int __pthread_system(const char *cmd)
-{
-    pthread_initialize();
-    return pth_system(cmd);
 }
 
 int __pthread_nanosleep(const struct timespec *rqtp, struct timespec *rmtp)
@@ -1066,6 +1054,23 @@ int __pthread_usleep(unsigned int sec)
 {
     pthread_initialize();
     return pth_usleep(sec);
+}
+
+#ifndef SMILEOS
+/*
+**  THREAD-SAFE REPLACEMENT FUNCTIONS
+*/
+
+pid_t __pthread_fork(void)
+{
+    pthread_initialize();
+    return pth_fork();
+}
+
+int __pthread_system(const char *cmd)
+{
+    pthread_initialize();
+    return pth_system(cmd);
 }
 
 int __pthread_sigwait(const sigset_t *set, int *sig)
@@ -1164,4 +1169,4 @@ ssize_t __pthread_pwrite(int fd, const void *buf, size_t nbytes, off_t offset)
     pthread_initialize();
     return pth_pwrite(fd, buf, nbytes, offset);
 }
-
+#endif

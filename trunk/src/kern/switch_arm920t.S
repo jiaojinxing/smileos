@@ -70,7 +70,7 @@ __switch_to:                                    /*  __switch_to 可能在 irq 和 sv
     cmp    r2, #ARM_SVC_MODE                    /*  判断是否在 svc 模式下                               */
     beq    svc_mode_save
 
-    mov    pc, lr
+    mov    pc, lr                               /*  都不是, 返回                                        */
 /*********************************************************************************************************
   irq 模式保存任务上下文
 *********************************************************************************************************/
@@ -92,8 +92,8 @@ irq_mode_save:
               | 原有值                               |
               +--------------------------------------+
 */
-    add     r0, r0, #CONTENT_OFFSET             /*  R0 = current->content                               */
-    ldr     sp, =(IRQ_STACK_P_BASE - 14 * 4)    /*  SP 指向中断进入时保存的寄存器                       */
+    add     r0, r0, #CONTENT_OFFSET             /*  r0 = current->content                               */
+    ldr     sp, =(IRQ_STACK_P_BASE - 14 * 4)    /*  sp 指向中断进入时保存的寄存器                       */
 
     add     r0, r0, #4                          /*  不修改 sp_backup                                    */
 
@@ -132,7 +132,7 @@ svc_mode_save:
               | 系统调用时的 sp (sys 模式)           |
               +--------------------------------------+
 */
-    add     r0, r0, #CONTENT_OFFSET             /*  R0 = current->content                               */
+    add     r0, r0, #CONTENT_OFFSET             /*  r0 = current->content                               */
 
     stmia   r0!, {sp}^                          /*  系统调用时的 sp (sys 模式)                          */
 
@@ -188,6 +188,11 @@ do_switch:
     mov     r0, r0, lsl #25                     /*  PID 在寄存器的最高 7 位                             */
     mcr     p15, 0, r0, c13, c0, 0              /*  写 PID, MVA 发生变化了!!!                           */
 
+    nop
+    nop
+    nop
+    nop
+
     add     r1, r1, #CONTENT_OFFSET             /*  r1 = task[next].content                             */
 
     ldmia   r1!, {r2-r5}                        /*  r2=sp_backup, r3=cpsr_int, r4=sp_int, r5=spsr_int   */
@@ -210,6 +215,7 @@ do_switch:
     mov     sp, r2                              /*  设置 sys 或 svc 模式的sp                            */
 
     msr     cpsr_cxsf, r3                       /*  中断时的 cpsr                                       */
+
     mov     sp, r4                              /*  中断时的 sp                                         */
 
     msrne   spsr_cxsf, r5                       /*  sys 模式下没有 spsr                                 */
@@ -221,13 +227,36 @@ do_switch:
 *********************************************************************************************************/
 .global __switch_to_process0
 __switch_to_process0:
-    mov     r1, lr
-    mov     sp, r0
+    mov     r1, lr                              /*  保存返回地址(lr)到 r1                               */
+
+    mov     sp, r0                              /*  设置 svc 模式的 sp                                  */
+
     msr     spsr_cxsf, #(ARM_SVC_MODE)
-    msr     cpsr_cxsf, #(ARM_FIQ_NO + ARM_IRQ_EN + ARM_SYS_MODE)        /*  进入 sys 模式, 开 IRQ 中断  */
-    ldr     sp, =(KERN_MEM_BASE + KERN_MEM_SIZE)                        /*  设置堆栈指针                */
-    mov     lr, r1
-    mov     pc, lr
+
+    msr     cpsr_cxsf, #(ARM_FIQ_NO + ARM_IRQ_EN + ARM_SYS_MODE)    /*  进入 sys 模式, 开 irq 中断      */
+
+    ldr     sp, =(KERN_MEM_BASE + KERN_MEM_SIZE)/*  设置 sys 模式的 sp                                  */
+
+    mov     lr, r1                              /*  恢复 lr                                             */
+
+    mov     pc, lr                              /*  返回                                                */
+
+    b       .                                   /*  loop here                                           */
+/*********************************************************************************************************
+  pthread 机器上下文切换
+*********************************************************************************************************/
+.global pth_mctx_switch
+pth_mctx_switch:
+    stmdb   sp!,  {lr}
+    stmdb   sp!,  {r0-r12, lr}
+    mrs     r2,   cpsr
+    stmdb   sp!,  {r2}
+    str     sp,   [r0]
+
+    ldr     sp,   [r1]
+    ldmia   sp!,  {r2}
+    msr     cpsr, r2
+    ldmia   sp!,  {r0-r12, lr, pc}
     b       .
 /*********************************************************************************************************
   END FILE

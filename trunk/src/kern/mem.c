@@ -48,13 +48,14 @@
 #define MEM_BLK_STAT_FREE           0
 #define MEM_BLK_STAT_USED           (1 << 4)
 
+/*
+ * 内存块魔数
+ */
 #define MEM_BLK_MAGIC0              0xA71B26E5
 
-#define MEM_ALIGNMENT               4
-#define MEM_ALIGN_SIZE(size)        (((size) + MEM_ALIGNMENT - 1) & ~(MEM_ALIGNMENT - 1))
-#define MEM_ALIGN_SIZE_LESS(size)   (((size) & ~(MEM_ALIGNMENT - 1)))
-#define MEM_ALIGN(addr)             ((void *)(((uint32_t)(addr) + MEM_ALIGNMENT - 1) & ~(uint32_t)(MEM_ALIGNMENT - 1)))
-
+/*
+ * 内存块
+ */
 struct _mem_block {
     uint32_t        magic0;
     mem_block      *prev;
@@ -165,23 +166,25 @@ void *mem_heap_free(mem_heap *heap, void *ptr)
     mem_block *next;
 
     if (ptr == NULL) {
-        printk("%s: memory pointer is null!\n", __func__, current->tid);
+        printk("%s: memory pointer is NULL!\n", __func__, current->tid);
         return ptr;
     }
 
     if (ptr != MEM_ALIGN(ptr)) {
-        printk("%s: memory pointer is unalignment!\n", __func__, current->tid);
+        printk("%s: memory pointer is not aligned!\n", __func__, current->tid);
+        return ptr;
+    }
+
+    if (((char *)ptr < (heap->base + MEM_ALIGN_SIZE(sizeof(mem_block)))) ||
+        ((char *)ptr >= heap->base + heap->size)) {
+        printk("%s: memory pointer dose not belong to this heap!\n", __func__, current->tid);
         return ptr;
     }
                                                                         /*  指针所在的内存块节点        */
     blk  = (mem_block *)((char *)ptr - MEM_ALIGN_SIZE(sizeof(mem_block)));
-    if (blk == NULL) {
-        printk("%s: memory pointer is null!\n", __func__, current->tid);
-        return ptr;
-    }
 
     if (blk->magic0 != MEM_BLK_MAGIC0 || blk->status != MEM_BLK_STAT_USED) {
-        printk("%s: memory pointer is invaild!\n", __func__, current->tid);
+        printk("%s: memory pointer is invalid!\n", __func__, current->tid);
         return ptr;
     }
 

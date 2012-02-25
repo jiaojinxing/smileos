@@ -19,14 +19,14 @@
 ** Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 **
 **--------------------------------------------------------------------------------------------------------
-** File name:               sys_call.h
-** Last modified Date:      2012-2-22
+** File name:               pthread.h
+** Last modified Date:      2012-2-25
 ** Last Version:            1.0.0
-** Descriptions:            系统调用
+** Descriptions:            posix 线程接口
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing
-** Created date:            2012-2-22
+** Created date:            2012-2-25
 ** Version:                 1.0.0
 ** Descriptions:            创建文件
 **
@@ -37,55 +37,42 @@
 ** Descriptions:
 **
 *********************************************************************************************************/
-#ifndef SYS_CALL_H_
-#define SYS_CALL_H_
+#ifndef PTHREAD_H_
+#define PTHREAD_H_
 
-#define SYS_CALL_EXIT       0
-#define SYS_CALL_SLEEP      1
-#define SYS_CALL_WRITE      2
-#define SYS_CALL_MALLOC     3
-#define SYS_CALL_FREE       4
-#define SYS_CALL_HEAP_INIT  5
-#define SYS_CALL_NR         6                                           /*  系统调用数                  */
+typedef void * pthread_attr_t;
+typedef void * pthread_t;
+typedef int    pthread_once_t;
+typedef int    pthread_key_t;
+typedef void   pthread_mutexattr_t;
+typedef void * pthread_mutex_t;
+typedef void   pthread_rwlockattr_t;
+typedef void * pthread_rwlock_t;
+typedef void   pthread_condattr_t;
+typedef void * pthread_cond_t;
 
-#ifndef __ASSEMBLER__
-/*
- * 进程退出
- */
-int exit(int error_code);
+struct sched_param {
+    int i;
+};
 
-/*
- * 进程休眠
- */
-int sleep(int time);
+#define PTHREAD_COND_INITIALIZER    ((pthread_cond_t)-1)
+#define PTHREAD_MUTEX_INITIALIZER   ((pthread_mutex_t)-1)
+#define PTHREAD_RWLOCK_INITIALIZER  ((pthread_rwlock_t)-1)
 
-/*
- * 写
- */
-int write(char *str);
+#define PTHREAD_THREADS_MAX         1024
 
-/*
- * printf
- */
-int printf(const char *fmt, ...);
+#define PTHREAD_CANCEL_DEFERRED     1
+#define PTHREAD_CANCEL_ASYNCHRONOUS 0
 
-/*
- * malloc
- */
-void *malloc(uint32_t size);
+#define PTHREAD_CANCEL_ENABLE       1
+#define PTHREAD_CANCEL_DISABLE      0
 
-/*
- * free
- */
-void *free(void *ptr);
+#define PTHREAD_CANCELED            ((void *)-1)
 
-/*
- * heap_init
- */
-int heap_init(uint8_t *base, uint32_t size);
-#endif
+#define PTHREAD_CREATE_JOINABLE     0
+#define PTHREAD_CREATE_DETACHED     1
 
-#endif                                                                  /*  SYS_CALL_H_                 */
+#endif                                                                  /*  PTHREAD_H_                  */
 /*********************************************************************************************************
   END FILE
 *********************************************************************************************************/

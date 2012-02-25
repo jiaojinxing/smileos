@@ -55,6 +55,11 @@ task_t task[TASK_NR];
 task_t *current;
 
 /*
+ * TICK
+ */
+uint64_t tick;
+
+/*
  * 初始化调度器
  */
 void sched_init(void)
@@ -72,9 +77,7 @@ void sched_init(void)
         p->count    = 0;
         p->timer    = 0;
         p->priority = 0;
-        p->child    = NULL;
-        p->next     = NULL;
-        p->father   = NULL;
+        p->errno    = 0;
     }
 
     /*
@@ -86,9 +89,6 @@ void sched_init(void)
     p->state        = TASK_RUNNING;
     p->count        = 5;
     p->priority     = 5;
-    p->child        = NULL;
-    p->next         = NULL;
-    p->father       = NULL;
 
     p->content[0]   = (uint32_t)&p->kstack[KERN_STACK_SIZE];        /*  svc 模式的 sp (满堆栈递减)      */
     p->content[1]   = ARM_SYS_MODE | ARM_FIQ_NO | ARM_IRQ_EN;       /*  cpsr, sys 模式, 关 FIQ, 开 IRQ  */
@@ -97,6 +97,8 @@ void sched_init(void)
     p->content[17]  = 0;                                            /*  pc                              */
 
     current = p;
+
+    tick = 0;
 }
 
 /*
@@ -134,7 +136,8 @@ void schedule(void)
     current = &task[next];
 
 #if 0
-    printk("switch to pid=%d, tid=%d, pc=0x%x, sp_sys=0x%x, sp_svc=0x%x\n",
+    printk("%s: switch to pid=%d, tid=%d, pc=0x%x, sp_sys=0x%x, sp_svc=0x%x\n",
+            __func__
             current->pid,
             current->tid,
             current->content[17],
@@ -154,6 +157,8 @@ void do_timer(void)
 {
     int i, wakeup = 0;
     task_t *p;
+
+    tick++;
 
     for (i = 1, p = &task[i]; i < TASK_NR; i++, p++) {
         if (p->state == TASK_SLEEPING) {
@@ -205,9 +210,9 @@ int create_process(uint8_t *code, uint32_t size, uint32_t priority)
     p->state        = TASK_RUNNING;
     p->count        = 15;
     p->priority     = priority;
-    p->child        = NULL;
-    p->next         = NULL;
-    p->father       = NULL;
+#ifdef SMILEOS_KTHREAD
+    p->type         = TASK_TYPE_PROCESS;
+#endif
 
     p->content[0]   = (uint32_t)&p->kstack[KERN_STACK_SIZE];        /*  svc 模式堆栈指针(满堆栈递减)    */
     p->content[1]   = ARM_SYS_MODE | ARM_FIQ_NO | ARM_IRQ_EN;       /*  cpsr, sys 模式, 关 FIQ, 开 IRQ  */
@@ -218,6 +223,7 @@ int create_process(uint8_t *code, uint32_t size, uint32_t priority)
     return 0;
 }
 
+#ifdef SMILEOS_KTHREAD
 /*
  * 创建线程
  */
@@ -241,9 +247,7 @@ int create_thread(uint32_t pc, uint32_t sp, uint32_t priority)
     p->state        = TASK_RUNNING;
     p->count        = 15;
     p->priority     = priority;
-    p->child        = NULL;
-    p->next         = NULL;
-    p->father       = NULL;
+    p->type         = TASK_TYPE_THREAD;
 
     p->content[0]   = (uint32_t)&p->kstack[KERN_STACK_SIZE];        /*  svc 模式堆栈指针(满堆栈递减)    */
     p->content[1]   = ARM_SYS_MODE | ARM_FIQ_NO | ARM_IRQ_EN;       /*  cpsr, sys 模式, 关 FIQ, 开 IRQ  */
@@ -253,6 +257,7 @@ int create_thread(uint32_t pc, uint32_t sp, uint32_t priority)
 
     return 0;
 }
+#endif
 
 /*
  * printk
@@ -271,16 +276,18 @@ void printk(const char *fmt, ...)
         if (c == '%') {
             c = *fmt++;
             /* ignore long */
-            if (c == 'l')
+            if (c == 'l') {
                 c = *fmt++;
+            }
             switch (c) {
             case 'c':
                 kputc(va_arg(ap, int));
                 continue;
             case 's':
                 s = va_arg(ap, char *);
-                if (s == NULL)
+                if (s == NULL) {
                     s = "<NULL>";
+                }
                 for (; *s; s++) {
                     kputc((int)*s);
                 }
@@ -292,28 +299,31 @@ void printk(const char *fmt, ...)
                 u = va_arg(ap, unsigned);
                 s = buf;
                 if (c == 'u') {
-                    do
+                    do {
                         *s++ = digits[u % 10U];
-                    while (u /= 10U);
+                    } while (u /= 10U);
                 } else {
                     pad = 0;
                     for (i = 0; i < 8; i++) {
-                        if (pad)
+                        if (pad) {
                             *s++ = '0';
-                        else {
+                        } else {
                             *s++ = digits[u % 16U];
-                            if ((u /= 16U) == 0)
+                            if ((u /= 16U) == 0) {
                                 pad = 1;
+                            }
                         }
                     }
                 }
-                while (--s >= buf)
+                while (--s >= buf) {
                     kputc((int)*s);
+                }
                 continue;
             }
         }
-        if (c == '\n')
+        if (c == '\n') {
             kputc('\r');
+        }
         kputc((int)c);
     }
     va_end(ap);
