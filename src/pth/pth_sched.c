@@ -38,11 +38,13 @@ intern pth_pqueue_t pth_DQ;         /* queue of terminated threads           */
 intern int          pth_favournew;  /* favour new threads on startup         */
 intern float        pth_loadval;    /* average scheduler load value          */
 
+#ifndef SMILEOS
 static int          pth_sigpipe[2]; /* internal signal occurrence pipe       */
 static sigset_t     pth_sigpending; /* mask of pending signals               */
 static sigset_t     pth_sigblock;   /* mask of signals we block in scheduler */
 static sigset_t     pth_sigcatch;   /* mask of signals we have to catch      */
 static sigset_t     pth_sigraised;  /* mask of raised signals                */
+#endif
 
 static pth_time_t   pth_loadticknext;
 static pth_time_t   pth_loadtickgap = PTH_TIME(1,0);
@@ -50,6 +52,7 @@ static pth_time_t   pth_loadtickgap = PTH_TIME(1,0);
 /* initialize the scheduler ingredients */
 intern int pth_scheduler_init(void)
 {
+#ifndef SMILEOS
     /* create the internal signal pipe */
     if (pipe(pth_sigpipe) == -1)
         return pth_error(FALSE, errno);
@@ -57,6 +60,7 @@ intern int pth_scheduler_init(void)
         return pth_error(FALSE, errno);
     if (pth_fdmode(pth_sigpipe[1], PTH_FDMODE_NONBLOCK) == PTH_FDMODE_ERROR)
         return pth_error(FALSE, errno);
+#endif
 
     /* initialize the essential threads */
     pth_sched   = NULL;
@@ -117,9 +121,11 @@ intern void pth_scheduler_kill(void)
     /* drop all threads */
     pth_scheduler_drop();
 
+#ifndef SMILEOS
     /* remove the internal signal pipe */
     close(pth_sigpipe[0]);
     close(pth_sigpipe[1]);
+#endif
     return;
 }
 
@@ -155,12 +161,16 @@ intern void pth_scheduler_kill(void)
 /* the heart of this library: the thread scheduler */
 intern void *pth_scheduler(void *dummy)
 {
+#ifndef SMILEOS
     sigset_t sigs;
+#endif
     pth_time_t running;
     pth_time_t snapshot;
+#ifndef SMILEOS
     struct sigaction sa;
     sigset_t ss;
     int sig;
+#endif
     pth_t t;
 
     /*
@@ -171,9 +181,11 @@ intern void *pth_scheduler(void *dummy)
     /* mark this thread as the special scheduler thread */
     pth_sched->state = PTH_STATE_SCHEDULER;
 
+#ifndef SMILEOS
     /* block all signals in the scheduler thread */
     sigfillset(&sigs);
     pth_sc(sigprocmask)(SIG_SETMASK, &sigs, NULL);
+#endif
 
     /* initialize the snapshot time for bootstrapping the loop */
     pth_time_set(&snapshot, PTH_TIME_NOW);
@@ -213,6 +225,7 @@ intern void *pth_scheduler(void *dummy)
         pth_debug4("pth_scheduler: thread \"%s\" selected (prio=%d, qprio=%d)",
                    pth_current->name, pth_current->prio, pth_current->q_prio);
 
+#ifndef SMILEOS
         /*
          * Raise additionally thread-specific signals
          * (they are delivered when we switch the context)
@@ -230,6 +243,7 @@ intern void *pth_scheduler(void *dummy)
                     if (!sigismember(&pth_sigpending, sig))
                         kill(getpid(), sig);
         }
+#endif
 
         /*
          * Set running start time for new thread
@@ -264,6 +278,7 @@ intern void *pth_scheduler(void *dummy)
         pth_debug3("pth_scheduler: thread \"%s\" ran %.6f",
                    pth_current->name, pth_time_t2d(&running));
 
+#ifndef SMILEOS
         /*
          * Remove still pending thread-specific signals
          * (they are re-delivered next time)
@@ -293,7 +308,9 @@ intern void *pth_scheduler(void *dummy)
                 }
             }
         }
+#endif
 
+#ifndef SMILEOS
         /*
          * Check for stack overflow
          */
@@ -325,6 +342,7 @@ intern void *pth_scheduler(void *dummy)
                 kill(getpid(), SIGSEGV);
             }
         }
+#endif
 
         /*
          * If previous thread is now marked as dead, kick it out
@@ -396,14 +414,18 @@ intern void pth_sched_eventmanager(pth_time_t *now, int dopoll)
     fd_set efds;
     struct timeval delay;
     struct timeval *pdelay;
+#ifndef SMILEOS
     sigset_t oss;
     struct sigaction sa;
     struct sigaction osa[1+PTH_NSIG];
     char minibuf[128];
+#endif
     int loop_repeat;
     int fdmax;
     int rc;
+#ifndef SMILEOS
     int sig;
+#endif
     int n;
 
     pth_debug2("pth_sched_eventmanager: enter in %s mode",
@@ -419,11 +441,13 @@ intern void pth_sched_eventmanager(pth_time_t *now, int dopoll)
     FD_ZERO(&efds);
     fdmax = -1;
 
+#ifndef SMILEOS
     /* initialize signal status */
     sigpending(&pth_sigpending);
     sigfillset(&pth_sigblock);
     sigemptyset(&pth_sigcatch);
     sigemptyset(&pth_sigraised);
+#endif
 
     /* initialize next timer */
     pth_time_set(&nexttimer_value, PTH_TIME_ZERO);
@@ -435,10 +459,12 @@ intern void pth_sched_eventmanager(pth_time_t *now, int dopoll)
     for (t = pth_pqueue_head(&pth_WQ); t != NULL;
          t = pth_pqueue_walk(&pth_WQ, t, PTH_WALK_NEXT)) {
 
+#ifndef SMILEOS
         /* determine signals we block */
         for (sig = 1; sig < PTH_NSIG; sig++)
             if (!sigismember(&(t->mctx.sigs), sig))
                 sigdelset(&pth_sigblock, sig);
+#endif
 
         /* cancellation support */
         if (t->cancelreq == TRUE)
@@ -477,6 +503,7 @@ intern void pth_sched_eventmanager(pth_time_t *now, int dopoll)
                     if (fdmax < ev->ev_args.SELECT.nfd-1)
                         fdmax = ev->ev_args.SELECT.nfd-1;
                 }
+#ifndef SMILEOS
                 /* Signal Set */
                 else if (ev->ev_type == PTH_EVENT_SIGS) {
                     for (sig = 1; sig < PTH_NSIG; sig++) {
@@ -503,6 +530,7 @@ intern void pth_sched_eventmanager(pth_time_t *now, int dopoll)
                         }
                     }
                 }
+#endif
                 /* Timer */
                 else if (ev->ev_type == PTH_EVENT_TIME) {
                     if (pth_time_cmp(&(ev->ev_args.TIME.tv), now) < 0)
@@ -597,6 +625,7 @@ intern void pth_sched_eventmanager(pth_time_t *now, int dopoll)
         pdelay = NULL;
     }
 
+#ifndef SMILEOS
     /* clear pipe and let select() wait for the read-part of the pipe */
     while (pth_sc(read)(pth_sigpipe[0], minibuf, sizeof(minibuf)) > 0) ;
     FD_SET(pth_sigpipe[0], &rfds);
@@ -617,6 +646,7 @@ intern void pth_sched_eventmanager(pth_time_t *now, int dopoll)
        catching handler or directly to the configured
        handler for signals not catched by events */
     pth_sc(sigprocmask)(SIG_SETMASK, &pth_sigblock, &oss);
+#endif
 
     /* now do the polling for filedescriptor I/O and timers
        WHEN THE SCHEDULER SLEEPS AT ALL, THEN HERE!! */
@@ -625,11 +655,13 @@ intern void pth_sched_eventmanager(pth_time_t *now, int dopoll)
         while ((rc = pth_sc(select)(fdmax+1, &rfds, &wfds, &efds, pdelay)) < 0
                && errno == EINTR) ;
 
+#ifndef SMILEOS
     /* restore signal mask and actions and handle signals */
     pth_sc(sigprocmask)(SIG_SETMASK, &oss, NULL);
     for (sig = 1; sig < PTH_NSIG; sig++)
         if (sigismember(&pth_sigcatch, sig))
             sigaction(sig, &osa[sig], NULL);
+#endif
 
     /* if the timer elapsed, handle it */
     if (!dopoll && rc == 0 && nexttimer_ev != NULL) {
@@ -646,11 +678,13 @@ intern void pth_sched_eventmanager(pth_time_t *now, int dopoll)
         }
     }
 
+#ifndef SMILEOS
     /* if the internal signal pipe was used, adjust the select() results */
     if (!dopoll && rc > 0 && FD_ISSET(pth_sigpipe[0], &rfds)) {
         FD_CLR(pth_sigpipe[0], &rfds);
         rc--;
     }
+#endif
 
     /* if an error occurred, avoid confusion in the cleanup loop */
     if (rc <= 0) {
@@ -765,6 +799,7 @@ intern void pth_sched_eventmanager(pth_time_t *now, int dopoll)
                             }
                         }
                     }
+#ifndef SMILEOS
                     /* Signal Set */
                     else if (ev->ev_type == PTH_EVENT_SIGS) {
                         for (sig = 1; sig < PTH_NSIG; sig++) {
@@ -780,6 +815,7 @@ intern void pth_sched_eventmanager(pth_time_t *now, int dopoll)
                             }
                         }
                     }
+#endif
                 }
                 /*
                  * post-processing for already occured events
@@ -839,6 +875,7 @@ intern void pth_sched_eventmanager(pth_time_t *now, int dopoll)
     return;
 }
 
+#ifndef SMILEOS
 intern void pth_sched_eventmanager_sighandler(int sig)
 {
     char c;
@@ -851,4 +888,5 @@ intern void pth_sched_eventmanager_sighandler(int sig)
     pth_sc(write)(pth_sigpipe[1], &c, sizeof(char));
     return;
 }
+#endif
 

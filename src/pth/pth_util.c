@@ -33,6 +33,7 @@
         ((a) > (b) ? (b) : (a))
 #endif
 
+#ifndef SMILEOS
 /* delete a pending signal */
 static void pth_util_sigdelete_sighandler(int _sig)
 {
@@ -73,6 +74,7 @@ intern int pth_util_sigdelete(int sig)
     pth_sc(sigprocmask)(SIG_SETMASK, &oss, NULL);
     return TRUE;
 }
+#endif
 
 /* copy a string like strncpy() but always null-terminate */
 intern char *pth_util_cpystrn(char *dst, const char *src, size_t dst_size)
@@ -94,11 +96,15 @@ intern char *pth_util_cpystrn(char *dst, const char *src, size_t dst_size)
 /* check whether a file-descriptor is valid */
 intern int pth_util_fd_valid(int fd)
 {
+#ifndef SMILEOS
     if (fd < 0 || fd >= FD_SETSIZE)
         return FALSE;
     if (fcntl(fd, F_GETFL) == -1 && errno == EBADF)
         return FALSE;
     return TRUE;
+#else
+    return FALSE;
+#endif
 }
 
 /* merge input fd set into output fds */

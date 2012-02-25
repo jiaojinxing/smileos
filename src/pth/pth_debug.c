@@ -80,6 +80,7 @@ intern void pth_debug(const char *file, int line, int argc, const char *fmt, ...
 /* dump out a page to stderr summarizing the internal state of Pth */
 intern void pth_dumpstate(FILE *fp)
 {
+#ifndef SMILEOS
     fprintf(fp, "+----------------------------------------------------------------------\n");
     fprintf(fp, "| Pth Version: %s\n", PTH_VERSION_STR);
     fprintf(fp, "| Load Average: %.2f\n", pth_loadval);
@@ -93,10 +94,12 @@ intern void pth_dumpstate(FILE *fp)
     pth_dumpqueue(fp, "DEAD", &pth_DQ);
     fprintf(fp, "+----------------------------------------------------------------------\n");
     return;
+#endif
 }
 
 intern void pth_dumpqueue(FILE *fp, const char *qn, pth_pqueue_t *q)
 {
+#ifndef SMILEOS
     pth_t t;
     int n;
     int i;
@@ -110,5 +113,6 @@ intern void pth_dumpqueue(FILE *fp, const char *qn, pth_pqueue_t *q)
         fprintf(fp, "|   %d. thread 0x%lx (\"%s\")\n", i++, (unsigned long)t, t->name);
     }
     return;
+#endif
 }
 

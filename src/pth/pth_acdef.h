@@ -186,7 +186,7 @@
 #undef HAVE_STRING_H
 
 /* define if exists "struct timespec" */
-#define HAVE_STRUCT_TIMESPEC    1
+#define HAVE_STRUCT_TIMESPEC 1
 
 /* Define to 1 if you have the `swapcontext' function. */
 #undef HAVE_SWAPCONTEXT
@@ -231,7 +231,7 @@
 #undef HAVE_UNISTD_H
 
 /* Define to 1 if you have the `usleep' function. */
-#undef HAVE_USLEEP
+#define HAVE_USLEEP 1
 
 /* Define to 1 if you have the `writev' function. */
 #undef HAVE_WRITEV

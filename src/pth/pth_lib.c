@@ -338,6 +338,7 @@ pth_t pth_self(void)
     return pth_current;
 }
 
+#ifndef SMILEOS
 /* raise a signal for a thread */
 int pth_raise(pth_t t, int sig)
 {
@@ -362,6 +363,7 @@ int pth_raise(pth_t t, int sig)
         return TRUE;
     }
 }
+#endif
 
 /* check whether a thread exists */
 intern int pth_thread_exists(pth_t t)
