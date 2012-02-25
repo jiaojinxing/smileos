@@ -338,7 +338,7 @@ pth_t pth_self(void)
     return pth_current;
 }
 
-#ifndef SMILEOS
+#ifdef SMILEOS_SIGNAL
 /* raise a signal for a thread */
 int pth_raise(pth_t t, int sig)
 {
@@ -579,6 +579,7 @@ int pth_resume(pth_t t)
     return TRUE;
 }
 
+#ifdef SMILEOS_STDIO
 /* switch a filedescriptor's I/O mode */
 int pth_fdmode(int fd, int newmode)
 {
@@ -602,6 +603,7 @@ int pth_fdmode(int fd, int newmode)
     /* return old mode */
     return oldmode;
 }
+#endif
 
 /* wait for specific amount of time */
 int pth_nap(pth_time_t naptime)
