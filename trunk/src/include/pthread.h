@@ -41,8 +41,6 @@
 #define PTHREAD_H_
 
 #include <sys/types.h>
-#include <sys/signal.h>
-#include <sys/socket.h>
 
 /*
  * Extra structure definitions
@@ -177,7 +175,7 @@ extern int       pthread_yield_np(void);
 extern void      pthread_exit(void *);
 extern int       pthread_join(pthread_t, void **);
 extern int       pthread_once(pthread_once_t *, void (*)(void));
-extern int       pthread_sigmask(int, const sigset_t *, sigset_t *);
+//extern int       pthread_sigmask(int, const sigset_t *, sigset_t *);
 extern int       pthread_kill(pthread_t, int);
 
 /* concurrency routines */
@@ -255,38 +253,36 @@ extern int       pthread_cond_signal(pthread_cond_t *);
 extern int       pthread_cond_wait(pthread_cond_t *, pthread_mutex_t *);
 extern int       pthread_cond_timedwait(pthread_cond_t *, pthread_mutex_t *, const struct timespec *);
 
-/* use vendor poll(2) environment */
-#include <poll.h>
-
-/* use vendor readv(2)/writev(2) environment */
-#include <sys/uio.h>
+///* use vendor poll(2) environment */
+//#include <poll.h>
+//
+///* use vendor readv(2)/writev(2) environment */
+//#include <sys/uio.h>
 
 /*
  * Replacement Functions (threading aware)
  */
-extern pid_t              __pthread_fork(void);
+//extern pid_t              __pthread_fork(void);
 extern unsigned int       __pthread_sleep(unsigned int);
 extern int                __pthread_nanosleep(const struct timespec *, struct timespec *);
 extern int                __pthread_usleep(unsigned int);
-extern int                __pthread_system(const char *);
-extern int                __pthread_sigwait(const sigset_t *, int *);
-extern pid_t              __pthread_waitpid(pid_t, int *, int);
-extern int                __pthread_connect(int, struct sockaddr *, socklen_t);
-extern int                __pthread_accept(int, struct sockaddr *, socklen_t *);
-extern int                __pthread_select(int, fd_set *, fd_set *, fd_set *, struct timeval *);
-extern int                __pthread_poll(struct pollfd *, nfds_t, int);
-extern ssize_t            __pthread_read(int, void *, size_t);
-extern ssize_t            __pthread_write(int, const void *, size_t);
-extern ssize_t            __pthread_readv(int, const struct iovec *, int);
-extern ssize_t            __pthread_writev(int, const struct iovec *, int);
-extern ssize_t            __pthread_recv(int, void *, size_t, int);
-extern ssize_t            __pthread_send(int, const void *, size_t, int);
-extern ssize_t            __pthread_recvfrom(int, void *, size_t, int, struct sockaddr *, socklen_t *);
-extern ssize_t            __pthread_sendto(int, const void *, size_t, int, const struct sockaddr *, socklen_t);
-extern ssize_t            __pthread_pread(int, void *, size_t, off_t);
-extern ssize_t            __pthread_pwrite(int, const void *, size_t, off_t);
-
-
+//extern int                __pthread_system(const char *);
+//extern int                __pthread_sigwait(const sigset_t *, int *);
+//extern pid_t              __pthread_waitpid(pid_t, int *, int);
+//extern int                __pthread_connect(int, struct sockaddr *, socklen_t);
+//extern int                __pthread_accept(int, struct sockaddr *, socklen_t *);
+//extern int                __pthread_select(int, fd_set *, fd_set *, fd_set *, struct timeval *);
+//extern int                __pthread_poll(struct pollfd *, nfds_t, int);
+//extern ssize_t            __pthread_read(int, void *, size_t);
+//extern ssize_t            __pthread_write(int, const void *, size_t);
+//extern ssize_t            __pthread_readv(int, const struct iovec *, int);
+//extern ssize_t            __pthread_writev(int, const struct iovec *, int);
+//extern ssize_t            __pthread_recv(int, void *, size_t, int);
+//extern ssize_t            __pthread_send(int, const void *, size_t, int);
+//extern ssize_t            __pthread_recvfrom(int, void *, size_t, int, struct sockaddr *, socklen_t *);
+//extern ssize_t            __pthread_sendto(int, const void *, size_t, int, const struct sockaddr *, socklen_t);
+//extern ssize_t            __pthread_pread(int, void *, size_t, off_t);
+//extern ssize_t            __pthread_pwrite(int, const void *, size_t, off_t);
 
 #endif                                                                  /*  PTHREAD_H_                  */
 /*********************************************************************************************************

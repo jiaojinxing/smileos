@@ -38,6 +38,7 @@
 **
 *********************************************************************************************************/
 #include "lwip/sys.h"
+#include "kern/config.h"
 
 /** Create a new mutex
  * @param mutex pointer to the mutex to create
@@ -209,7 +210,22 @@ void sys_mbox_set_invalid(sys_mbox_t *mbox)
  * @param prio priority of the new thread (may be ignored by ports) */
 sys_thread_t sys_thread_new(const char *name, lwip_thread_fn thread, void *arg, int stacksize, int prio)
 {
-    return 0;
+    pthread_t tid;
+    pthread_attr_t attr;
+
+    pthread_attr_init(&attr);
+
+    pthread_attr_setstacksize(&attr, stacksize);
+
+    pthread_attr_setprio_np(&attr, prio);
+
+    pthread_attr_setname_np(&attr, (char *)name);
+
+    pthread_create(&tid, &attr, (void *(*)(void *))thread, arg);
+
+    pthread_attr_destroy(&attr);
+
+    return tid;
 }
 
 /* sys_init() must be called before anthing else. */
@@ -221,14 +237,21 @@ void sys_init(void)
 /** Ticks/jiffies since power up. */
 u32_t sys_jiffies(void)
 {
-    return 0;
+    struct timeval tv;
+    u32_t jiffies;
+
+    gettimeofday(&tv, NULL);
+
+    jiffies = tv.tv_sec * TICK_PER_SECOND + tv.tv_usec * TICK_PER_SECOND / 1000000;
+
+    return jiffies;
 }
 
 /** Returns the current time in milliseconds,
  * may be the same as sys_jiffies or at least based on it. */
 u32_t sys_now(void)
 {
-    return 0;
+    return sys_jiffies() / TICK_PER_SECOND * 1000;
 }
 /*********************************************************************************************************
   END FILE
