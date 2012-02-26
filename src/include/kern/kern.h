@@ -63,8 +63,8 @@
  * 任务控制块
  */
 typedef struct _task {
-    int             pid;
-    int             tid;
+    int32_t         pid;
+    int32_t         tid;
     uint32_t        state;
     uint32_t        count;
     uint32_t        timer;
@@ -104,6 +104,11 @@ typedef uint32_t sys_do_t;
 void sched_init(void);
 
 /*
+ * 启动调度器
+ */
+void sched_start(void);
+
+/*
  * 调度
  */
 void schedule(void);
@@ -112,11 +117,6 @@ void schedule(void);
  * 内核定时器处理函数
  */
 void do_timer(void);
-
-/*
- * 切换到进程 0
- */
-void __switch_to_process0(uint32_t sp_svc);
 
 /*
  * 创建任务

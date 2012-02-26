@@ -37,12 +37,12 @@
 ** Descriptions:
 **
 *********************************************************************************************************/
-#include "config.h"
-#include "types.h"
+#include "kern/config.h"
+#include "kern/types.h"
+#include "kern/kern.h"
 #include "s3c2440.h"
 #include "s3c2440_int.h"
 #include "s3c2440_clock.h"
-#include "kern.h"
 
 static int timer4_isr(uint32_t interrupt)
 {

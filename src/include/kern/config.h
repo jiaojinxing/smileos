@@ -41,7 +41,7 @@
 #define CONFIG_H_
 
 #ifdef S3C2440_BSP
-#include "../bsp/s3c2440/s3c2440_config.h"
+#include "../../bsp/s3c2440/s3c2440_config.h"
 #endif
 
 #endif                                                                  /*  CONFIG_H_                   */

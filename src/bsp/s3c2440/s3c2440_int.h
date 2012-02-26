@@ -40,7 +40,7 @@
 #ifndef S3C2440_INT_H_
 #define S3C2440_INT_H_
 
-#include "types.h"
+#include "kern/types.h"
 
 typedef int (*isr_t)(uint32_t interrupt);
 

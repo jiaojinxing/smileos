@@ -37,11 +37,10 @@
 ** Descriptions:
 **
 *********************************************************************************************************/
-#include "config.h"
-#include "types.h"
-#include "kern.h"
-#include "mem.h"
-#include <sys/time.h>
+#include "kern/config.h"
+#include "kern/types.h"
+#include "kern/kern.h"
+#include "kern/mem.h"
 /*********************************************************************************************************
   系统调用处理
 *********************************************************************************************************/
@@ -74,11 +73,11 @@ static int do_sleep(uint32_t time)
 /*
  * 写
  */
-static int32_t do_write(int fd, uint8_t *data, uint32_t len)
+static int do_write(int fd, void *data, uint32_t len)
 {
     printk((char *)data);
 
-    return (int32_t)len;
+    return (int)len;
 }
 
 /*
@@ -105,6 +104,7 @@ static int do_heap_init(uint8_t *base, uint32_t size)
     return mem_heap_init(&task[current->pid].heap, base, size);
 }
 
+#include <sys/time.h>
 /*
  * 获得时间
  */
@@ -121,7 +121,7 @@ static int do_gettimeofday(struct timeval *tv, void *tzp)
  */
 static int do_getpid(void)
 {
-    return current->pid;
+    return (int)current->pid;
 }
 
 /*

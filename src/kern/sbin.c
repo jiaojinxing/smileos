@@ -37,8 +37,8 @@
 ** Descriptions:
 **
 *********************************************************************************************************/
-#include "config.h"
-#include "types.h"
+#include "kern/config.h"
+#include "kern/types.h"
 #include "wsIntrn.h"
 #include <string.h>
 

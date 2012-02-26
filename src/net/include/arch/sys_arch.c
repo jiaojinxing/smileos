@@ -19,10 +19,10 @@
 ** Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 **
 **--------------------------------------------------------------------------------------------------------
-** File name:               lwip_fix.c
+** File name:               sys_arch.c
 ** Last modified Date:      2012-2-22
 ** Last Version:            1.0.0
-** Descriptions:            LwIP 修正源文件
+** Descriptions:            LwIP 系统模拟层源文件
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing
@@ -37,7 +37,6 @@
 ** Descriptions:
 **
 *********************************************************************************************************/
-
 #include "lwip/sys.h"
 
 /** Create a new mutex
@@ -45,33 +44,34 @@
  * @return a new mutex */
 err_t sys_mutex_new(sys_mutex_t *mutex)
 {
-    return 0;
+    return pthread_mutex_init(mutex, NULL);
 }
 
 /** Lock a mutex
  * @param mutex the mutex to lock */
 void sys_mutex_lock(sys_mutex_t *mutex)
 {
-
+    pthread_mutex_lock(mutex);
 }
 
 /** Unlock a mutex
  * @param mutex the mutex to unlock */
 void sys_mutex_unlock(sys_mutex_t *mutex)
 {
-
+    pthread_mutex_unlock(mutex);
 }
 
 /** Delete a semaphore
  * @param mutex the mutex to delete */
 void sys_mutex_free(sys_mutex_t *mutex)
 {
+    pthread_mutex_destroy(mutex);
 }
 
 /** Check if a mutex is valid/allocated: return 1 for valid, 0 for invalid */
 int sys_mutex_valid(sys_mutex_t *mutex)
 {
-    return 0;
+    return 1;
 }
 
 /** Set a mutex invalid so that sys_mutex_valid returns 0 */
@@ -128,7 +128,7 @@ void sys_sem_set_invalid(sys_sem_t *sem)
 /* Time functions. */
 void sys_msleep(u32_t ms) /* only has a (close to) 1 jiffy resolution. */
 {
-
+    __pthread_usleep(1000 * ms);
 }
 
 /** Create a new mbox of specified size

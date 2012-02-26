@@ -37,9 +37,9 @@
 ** Descriptions:
 **
 *********************************************************************************************************/
-#include "config.h"
-#include "types.h"
-#include "mmu.h"
+#include "kern/config.h"
+#include "kern/types.h"
+#include "kern/mmu.h"
 
 /*
  * »ñµÃ ID

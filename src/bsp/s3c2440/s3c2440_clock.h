@@ -40,7 +40,7 @@
 #ifndef S3C2440_CLOCK_H_
 #define S3C2440_CLOCK_H_
 
-#include "types.h"
+#include "kern/types.h"
 
 #define CONFIG_SYS_CLK_FREQ     12000000                                /*  Fin = 12.00MHz              */
 

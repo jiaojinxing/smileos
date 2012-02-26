@@ -543,7 +543,7 @@ void pthread_cleanup_pop(int execute)
     return;
 }
 
-#ifndef SMILEOS
+#ifdef SMILEOS_FORK
 /*
 **  AT-FORK SUPPORT
 */
@@ -1056,7 +1056,7 @@ int __pthread_usleep(unsigned int sec)
     return pth_usleep(sec);
 }
 
-#ifndef SMILEOS
+#ifdef SMILEOS_FORK
 /*
 **  THREAD-SAFE REPLACEMENT FUNCTIONS
 */

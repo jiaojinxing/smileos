@@ -40,6 +40,8 @@
 #ifndef S3C2440_UART_H_
 #define S3C2440_UART_H_
 
+#include "kern/types.h"
+
 void uart_init(void);
 
 #endif                                                                  /*  S3C2440_UART_H_             */

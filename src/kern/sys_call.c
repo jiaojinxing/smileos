@@ -37,10 +37,10 @@
 ** Descriptions:
 **
 *********************************************************************************************************/
-#include "config.h"
-#include "types.h"
-#include "sys_call.h"
-#include "mem.h"
+#include "kern/config.h"
+#include "kern/types.h"
+#include "kern/sys_call.h"
+#include "kern/mem.h"
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
