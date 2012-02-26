@@ -58,6 +58,7 @@
 #define TASK_UNALLOCATE      ((uint32_t)-1)
 #define TASK_RUNNING         0
 #define TASK_SLEEPING        1
+#define TASK_SUSPEND         2
 
 /*
  * 任务控制块
@@ -68,7 +69,7 @@ typedef struct _task {
     uint32_t        state;
     uint32_t        count;
     uint32_t        timer;
-    uint32_t        priority;
+    uint32_t        prio;
     uint32_t        content[20];
     uint32_t        kstack[KERN_STACK_SIZE];
 #ifdef SMILEOS_KTHREAD
@@ -76,6 +77,8 @@ typedef struct _task {
 #endif
     mem_heap        heap;
     int             errno;
+    struct _task   *next;
+    struct _task  **wait_list;
 } task_t;
 
 /*
@@ -123,13 +126,13 @@ void do_timer(void);
 /*
  * 创建任务
  */
-int process_create(uint8_t *code, uint32_t size, uint32_t priority);
+int32_t process_create(uint8_t *code, uint32_t size, uint32_t prio);
 
 #ifdef SMILEOS_KTHREAD
 /*
  * 创建线程
  */
-int kthread_create(uint32_t pc, uint32_t sp, uint32_t priority);
+int32_t kthread_create(void (*func)(void *), void *arg, uint32_t stk_size, uint32_t prio);
 #endif
 
 /*
