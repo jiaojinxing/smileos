@@ -106,7 +106,9 @@ void sched_init(void);
 /*
  * 启动调度器
  */
-void sched_start(void);
+void __switch_to_process0(uint32_t sp_svc);
+
+#define sched_start() __switch_to_process0(current->content[0]);
 
 /*
  * 调度
@@ -121,13 +123,13 @@ void do_timer(void);
 /*
  * 创建任务
  */
-int create_process(uint8_t *code, uint32_t size, uint32_t priority);
+int process_create(uint8_t *code, uint32_t size, uint32_t priority);
 
 #ifdef SMILEOS_KTHREAD
 /*
  * 创建线程
  */
-int create_thread(uint32_t pc, uint32_t sp, uint32_t priority);
+int kthread_create(uint32_t pc, uint32_t sp, uint32_t priority);
 #endif
 
 /*

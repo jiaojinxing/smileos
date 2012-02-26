@@ -84,14 +84,16 @@ int main(void)
     sched_init();
 
     code = sbin_lookup("/2440_P1.hex", &size);
-    create_process(code, size, 15);
-    create_process(code, size, 15);
-    create_process(code, size, 15);
-    create_process(code, size, 15);
-    create_process(code, size, 15);
-    create_process(code, size, 15);
+    process_create(code, size, 15);
+    process_create(code, size, 15);
+    process_create(code, size, 15);
+    process_create(code, size, 15);
+    process_create(code, size, 15);
+    process_create(code, size, 15);
 
     sched_start();
+
+    printk("process 0 inter\n");
 
     heap_init(heap, sizeof(heap));
 

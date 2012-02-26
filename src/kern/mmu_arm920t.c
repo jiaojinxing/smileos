@@ -50,7 +50,7 @@ uint32_t mmu_get_id(void)
 
     // MRC p15,0,Rd,c0,c0,0 ; returns ID register
 
-    __asm__("mrc p15, 0, %0, c0, c0, 0":"=r"(i));
+    __asm__ __volatile__("mrc p15, 0, %0, c0, c0, 0":"=r"(i));
 
     return i;
 }
@@ -64,7 +64,7 @@ uint32_t mmu_get_cache_type(void)
 
     // MRC p15,0,Rd,c0,c0,1 ; returns cache details
 
-    __asm__("mrc p15, 0, %0, c0, c0, 1":"=r"(i));
+    __asm__ __volatile__("mrc p15, 0, %0, c0, c0, 1":"=r"(i));
 
     return i;
 }
@@ -78,7 +78,7 @@ void mmu_set_ttb(register uint32_t i)
 
     // MCR p15, 0, Rd, c2, c0, 0 ; write TTB register
 
-    __asm__("mcr p15, 0, %0, c2, c0, 0": :"r"(i));
+    __asm__ __volatile__("mcr p15, 0, %0, c2, c0, 0": :"r"(i));
 }
 
 /*
@@ -90,7 +90,7 @@ void mmu_set_domain(register uint32_t i)
 
     // MCR p15, 0, Rd, c3, c0, 0 ; write domain 15:0 access permissions
 
-    __asm__("mcr p15,0, %0, c3, c0, 0": :"r"(i));
+    __asm__ __volatile__("mcr p15,0, %0, c3, c0, 0": :"r"(i));
 }
 
 /*
@@ -104,11 +104,11 @@ void mmu_enable(void)
 
     // MCR p15, 0, Rd, c1, c0, 0 ; write control register
 
-    __asm__("mrc p15, 0, %0, c1, c0, 0":"=r"(i));
+    __asm__ __volatile__("mrc p15, 0, %0, c1, c0, 0":"=r"(i));
 
     i |= (1 << 0);
 
-    __asm__("mcr p15, 0, %0, c1, c0, 0": :"r"(i));
+    __asm__ __volatile__("mcr p15, 0, %0, c1, c0, 0": :"r"(i));
 }
 
 /*
@@ -122,11 +122,11 @@ void mmu_disable(void)
 
     // MCR p15, 0, Rd, c1, c0, 0 ; write control register
 
-    __asm__("mrc p15, 0, %0, c1, c0, 0":"=r"(i));
+    __asm__ __volatile__("mrc p15, 0, %0, c1, c0, 0":"=r"(i));
 
     i &= ~(1 << 0);
 
-    __asm__("mcr p15, 0, %0, c1, c0, 0": :"r"(i));
+    __asm__ __volatile__("mcr p15, 0, %0, c1, c0, 0": :"r"(i));
 }
 
 /*
@@ -140,11 +140,11 @@ void mmu_enable_align_fault_check(void)
 
     // MCR p15, 0, Rd, c1, c0, 0 ; write control register
 
-    __asm__("mrc p15, 0, %0, c1, c0, 0":"=r"(i));
+    __asm__ __volatile__("mrc p15, 0, %0, c1, c0, 0":"=r"(i));
 
     i |= (1 << 1);
 
-    __asm__("mcr p15, 0, %0, c1, c0, 0": :"r"(i));
+    __asm__ __volatile__("mcr p15, 0, %0, c1, c0, 0": :"r"(i));
 }
 
 /*
@@ -158,11 +158,11 @@ void mmu_disable_align_fault_check(void)
 
     // MCR p15, 0, Rd, c1, c0, 0 ; write control register
 
-    __asm__("mrc p15, 0, %0, c1, c0, 0":"=r"(i));
+    __asm__ __volatile__("mrc p15, 0, %0, c1, c0, 0":"=r"(i));
 
     i &= ~(1 << 1);
 
-    __asm__("mcr p15, 0, %0, c1, c0, 0": :"r"(i));
+    __asm__ __volatile__("mcr p15, 0, %0, c1, c0, 0": :"r"(i));
 }
 
 /*
@@ -176,7 +176,7 @@ void mmu_set_sys_rom_protect_bit(uint32_t s, uint32_t r)
 
     // MCR p15, 0, Rd, c1, c0, 0 ; write control register
 
-    __asm__("mrc p15, 0, %0, c1, c0, 0":"=r"(i));
+    __asm__ __volatile__("mrc p15, 0, %0, c1, c0, 0":"=r"(i));
 
     if (s) {
         i |=  (1 << 8);
@@ -190,7 +190,7 @@ void mmu_set_sys_rom_protect_bit(uint32_t s, uint32_t r)
         i &= ~(1 << 9);
     }
 
-    __asm__("mcr p15, 0, %0, c1, c0, 0": :"r"(i));
+    __asm__ __volatile__("mcr p15, 0, %0, c1, c0, 0": :"r"(i));
 }
 
 /*
@@ -204,7 +204,7 @@ void mmu_set_vector_addr(uint32_t v)
 
     // MCR p15, 0, Rd, c1, c0, 0 ; write control register
 
-    __asm__("mrc p15, 0, %0, c1, c0, 0":"=r"(i));
+    __asm__ __volatile__("mrc p15, 0, %0, c1, c0, 0":"=r"(i));
 
     if (v) {
         i |=  (1 << 13);
@@ -212,7 +212,7 @@ void mmu_set_vector_addr(uint32_t v)
         i &= ~(1 << 13);
     }
 
-    __asm__("mcr p15, 0, %0, c1, c0, 0": :"r"(i));
+    __asm__ __volatile__("mcr p15, 0, %0, c1, c0, 0": :"r"(i));
 }
 
 /*
@@ -226,11 +226,11 @@ void mmu_enable_dcache(void)
 
     // MCR p15, 0, Rd, c1, c0, 0 ; write control register
 
-    __asm__("mrc p15, 0, %0, c1, c0, 0":"=r"(i));
+    __asm__ __volatile__("mrc p15, 0, %0, c1, c0, 0":"=r"(i));
 
     i |= (1 << 2);
 
-    __asm__("mcr p15, 0, %0, c1, c0, 0": :"r"(i));
+    __asm__ __volatile__("mcr p15, 0, %0, c1, c0, 0": :"r"(i));
 }
 
 /*
@@ -244,11 +244,11 @@ void mmu_disable_dcache(void)
 
     // MCR p15, 0, Rd, c1, c0, 0 ; write control register
 
-    __asm__("mrc p15, 0, %0, c1, c0, 0":"=r"(i));
+    __asm__ __volatile__("mrc p15, 0, %0, c1, c0, 0":"=r"(i));
 
     i &= ~(1 << 2);
 
-    __asm__("mcr p15, 0, %0, c1, c0, 0": :"r"(i));
+    __asm__ __volatile__("mcr p15, 0, %0, c1, c0, 0": :"r"(i));
 }
 
 /*
@@ -262,11 +262,11 @@ void mmu_enable_icache(void)
 
     // MCR p15, 0, Rd, c1, c0, 0 ; write control register
 
-    __asm__("mrc p15, 0, %0, c1, c0, 0":"=r"(i));
+    __asm__ __volatile__("mrc p15, 0, %0, c1, c0, 0":"=r"(i));
 
     i |= (1 << 12);
 
-    __asm__("mcr p15, 0, %0, c1, c0, 0": :"r"(i));
+    __asm__ __volatile__("mcr p15, 0, %0, c1, c0, 0": :"r"(i));
 }
 
 /*
@@ -280,11 +280,11 @@ void mmu_disable_icache(void)
 
     // MCR p15, 0, Rd, c1, c0, 0 ; write control register
 
-    __asm__("mrc p15, 0, %0, c1, c0, 0":"=r"(i));
+    __asm__ __volatile__("mrc p15, 0, %0, c1, c0, 0":"=r"(i));
 
     i &= ~(1 << 12);
 
-    __asm__("mcr p15, 0, %0, c1, c0, 0": :"r"(i));
+    __asm__ __volatile__("mcr p15, 0, %0, c1, c0, 0": :"r"(i));
 }
 
 /*
@@ -294,7 +294,7 @@ void mmu_invalidate_icache_dcache(void)
 {
     // Invalidate ICache and DCache SBZ MCR p15,0,Rd,c7,c7,0
 
-    __asm__("mcr p15, 0, %0, c7, c7, 0": :"r"(0));
+    __asm__ __volatile__("mcr p15, 0, %0, c7, c7, 0": :"r"(0));
 }
 
 /*
@@ -304,7 +304,7 @@ void mmu_invalidate_icache(void)
 {
     // Invalidate ICache SBZ MCR p15,0,Rd,c7,c5,0
 
-    __asm__("mcr p15, 0, %0, c7, c5, 0": :"r"(0));
+    __asm__ __volatile__("mcr p15, 0, %0, c7, c5, 0": :"r"(0));
 }
 
 /*
@@ -314,7 +314,7 @@ void mmu_invalidate_dcache(void)
 {
     // Invalidate DCache SBZ MCR p15,0,Rd,c7,c6,0
 
-    __asm__("mcr p15, 0, %0, c7, c6, 0": :"r"(0));
+    __asm__ __volatile__("mcr p15, 0, %0, c7, c6, 0": :"r"(0));
 }
 
 /*
@@ -324,7 +324,7 @@ void mmu_clean_dcache_index(register uint32_t index)
 {
     // Clean DCache single entry (using index) Index format MCR p15,0,Rd,c7,c10,2
 
-    __asm__("mcr p15, 0, %0, c7, c10, 2": :"r"(index));
+    __asm__ __volatile__("mcr p15, 0, %0, c7, c10, 2": :"r"(index));
 }
 
 /*
@@ -334,7 +334,7 @@ void mmu_clean_invalidate_dcache_index(register uint32_t index)
 {
     // Clean and Invalidate DCache entry (using index) Index format MCR p15,0,Rd,c7,c14,2
 
-    __asm__("mcr p15, 0, %0, c7, c14, 2": :"r"(index));
+    __asm__ __volatile__("mcr p15, 0, %0, c7, c14, 2": :"r"(index));
 }
 
 /*
@@ -344,7 +344,7 @@ void mmu_drain_write_buffer(void)
 {
     // Drain write buffer SBZ MCR p15,0,Rd,c7,c10,4
 
-    __asm__("mcr p15, 0, %0, c7, c10, 4": :"r"(0));
+    __asm__ __volatile__("mcr p15, 0, %0, c7, c10, 4": :"r"(0));
 }
 
 /*
@@ -354,7 +354,7 @@ void mmu_wait_for_interrupt(void)
 {
     // Wait for interrupt SBZ MCR p15,0,Rd,c7,c0,4
 
-    __asm__("mcr p15, 0, %0, c7, c0, 4": :"r"(0));
+    __asm__ __volatile__("mcr p15, 0, %0, c7, c0, 4": :"r"(0));
 }
 
 /*
@@ -364,7 +364,7 @@ void mmu_invalidate_itlb_dtlb(void)
 {
     // Invalidate TLB(s) SBZ MCR p15,0,Rd,c8,c7,0
 
-    __asm__("mcr p15, 0, %0, c8, c7, 0": :"r"(0));
+    __asm__ __volatile__("mcr p15, 0, %0, c8, c7, 0": :"r"(0));
 }
 
 /*
@@ -374,7 +374,7 @@ void mmu_invalidate_itlb(void)
 {
     // Invalidate I TLB SBZ MCR p15,0,Rd,c8,c5,0
 
-    __asm__("mcr p15, 0, %0, c8, c5, 0": :"r"(0));
+    __asm__ __volatile__("mcr p15, 0, %0, c8, c5, 0": :"r"(0));
 }
 
 /*
@@ -384,7 +384,7 @@ void mmu_invalidate_dtlb(void)
 {
     // Invalidate D TLB SBZ MCR p15,0,Rd,c8,c6,0
 
-    __asm__("mcr p15, 0, %0, c8, c6, 0": :"r"(0));
+    __asm__ __volatile__("mcr p15, 0, %0, c8, c6, 0": :"r"(0));
 }
 
 /*
@@ -396,7 +396,7 @@ uint32_t mmu_get_prefetch_fault_status(void)
 
     // read prefetch FSR value MRC p15, 0, Rd, c5, c0, 1
 
-    __asm__("mrc p15, 0, %0, c5, c0, 1":"=r"(i));
+    __asm__ __volatile__("mrc p15, 0, %0, c5, c0, 1":"=r"(i));
 
     return i;
 }
@@ -410,7 +410,7 @@ uint32_t mmu_get_data_fault_status(void)
 
     // read data FSR value MRC p15, 0, Rd, c5, c0, 0
 
-    __asm__("mrc p15, 0, %0, c5, c0, 0":"=r"(i));
+    __asm__ __volatile__("mrc p15, 0, %0, c5, c0, 0":"=r"(i));
 
     return i;
 }
@@ -424,7 +424,7 @@ uint32_t mmu_get_fault_address(void)
 
     // read FAR data MRC p15, 0, Rd, c6, c0, 0
 
-    __asm__("mrc p15, 0, %0, c6, c0, 0":"=r"(i));
+    __asm__ __volatile__("mrc p15, 0, %0, c6, c0, 0":"=r"(i));
 
     return i;
 }
