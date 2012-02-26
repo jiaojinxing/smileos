@@ -37,23 +37,25 @@
 ** Descriptions:
 **
 *********************************************************************************************************/
-#include "config.h"
-#include "types.h"
-#include "kern.h"
-#include "mmu.h"
+#include "kern/config.h"
+#include "kern/types.h"
+#include "kern/kern.h"
+#include "kern/mmu.h"
 
 /*
- * 未定义指令
+ * 未定义指令异常处理程序
  */
 void undf_c_handler(uint32_t lr, uint32_t spsr)
 {
-    printk("%s\n", __func__);
+    printk("%s, current pid = %d\n", __func__, current->pid);
+    printk("lr   = 0x%x\n", lr);
+    printk("spsr = 0x%x\n", spsr);
 
     while (1);
 }
 
 /*
- * 预取指中止
+ * 预取指中止异常处理程序
  */
 void pabt_c_handler(uint32_t lr, uint32_t spsr)
 {
@@ -67,7 +69,7 @@ void pabt_c_handler(uint32_t lr, uint32_t spsr)
 }
 
 /*
- * 数据中止
+ * 数据访问中止异常处理程序
  */
 void dabt_c_handler(uint32_t lr, uint32_t spsr)
 {
@@ -81,11 +83,13 @@ void dabt_c_handler(uint32_t lr, uint32_t spsr)
 }
 
 /*
- * 快速中断
+ * FIQ 快速中断处理程序
  */
-void fiq_c_handler(void)
+void fiq_c_handler(uint32_t lr, uint32_t spsr)
 {
-    printk("%s\n", __func__);
+    printk("%s, current pid = %d\n", __func__, current->pid);
+    printk("lr   = 0x%x\n", lr);
+    printk("spsr = 0x%x\n", spsr);
 
     while (1);
 }

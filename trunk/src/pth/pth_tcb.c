@@ -96,7 +96,7 @@ intern const char *pth_state_names[] = {
 #define SIGSTKSZ MINSIGSTKSZ
 #endif
 #if !defined(SIGSTKSZ)
-#define SIGSTKSZ 64 * 1024
+#define SIGSTKSZ 8192
 #endif
 
 /* allocate a thread control block */

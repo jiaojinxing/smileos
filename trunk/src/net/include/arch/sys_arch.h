@@ -22,7 +22,7 @@
 ** File name:               sys_arch.h
 ** Last modified Date:      2012-2-22
 ** Last Version:            1.0.0
-** Descriptions:            LwIP 与操作系统体系结构相关头文件
+** Descriptions:            LwIP 系统模拟层头文件
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing

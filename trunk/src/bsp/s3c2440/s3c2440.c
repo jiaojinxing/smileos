@@ -37,9 +37,9 @@
 ** Descriptions:
 **
 *********************************************************************************************************/
-#include "config.h"
-#include "types.h"
-#include "mmu.h"
+#include "kern/config.h"
+#include "kern/types.h"
+#include "kern/mmu.h"
 #include "s3c2440.h"
 #include "s3c2440_clock.h"
 #include "s3c2440_uart.h"

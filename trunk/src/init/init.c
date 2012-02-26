@@ -37,12 +37,12 @@
 ** Descriptions:
 **
 *********************************************************************************************************/
-#include "config.h"
-#include "types.h"
-#include "kern.h"
-#include "mmu.h"
-#include "sys_call.h"
-#include "sbin.h"
+#include "kern/config.h"
+#include "kern/types.h"
+#include "kern/kern.h"
+#include "kern/mmu.h"
+#include "kern/sys_call.h"
+#include "kern/sbin.h"
 #include <string.h>
 #include <pthread.h>
 
@@ -85,18 +85,24 @@ int main(void)
 
     code = sbin_lookup("/2440_P1.hex", &size);
     create_process(code, size, 15);
+    create_process(code, size, 15);
+    create_process(code, size, 15);
+    create_process(code, size, 15);
+    create_process(code, size, 15);
+    create_process(code, size, 15);
 
-    __switch_to_process0(current->content[0]);
+    sched_start();
 
     heap_init(heap, sizeof(heap));
 
-    pthread_create(&tid1, NULL, test_thread, 1);
-
-    pthread_create(&tid2, NULL, test_thread, 2);
+    pthread_create(&tid1, NULL, test_thread, (void *)1);
+    pthread_create(&tid2, NULL, test_thread, (void *)2);
+    pthread_create(&tid2, NULL, test_thread, (void *)3);
+    pthread_create(&tid2, NULL, test_thread, (void *)4);
+    pthread_create(&tid2, NULL, test_thread, (void *)5);
 
     while (1) {
         pthread_yield_np();
-        //mmu_wait_for_interrupt();
     }
 
     return 0;

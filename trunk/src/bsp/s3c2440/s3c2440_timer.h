@@ -40,7 +40,7 @@
 #ifndef S3C2440_TIMER_H_
 #define S3C2440_TIMER_H_
 
-#include "types.h"
+#include "kern/types.h"
 
 void timer_init(void);
 

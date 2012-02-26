@@ -37,10 +37,10 @@
 ** Descriptions:
 **
 *********************************************************************************************************/
-#include "config.h"
-#include "types.h"
-#include "kern.h"
-#include "arm.h"
+#include "kern/config.h"
+#include "kern/types.h"
+#include "kern/kern.h"
+#include "kern/arm.h"
 #include <string.h>
 #include <stdarg.h>
 
@@ -103,6 +103,19 @@ void sched_init(void)
 }
 
 /*
+ * 启动调度器
+ */
+void sched_start(void)
+{
+    /*
+     * 切换到进程 0, 并开中断
+     */
+    void __switch_to_process0(uint32_t sp_svc);
+
+    __switch_to_process0(current->content[0]);
+}
+
+/*
  * 调度
  */
 void schedule(void)
@@ -136,7 +149,7 @@ void schedule(void)
 
     current = &task[next];
 
-#if 1
+#if 0
     if ((current->content[3] & ARM_MODE_MASK) == ARM_SVC_MODE) {
         printk("%s: switch to pid=%d, tid=%d, pc=0x%x, sp_sys=0x%x, sp_svc=0x%x\n",
                 __func__,
@@ -192,7 +205,7 @@ void do_timer(void)
 /*
  * 创建进程
  */
-int create_process(uint8_t *code, uint32_t size, uint32_t priority)
+int32_t create_process(uint8_t *code, uint32_t size, uint32_t priority)
 {
     int i;
     task_t *p = &task[0];
@@ -232,14 +245,14 @@ int create_process(uint8_t *code, uint32_t size, uint32_t priority)
     p->content[17]  = 0;                                            /*  lr                              */
     p->content[18]  = 0;                                            /*  pc                              */
 
-    return 0;
+    return i;
 }
 
 #ifdef SMILEOS_KTHREAD
 /*
  * 创建线程
  */
-int create_thread(uint32_t pc, uint32_t sp, uint32_t priority)
+int32_t create_thread(uint32_t pc, uint32_t sp, uint32_t priority)
 {
     int i;
     task_t *p = &task[0];
@@ -268,7 +281,7 @@ int create_thread(uint32_t pc, uint32_t sp, uint32_t priority)
     p->content[17]  = pc;                                           /*  lr                              */
     p->content[18]  = pc;                                           /*  pc                              */
 
-    return 0;
+    return i;
 }
 #endif
 
