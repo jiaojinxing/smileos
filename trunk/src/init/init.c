@@ -46,9 +46,7 @@
 #include <string.h>
 #include <pthread.h>
 
-#define HEAP_SIZE       (1 * MB)
-
-static uint8_t heap[HEAP_SIZE];
+static uint8_t heap[KERN_HEAP_SIZE];
 
 static void *test_thread(void *arg)
 {
@@ -56,15 +54,15 @@ static void *test_thread(void *arg)
     void *ptr;
 
     while (1) {
-        printf("thread %d, i = %d\n", (int)arg, i++);
+        printf("process 0 thread %d, i = %d\n", (int)arg, i++);
 
         ptr = malloc(i);
 
-        printf("thread %d addr = %p\n", (int)arg, ptr);
+        printf("process 0 thread %d addr = %p\n", (int)arg, ptr);
 
         free(ptr);
 
-        __pthread_usleep(10000);
+        __pthread_usleep(1000000);
     }
 
     return NULL;
@@ -75,7 +73,6 @@ int main(void)
     uint8_t  *code;
     uint32_t  size;
     pthread_t tid1;
-    pthread_t tid2;
 
     mmu_init();
 
@@ -85,23 +82,12 @@ int main(void)
 
     code = sbin_lookup("/2440_P1.hex", &size);
     process_create(code, size, 15);
-    process_create(code, size, 15);
-    process_create(code, size, 15);
-    process_create(code, size, 15);
-    process_create(code, size, 15);
-    process_create(code, size, 15);
 
     sched_start();
-
-    printk("process 0 inter\n");
 
     heap_init(heap, sizeof(heap));
 
     pthread_create(&tid1, NULL, test_thread, (void *)1);
-    pthread_create(&tid2, NULL, test_thread, (void *)2);
-    pthread_create(&tid2, NULL, test_thread, (void *)3);
-    pthread_create(&tid2, NULL, test_thread, (void *)4);
-    pthread_create(&tid2, NULL, test_thread, (void *)5);
 
     while (1) {
         pthread_yield_np();

@@ -43,15 +43,6 @@
 #include "types.h"
 
 /*
- * 处理内存对齐
- */
-#define MEM_ALIGNMENT               4
-#define MEM_ALIGN_SIZE(size)        (((size) + MEM_ALIGNMENT - 1) & ~(MEM_ALIGNMENT - 1))
-#define MEM_ALIGN_SIZE_LESS(size)   (((size) & ~(MEM_ALIGNMENT - 1)))
-#define MEM_ALIGN(addr)             ((void *)(((uint32_t)(addr) + MEM_ALIGNMENT - 1) & ~(uint32_t)(MEM_ALIGNMENT - 1)))
-#define MEM_ALIGN_LESS(addr)        ((void *)(((uint32_t)(addr)) & ~(uint32_t)(MEM_ALIGNMENT - 1)))
-
-/*
  * 内存块
  */
 struct _mem_block;
@@ -65,6 +56,10 @@ typedef struct {
     mem_block      *block_list;
     uint8_t        *base;
     uint32_t        size;
+    uint32_t        block_cnt;
+    uint32_t        used_size;
+    uint32_t        alloc_cnt;
+    uint32_t        free_cnt;
 } mem_heap;
 
 /*

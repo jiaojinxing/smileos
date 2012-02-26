@@ -43,10 +43,8 @@
   数据类型定义
 *********************************************************************************************************/
 #include "kern/types.h"
-#include "kern/mem.h"
 #include <sys/time.h>
 #include <sys/errno.h>
-#include <pthread.h>
 /*********************************************************************************************************
   主机与网络字节转换 (为了速度这里使用宏, 但是不可以直接使用, 例如: htonl(x++) 就会错误.)
 *********************************************************************************************************/
@@ -91,10 +89,10 @@ extern int printf(const char *fmt, ...);
 /*********************************************************************************************************
   OS 数据类型
 *********************************************************************************************************/
-typedef pthread_mutex_t             sys_mutex_t;
-typedef pthread_mutex_t             sys_sem_t;
-typedef pthread_msgport_t           sys_mbox_t;
-typedef pthread_t                   sys_thread_t;
+typedef void *                      sys_mutex_t;
+typedef void *                      sys_sem_t;
+typedef void *                      sys_mbox_t;
+typedef void *                      sys_thread_t;
 
 #define SYS_MUTEX_NULL              0ul
 #define SYS_SEM_NULL                0ul

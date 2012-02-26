@@ -101,6 +101,14 @@ typedef uint32_t                    mem_ptr_t;
 #endif
 
 #define BYTE_ORDER                  LITTLE_ENDIAN
+/*********************************************************************************************************
+  处理内存对齐
+*********************************************************************************************************/
+#define MEM_ALIGNMENT               4
+#define MEM_ALIGN_SIZE(size)        (((size) + MEM_ALIGNMENT - 1) & ~(MEM_ALIGNMENT - 1))
+#define MEM_ALIGN_SIZE_LESS(size)   (((size) & ~(MEM_ALIGNMENT - 1)))
+#define MEM_ALIGN(addr)             ((void *)(((uint32_t)(addr) + MEM_ALIGNMENT - 1) & ~(uint32_t)(MEM_ALIGNMENT - 1)))
+#define MEM_ALIGN_LESS(addr)        ((void *)(((uint32_t)(addr)) & ~(uint32_t)(MEM_ALIGNMENT - 1)))
 
 #endif                                                                  /*  TYPES_H_                    */
 /*********************************************************************************************************

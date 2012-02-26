@@ -42,6 +42,8 @@
 
 #define LWIP_ICMP 0
 
+#define LWIP_POSIX_SOCKETS_IO_NAMES 0
+
 #endif                                                                  /*  LWIP_CONFIG_H_              */
 /*********************************************************************************************************
   END FILE

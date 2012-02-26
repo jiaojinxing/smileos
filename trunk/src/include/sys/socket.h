@@ -40,12 +40,6 @@
 #ifndef SOCKET_H_
 #define SOCKET_H_
 
-#include <sys/types.h>
-
-#ifndef socklen_t
-#  define socklen_t size_t
-#endif
-
 #include "lwip/sockets.h"
 
 #endif                                                                  /*  SOCKET_H_                   */

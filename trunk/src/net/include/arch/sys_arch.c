@@ -40,33 +40,34 @@
 #include "lwip/sys.h"
 #include "kern/config.h"
 
+/*
+ * LwIP 运行在 SmileOS 的内核里, LwIP 线程使用内核线程实现, 这还需要一套完整的内核线程 IPC 机制
+ */
+
 /** Create a new mutex
  * @param mutex pointer to the mutex to create
  * @return a new mutex */
 err_t sys_mutex_new(sys_mutex_t *mutex)
 {
-    return pthread_mutex_init(mutex, NULL);
+    return 0;
 }
 
 /** Lock a mutex
  * @param mutex the mutex to lock */
 void sys_mutex_lock(sys_mutex_t *mutex)
 {
-    pthread_mutex_lock(mutex);
 }
 
 /** Unlock a mutex
  * @param mutex the mutex to unlock */
 void sys_mutex_unlock(sys_mutex_t *mutex)
 {
-    pthread_mutex_unlock(mutex);
 }
 
 /** Delete a semaphore
  * @param mutex the mutex to delete */
 void sys_mutex_free(sys_mutex_t *mutex)
 {
-    pthread_mutex_destroy(mutex);
 }
 
 /** Check if a mutex is valid/allocated: return 1 for valid, 0 for invalid */
@@ -129,7 +130,6 @@ void sys_sem_set_invalid(sys_sem_t *sem)
 /* Time functions. */
 void sys_msleep(u32_t ms) /* only has a (close to) 1 jiffy resolution. */
 {
-    __pthread_usleep(1000 * ms);
 }
 
 /** Create a new mbox of specified size
@@ -210,22 +210,7 @@ void sys_mbox_set_invalid(sys_mbox_t *mbox)
  * @param prio priority of the new thread (may be ignored by ports) */
 sys_thread_t sys_thread_new(const char *name, lwip_thread_fn thread, void *arg, int stacksize, int prio)
 {
-    pthread_t tid;
-    pthread_attr_t attr;
-
-    pthread_attr_init(&attr);
-
-    pthread_attr_setstacksize(&attr, stacksize);
-
-    pthread_attr_setprio_np(&attr, prio);
-
-    pthread_attr_setname_np(&attr, (char *)name);
-
-    pthread_create(&tid, &attr, (void *(*)(void *))thread, arg);
-
-    pthread_attr_destroy(&attr);
-
-    return tid;
+    return 0;
 }
 
 /* sys_init() must be called before anthing else. */
