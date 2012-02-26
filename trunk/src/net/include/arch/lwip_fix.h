@@ -89,10 +89,14 @@ extern int printf(const char *fmt, ...);
 /*********************************************************************************************************
   OS 数据类型
 *********************************************************************************************************/
-typedef void *                      sys_mutex_t;
-typedef void *                      sys_sem_t;
-typedef void *                      sys_mbox_t;
-typedef void *                      sys_thread_t;
+struct sys_mutex;
+struct sys_sem;
+struct sys_mbox;
+
+typedef struct sys_mutex *          sys_mutex_t;
+typedef struct sys_sem   *          sys_sem_t;
+typedef struct sys_mbox  *          sys_mbox_t;
+typedef int32_t                     sys_thread_t;
 
 #define SYS_MUTEX_NULL              0ul
 #define SYS_SEM_NULL                0ul
