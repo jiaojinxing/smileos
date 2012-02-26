@@ -175,8 +175,8 @@ void *mem_heap_free(mem_heap *heap, void *ptr)
         return ptr;
     }
 
-    if (((char *)ptr < (heap->base + MEM_ALIGN_SIZE(sizeof(mem_block)))) ||
-        ((char *)ptr >= heap->base + heap->size)) {
+    if (((uint8_t *)ptr < (heap->base + MEM_ALIGN_SIZE(sizeof(mem_block)))) ||
+        ((uint8_t *)ptr >= heap->base + heap->size)) {
         printk("%s: memory pointer dose not belong to this heap!\n", __func__, current->tid);
         return ptr;
     }

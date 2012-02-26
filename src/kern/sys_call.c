@@ -79,6 +79,7 @@ void exit(int error_code)
     __asm__("mov    r0,  %0": :"r"(error_code));
     __asm__("mov    r7,  %0": :"M"(SYS_CALL_EXIT));
     __asm__("swi    0");
+    __asm__("b      .");
 }
 
 /*

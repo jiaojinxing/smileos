@@ -59,12 +59,12 @@ _start:
     ldr     pc, _fiq                                                    // FIQ - _fiq
 
 _reset:     .word reset_handler                                         // reset
-_undf:      .word __undf                                                // undefined
+_undf:      .word undef_handler                                         // undefined
 _swi:       .word swi_handler                                           // SWI
-_pabt:      .word __pabt                                                // program abort
-_dabt:      .word __dabt                                                // data abort
+_pabt:      .word pabt_handler                                          // program abort
+_dabt:      .word dabt_handler                                          // data abort
 _irq:       .word irq_handler                                           // IRQ
-_fiq:       .word __fiq                                                 // FIQ
+_fiq:       .word fiq_handler                                           // FIQ
 /*********************************************************************************************************
   复位处理程序
 *********************************************************************************************************/
@@ -109,7 +109,7 @@ swi_handler:
 
     mov     r0, #-1                         /*  出错, 返回 -1, r0 用于返回值                            */
 
-sys_do_return:
+sys_do_return:                              /*  一定会执行                                              */
     ldmia   sp!, {r4-r12, pc}^              /*  系统调用处理返回, ^ 表示复制 spsr 到 cpsr               */
 /*********************************************************************************************************
   IRQ 中断处理程序
@@ -126,13 +126,13 @@ irq_handler:
 
     ldr     pc, =irq_c_handler              /*  进入 irq c 处理程序                                     */
 
-irq_c_handler_return:
+irq_c_handler_return:                       /*  不一定会执行                                            */
     ldmia   sp!, {r0-r12, pc}^              /*  irq 中断处理返回, ^ 表示复制 spsr 到 cpsr               */
 /*********************************************************************************************************
   未定义指令处理程序
 *********************************************************************************************************/
 .extern undf_c_handler
-__undf:
+undef_handler:
     ldr     sp, =(IRQ_STACK_P_BASE)         /*  设置 irq 模式的 sp                                      */
 
     ldr     pc, =undf_c_handler
@@ -140,7 +140,7 @@ __undf:
   预取指中止处理程序
 *********************************************************************************************************/
 .extern pabt_c_handler
-__pabt:
+pabt_handler:
     ldr     sp, =(IRQ_STACK_P_BASE)         /*  设置 irq 模式的 sp                                      */
     mov     r0, lr
     mrs     r1, spsr
@@ -149,15 +149,16 @@ __pabt:
   数据访问中止处理程序
 *********************************************************************************************************/
 .extern dabt_c_handler
-__dabt:
+dabt_handler:
     ldr     sp, =(IRQ_STACK_P_BASE)         /*  设置 irq 模式的 sp                                      */
-
+    mov     r0, lr
+    mrs     r1, spsr
     ldr     pc, =dabt_c_handler
 /*********************************************************************************************************
   FIQ 快速中断处理程序
 *********************************************************************************************************/
 .extern fiq_c_handler
-__fiq:
+fiq_handler:
     ldr     sp, =(IRQ_STACK_P_BASE)         /*  设置 irq 模式的 sp                                      */
 
     ldr     pc, =fiq_c_handler
