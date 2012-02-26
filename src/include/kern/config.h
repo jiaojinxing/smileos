@@ -40,8 +40,24 @@
 #ifndef CONFIG_H_
 #define CONFIG_H_
 
+#define KB                  (1024)
+#define MB                  (1024 * KB)
+#define PAGE                (4 * KB)
+
 #ifdef S3C2440_BSP
 #include "../../bsp/s3c2440/s3c2440_config.h"
+#endif
+
+#ifndef TICK_PER_SECOND
+#define TICK_PER_SECOND     100                                         /*  每秒 tick 数                */
+#endif
+
+#ifndef PROCESS_HEAP_SIZE
+#define PROCESS_HEAP_SIZE   (3 * MB)                                    /*  进程堆大小                  */
+#endif
+
+#ifndef KERN_HEAP_SIZE
+#define KERN_HEAP_SIZE      (3 * MB)                                    /*  内核堆大小                  */
 #endif
 
 #endif                                                                  /*  CONFIG_H_                   */

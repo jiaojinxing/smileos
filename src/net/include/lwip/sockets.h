@@ -356,7 +356,9 @@ int lwip_fcntl(int s, int cmd, int val);
 #define send(a,b,c,d)         lwip_send(a,b,c,d)
 #define sendto(a,b,c,d,e,f)   lwip_sendto(a,b,c,d,e,f)
 #define socket(a,b,c)         lwip_socket(a,b,c)
+#ifndef SMILEOS
 #define select(a,b,c,d,e)     lwip_select(a,b,c,d,e)
+#endif
 #define ioctlsocket(a,b,c)    lwip_ioctl(a,b,c)
 
 #if LWIP_POSIX_SOCKETS_IO_NAMES
