@@ -42,34 +42,53 @@
 #include "kern.h"
 #include "mmu.h"
 
-void undf_c_handler(void)
+/*
+ * 未定义指令
+ */
+void undf_c_handler(uint32_t lr, uint32_t spsr)
 {
     printk("%s\n", __func__);
 
     while (1);
 }
 
+/*
+ * 预取指中止
+ */
 void pabt_c_handler(uint32_t lr, uint32_t spsr)
 {
     printk("%s, current pid = %d\n", __func__, current->pid);
     printk("fault address = 0x%x\n", mmu_get_fault_address());
     printk("fault status  = 0x%x\n", mmu_get_prefetch_fault_status());
-    printk("lr = 0x%x\n", lr);
+    printk("lr   = 0x%x\n", lr);
     printk("spsr = 0x%x\n", spsr);
 
     while (1);
 }
 
-void dabt_c_handler(void)
+/*
+ * 数据中止
+ */
+void dabt_c_handler(uint32_t lr, uint32_t spsr)
 {
-    printk("%s\n", __func__);
+    printk("%s, current pid = %d\n", __func__, current->pid);
+    printk("fault address = 0x%x\n", mmu_get_fault_address());
+    printk("fault status  = 0x%x\n", mmu_get_data_fault_status());
+    printk("lr   = 0x%x\n", lr);
+    printk("spsr = 0x%x\n", spsr);
 
     while (1);
 }
 
+/*
+ * 快速中断
+ */
 void fiq_c_handler(void)
 {
     printk("%s\n", __func__);
 
     while (1);
 }
+/*********************************************************************************************************
+  END FILE
+*********************************************************************************************************/

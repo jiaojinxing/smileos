@@ -22,7 +22,7 @@
 ** File name:               arm.h
 ** Last modified Date:      2012-2-2
 ** Last Version:            1.0.0
-** Descriptions:            ARM 相关定义头文件
+** Descriptions:            ARM 相关定义
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing

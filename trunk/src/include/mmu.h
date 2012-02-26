@@ -217,7 +217,12 @@ void mmu_invalidate_dtlb(void);
 uint32_t mmu_get_prefetch_fault_status(void);
 
 /*
- * 获得预取指错误地址
+ * 获得数据访问错误状态
+ */
+uint32_t mmu_get_data_fault_status(void);
+
+/*
+ * 获得错误地址
  */
 uint32_t mmu_get_fault_address(void);
 

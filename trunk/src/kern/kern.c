@@ -94,7 +94,8 @@ void sched_init(void)
     p->content[1]   = ARM_SYS_MODE | ARM_FIQ_NO | ARM_IRQ_EN;       /*  cpsr, sys 模式, 关 FIQ, 开 IRQ  */
     p->content[2]   = PROCESS0_STACK_BASE;                          /*  sys 模式的 sp                   */
     p->content[3]   = ARM_SVC_MODE;                                 /*  spsr, svc 模式                  */
-    p->content[17]  = 0;                                            /*  pc                              */
+    p->content[17]  = 0;                                            /*  lr                              */
+    p->content[18]  = 0;                                            /*  pc                              */
 
     current = p;
 
@@ -136,7 +137,7 @@ void schedule(void)
     current = &task[next];
 
 #if 1
-    if ((current->content[3] & ARM_MODE_MASK) == ARM_SVC_MODE)
+    if ((current->content[3] & ARM_MODE_MASK) == ARM_SVC_MODE) {
         printk("%s: switch to pid=%d, tid=%d, pc=0x%x, sp_sys=0x%x, sp_svc=0x%x\n",
                 __func__,
                 current->pid,
@@ -144,7 +145,7 @@ void schedule(void)
                 current->content[17],
                 current->content[2],
                 current->content[0]);
-    else
+    } else {
         printk("%s: switch to pid=%d, tid=%d, pc=0x%x, sp_sys=0x%x, sp_svc=0x%x\n",
                 __func__,
                 current->pid,
@@ -152,6 +153,7 @@ void schedule(void)
                 current->content[17],
                 current->content[0],
                 current->content[2]);
+    }
 #endif
 
     extern void __switch_to(task_t *cur, task_t *next);
@@ -195,7 +197,6 @@ int create_process(uint8_t *code, uint32_t size, uint32_t priority)
     int i;
     task_t *p = &task[0];
     uint8_t *pa;
-    int k, j;
 
     if (code == NULL) {
         return -1;
@@ -228,7 +229,8 @@ int create_process(uint8_t *code, uint32_t size, uint32_t priority)
     p->content[1]   = ARM_SYS_MODE | ARM_FIQ_NO | ARM_IRQ_EN;       /*  cpsr, sys 模式, 关 FIQ, 开 IRQ  */
     p->content[2]   = PROCESS_MEM_SIZE;                             /*  sys 模式的 sp                   */
     p->content[3]   = ARM_SVC_MODE;                                 /*  spsr, svc 模式                  */
-    p->content[17]  = 0;                                            /*  pc                              */
+    p->content[17]  = 0;                                            /*  lr                              */
+    p->content[18]  = 0;                                            /*  pc                              */
 
     return 0;
 }
@@ -263,7 +265,8 @@ int create_thread(uint32_t pc, uint32_t sp, uint32_t priority)
     p->content[1]   = ARM_SYS_MODE | ARM_FIQ_NO | ARM_IRQ_EN;       /*  cpsr, sys 模式, 关 FIQ, 开 IRQ  */
     p->content[2]   = sp;                                           /*  sys 模式的 sp                   */
     p->content[3]   = ARM_SVC_MODE;                                 /*  spsr, svc 模式                  */
-    p->content[17]  = pc;                                           /*  pc                              */
+    p->content[17]  = pc;                                           /*  lr                              */
+    p->content[18]  = pc;                                           /*  pc                              */
 
     return 0;
 }

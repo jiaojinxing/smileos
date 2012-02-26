@@ -56,11 +56,11 @@ static void *test_thread(void *arg)
     void *ptr;
 
     while (1) {
-        //printf("thread %d, i = %d\n", (int)arg, i++);
+        printf("thread %d, i = %d\n", (int)arg, i++);
 
         ptr = malloc(i);
 
-        //printf("thread %d addr = %p\n", (int)arg, ptr);
+        printf("thread %d addr = %p\n", (int)arg, ptr);
 
         free(ptr);
 

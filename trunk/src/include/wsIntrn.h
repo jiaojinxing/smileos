@@ -22,7 +22,7 @@
 ** File name:               wsIntrn.h
 ** Last modified Date:      2012-2-22
 ** Last Version:            1.0.0
-** Descriptions:            Goahead 头文件
+** Descriptions:            GoAhead 头文件
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing

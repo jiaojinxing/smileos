@@ -30,7 +30,7 @@ int pth_mctx_set(pth_mctx_t *mctx, void (*func)(void), char *sk_addr_lo, char *s
     *stk-- = 0;                 /* r2   */
     *stk-- = 0;                 /* r1   */
     *stk-- = 0;                 /* r0   */
-    *stk   = ARM_SYS_MODE | ARM_FIQ_NO | ARM_IRQ_EN;        /* cpsr: sys mode, irq enable, fiq dissable */
+    *stk   = ARM_SYS_MODE | ARM_FIQ_NO | ARM_IRQ_EN;        /* cpsr: sys mode, irq enable, fiq disable  */
 
     mctx->sp = (uint32_t)stk;
 

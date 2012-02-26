@@ -22,7 +22,7 @@
 ** File name:               pthread.h
 ** Last modified Date:      2012-2-25
 ** Last Version:            1.0.0
-** Descriptions:            posix 线程接口
+** Descriptions:            pthread 线程头文件
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing

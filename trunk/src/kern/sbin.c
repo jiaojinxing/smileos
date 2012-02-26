@@ -22,7 +22,7 @@
 ** File name:               sbin.c
 ** Last modified Date:      2012-2-21
 ** Last Version:            1.0.0
-** Descriptions:            sbin
+** Descriptions:            系统二进程程序
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing

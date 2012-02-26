@@ -402,7 +402,21 @@ uint32_t mmu_get_prefetch_fault_status(void)
 }
 
 /*
- * 获得预取指错误地址
+ * 获得数据访问错误状态
+ */
+uint32_t mmu_get_data_fault_status(void)
+{
+    register uint32_t i;
+
+    // read data FSR value MRC p15, 0, Rd, c5, c0, 0
+
+    __asm__("mrc p15, 0, %0, c5, c0, 0":"=r"(i));
+
+    return i;
+}
+
+/*
+ * 获得错误地址
  */
 uint32_t mmu_get_fault_address(void)
 {
