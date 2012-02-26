@@ -92,7 +92,7 @@ void sched_init(void)
 
     p->content[0]   = (uint32_t)&p->kstack[KERN_STACK_SIZE];        /*  svc 模式的 sp (满堆栈递减)      */
     p->content[1]   = ARM_SYS_MODE | ARM_FIQ_NO | ARM_IRQ_EN;       /*  cpsr, sys 模式, 关 FIQ, 开 IRQ  */
-    p->content[2]   = KERN_MEM_BASE + KERN_MEM_SIZE;                /*  sys 模式的 sp                   */
+    p->content[2]   = PROCESS0_STACK_BASE;                          /*  sys 模式的 sp                   */
     p->content[3]   = ARM_SVC_MODE;                                 /*  spsr, svc 模式                  */
     p->content[17]  = 0;                                            /*  pc                              */
 
@@ -135,14 +135,23 @@ void schedule(void)
 
     current = &task[next];
 
-#if 0
-    printk("%s: switch to pid=%d, tid=%d, pc=0x%x, sp_sys=0x%x, sp_svc=0x%x\n",
-            __func__
-            current->pid,
-            current->tid,
-            current->content[17],
-            current->content[2],
-            current->content[0]);
+#if 1
+    if ((current->content[3] & ARM_MODE_MASK) == ARM_SVC_MODE)
+        printk("%s: switch to pid=%d, tid=%d, pc=0x%x, sp_sys=0x%x, sp_svc=0x%x\n",
+                __func__,
+                current->pid,
+                current->tid,
+                current->content[17],
+                current->content[2],
+                current->content[0]);
+    else
+        printk("%s: switch to pid=%d, tid=%d, pc=0x%x, sp_sys=0x%x, sp_svc=0x%x\n",
+                __func__,
+                current->pid,
+                current->tid,
+                current->content[17],
+                current->content[0],
+                current->content[2]);
 #endif
 
     extern void __switch_to(task_t *cur, task_t *next);
@@ -186,6 +195,7 @@ int create_process(uint8_t *code, uint32_t size, uint32_t priority)
     int i;
     task_t *p = &task[0];
     uint8_t *pa;
+    int k, j;
 
     if (code == NULL) {
         return -1;

@@ -46,7 +46,7 @@
 #include <string.h>
 #include <pthread.h>
 
-#define HEAP_SIZE       (2 * MB)
+#define HEAP_SIZE       (1 * MB)
 
 static uint8_t heap[HEAP_SIZE];
 
@@ -56,15 +56,15 @@ static void *test_thread(void *arg)
     void *ptr;
 
     while (1) {
-        printf("thread %d, i = %d\n", (int)arg, i++);
+        //printf("thread %d, i = %d\n", (int)arg, i++);
 
         ptr = malloc(i);
 
-        printf("thread %d addr = %p\n", (int)arg, ptr);
+        //printf("thread %d addr = %p\n", (int)arg, ptr);
 
         free(ptr);
 
-        __pthread_sleep(1);
+        __pthread_usleep(10000);
     }
 
     return NULL;
@@ -95,9 +95,7 @@ int main(void)
     pthread_create(&tid2, NULL, test_thread, 2);
 
     while (1) {
-
         pthread_yield_np();
-
         //mmu_wait_for_interrupt();
     }
 

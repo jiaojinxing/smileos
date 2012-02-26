@@ -388,6 +388,34 @@ void mmu_invalidate_dtlb(void)
 }
 
 /*
+ * 获得预取指错误状态
+ */
+uint32_t mmu_get_prefetch_fault_status(void)
+{
+    register uint32_t i;
+
+    // read prefetch FSR value MRC p15, 0, Rd, c5, c0, 1
+
+    __asm__("mrc p15, 0, %0, c5, c0, 1":"=r"(i));
+
+    return i;
+}
+
+/*
+ * 获得预取指错误地址
+ */
+uint32_t mmu_get_fault_address(void)
+{
+    register uint32_t i;
+
+    // read FAR data MRC p15, 0, Rd, c6, c0, 0
+
+    __asm__("mrc p15, 0, %0, c6, c0, 0":"=r"(i));
+
+    return i;
+}
+
+/*
  * 映射段
  */
 void mmu_map_section(
