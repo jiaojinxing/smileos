@@ -136,6 +136,10 @@ svc_mode_save:
 
     stmia   r0!, {sp}^                          /*  系统调用时的 sp (sys 模式)                          */
 
+    nop
+    nop
+    nop
+
     mrs     r2, cpsr                            /*  中断时的 cpsr (svc 模式)                            */
     stmia   r0!, {r2}
 
@@ -189,9 +193,10 @@ do_switch:
     mcr     p15, 0, r0, c13, c0, 0              /*  写 PID, MVA 发生变化了!!!                           */
 
     nop
-    nop
-    nop
-    nop
+     nop
+      nop
+       nop
+        nop
 
     add     r1, r1, #CONTENT_OFFSET             /*  r1 = task[next].content                             */
 
@@ -235,7 +240,7 @@ __switch_to_process0:
 
     msr     cpsr_cxsf, #(ARM_FIQ_NO + ARM_IRQ_EN + ARM_SYS_MODE)    /*  进入 sys 模式, 开 irq 中断      */
 
-    ldr     sp, =(KERN_MEM_BASE + KERN_MEM_SIZE)/*  设置 sys 模式的 sp                                  */
+    ldr     sp, =(PROCESS0_STACK_BASE)          /*  设置 sys 模式的 sp                                  */
 
     mov     lr, r1                              /*  恢复 lr                                             */
 
@@ -247,17 +252,18 @@ __switch_to_process0:
 *********************************************************************************************************/
 .global pth_mctx_switch
 pth_mctx_switch:
-    stmdb   sp!,  {lr}
-    stmdb   sp!,  {r0-r12, lr}
+    //msr     cpsr_c, #(ARM_FIQ_NO + ARM_IRQ_NO + ARM_SYS_MODE)
+    stmfd   sp!,  {lr}
+    stmfd   sp!,  {r0-r12, lr}
     mrs     r2,   cpsr
-    stmdb   sp!,  {r2}
+    stmfd   sp!,  {r2}
     str     sp,   [r0]
 
     ldr     sp,   [r1]
-    ldmia   sp!,  {r2}
-    msr     cpsr, r2
-    ldmia   sp!,  {r0-r12, lr, pc}
-    b       .
+    ldmfd   sp!,  {r2}
+    //bic     r2,   r2, #ARM_IRQ_NO
+    msr     cpsr_cxsf, r2
+    ldmfd   sp!,  {r0-r12, lr, pc}
 /*********************************************************************************************************
   END FILE
 *********************************************************************************************************/

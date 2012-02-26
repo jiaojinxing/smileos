@@ -41,6 +41,7 @@
 #define PTH_FDSETSIZE   128
 #define _PTHREAD_PRIVATE
 #define intern
+#define PTH_DEBUG
 
     /* essential headers */
 #include <sys/types.h>     /* for ssize_t, off_t  */

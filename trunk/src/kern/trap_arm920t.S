@@ -73,7 +73,7 @@ _fiq:       .word __fiq                                                 // FIQ
 reset_handler:
     msr     cpsr_c, #(ARM_FIQ_NO + ARM_IRQ_NO + ARM_SVC_MODE)           /*  进入 svc 模式, 关中断       */
 
-    ldr     sp, =(KERN_MEM_BASE + KERN_MEM_SIZE)                        /*  设置 svc 模式的 sp          */
+    ldr     sp, =(PROCESS0_STACK_BASE)                                  /*  设置 svc 模式的 sp          */
 
     bl      cpu_init                                                    /*  初始化 CPU                  */
 
@@ -142,7 +142,8 @@ __undf:
 .extern pabt_c_handler
 __pabt:
     ldr     sp, =(IRQ_STACK_P_BASE)         /*  设置 irq 模式的 sp                                      */
-
+    mov     r0, lr
+    mrs     r1, spsr
     ldr     pc, =pabt_c_handler
 /*********************************************************************************************************
   数据访问中止处理程序

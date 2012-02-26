@@ -111,7 +111,7 @@ static int do_heap_init(uint8_t *base, uint32_t size)
 static int do_gettimeofday(struct timeval *tv, void *tzp)
 {
     tv->tv_sec  = (tick / TICK_PER_SECOND);
-    tv->tv_usec = (tick % TICK_PER_SECOND) * 1000000;
+    tv->tv_usec = (tick % TICK_PER_SECOND) * 1000000 / TICK_PER_SECOND;
 
     return 0;
 }

@@ -279,7 +279,7 @@
 #undef PTH_NSIG
 
 /* define for stack growth */
-#undef PTH_STACKGROWTH
+#define PTH_STACKGROWTH -1
 
 /* define for the paths to syscall dynamic libraries */
 #undef PTH_SYSCALL_LIBS

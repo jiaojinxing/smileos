@@ -312,7 +312,6 @@ intern void *pth_scheduler(void *dummy)
         }
 #endif
 
-#ifdef SMILEOS_SINGAL
         /*
          * Check for stack overflow
          */
@@ -320,6 +319,8 @@ intern void *pth_scheduler(void *dummy)
             if (*pth_current->stackguard != 0xDEAD) {
                 pth_debug3("pth_scheduler: stack overflow detected for thread 0x%lx (\"%s\")",
                            (unsigned long)pth_current, pth_current->name);
+
+#ifdef SMILEOS_SINGAL
                 /*
                  * if the application doesn't catch SIGSEGVs, we terminate
                  * manually with a SIGSEGV now, but output a reasonable message.
@@ -342,9 +343,9 @@ intern void *pth_scheduler(void *dummy)
                 pth_current->join_arg = (void *)0xDEAD;
                 pth_current->state = PTH_STATE_DEAD;
                 kill(getpid(), SIGSEGV);
+#endif
             }
         }
-#endif
 
         /*
          * If previous thread is now marked as dead, kick it out

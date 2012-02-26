@@ -40,6 +40,7 @@
 #include "config.h"
 #include "types.h"
 #include "kern.h"
+#include "mmu.h"
 
 void undf_c_handler(void)
 {
@@ -48,9 +49,13 @@ void undf_c_handler(void)
     while (1);
 }
 
-void pabt_c_handler(void)
+void pabt_c_handler(uint32_t lr, uint32_t spsr)
 {
     printk("%s, current pid = %d\n", __func__, current->pid);
+    printk("fault address = 0x%x\n", mmu_get_fault_address());
+    printk("fault status  = 0x%x\n", mmu_get_prefetch_fault_status());
+    printk("lr = 0x%x\n", lr);
+    printk("spsr = 0x%x\n", spsr);
 
     while (1);
 }
