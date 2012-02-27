@@ -46,33 +46,10 @@
 #include <string.h>
 #include <pthread.h>
 
-static uint8_t heap[KERN_HEAP_SIZE];
-
-static void *test_thread(void *arg)
-{
-    int i = 0;
-    void *ptr;
-
-    while (1) {
-        printf("process 0 thread %d, i = %d\n", (int)arg, i++);
-
-        ptr = malloc(i);
-
-        printf("process 0 thread %d addr = %p\n", (int)arg, ptr);
-
-        free(ptr);
-
-        __pthread_usleep(1000000);
-    }
-
-    return NULL;
-}
-
 int main(void)
 {
     uint8_t  *code;
     uint32_t  size;
-    pthread_t tid1;
 
     mmu_init();
 
@@ -85,12 +62,8 @@ int main(void)
 
     sched_start();
 
-    heap_init(heap, sizeof(heap));
-
-    pthread_create(&tid1, NULL, test_thread, (void *)1);
-
     while (1) {
-        pthread_yield_np();
+
     }
 
     return 0;

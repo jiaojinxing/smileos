@@ -82,30 +82,6 @@ static int do_write(int fd, void *data, uint32_t len)
     return (int)len;
 }
 
-/*
- * 内存分配
- */
-static void *do_malloc(uint32_t size)
-{
-    return mem_heap_alloc(&task[current->pid].heap, size);
-}
-
-/*
- * 内存释放
- */
-static void *do_free(void *ptr)
-{
-    return mem_heap_free(&task[current->pid].heap, ptr);
-}
-
-/*
- * 初始化堆
- */
-static int do_heap_init(uint8_t *base, uint32_t size)
-{
-    return mem_heap_init(&task[current->pid].heap, base, size);
-}
-
 #include <sys/time.h>
 /*
  * 获得时间
@@ -128,6 +104,8 @@ static int do_getpid(void)
 
 /*
  * 获得 errno 指针
+ *
+ * TODO: 最好把 errno 放在用户空间, 进程提交内核 errno 的地址, 这样用户空间访问 errno, 免进入内核, 以提高性能
  */
 static int *do_errno(void)
 {
@@ -143,9 +121,6 @@ sys_do_t sys_do_table[] = {
         (sys_do_t)do_exit,
         (sys_do_t)do_sleep,
         (sys_do_t)do_write,
-        (sys_do_t)do_malloc,
-        (sys_do_t)do_free,
-        (sys_do_t)do_heap_init,
         (sys_do_t)do_gettimeofday,
         (sys_do_t)do_getpid,
         (sys_do_t)do_errno,

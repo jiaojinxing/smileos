@@ -157,65 +157,6 @@ int printf(const char *fmt, ...)
 }
 
 /*
- * malloc
- */
-void *malloc(unsigned int size)
-{
-    void *ret;
-
-    __asm__ __volatile__("mov    r0,  %0": :"r"(size));
-    __asm__ __volatile__("mov    r7,  %0": :"M"(SYS_CALL_MALLOC));
-    __asm__ __volatile__("stmdb  sp!, {lr}");
-    __asm__ __volatile__("swi    0");
-    __asm__ __volatile__("ldmia  sp!, {lr}");
-    __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
-
-    return ret;
-}
-
-/*
- * calloc
- */
-void *calloc(unsigned int nelem, unsigned int elsize)
-{
-    void *ptr = malloc(nelem * MEM_ALIGN_SIZE(elsize));
-    if (ptr != NULL) {
-        memset(ptr, 0, nelem * MEM_ALIGN_SIZE(elsize));
-    }
-    return ptr;
-}
-
-/*
- * free
- */
-void free(void *ptr)
-{
-    __asm__ __volatile__("mov    r0,  %0": :"r"(ptr));
-    __asm__ __volatile__("mov    r7,  %0": :"M"(SYS_CALL_FREE));
-    __asm__ __volatile__("stmdb  sp!, {lr}");
-    __asm__ __volatile__("swi    0");
-    __asm__ __volatile__("ldmia  sp!, {lr}");
-}
-
-/*
- * heap_init
- */
-int heap_init(void *base, unsigned int size)
-{
-    int ret;
-
-    __asm__ __volatile__("mov    r0,  %0": :"r"(base));
-    __asm__ __volatile__("mov    r1,  %0": :"r"(size));
-    __asm__ __volatile__("mov    r7,  %0": :"M"(SYS_CALL_HEAP_INIT));
-    __asm__ __volatile__("stmdb  sp!, {lr}");
-    __asm__ __volatile__("swi    0");
-    __asm__ __volatile__("ldmia  sp!, {lr}");
-    __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
-
-    return ret;
-}
-
-/*
  * select
  */
 int select(int maxfdp1, fd_set *readset, fd_set *writeset, fd_set *exceptset, struct timeval *timeout)
