@@ -46,6 +46,13 @@
 #include <string.h>
 #include <pthread.h>
 
+void thread1(void *arg)
+{
+    while (1) {
+        printk("hello smileos, %d\n", (int)arg);
+    }
+}
+
 int main(void)
 {
     uint8_t  *code;
@@ -58,9 +65,11 @@ int main(void)
     sched_init();
 
     code = sbin_lookup("/2440_P1.hex", &size);
-    process_create(code, size, 15);
+    //process_create(code, size, 15);
 
     sched_start();
+
+    kthread_create(thread1, (void *)1, 8 * 1024, 15);
 
     while (1) {
 
