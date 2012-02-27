@@ -190,8 +190,9 @@ void do_timer(void)
                         }
                     }
 
-                    t->next      = NULL;
-                    t->wait_list = NULL;
+                    t->next        = NULL;
+                    t->wait_list   = NULL;
+                    t->resume_type = TASK_RESUME_TIMEOUT;
                 }
                 wakeup = 1;
             }

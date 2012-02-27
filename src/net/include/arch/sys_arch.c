@@ -106,9 +106,11 @@ void sys_mutex_lock(sys_mutex_t *mutex)
                     current->timer = 0;
                     current->state = TASK_SUSPEND;
                     current->wait_list = &m->wait_list;
+                    current->resume_type = TASK_RESUME_UNKNOW;
                     schedule();
                     current->wait_list = NULL;
                     current->next = NULL;
+                    current->resume_type = TASK_RESUME_UNKNOW;
                     goto again;
                 }
             }
@@ -138,6 +140,7 @@ void sys_mutex_unlock(sys_mutex_t *mutex)
                                 m->wait_list = t->next;
                                 t->wait_list = NULL;
                                 t->next = NULL;
+                                t->resume_type = TASK_RESUME_MUTEX_COME;
                                 schedule();
                             }
                         }
@@ -245,6 +248,7 @@ void sys_sem_signal(sys_sem_t *sem)
                     s->wait_list = t->next;
                     t->wait_list = NULL;
                     t->next = NULL;
+                    t->resume_type = TASK_RESUME_SEM_COME;
                     schedule();
                 }
             }
@@ -292,10 +296,16 @@ u32_t sys_arch_sem_wait(sys_sem_t *sem, u32_t timeout)
                     current->timer = timeout * 1000 / TICK_PER_SECOND;
                     current->state = TASK_SLEEPING;
                     current->wait_list = &s->wait_list;
+                    current->resume_type = TASK_RESUME_UNKNOW;
                     schedule();
                     current->wait_list = NULL;
                     current->next = NULL;
                     current->timer = 0;
+                    if (current->resume_type & TASK_RESUME_TIMEOUT) {
+                        current->resume_type = TASK_RESUME_UNKNOW;
+                        goto out;
+                    }
+                    current->resume_type = TASK_RESUME_UNKNOW;
                     goto again;
                 }
             } else {
@@ -429,6 +439,7 @@ void sys_mbox_post(sys_mbox_t *mbox, void *msg)
                         q->r_wait_list = t->next;
                         t->wait_list = NULL;
                         t->next = NULL;
+                        t->resume_type = TASK_RESUME_MSG_COME;
                         schedule();
                     }
                 } else {
@@ -446,9 +457,11 @@ void sys_mbox_post(sys_mbox_t *mbox, void *msg)
                     current->timer = 0;
                     current->state = TASK_SUSPEND;
                     current->wait_list = &q->w_wait_list;
+                    current->resume_type = TASK_RESUME_UNKNOW;
                     schedule();
                     current->wait_list = NULL;
                     current->next = NULL;
+                    current->resume_type = TASK_RESUME_UNKNOW;
                     goto again;
                 }
             }
@@ -480,6 +493,7 @@ err_t sys_mbox_trypost(sys_mbox_t *mbox, void *msg)
                         q->r_wait_list = t->next;
                         t->wait_list = NULL;
                         t->next = NULL;
+                        t->resume_type = TASK_RESUME_MSG_COME;
                         schedule();
                     }
                     return ERR_OK;
@@ -523,6 +537,7 @@ u32_t sys_arch_mbox_fetch(sys_mbox_t *mbox, void **msg, u32_t timeout)
                         q->w_wait_list = t->next;
                         t->wait_list = NULL;
                         t->next = NULL;
+                        t->resume_type = TASK_RESUME_MSG_OUT;
                         schedule();
                     }
                     return sys_now() - start;
@@ -545,15 +560,22 @@ u32_t sys_arch_mbox_fetch(sys_mbox_t *mbox, void **msg, u32_t timeout)
                     current->timer = timeout * 1000 / TICK_PER_SECOND;
                     current->state = TASK_SLEEPING;
                     current->wait_list = &q->r_wait_list;
+                    current->resume_type = TASK_RESUME_UNKNOW;
                     schedule();
                     current->wait_list = NULL;
                     current->next = NULL;
                     current->timer = 0;
+                    if (current->resume_type & TASK_RESUME_TIMEOUT) {
+                        current->resume_type = TASK_RESUME_UNKNOW;
+                        goto out;
+                    }
+                    current->resume_type = TASK_RESUME_UNKNOW;
                     goto again;
                 }
             }
         }
     }
+    out:
     return SYS_ARCH_TIMEOUT;
 }
 
@@ -585,6 +607,7 @@ u32_t sys_arch_mbox_tryfetch(sys_mbox_t *mbox, void **msg)
                         q->w_wait_list = t->next;
                         t->wait_list = NULL;
                         t->next = NULL;
+                        t->resume_type = TASK_RESUME_MSG_OUT;
                         schedule();
                     }
                     return 0;

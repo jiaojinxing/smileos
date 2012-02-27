@@ -55,14 +55,6 @@
                                                                         /*  进程数, 不含进程 0          */
 #define PROCESS_NR          ((PHY_MEM_SIZE - KERN_MEM_SIZE - INT_MEM_SIZE) / PROCESS_MEM_SIZE)
 
-#ifdef SMILEOS_KTHREAD
-#define THREAD_NR           64                                          /*  线程数                      */
-#else
-#define THREAD_NR           0                                           /*  线程数                      */
-#endif
-
-#define TASK_NR             (PROCESS_NR + 1 + THREAD_NR)                /*  任务数                      */
-
 #define MMU_TBL_ALIGNED     (32 * KB)                                   /*  MMU 转换表基址对齐大小      */
                                                                         /*  MMU 转换表基址              */
 #define MMU_TBL_BASE        (KERN_MEM_BASE + KERN_MEM_SIZE - MMU_TBL_ALIGNED)

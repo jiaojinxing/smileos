@@ -57,8 +57,16 @@
 #endif
 
 #ifndef KERN_HEAP_SIZE
-#define KERN_HEAP_SIZE      (3 * MB)                                    /*  内核堆大小                  */
+#define KERN_HEAP_SIZE      (2 * MB)                                    /*  内核堆大小                  */
 #endif
+
+#ifdef SMILEOS_KTHREAD
+#define THREAD_NR           64                                          /*  线程数                      */
+#else
+#define THREAD_NR           0                                           /*  线程数                      */
+#endif
+
+#define TASK_NR             (PROCESS_NR + 1 + THREAD_NR)                /*  任务数                      */
 
 #endif                                                                  /*  CONFIG_H_                   */
 /*********************************************************************************************************

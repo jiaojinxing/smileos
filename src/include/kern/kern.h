@@ -47,18 +47,25 @@
 /*
  * 任务类型
  */
-#define TASK_TYPE_PROCESS 0
+#define TASK_TYPE_PROCESS       0
 #ifdef SMILEOS_KTHREAD
-#define TASK_TYPE_THREAD  1
+#define TASK_TYPE_THREAD        1
 #endif
 
 /*
  * 任务状态
  */
-#define TASK_UNALLOCATE      ((uint32_t)-1)
-#define TASK_RUNNING         0
-#define TASK_SLEEPING        1
-#define TASK_SUSPEND         2
+#define TASK_UNALLOCATE         ((uint32_t)-1)
+#define TASK_RUNNING            0
+#define TASK_SLEEPING           1
+#define TASK_SUSPEND            2
+
+#define TASK_RESUME_UNKNOW      0
+#define TASK_RESUME_MUTEX_COME  (1 << 1)
+#define TASK_RESUME_SEM_COME    (1 << 2)
+#define TASK_RESUME_TIMEOUT     (1 << 3)
+#define TASK_RESUME_MSG_COME    (1 << 4)
+#define TASK_RESUME_MSG_OUT     (1 << 5)
 
 /*
  * 任务控制块
@@ -77,6 +84,7 @@ typedef struct _task {
 #endif
     mem_heap        heap;
     int             errno;
+    int             resume_type;
     struct _task   *next;
     struct _task  **wait_list;
 } task_t;
