@@ -60,6 +60,34 @@ task_t *current;
 uint64_t tick;
 
 /*
+ * 内核堆
+ */
+static uint8_t kern_heap_mem[KERN_HEAP_SIZE];
+
+/*
+ * 从内核堆分配内存
+ */
+void *kmalloc(uint32_t size)
+{
+    /*
+     * TODO: 加入开关中断
+     */
+    void *ptr;
+
+    ptr = heap_alloc(&task[0].heap, size);
+
+    return ptr;
+}
+
+/*
+ * 释放内存回内核堆
+ */
+void kfree(void *ptr)
+{
+    heap_free(&task[0].heap, ptr);
+}
+
+/*
  * 初始化调度器
  */
 void sched_init(void)
@@ -100,6 +128,8 @@ void sched_init(void)
     current = t;
 
     tick = 0;
+
+    heap_init(&task[0].heap, kern_heap_mem, KERN_HEAP_SIZE);
 }
 
 /*

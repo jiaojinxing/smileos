@@ -43,13 +43,10 @@
 #define SYS_CALL_EXIT       0
 #define SYS_CALL_SLEEP      1
 #define SYS_CALL_WRITE      2
-#define SYS_CALL_MALLOC     3
-#define SYS_CALL_FREE       4
-#define SYS_CALL_HEAP_INIT  5
-#define SYS_CALL_GETTIME    6
-#define SYS_CALL_GETPID     7
-#define SYS_CALL_ERRNO      8
-#define SYS_CALL_NR         9                                           /*  系统调用数                  */
+#define SYS_CALL_GETTIME    3
+#define SYS_CALL_GETPID     4
+#define SYS_CALL_ERRNO      5
+#define SYS_CALL_NR         6                                           /*  系统调用数                  */
 
 #ifndef __ASSEMBLER__
 #include <sys/time.h>
@@ -83,26 +80,6 @@ int write(int fd, char *data, unsigned int size);
  * printf
  */
 int printf(const char *fmt, ...);
-
-/*
- * malloc
- */
-void *malloc(unsigned int size);
-
-/*
- * calloc
- */
-void *calloc(unsigned int nelem, unsigned int elsize);
-
-/*
- * free
- */
-void free(void *ptr);
-
-/*
- * heap_init
- */
-int heap_init(void *base, unsigned int size);
 
 /*
  * select

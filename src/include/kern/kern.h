@@ -82,7 +82,7 @@ typedef struct _task {
 #ifdef SMILEOS_KTHREAD
     int             type;
 #endif
-    mem_heap        heap;
+    heap_t          heap;
     int             errno;
     int             resume_type;
     struct _task   *next;
@@ -102,7 +102,7 @@ extern task_t task[TASK_NR];
 /*
  * TICK
  */
-extern uint64_t tick;;
+extern uint64_t tick;
 
 /*
  * 系统调用处理
@@ -119,7 +119,7 @@ void sched_init(void);
  */
 void __switch_to_process0(uint32_t sp_svc);
 
-#define sched_start() __switch_to_process0(current->content[0]);
+#define sched_start() __switch_to_process0(current->content[0])
 
 /*
  * 调度
@@ -157,6 +157,16 @@ void kputc(unsigned char c);
  * kgetc
  */
 unsigned char kgetc(void);
+
+/*
+ * 从内核堆分配内存
+ */
+void *kmalloc(uint32_t size);
+
+/*
+ * 释放内存回内核堆
+ */
+void kfree(void *ptr);
 
 /*
  * 虚拟地址转物理地址

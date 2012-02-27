@@ -45,37 +45,37 @@
 /*
  * 内存块
  */
-struct _mem_block;
-typedef struct _mem_block mem_block;
+struct _mem_block_t;
+typedef struct _mem_block_t mem_block_t;
 
 /*
  * 内存堆
  */
 typedef struct {
-    mem_block      *free_list;
-    mem_block      *block_list;
+    mem_block_t    *free_list;
+    mem_block_t    *block_list;
     uint8_t        *base;
     uint32_t        size;
     uint32_t        block_cnt;
     uint32_t        used_size;
     uint32_t        alloc_cnt;
     uint32_t        free_cnt;
-} mem_heap;
+} heap_t;
 
 /*
  * 初始化内存堆
  */
-int mem_heap_init(mem_heap *heap, uint8_t *base, uint32_t size);
+int heap_init(heap_t *heap, uint8_t *base, uint32_t size);
 
 /*
  * 分配内存
  */
-void *mem_heap_alloc(mem_heap *heap, uint32_t size);
+void *heap_alloc(heap_t *heap, uint32_t size);
 
 /*
  * 释放内存
  */
-void *mem_heap_free(mem_heap *heap, void *ptr);
+void *heap_free(heap_t *heap, void *ptr);
 
 #endif                                                                  /*  MEM_H_                      */
 /*********************************************************************************************************
