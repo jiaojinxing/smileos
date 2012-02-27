@@ -64,6 +64,8 @@ uint64_t tick;
  */
 static uint8_t kern_heap_mem[KERN_HEAP_SIZE];
 
+static heap_t  kern_heap;
+
 /*
  * 从内核堆分配内存
  */

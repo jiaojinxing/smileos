@@ -49,6 +49,7 @@
  * 进程不能使用 printk
  */
 #ifndef SMILEOS_KERNEL
+extern int printf(const char *fmt, ...);
 #define printk printf
 #endif
 
