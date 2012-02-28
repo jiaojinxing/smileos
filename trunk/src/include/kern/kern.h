@@ -44,6 +44,8 @@
 #include "types.h"
 #include "mem.h"
 
+#ifdef SMILEOS_KERNEL
+
 /*
  * 任务类型
  */
@@ -117,8 +119,7 @@ void sched_init(void);
 /*
  * 启动调度器
  */
-void __switch_to_process0(uint32_t sp_svc);
-
+void __switch_to_process0(register uint32_t sp_svc) __attribute__ ((interrupt ("IRQ")));
 #define sched_start() __switch_to_process0(current->content[0])
 
 /*
@@ -173,7 +174,7 @@ void kfree(void *ptr);
  */
 static inline uint32_t virt_to_phy(uint32_t va)
 {
-    if (current->pid) {
+    if (current->pid > 0) {
         return PROCESS_MEM_BASE + PROCESS_MEM_SIZE * (current->pid - 1) + va;
     } else {
         return va;
@@ -185,12 +186,24 @@ static inline uint32_t virt_to_phy(uint32_t va)
  */
 static inline uint32_t __virt_to_phy(uint32_t va, int pid)
 {
-    if (pid) {
+    if (pid > 0) {
         return PROCESS_MEM_BASE + PROCESS_MEM_SIZE * (pid - 1) + va;
     } else {
         return va;
     }
 }
+
+/*
+ * 进入临界区域
+ */
+uint32_t critical_enter(void);
+
+/*
+ * 退出临界区域
+ */
+void critical_exit(register uint32_t reg);
+
+#endif
 
 #endif                                                                  /*  KERN_H_                     */
 /*********************************************************************************************************

@@ -63,7 +63,6 @@
 #define PROCESS0_STACK_BASE MMU_TBL_BASE
 
 #define KERN_LOAD_ADDR      (KERN_MEM_BASE)                             /*  内核加载地址                */
-#define KERN_STACK_SIZE     1024                                        /*  内核堆栈大小                */
 
 #define VECTOR_V_ADDR       (0xFFFFF0000)                               /*  向量虚拟地址                */
 #define VECTOR_P_ADDR       (INT_MEM_BASE + 0xF0000)                    /*  向量物理地址                */
@@ -77,7 +76,17 @@
 
 #define PROCESS_HEAP_SIZE   (PROCESS_MEM_SIZE - 1 * MB)                 /*  进程堆大小                  */
 
-#define KERN_HEAP_SIZE      (KERN_MEM_SIZE - 1 * MB)                    /*  内核堆大小                  */
+#define KERN_HEAP_SIZE      (2 * MB)                                    /*  内核堆大小                  */
+
+#ifdef SMILEOS_KTHREAD
+#define THREAD_NR           64                                          /*  线程数                      */
+#else
+#define THREAD_NR           0                                           /*  线程数                      */
+#endif
+
+#define TASK_NR             (PROCESS_NR + 1 + THREAD_NR)                /*  任务数                      */
+
+#define KERN_STACK_SIZE     1024                                        /*  内核堆栈大小                */
 
 #endif                                                                  /*  S3C2440_CONFIG_H_           */
 /*********************************************************************************************************

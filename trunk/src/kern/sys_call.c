@@ -223,9 +223,15 @@ int *__errno(void)
  */
 void _sbrk(void)
 {
+#ifdef SMILEOS_KERNEL
+    printk("can't call %s()!, SmileOS abort\n", __func__);
+
+    while (1) ;
+#else
     printf("can't call %s()!, kill process %d\n", __func__, getpid());
 
     abort();
+#endif
 }
 /*********************************************************************************************************
   END FILE

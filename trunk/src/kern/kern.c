@@ -64,19 +64,19 @@ uint64_t tick;
  */
 static uint8_t kern_heap_mem[KERN_HEAP_SIZE];
 
-static heap_t  kern_heap;
-
 /*
  * 从内核堆分配内存
  */
 void *kmalloc(uint32_t size)
 {
-    /*
-     * TODO: 加入开关中断
-     */
     void *ptr;
+    uint32_t reg;
+
+    reg = critical_enter();
 
     ptr = heap_alloc(&task[0].heap, size);
+
+    critical_exit(reg);
 
     return ptr;
 }
@@ -86,7 +86,13 @@ void *kmalloc(uint32_t size)
  */
 void kfree(void *ptr)
 {
+    uint32_t reg;
+
+    reg = critical_enter();
+
     heap_free(&task[0].heap, ptr);
+
+    critical_exit(reg);
 }
 
 /*
@@ -101,13 +107,16 @@ void sched_init(void)
      * 初始化任务控制块
      */
     for (i = 0, t = &task[i]; i < TASK_NR; i++, t++) {
-        t->pid      = -1;
-        t->tid      = -1;
-        t->state    = TASK_UNALLOCATE;
-        t->count    = 0;
-        t->timer    = 0;
-        t->prio     = 0;
-        t->errno    = 0;
+        t->pid          = -1;
+        t->tid          = -1;
+        t->state        = TASK_UNALLOCATE;
+        t->count        = 0;
+        t->timer        = 0;
+        t->prio         = 0;
+        t->errno        = 0;
+        t->resume_type  = TASK_RESUME_UNKNOW;
+        t->wait_list    = NULL;
+        t->next         = NULL;
     }
 
     /*
@@ -131,6 +140,9 @@ void sched_init(void)
 
     tick = 0;
 
+    /*
+     * 初始化内核堆
+     */
     heap_init(&task[0].heap, kern_heap_mem, KERN_HEAP_SIZE);
 }
 
@@ -168,27 +180,27 @@ void schedule(void)
 
     current = &task[next];
 
-#if 0
+#if 1
     if ((current->content[3] & ARM_MODE_MASK) == ARM_SVC_MODE) {
-        printk("%s: switch to pid=%d, tid=%d, pc=0x%x, sp_sys=0x%x, sp_svc=0x%x\n",
+        printk("%s: switch to pid=%d, tid=%d, pc=0x%x, sp_sys=0x%x, sp_svc=0x%x, irq save\n",
                 __func__,
                 current->pid,
                 current->tid,
-                current->content[17],
+                current->content[18],
                 current->content[2],
                 current->content[0]);
     } else {
-        printk("%s: switch to pid=%d, tid=%d, pc=0x%x, sp_sys=0x%x, sp_svc=0x%x\n",
+        printk("%s: switch to pid=%d, tid=%d, pc=0x%x, sp_sys=0x%x, sp_svc=0x%x, svc save\n",
                 __func__,
                 current->pid,
                 current->tid,
-                current->content[17],
+                current->content[18],
                 current->content[0],
                 current->content[2]);
     }
 #endif
 
-    extern void __switch_to(task_t *cur, task_t *next);
+    extern void __switch_to(register task_t *cur, register task_t *next);
 
     __switch_to(t, current);
 }
@@ -198,7 +210,7 @@ void schedule(void)
  */
 void do_timer(void)
 {
-    int i, wakeup = 0;
+    int i, wakeup = FALSE;
     task_t *t;
 
     tick++;
@@ -207,17 +219,17 @@ void do_timer(void)
         if (t->state == TASK_SLEEPING) {
             if (--t->timer == 0) {
                 t->state = TASK_RUNNING;
-                if (t->wait_list) {
+                if (t->wait_list != NULL) {
                     task_t *prev = *t->wait_list;
 
                     if (t == prev) {
                         *t->wait_list = t->next;
                     } else {
-                        while (prev && prev->next != t) {
+                        while (prev != NULL && prev->next != t) {
                             prev = prev->next;
                         }
 
-                        if (prev) {
+                        if (prev != NULL) {
                             prev->next = t->next;
                         }
                     }
@@ -226,7 +238,7 @@ void do_timer(void)
                     t->wait_list   = NULL;
                     t->resume_type = TASK_RESUME_TIMEOUT;
                 }
-                wakeup = 1;
+                wakeup = TRUE;
             }
         }
     }
@@ -266,6 +278,8 @@ int32_t process_create(uint8_t *code, uint32_t size, uint32_t prio)
     pa = (uint8_t *)__virt_to_phy(0, i);
 
     memcpy(pa, code, size);
+
+    mmu_drain_write_buffer();
 
     t->pid          = i;
     t->tid          = i;

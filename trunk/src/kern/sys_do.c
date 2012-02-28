@@ -61,9 +61,7 @@ static void do_exit(int error_code)
  */
 static int do_sleep(uint32_t time)
 {
-    time = time != 0 ? time : 1;
-
-    current->timer = time;
+    current->timer = time != 0 ? time : 1;
 
     current->state = TASK_SLEEPING;
 

@@ -103,7 +103,6 @@ irq_mode_save:
     stmia   r0!, {r2}
 
     stmia   r0!, {sp}^                          /*  中断时的 sp (sys 模式)                              */
-    mov     r0, r0
 
     mov     r2, #ARM_SVC_MODE                   /*  中断时的 spsr = 0x13, svc 模式(无效)                */
     stmia   r0!, {r2}
@@ -114,7 +113,6 @@ irq_mode_save:
     stmia   r0!, {r2-r7}
 
     stmia   r0!, {lr}^                          /*  中断时的 lr (sys 模式)                              */
-    mov     r0, r0
 
     ldmia   sp!, {r2}                           /*  中断时的 pc (sys 模式)                              */
     stmia   r0!, {r2}
@@ -146,7 +144,6 @@ svc_mode_save:
     add     r0, r0, #CONTENT_OFFSET             /*  r0 = current->content                               */
 
     stmia   r0!, {sp}^                          /*  系统调用时的 sp (sys 模式)                          */
-    mov     r0, r0
 
     mrs     r2, cpsr                            /*  中断时的 cpsr (svc 模式)                            */
     stmia   r0!, {r2}
@@ -201,9 +198,15 @@ do_switch:
               | 系统调用时的 sp (sys 模式)           |
               +--------------------------------------+
 */
+    mov     r2, #0
+    mcr     p15, 0, r2, c7, c10, 4
+
     ldr     r0, [r1, #PID_OFFSET]               /*  要切换到的任务的 PID                                */
     mov     r0, r0, lsl #25                     /*  PID 在寄存器的最高 7 位                             */
     mcr     p15, 0, r0, c13, c0, 0              /*  写 PID, MVA 发生变化了!!!                           */
+    nop
+    nop
+    nop
 
     add     r1, r1, #CONTENT_OFFSET             /*  r1 = task[next].content                             */
 
@@ -245,19 +248,21 @@ do_switch:
 *********************************************************************************************************/
 .global __switch_to_process0
 __switch_to_process0:
-    mov     r1, lr                              /*  保存返回地址(lr)到 r1                               */
+    mov     r1, sp                              /*  设置 svc 模式的 sp                                  */
 
-    mov     sp, r0                              /*  设置 svc 模式的 sp                                  */
+    mov     sp, r0
 
-    msr     spsr_cxsf, #(ARM_SVC_MODE)
+    mov     r2, lr
 
-    msr     cpsr_cxsf, #(ARM_FIQ_NO + ARM_IRQ_EN + ARM_SYS_MODE)    /*  进入 sys 模式, 开 irq 中断      */
+    msr     cpsr_c, #(ARM_FIQ_NO + ARM_IRQ_NO + ARM_SYS_MODE)    /*  进入 sys 模式                      */
 
-    ldr     sp, =(PROCESS0_STACK_BASE)          /*  设置 sys 模式的 sp                                  */
+    mov     lr, r2                              /*  设置 sys 模式的 sp                                  */
 
-    bx      r1                                  /*  返回                                                */
+    mov     sp, r1
 
-    b       .                                   /*  loop here                                           */
+    msr     cpsr_c, #(ARM_FIQ_NO + ARM_IRQ_EN)  /*  开 irq 中断                                         */
+
+    bx      lr                                   /*  loop here                                           */
 /*********************************************************************************************************
   pthread 机器上下文切换
 *********************************************************************************************************/
@@ -273,6 +278,20 @@ pth_mctx_switch:
     ldmfd   sp!,  {r2}
     msr     cpsr_cxsf, r2
     ldmfd   sp!,  {r0-r12, lr, pc}
+/*********************************************************************************************************
+  进退临界区域
+*********************************************************************************************************/
+.globl critical_enter
+critical_enter:
+    mrs     r0, cpsr
+    orr     r1, r0, #(ARM_FIQ_NO + ARM_IRQ_NO)
+    msr     cpsr_c, r1
+    mov     pc, lr
+
+.globl critical_exit
+critical_exit:
+    msr     cpsr, r0
+    mov     pc, lr
 /*********************************************************************************************************
   END FILE
 *********************************************************************************************************/
