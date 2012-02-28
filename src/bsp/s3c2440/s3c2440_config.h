@@ -52,8 +52,8 @@
 #define PROCESS_SPACE_SIZE  (32 * MB)                                   /*  进程空间大小                */
 #define PROCESS_MEM_SIZE    (4 * MB)                                    /*  进程内存大小                */
 #define PROCESS_MEM_BASE    (INT_MEM_BASE + INT_MEM_SIZE)               /*  进程内存基址                */
-                                                                        /*  进程数, 不含进程 0          */
-#define PROCESS_NR          ((PHY_MEM_SIZE - KERN_MEM_SIZE - INT_MEM_SIZE) / PROCESS_MEM_SIZE)
+                                                                        /*  进程数, 含进程 0            */
+#define PROCESS_NR          ((PHY_MEM_SIZE - KERN_MEM_SIZE - INT_MEM_SIZE) / PROCESS_MEM_SIZE + 1)
 
 #define MMU_TBL_ALIGNED     (32 * KB)                                   /*  MMU 转换表基址对齐大小      */
                                                                         /*  MMU 转换表基址              */
@@ -76,17 +76,17 @@
 
 #define PROCESS_HEAP_SIZE   (PROCESS_MEM_SIZE - 1 * MB)                 /*  进程堆大小                  */
 
-#define KERN_HEAP_SIZE      (2 * MB)                                    /*  内核堆大小                  */
+#define KERN_HEAP_SIZE      (1 * MB)                                    /*  内核堆大小                  */
 
 #ifdef SMILEOS_KTHREAD
-#define THREAD_NR           64                                          /*  线程数                      */
+#define THREAD_NR           32                                          /*  线程数                      */
 #else
 #define THREAD_NR           0                                           /*  线程数                      */
 #endif
 
-#define TASK_NR             (PROCESS_NR + 1 + THREAD_NR)                /*  任务数                      */
+#define TASK_NR             (PROCESS_NR + THREAD_NR)                    /*  任务数                      */
 
-#define KERN_STACK_SIZE     1024                                        /*  内核堆栈大小                */
+#define KERN_STACK_SIZE     2048                                        /*  内核堆栈大小                */
 
 #endif                                                                  /*  S3C2440_CONFIG_H_           */
 /*********************************************************************************************************

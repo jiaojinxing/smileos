@@ -72,11 +72,11 @@ void *kmalloc(uint32_t size)
     void *ptr;
     uint32_t reg;
 
-    reg = critical_enter();
+    reg = interrupt_disable();
 
     ptr = heap_alloc(&task[0].heap, size);
 
-    critical_exit(reg);
+    interrupt_resume(reg);
 
     return ptr;
 }
@@ -88,11 +88,11 @@ void kfree(void *ptr)
 {
     uint32_t reg;
 
-    reg = critical_enter();
+    reg = interrupt_disable();
 
     heap_free(&task[0].heap, ptr);
 
-    critical_exit(reg);
+    interrupt_resume(reg);
 }
 
 /*
@@ -106,7 +106,7 @@ void sched_init(void)
     /*
      * 初始化任务控制块
      */
-    for (i = 0, t = &task[i]; i < TASK_NR; i++, t++) {
+    for (i = 0, t = task; i < TASK_NR; i++, t++) {
         t->pid          = -1;
         t->tid          = -1;
         t->state        = TASK_UNALLOCATE;
@@ -122,7 +122,7 @@ void sched_init(void)
     /*
      * 初始化空闲进程
      */
-    t               = &task[0];
+    t               = task;
     t->pid          = 0;
     t->tid          = 0;
     t->state        = TASK_RUNNING;
@@ -156,7 +156,7 @@ void schedule(void)
     task_t *t;
 
     while (1) {
-        for (i = 1, t = &task[i]; i < TASK_NR; i++, t++) {
+        for (i = 1, t = task + 1; i < TASK_NR; i++, t++) {
             if ((t->state == TASK_RUNNING) && (max < (int32_t)t->count)) {
                 max  = (int32_t)t->count;
                 next = i;
@@ -167,7 +167,7 @@ void schedule(void)
             break;
         }
 
-        for (i = 0, t = &task[i]; i < TASK_NR; i++, t++) {
+        for (i = 0, t = task; i < TASK_NR; i++, t++) {
             t->count = (t->count >> 1) + t->prio;
         }
     }
@@ -180,14 +180,17 @@ void schedule(void)
 
     current = &task[next];
 
-#if 1
+    if ((current->content[3] & ARM_MODE_MASK) == ARM_SVC_MODE) {
+        current->content[0] = (uint32_t)&current->kstack[KERN_STACK_SIZE];
+    }
+
+#if 0
     if ((current->content[3] & ARM_MODE_MASK) == ARM_SVC_MODE) {
         printk("%s: switch to pid=%d, tid=%d, pc=0x%x, sp_sys=0x%x, sp_svc=0x%x, irq save\n",
                 __func__,
                 current->pid,
                 current->tid,
                 current->content[18],
-                current->content[2],
                 current->content[0]);
     } else {
         printk("%s: switch to pid=%d, tid=%d, pc=0x%x, sp_sys=0x%x, sp_svc=0x%x, svc save\n",
@@ -215,7 +218,7 @@ void do_timer(void)
 
     tick++;
 
-    for (i = 1, t = &task[i]; i < TASK_NR; i++, t++) {
+    for (i = 1, t = task + 1; i < TASK_NR; i++, t++) {
         if (t->state == TASK_SLEEPING) {
             if (--t->timer == 0) {
                 t->state = TASK_RUNNING;
@@ -258,28 +261,26 @@ void do_timer(void)
 int32_t process_create(uint8_t *code, uint32_t size, uint32_t prio)
 {
     int i;
-    task_t *t = &task[0];
+    task_t *t;
     uint8_t *pa;
 
     if (code == NULL) {
         return -1;
     }
 
-    for (i = 1, t = &task[i]; i <= PROCESS_NR; i++, t++){
+    for (i = 0, t = task; i < PROCESS_NR; i++, t++){
         if (t->state == TASK_UNALLOCATE) {
             break;
         }
     }
 
-    if (i > PROCESS_NR) {
+    if (i == PROCESS_NR) {
         return -1;
     }
 
     pa = (uint8_t *)__virt_to_phy(0, i);
 
     memcpy(pa, code, size);
-
-    mmu_drain_write_buffer();
 
     t->pid          = i;
     t->tid          = i;
@@ -307,10 +308,10 @@ int32_t process_create(uint8_t *code, uint32_t size, uint32_t prio)
 int32_t kthread_create(void (*func)(void *), void *arg, uint32_t stk_size, uint32_t prio)
 {
     int i;
-    task_t *t = &task[0];
+    task_t *t;
     uint32_t stk;
 
-    for (i = PROCESS_NR + 1, t = &task[i]; i < TASK_NR; i++, t++){
+    for (i = PROCESS_NR, t = task + PROCESS_NR; i < TASK_NR; i++, t++) {
         if (t->state == TASK_UNALLOCATE) {
             break;
         }
