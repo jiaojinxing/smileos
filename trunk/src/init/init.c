@@ -48,7 +48,7 @@
 void thread1(void *arg)
 {
     while (1) {
-        //printf("hello smileos, %d\n", (int)arg);
+        printf("hello SmileOS, kernel thread %d\n", (int)arg);
         sleep(1);
     }
 }
@@ -65,9 +65,8 @@ int main(void)
     sched_init();
 
     code = sbin_lookup("/2440_P1.hex", &size);
-
-    //process_create(code, size, 15);
-    //process_create(code, size, 15);
+    process_create(code, size, 15);
+    process_create(code, size, 15);
 
     kthread_create(thread1, (void *)1, 32 * 1024, 5);
     kthread_create(thread1, (void *)2, 32 * 1024, 5);
@@ -78,7 +77,6 @@ int main(void)
     sched_start();
 
     while (1) {
-
     }
 
     return 0;
