@@ -41,16 +41,63 @@
 #include "kern/types.h"
 #include "kern/kern.h"
 #include "kern/mem.h"
+#include "kern/sys_call.h"
 
 /*
- * 进程代码项目应享有一份该文件, 用于实现用户态的 malloc 等, 因进程使用 pthread, 免锁免关中断
+ * 进程代码项目应享有一份该文件, 用于实现用户态的 malloc 等, 因进程使用非抢占的 pthread, 免锁免关中断
  */
 /*
  * 进程不能使用 printk
  */
-#ifndef SMILEOS_KERNEL
+#ifdef SMILEOS_KERNEL
+#define getpid()    0
+#else
 extern int printf(const char *fmt, ...);
-#define printk printf
+#define printk      printf
+
+static heap_t  process_heap;
+
+static uint8_t process_heap_mem[PROCESS_HEAP_SIZE];
+
+/*
+ * 从堆分配内存
+ */
+void *malloc(uint32_t size)
+{
+    void *ptr;
+
+    ptr = heap_alloc(&process_heap, size);
+
+    return ptr;
+}
+
+/*
+ * 释放内存回堆
+ */
+void free(void *ptr)
+{
+    heap_free(&process_heap, ptr);
+}
+
+/*
+ * calloc
+ */
+void *calloc(unsigned int nelem, unsigned int elsize)
+{
+    void *ptr = malloc(nelem * MEM_ALIGN_SIZE(elsize));
+    if (ptr != NULL) {
+        memset(ptr, 0, nelem * MEM_ALIGN_SIZE(elsize));
+    }
+    return ptr;
+}
+
+/*
+ * 初始化 c 库
+ */
+void libc_init(void)
+{
+    heap_init(&process_heap, process_heap_mem, PROCESS_HEAP_SIZE);
+}
 #endif
 
 /*
@@ -69,10 +116,10 @@ extern int printf(const char *fmt, ...);
  */
 struct _mem_block_t {
     uint32_t        magic0;
-    mem_block_t      *prev;
-    mem_block_t      *next;
-    mem_block_t      *prev_free;
-    mem_block_t      *next_free;
+    mem_block_t    *prev;
+    mem_block_t    *next;
+    mem_block_t    *prev_free;
+    mem_block_t    *next_free;
     uint32_t        size;
     uint8_t         status;
 };
@@ -175,7 +222,7 @@ void *heap_alloc(heap_t *heap, uint32_t size)
     }
 
     error0:
-    printk("%s: process %d low memory!\n", __func__, current->pid);
+    printk("%s: process %d low memory!\n", __func__, getpid());
 
     return NULL;
 }
@@ -190,25 +237,25 @@ void *heap_free(heap_t *heap, void *ptr)
     mem_block_t *next;
 
     if (ptr == NULL) {
-        printk("%s: memory pointer is NULL!\n", __func__, current->tid);
+        printk("%s: process %d memory pointer is NULL!\n", __func__, getpid());
         return ptr;
     }
 
     if (ptr != MEM_ALIGN(ptr)) {
-        printk("%s: memory pointer is not aligned!\n", __func__, current->tid);
+        printk("%s: process %d memory pointer is not aligned!\n", __func__, getpid());
         return ptr;
     }
 
     if (((uint8_t *)ptr < (heap->base + MEM_ALIGN_SIZE(sizeof(mem_block_t)))) ||
         ((uint8_t *)ptr >= heap->base + heap->size)) {
-        printk("%s: memory pointer dose not belong to this heap!\n", __func__, current->tid);
+        printk("%s: process %d memory pointer dose not belong to this heap!\n", __func__, getpid());
         return ptr;
     }
                                                                         /*  指针所在的内存块节点        */
     blk  = (mem_block_t *)((char *)ptr - MEM_ALIGN_SIZE(sizeof(mem_block_t)));
 
     if (blk->magic0 != MEM_BLK_MAGIC0 || blk->status != MEM_BLK_STAT_USED) {
-        printk("%s: memory pointer is invalid!\n", __func__, current->tid);
+        printk("%s: process %d memory pointer is invalid!\n", __func__, getpid());
         return ptr;
     }
 
@@ -216,7 +263,7 @@ void *heap_free(heap_t *heap, void *ptr)
     next = blk->next;
 
     if (next != NULL && next->magic0 != MEM_BLK_MAGIC0) {               /*  写缓冲区溢出                */
-        printk("%s: write buffer over!\n", __func__, current->tid);
+        printk("%s: process %d write buffer over!\n", __func__, getpid());
         return ptr;
     }
 

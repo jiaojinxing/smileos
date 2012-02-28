@@ -82,10 +82,10 @@ static inline u32_t  __LW_HTONL (u32_t  x)
 /*********************************************************************************************************
   调试输出
 *********************************************************************************************************/
-extern int printf(const char *fmt, ...);
+extern void printk(const char *fmt, ...);
 
-#define LWIP_PLATFORM_DIAG(x)       { printf x; }
-#define LWIP_PLATFORM_ASSERT(x)     { printf("lwip assert: %s\n", x); }
+#define LWIP_PLATFORM_DIAG(x)       { printk x; }
+#define LWIP_PLATFORM_ASSERT(x)     { printk("lwip assert: %s\n", x); }
 /*********************************************************************************************************
   OS 数据类型
 *********************************************************************************************************/

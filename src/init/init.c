@@ -44,12 +44,12 @@
 #include "kern/sys_call.h"
 #include "kern/sbin.h"
 #include <string.h>
-#include <pthread.h>
 
 void thread1(void *arg)
 {
     while (1) {
-        printk("hello smileos, %d\n", (int)arg);
+        //printf("hello smileos, %d\n", (int)arg);
+        sleep(1);
     }
 }
 
@@ -65,11 +65,17 @@ int main(void)
     sched_init();
 
     code = sbin_lookup("/2440_P1.hex", &size);
+
+    //process_create(code, size, 15);
     //process_create(code, size, 15);
 
-    sched_start();
+    kthread_create(thread1, (void *)1, 32 * 1024, 5);
+    kthread_create(thread1, (void *)2, 32 * 1024, 5);
+    kthread_create(thread1, (void *)3, 32 * 1024, 5);
+    kthread_create(thread1, (void *)4, 32 * 1024, 5);
+    kthread_create(thread1, (void *)5, 32 * 1024, 5);
 
-    kthread_create(thread1, (void *)1, 8 * 1024, 15);
+    sched_start();
 
     while (1) {
 

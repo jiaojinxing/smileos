@@ -369,6 +369,8 @@ void sys_sem_set_invalid(sys_sem_t *sem)
 /* Time functions. */
 void sys_msleep(u32_t ms) /* only has a (close to) 1 jiffy resolution. */
 {
+    void usleep(unsigned int us);
+
     usleep(1000 * ms);
 }
 
