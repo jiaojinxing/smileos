@@ -39,6 +39,7 @@
 *********************************************************************************************************/
 #include "kern/config.h"
 #include "kern/types.h"
+#include "kern/kern.h"
 #include "s3c2440.h"
 #include "s3c2440_int.h"
 
@@ -50,6 +51,8 @@ void irq_c_handler(void)
 {
     uint32_t interrupt;
     isr_t    isr;
+
+    interrupt_enter();
 
     interrupt = INTOFFSET;
 
@@ -64,6 +67,8 @@ void irq_c_handler(void)
     SRCPND = 1 << interrupt;
 
     INTPND = INTPND;
+
+    interrupt_exit();
 }
 
 int isr_invaild(uint32_t interrupt)

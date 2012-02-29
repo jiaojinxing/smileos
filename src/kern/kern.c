@@ -64,12 +64,16 @@ uint64_t tick;
  */
 static uint8_t kern_heap_mem[KERN_HEAP_SIZE];
 
+static int interrupt_level = 0;
+static int kern_started    = FALSE;
+static int wakeup_new      = FALSE;
+
 /*
  * 从内核堆分配内存
  */
 void *kmalloc(uint32_t size)
 {
-    void *ptr;
+    void    *ptr;
     uint32_t reg;
 
     reg = interrupt_disable();
@@ -101,7 +105,12 @@ void kfree(void *ptr)
 void sched_init(void)
 {
     task_t *t;
-    int i;
+    int     i;
+
+    interrupt_level = 0;
+    tick            = 0;
+    kern_started    = FALSE;
+    wakeup_new      = FALSE;
 
     /*
      * 初始化任务控制块
@@ -138,8 +147,6 @@ void sched_init(void)
 
     current = t;
 
-    tick = 0;
-
     /*
      * 初始化内核堆
      */
@@ -152,8 +159,16 @@ void sched_init(void)
 void schedule(void)
 {
     int32_t max = -1;
-    int i, next = 0;
+    int     i, next = 0;
     task_t *t;
+
+    if (!kern_started) {
+        return;
+    }
+
+    if (interrupt_level > 0) {
+        return;
+    }
 
     while (1) {
         for (i = 1, t = task + 1; i < TASK_NR; i++, t++) {
@@ -213,10 +228,13 @@ void schedule(void)
  */
 void do_timer(void)
 {
-    int i, wakeup = FALSE;
-    task_t *t;
+    int      i;
+    task_t  *t;
+    uint32_t reg;
 
+    reg = interrupt_disable();
     tick++;
+    wakeup_new = FALSE;
 
     for (i = 1, t = task + 1; i < TASK_NR; i++, t++) {
         if (t->state == TASK_SLEEPING) {
@@ -224,7 +242,6 @@ void do_timer(void)
                 t->state = TASK_RUNNING;
                 if (t->wait_list != NULL) {
                     task_t *prev = *t->wait_list;
-
                     if (t == prev) {
                         *t->wait_list = t->next;
                     } else {
@@ -236,12 +253,11 @@ void do_timer(void)
                             prev->next = t->next;
                         }
                     }
-
                     t->next        = NULL;
                     t->wait_list   = NULL;
                     t->resume_type = TASK_RESUME_TIMEOUT;
                 }
-                wakeup = TRUE;
+                wakeup_new = TRUE;
             }
         }
     }
@@ -250,23 +266,64 @@ void do_timer(void)
         current->count--;
     }
 
-    if ((current->state != TASK_RUNNING) || (current->count == 0) || wakeup) {
-        schedule();
-    }
+    interrupt_resume(reg);
 }
 
+/*
+ * 进入中断
+ */
+void interrupt_enter(void)
+{
+    uint32_t reg;
+
+    reg = interrupt_disable();
+    interrupt_level++;
+    interrupt_resume(reg);
+}
+
+/*
+ * 退出中断
+ */
+void interrupt_exit(void)
+{
+    uint32_t reg;
+
+    reg = interrupt_disable();
+    if (--interrupt_level == 0) {
+        if ((current->state != TASK_RUNNING) || (current->count == 0) || wakeup_new) {
+            wakeup_new = FALSE;
+            schedule();
+        }
+    }
+    interrupt_resume(reg);
+}
+
+/*
+ * 启动调度器
+ */
+void sched_start(void)
+{
+    kern_started = TRUE;
+
+    void __switch_to_process0(register uint32_t sp_svc);
+
+    __switch_to_process0(current->content[0]);
+}
 /*
  * 创建进程
  */
 int32_t process_create(uint8_t *code, uint32_t size, uint32_t prio)
 {
-    int i;
-    task_t *t;
+    int      i;
+    task_t  *t;
     uint8_t *pa;
+    uint32_t reg;
 
-    if (code == NULL) {
+    if (code == NULL || size == 0) {
         return -1;
     }
+
+    reg = interrupt_disable();
 
     for (i = 0, t = task; i < PROCESS_NR; i++, t++){
         if (t->state == TASK_UNALLOCATE) {
@@ -275,6 +332,7 @@ int32_t process_create(uint8_t *code, uint32_t size, uint32_t prio)
     }
 
     if (i == PROCESS_NR) {
+        interrupt_resume(reg);
         return -1;
     }
 
@@ -298,6 +356,10 @@ int32_t process_create(uint8_t *code, uint32_t size, uint32_t prio)
     t->content[17]  = 0;                                            /*  lr                              */
     t->content[18]  = 0;                                            /*  pc                              */
 
+    schedule();
+
+    interrupt_resume(reg);
+
     return i;
 }
 
@@ -307,9 +369,12 @@ int32_t process_create(uint8_t *code, uint32_t size, uint32_t prio)
  */
 int32_t kthread_create(void (*func)(void *), void *arg, uint32_t stk_size, uint32_t prio)
 {
-    int i;
-    task_t *t;
+    int      i;
+    task_t  *t;
     uint32_t stk;
+    uint32_t reg;
+
+    reg = interrupt_disable();
 
     for (i = PROCESS_NR, t = task + PROCESS_NR; i < TASK_NR; i++, t++) {
         if (t->state == TASK_UNALLOCATE) {
@@ -318,6 +383,7 @@ int32_t kthread_create(void (*func)(void *), void *arg, uint32_t stk_size, uint3
     }
 
     if (i == TASK_NR) {
+        interrupt_resume(reg);
         return -1;
     }
 
@@ -337,6 +403,10 @@ int32_t kthread_create(void (*func)(void *), void *arg, uint32_t stk_size, uint3
     t->content[4]   = (uint32_t)arg;                                /*  r0 = arg                        */
     t->content[17]  = (uint32_t)func;                               /*  lr                              */
     t->content[18]  = (uint32_t)func;                               /*  pc                              */
+
+    schedule();
+
+    interrupt_resume(reg);
 
     return i;
 }

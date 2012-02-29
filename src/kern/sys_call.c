@@ -91,9 +91,9 @@ void abort(void)
 }
 
 /*
- * tick_sleep
+ * tsleep
  */
-static void tick_sleep(unsigned int t)
+static void tsleep(unsigned int t)
 {
     __asm__ __volatile__("mov    r0,  %0": :"r"(t));
     __asm__ __volatile__("mov    r7,  %0": :"M"(SYS_CALL_SLEEP));
@@ -107,7 +107,7 @@ static void tick_sleep(unsigned int t)
  */
 void sleep(unsigned int s)
 {
-    tick_sleep(TICK_PER_SECOND * s);
+    tsleep(TICK_PER_SECOND * s);
 }
 
 /*
@@ -115,7 +115,7 @@ void sleep(unsigned int s)
  */
 void usleep(unsigned int us)
 {
-    tick_sleep(TICK_PER_SECOND * us / 1000000);
+    tsleep(TICK_PER_SECOND * us / 1000000);
 }
 
 /*

@@ -49,7 +49,7 @@
  */
 static void do_exit(int error_code)
 {
-    printk("process %d exit!\n", current->pid);
+    printk("process %d exit!\n", current->tid);
 
     current->state = TASK_UNALLOCATE;
 
@@ -97,7 +97,7 @@ static int do_gettimeofday(struct timeval *tv, void *tzp)
  */
 static int do_getpid(void)
 {
-    return (int)current->pid;
+    return (int)current->tid;
 }
 
 /*

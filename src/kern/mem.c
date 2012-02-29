@@ -44,13 +44,13 @@
 #include "kern/sys_call.h"
 
 /*
- * 进程代码项目应享有一份该文件, 用于实现用户态的 malloc 等, 因进程使用非抢占的 pthread, 免锁免关中断
+ * 进程代码项目应享有一份该文件, 用于实现用户态的 malloc 等, 因进程里使用非抢占的 pthread, 免锁免关中断
  */
 /*
  * 进程不能使用 printk
  */
 #ifdef SMILEOS_KERNEL
-#define getpid()    0
+#define getpid()    current->tid
 #else
 extern int printf(const char *fmt, ...);
 #define printk      printf

@@ -89,7 +89,7 @@ typedef struct _task {
     int             resume_type;
     struct _task   *next;
     struct _task  **wait_list;
-} task_t __attribute__((packed));
+} task_t;
 
 /*
  * 当前运行的任务
@@ -119,8 +119,7 @@ void sched_init(void);
 /*
  * 启动调度器
  */
-void __switch_to_process0(register uint32_t sp_svc);
-#define sched_start() __switch_to_process0(current->content[0])
+void sched_start(void);
 
 /*
  * 调度
@@ -202,6 +201,16 @@ uint32_t interrupt_disable(void);
  * 退出临界区域
  */
 void interrupt_resume(register uint32_t reg);
+
+/*
+ * 进入中断
+ */
+void interrupt_enter(void);
+
+/*
+ * 退出中断
+ */
+void interrupt_exit(void);
 
 #endif
 
