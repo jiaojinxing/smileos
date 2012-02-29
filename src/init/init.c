@@ -45,7 +45,7 @@
 #include "kern/sbin.h"
 #include <string.h>
 
-void thread1(void *arg)
+static void thread1(void *arg)
 {
     while (1) {
         printf("hello SmileOS, kernel thread %d\n", (int)arg);
@@ -73,6 +73,15 @@ int main(void)
     process_create(code, size, 15);
     process_create(code, size, 15);
     process_create(code, size, 15);
+    process_create(code, size, 15);
+    process_create(code, size, 15);
+    process_create(code, size, 15);
+    process_create(code, size, 15);
+    process_create(code, size, 15);
+    process_create(code, size, 15);
+    process_create(code, size, 15);
+    process_create(code, size, 15);
+
 
     kthread_create(thread1, (void *)1, 32 * 1024, 5);
     kthread_create(thread1, (void *)2, 32 * 1024, 5);
