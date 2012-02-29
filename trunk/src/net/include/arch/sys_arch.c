@@ -80,7 +80,9 @@ void sys_mutex_lock(sys_mutex_t *mutex)
 {
     struct sys_mutex *m;
     task_t *end;
+    uint32_t reg;
 
+    reg = interrupt_disable();
     if (mutex) {
         again:
         m = *mutex;
@@ -116,6 +118,7 @@ void sys_mutex_lock(sys_mutex_t *mutex)
             }
         }
     }
+    interrupt_resume(reg);
 }
 
 /** Unlock a mutex
@@ -124,7 +127,9 @@ void sys_mutex_unlock(sys_mutex_t *mutex)
 {
     struct sys_mutex *m;
     task_t *t;
+    uint32_t reg;
 
+    reg = interrupt_disable();
     if (mutex) {
         m = *mutex;
         if (m) {
@@ -149,6 +154,7 @@ void sys_mutex_unlock(sys_mutex_t *mutex)
             }
         }
     }
+    interrupt_resume(reg);
 }
 
 /** Delete a semaphore
@@ -156,7 +162,9 @@ void sys_mutex_unlock(sys_mutex_t *mutex)
 void sys_mutex_free(sys_mutex_t *mutex)
 {
     struct sys_mutex *m;
+    uint32_t reg;
 
+    reg = interrupt_disable();
     if (mutex) {
         m = *mutex;
         if (m) {
@@ -169,33 +177,41 @@ void sys_mutex_free(sys_mutex_t *mutex)
             }
         }
     }
+    interrupt_resume(reg);
 }
 
 /** Check if a mutex is valid/allocated: return 1 for valid, 0 for invalid */
 int sys_mutex_valid(sys_mutex_t *mutex)
 {
     struct sys_mutex *m;
+    uint32_t reg;
+    int valid = 0;
 
+    reg = interrupt_disable();
     if (mutex) {
         m = *mutex;
         if (m) {
-            return m->valid;
+            valid = m->valid;
         }
     }
-    return 0;
+    interrupt_resume(reg);
+    return valid;
 }
 
 /** Set a mutex invalid so that sys_mutex_valid returns 0 */
 void sys_mutex_set_invalid(sys_mutex_t *mutex)
 {
     struct sys_mutex *m;
+    uint32_t reg;
 
+    reg = interrupt_disable();
     if (mutex) {
         m = *mutex;
         if (m) {
             m->valid = FALSE;
         }
     }
+    interrupt_resume(reg);
 }
 
 /*
@@ -235,7 +251,9 @@ void sys_sem_signal(sys_sem_t *sem)
 {
     struct sys_sem *s;
     task_t *t;
+    uint32_t reg;
 
+    reg = interrupt_disable();
     if (sem) {
         s = *sem;
         if (s) {
@@ -254,6 +272,7 @@ void sys_sem_signal(sys_sem_t *sem)
             }
         }
     }
+    interrupt_resume(reg);
 }
 
 /** Wait for a semaphore for the specified timeout
@@ -266,9 +285,11 @@ u32_t sys_arch_sem_wait(sys_sem_t *sem, u32_t timeout)
     struct sys_sem *s;
     task_t *end;
     u32_t start;
+    uint32_t reg;
 
     start = sys_now();
 
+    reg = interrupt_disable();
     if (sem) {
         again:
         s = *sem;
@@ -276,6 +297,7 @@ u32_t sys_arch_sem_wait(sys_sem_t *sem, u32_t timeout)
             if (s->valid) {
                 if (s->count) {
                     s->count--;
+                    interrupt_resume(reg);
                     return sys_now() - start;
                 } else {
                     if (!s->wait_list) {
@@ -316,6 +338,7 @@ u32_t sys_arch_sem_wait(sys_sem_t *sem, u32_t timeout)
         }
     }
     out:
+    interrupt_resume(reg);
     return SYS_ARCH_TIMEOUT;
 }
 
@@ -324,7 +347,9 @@ u32_t sys_arch_sem_wait(sys_sem_t *sem, u32_t timeout)
 void sys_sem_free(sys_sem_t *sem)
 {
     struct sys_sem *s;
+    uint32_t reg;
 
+    reg = interrupt_disable();
     if (sem) {
         s = *sem;
         if (s) {
@@ -337,33 +362,41 @@ void sys_sem_free(sys_sem_t *sem)
             }
         }
     }
+    interrupt_resume(reg);
 }
 
 /** Check if a sempahore is valid/allocated: return 1 for valid, 0 for invalid */
 int sys_sem_valid(sys_sem_t *sem)
 {
     struct sys_sem *s;
+    uint32_t reg;
+    int valid = 0;
 
+    reg = interrupt_disable();
     if (sem) {
         s = *sem;
         if (s) {
-            return s->valid;
+            valid = s->valid;
         }
     }
-    return 0;
+    interrupt_resume(reg);
+    return valid;
 }
 
 /** Set a semaphore invalid so that sys_sem_valid returns 0 */
 void sys_sem_set_invalid(sys_sem_t *sem)
 {
     struct sys_sem *s;
+    uint32_t reg;
 
+    reg = interrupt_disable();
     if (sem) {
         s = *sem;
         if (s) {
             s->valid = FALSE;
         }
     }
+    interrupt_resume(reg);
 }
 
 /* Time functions. */
@@ -423,7 +456,9 @@ void sys_mbox_post(sys_mbox_t *mbox, void *msg)
     struct sys_mbox *q;
     task_t *end;
     task_t *t;
+    uint32_t reg;
 
+    reg = interrupt_disable();
     if (mbox) {
         again:
         q = *mbox;
@@ -469,6 +504,7 @@ void sys_mbox_post(sys_mbox_t *mbox, void *msg)
             }
         }
     }
+    interrupt_resume(reg);
 }
 
 /** Try to post a message to an mbox - may fail if full or ISR
@@ -478,7 +514,9 @@ err_t sys_mbox_trypost(sys_mbox_t *mbox, void *msg)
 {
     struct sys_mbox *q;
     task_t *t;
+    uint32_t reg;
 
+    reg = interrupt_disable();
     if (mbox) {
         q = *mbox;
         if (q) {
@@ -498,11 +536,13 @@ err_t sys_mbox_trypost(sys_mbox_t *mbox, void *msg)
                         t->resume_type = TASK_RESUME_MSG_COME;
                         schedule();
                     }
+                    interrupt_resume(reg);
                     return ERR_OK;
                 }
             }
         }
     }
+    interrupt_resume(reg);
     return ERR_BUF;
 }
 
@@ -519,9 +559,11 @@ u32_t sys_arch_mbox_fetch(sys_mbox_t *mbox, void **msg, u32_t timeout)
     task_t *end;
     task_t *t;
     u32_t start;
+    uint32_t reg;
 
     start = sys_now();
 
+    reg = interrupt_disable();
     if (mbox) {
         again:
         q = *mbox;
@@ -542,6 +584,7 @@ u32_t sys_arch_mbox_fetch(sys_mbox_t *mbox, void **msg, u32_t timeout)
                         t->resume_type = TASK_RESUME_MSG_OUT;
                         schedule();
                     }
+                    interrupt_resume(reg);
                     return sys_now() - start;
                 } else {
                     if (!q->r_wait_list) {
@@ -578,6 +621,7 @@ u32_t sys_arch_mbox_fetch(sys_mbox_t *mbox, void **msg, u32_t timeout)
         }
     }
     out:
+    interrupt_resume(reg);
     return SYS_ARCH_TIMEOUT;
 }
 
@@ -592,7 +636,9 @@ u32_t sys_arch_mbox_tryfetch(sys_mbox_t *mbox, void **msg)
 {
     struct sys_mbox *q;
     task_t *t;
+    uint32_t reg;
 
+    reg = interrupt_disable();
     if (mbox) {
         q = *mbox;
         if (q) {
@@ -612,11 +658,13 @@ u32_t sys_arch_mbox_tryfetch(sys_mbox_t *mbox, void **msg)
                         t->resume_type = TASK_RESUME_MSG_OUT;
                         schedule();
                     }
+                    interrupt_resume(reg);
                     return 0;
                 }
             }
         }
     }
+    interrupt_resume(reg);
     return SYS_MBOX_EMPTY;
 }
 
@@ -625,7 +673,9 @@ u32_t sys_arch_mbox_tryfetch(sys_mbox_t *mbox, void **msg)
 void sys_mbox_free(sys_mbox_t *mbox)
 {
     struct sys_mbox *q;
+    uint32_t reg;
 
+    reg = interrupt_disable();
     if (mbox) {
         q = *mbox;
         if (q) {
@@ -638,33 +688,41 @@ void sys_mbox_free(sys_mbox_t *mbox)
             }
         }
     }
+    interrupt_resume(reg);
 }
 
 /** Check if an mbox is valid/allocated: return 1 for valid, 0 for invalid */
 int sys_mbox_valid(sys_mbox_t *mbox)
 {
     struct sys_mbox *q;
+    uint32_t reg;
+    int valid = 0;
 
+    reg = interrupt_disable();
     if (mbox) {
         q = *mbox;
         if (q) {
-            return q->valid;
+            valid = q->valid;
         }
     }
-    return 0;
+    interrupt_resume(reg);
+    return valid;
 }
 
 /** Set an mbox invalid so that sys_mbox_valid returns 0 */
 void sys_mbox_set_invalid(sys_mbox_t *mbox)
 {
     struct sys_mbox *q;
+    uint32_t reg;
 
+    reg = interrupt_disable();
     if (mbox) {
         q = *mbox;
         if (q) {
             q->valid = FALSE;
         }
     }
+    interrupt_resume(reg);
 }
 
 /** The only thread function:
