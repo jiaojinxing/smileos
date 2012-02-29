@@ -154,7 +154,7 @@ void sched_init(void)
 }
 
 /*
- * 调度
+ * 调度, 调用之前必须关中断
  */
 void schedule(void)
 {
@@ -309,6 +309,7 @@ void sched_start(void)
 
     __switch_to_process0(current->content[0]);
 }
+
 /*
  * 创建进程
  */
