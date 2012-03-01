@@ -40,7 +40,7 @@
 #include "kern/config.h"
 #include "kern/types.h"
 #include "kern/sys_call.h"
-#include "kern/mem.h"
+#include "kern/heap.h"
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
@@ -224,6 +224,7 @@ int *__errno(void)
 void _sbrk(void)
 {
 #ifdef SMILEOS_KERNEL
+    extern void printk(const char *fmt, ...);
     printk("can't call %s()!, SmileOS abort\n", __func__);
 
     while (1) ;

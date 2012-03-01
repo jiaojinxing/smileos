@@ -47,7 +47,7 @@
  */
 void undf_c_handler(uint32_t lr, uint32_t spsr)
 {
-    printk("%s, current pid = %d\n", __func__, current->tid);
+    printk("%s, current tid = %d\n", __func__, current->tid);
     printk("lr   = 0x%x\n", lr);
     printk("spsr = 0x%x\n", spsr);
 
@@ -59,7 +59,7 @@ void undf_c_handler(uint32_t lr, uint32_t spsr)
  */
 void pabt_c_handler(uint32_t lr, uint32_t spsr)
 {
-    printk("%s, current pid = %d\n", __func__, current->tid);
+    printk("%s, current tid = %d\n", __func__, current->tid);
     printk("fault address = 0x%x\n", mmu_get_fault_address());
     printk("fault status  = 0x%x\n", mmu_get_prefetch_fault_status());
     printk("lr   = 0x%x\n", lr);
@@ -73,7 +73,7 @@ void pabt_c_handler(uint32_t lr, uint32_t spsr)
  */
 void dabt_c_handler(uint32_t lr, uint32_t spsr)
 {
-    printk("%s, current pid = %d\n", __func__, current->tid);
+    printk("%s, current tid = %d\n", __func__, current->tid);
     printk("fault address = 0x%x\n", mmu_get_fault_address());
     printk("fault status  = 0x%x\n", mmu_get_data_fault_status());
     printk("lr   = 0x%x\n", lr);
@@ -87,7 +87,7 @@ void dabt_c_handler(uint32_t lr, uint32_t spsr)
  */
 void fiq_c_handler(uint32_t lr, uint32_t spsr)
 {
-    printk("%s, current pid = %d\n", __func__, current->tid);
+    printk("%s, current tid = %d\n", __func__, current->tid);
     printk("lr   = 0x%x\n", lr);
     printk("spsr = 0x%x\n", spsr);
 

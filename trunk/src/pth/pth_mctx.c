@@ -40,7 +40,7 @@
 #include "pth_p.h"
 #include "kern/types.h"
 #include "kern/arm.h"
-#include "kern/mem.h"
+#include "kern/heap.h"
 
 /*
  * 构建 pthread 线程机器上下文
