@@ -69,26 +69,28 @@
 #define TASK_RESUME_MSG_COME    (1 << 4)
 #define TASK_RESUME_MSG_OUT     (1 << 5)
 
+struct _frame_t;
 /*
  * 任务控制块
  */
 typedef struct _task {
-    int32_t         pid;
-    int32_t         tid;
-    uint32_t        state;
-    uint32_t        count;
-    uint32_t        timer;
-    uint32_t        prio;
-    uint32_t        content[20];
-    uint32_t        kstack[KERN_STACK_SIZE];
+    int32_t             pid;
+    int32_t             tid;
+    uint32_t            state;
+    uint32_t            count;
+    uint32_t            timer;
+    uint32_t            prio;
+    uint32_t            content[20];
+    uint32_t            kstack[KERN_STACK_SIZE];
 #ifdef SMILEOS_KTHREAD
-    int             type;
+    int                 type;
 #endif
-    heap_t          heap;
-    int             errno;
-    int             resume_type;
-    struct _task   *next;
-    struct _task  **wait_list;
+    heap_t              heap;
+    int                 errno;
+    int                 resume_type;
+    struct _task       *next;
+    struct _task      **wait_list;
+    struct _frame_t    *frame_list;
 } task_t;
 
 /*
@@ -168,29 +170,29 @@ void *kmalloc(uint32_t size);
  */
 void kfree(void *ptr);
 
-/*
- * 虚拟地址转物理地址
- */
-static inline uint32_t virt_to_phy(uint32_t va)
-{
-    if (current->pid > 0) {
-        return PROCESS_MEM_BASE + PROCESS_MEM_SIZE * (current->pid - 1) + va;
-    } else {
-        return va;
-    }
-}
-
-/*
- * 虚拟地址转物理地址
- */
-static inline uint32_t __virt_to_phy(uint32_t va, int pid)
-{
-    if (pid > 0) {
-        return PROCESS_MEM_BASE + PROCESS_MEM_SIZE * (pid - 1) + va;
-    } else {
-        return va;
-    }
-}
+///*
+// * 虚拟地址转物理地址
+// */
+//static inline uint32_t virt_to_phy(uint32_t va)
+//{
+//    if (current->pid > 0) {
+//        return PROCESS_MEM_BASE + PROCESS_MEM_SIZE * (current->pid - 1) + va;
+//    } else {
+//        return va;
+//    }
+//}
+//
+///*
+// * 虚拟地址转物理地址
+// */
+//static inline uint32_t __virt_to_phy(uint32_t va, int pid)
+//{
+//    if (pid > 0) {
+//        return PROCESS_MEM_BASE + PROCESS_MEM_SIZE * (pid - 1) + va;
+//    } else {
+//        return va;
+//    }
+//}
 
 /*
  * 进入临界区域

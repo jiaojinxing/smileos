@@ -41,6 +41,7 @@
 #include "kern/types.h"
 #include "kern/kern.h"
 #include "kern/arm.h"
+#include "kern/vmm.h"
 #include <string.h>
 #include <stdarg.h>
 
@@ -164,6 +165,8 @@ void sched_init(void)
      * 初始化内核堆
      */
     heap_init(&task[0].heap, kern_heap_mem, KERN_HEAP_SIZE);
+
+    vmm_init();
 }
 
 /*
@@ -221,7 +224,11 @@ void schedule(void)
                 __func__,
                 current->pid,
                 current->tid,
-                current->content[18], current->content[4], current->content[1], current->content[2], current->content[0],
+                current->content[18],
+                current->content[4],
+                current->content[1],
+                current->content[2],
+                current->content[0],
                 current->content[5],
                 current->content[6],
                 current->content[7],
@@ -243,7 +250,11 @@ void schedule(void)
                 __func__,
                 current->pid,
                 current->tid,
-                current->content[18], current->content[4], current->content[1], current->content[0], current->content[2],
+                current->content[18],
+                current->content[4],
+                current->content[1],
+                current->content[0],
+                current->content[2],
                 current->content[5],
                 current->content[6],
                 current->content[7],
@@ -359,7 +370,6 @@ int32_t process_create(uint8_t *code, uint32_t size, uint32_t prio)
 {
     int      i;
     task_t  *t;
-    uint8_t *pa;
     uint32_t reg;
 
     if (code == NULL || size == 0) {
@@ -368,7 +378,7 @@ int32_t process_create(uint8_t *code, uint32_t size, uint32_t prio)
 
     reg = interrupt_disable();
 
-    for (i = 0, t = task; i < PROCESS_NR; i++, t++){
+    for (i = 1, t = task + 1; i < PROCESS_NR; i++, t++){
         if (t->state == TASK_UNALLOCATE) {
             break;
         }
@@ -378,10 +388,6 @@ int32_t process_create(uint8_t *code, uint32_t size, uint32_t prio)
         interrupt_resume(reg);
         return -1;
     }
-
-    pa = (uint8_t *)__virt_to_phy(0, i);
-
-    memcpy(pa, code, size);
 
     t->pid          = i;
     t->tid          = i;
@@ -394,7 +400,7 @@ int32_t process_create(uint8_t *code, uint32_t size, uint32_t prio)
 
     t->content[0]   = (uint32_t)&t->kstack[KERN_STACK_SIZE];        /*  svc 模式的 sp (满堆栈递减)      */
     t->content[1]   = ARM_SYS_MODE | ARM_FIQ_NO | ARM_IRQ_EN;       /*  cpsr, sys 模式, 关 FIQ, 开 IRQ  */
-    t->content[2]   = PROCESS_MEM_SIZE;                             /*  sys 模式的 sp                   */
+    t->content[2]   = PROCESS_SPACE_SIZE;                           /*  sys 模式的 sp                   */
     t->content[3]   = ARM_SVC_MODE;                                 /*  spsr, svc 模式                  */
     t->content[4]   = 0;                                            /*  lr                              */
     t->content[5]   = 0;                                            /*  r0 ~ r12                        */
@@ -411,6 +417,14 @@ int32_t process_create(uint8_t *code, uint32_t size, uint32_t prio)
     t->content[16]  = 11;
     t->content[17]  = 12;
     t->content[18]  = 0;                                            /*  pc                              */
+
+    for (i = 0; i < (size + PAGE_SIZE - 1) / PAGE_SIZE; i++) {
+        mva_map(t, t->pid * PROCESS_SPACE_SIZE + i * PAGE_SIZE);
+    }
+
+    mva_map(t, (t->pid + 1) * PROCESS_SPACE_SIZE - PAGE_SIZE);
+
+    memcpy(t->pid * PROCESS_SPACE_SIZE, code, size);
 
     schedule();
 
