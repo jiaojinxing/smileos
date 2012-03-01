@@ -142,7 +142,20 @@ void sched_init(void)
     t->content[1]   = ARM_SYS_MODE | ARM_FIQ_NO | ARM_IRQ_EN;       /*  cpsr, sys 模式, 关 FIQ, 开 IRQ  */
     t->content[2]   = PROCESS0_STACK_BASE;                          /*  sys 模式的 sp                   */
     t->content[3]   = ARM_SVC_MODE;                                 /*  spsr, svc 模式                  */
-    t->content[17]  = 0;                                            /*  lr                              */
+    t->content[4]   = 0;                                            /*  lr                              */
+    t->content[5]   = 0;                                            /*  r0 ~ r12                        */
+    t->content[6]   = 1;
+    t->content[7]   = 2;
+    t->content[8]   = 3;
+    t->content[9]   = 4;
+    t->content[10]  = 5;
+    t->content[11]  = 6;
+    t->content[12]  = 7;
+    t->content[13]  = 8;
+    t->content[14]  = 9;
+    t->content[15]  = 10;
+    t->content[16]  = 11;
+    t->content[17]  = 12;
     t->content[18]  = 0;                                            /*  pc                              */
 
     current = t;
@@ -201,20 +214,49 @@ void schedule(void)
 
 #if 0
     if ((current->content[3] & ARM_MODE_MASK) == ARM_SVC_MODE) {
-        printk("%s: switch to pid=%d, tid=%d, pc=0x%x, sp_sys=0x%x, sp_svc=0x%x, irq save\n",
+        printk("%s: switch to pid=%d, tid=%d, "
+                "pc=0x%x, lr=0x%x cpsr=0x%x sp_sys=0x%x, sp_svc=0x%x, "
+                "r0=0x%x, r1=0x%x, r2=0x%x, r3=0x%x, r4=0x%x, r5=0x%x, r6=0x%x, r7=0x%x, r8=0x%x, r9=0x%x, r10=0x%x, r11=0x%x, r12=0x%x, "
+                "irq save\n",
                 __func__,
                 current->pid,
                 current->tid,
-                current->content[18],
-                current->content[0]);
+                current->content[18], current->content[4], current->content[1], current->content[2], current->content[0],
+                current->content[5],
+                current->content[6],
+                current->content[7],
+                current->content[8],
+                current->content[9],
+                current->content[10],
+                current->content[11],
+                current->content[12],
+                current->content[13],
+                current->content[14],
+                current->content[15],
+                current->content[16],
+                current->content[17]);
     } else {
-        printk("%s: switch to pid=%d, tid=%d, pc=0x%x, sp_sys=0x%x, sp_svc=0x%x, svc save\n",
+        printk("%s: switch to pid=%d, tid=%d, "
+                "pc=0x%x, lr=0x%x cpsr=0x%x sp_sys=0x%x, sp_svc=0x%x, "
+                "r0=0x%x, r1=0x%x, r2=0x%x, r3=0x%x, r4=0x%x, r5=0x%x, r6=0x%x, r7=0x%x, r8=0x%x, r9=0x%x, r10=0x%x, r11=0x%x, r12=0x%x, "
+                "svc save\n",
                 __func__,
                 current->pid,
                 current->tid,
-                current->content[18],
-                current->content[0],
-                current->content[2]);
+                current->content[18], current->content[4], current->content[1], current->content[0], current->content[2],
+                current->content[5],
+                current->content[6],
+                current->content[7],
+                current->content[8],
+                current->content[9],
+                current->content[10],
+                current->content[11],
+                current->content[12],
+                current->content[13],
+                current->content[14],
+                current->content[15],
+                current->content[16],
+                current->content[17]);
     }
 #endif
 
@@ -350,11 +392,24 @@ int32_t process_create(uint8_t *code, uint32_t size, uint32_t prio)
     t->type         = TASK_TYPE_PROCESS;
 #endif
 
-    t->content[0]   = (uint32_t)&t->kstack[KERN_STACK_SIZE];        /*  svc 模式堆栈指针(满堆栈递减)    */
+    t->content[0]   = (uint32_t)&t->kstack[KERN_STACK_SIZE];        /*  svc 模式的 sp (满堆栈递减)      */
     t->content[1]   = ARM_SYS_MODE | ARM_FIQ_NO | ARM_IRQ_EN;       /*  cpsr, sys 模式, 关 FIQ, 开 IRQ  */
     t->content[2]   = PROCESS_MEM_SIZE;                             /*  sys 模式的 sp                   */
     t->content[3]   = ARM_SVC_MODE;                                 /*  spsr, svc 模式                  */
-    t->content[17]  = 0;                                            /*  lr                              */
+    t->content[4]   = 0;                                            /*  lr                              */
+    t->content[5]   = 0;                                            /*  r0 ~ r12                        */
+    t->content[6]   = 1;
+    t->content[7]   = 2;
+    t->content[8]   = 3;
+    t->content[9]   = 4;
+    t->content[10]  = 5;
+    t->content[11]  = 6;
+    t->content[12]  = 7;
+    t->content[13]  = 8;
+    t->content[14]  = 9;
+    t->content[15]  = 10;
+    t->content[16]  = 11;
+    t->content[17]  = 12;
     t->content[18]  = 0;                                            /*  pc                              */
 
     schedule();
@@ -401,9 +456,21 @@ int32_t kthread_create(void (*func)(void *), void *arg, uint32_t stk_size, uint3
     t->content[1]   = ARM_SYS_MODE | ARM_FIQ_NO | ARM_IRQ_EN;       /*  cpsr, sys 模式, 关 FIQ, 开 IRQ  */
     t->content[2]   = stk;                                          /*  sys 模式的 sp                   */
     t->content[3]   = ARM_SVC_MODE;                                 /*  spsr, svc 模式                  */
-    t->content[4]   = (uint32_t)arg;                                /*  r0 = arg                        */
-    t->content[17]  = (uint32_t)func;                               /*  lr                              */
-    t->content[18]  = (uint32_t)func;                               /*  pc                              */
+    t->content[4]   = (uint32_t)func;                               /*  lr                              */
+    t->content[5]   = (uint32_t)arg;                                /*  r0 ~ r12                        */
+    t->content[6]   = 1;
+    t->content[7]   = 2;
+    t->content[8]   = 3;
+    t->content[9]   = 4;
+    t->content[10]  = 5;
+    t->content[11]  = 6;
+    t->content[12]  = 7;
+    t->content[13]  = 8;
+    t->content[14]  = 9;
+    t->content[15]  = 10;
+    t->content[16]  = 11;
+    t->content[17]  = 12;
+    t->content[18]  = (uint32_t)func;;                              /*  pc                              */
 
     schedule();
 
