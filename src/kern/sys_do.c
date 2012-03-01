@@ -40,7 +40,7 @@
 #include "kern/config.h"
 #include "kern/types.h"
 #include "kern/kern.h"
-#include "kern/mem.h"
+#include "kern/heap.h"
 /*********************************************************************************************************
   系统调用处理
 *********************************************************************************************************/
@@ -49,7 +49,7 @@
  */
 static void do_exit(int error_code)
 {
-    printk("process %d exit!\n", current->tid);
+    printk("process %d exit!\n", current->pid);
 
     current->state = TASK_UNALLOCATE;
 

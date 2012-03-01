@@ -19,10 +19,10 @@
 ** Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 **
 **--------------------------------------------------------------------------------------------------------
-** File name:               mem.c
+** File name:               heap.c
 ** Last modified Date:      2012-2-23
 ** Last Version:            1.0.0
-** Descriptions:            内存管理
+** Descriptions:            堆内存管理
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing
@@ -40,7 +40,7 @@
 #include "kern/config.h"
 #include "kern/types.h"
 #include "kern/kern.h"
-#include "kern/mem.h"
+#include "kern/heap.h"
 #include "kern/sys_call.h"
 
 /*

@@ -42,7 +42,7 @@
 
 #include "config.h"
 #include "types.h"
-#include "mem.h"
+#include "heap.h"
 
 #ifdef SMILEOS_KERNEL
 

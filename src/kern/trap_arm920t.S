@@ -95,9 +95,12 @@ bss_loop:
 .extern sys_do_table
 swi_handler:
     stmfd   sp!, {r4-r12, lr}               /*  保存寄存器和返回地址到进程的内核栈                      */
-                                            /*  根据 ATPCS, 前四个参数使用 r0 - r3, 后面的参数使用堆栈  */
+                                            /*  根据 APCS, 前四个参数使用 r0 - r3, 后面的参数使用堆栈   */
                                             /*  因为切换了处理器模式, sp 也切换了, 所以多于 4 个参数时, */
                                             /*  会有问题                                                */
+                                            /*
+                                                http://www.52rd.com/Blog/Detail_RD.Blog_zjhfqq_7625.html
+                                             */
 
     cmp     r7, #SYS_CALL_NR                /*  根据 EABI, 系统调用号使用 r7                            */
 
