@@ -154,10 +154,18 @@ pabt_handler:
 *********************************************************************************************************/
 .extern dabt_c_handler
 dabt_handler:
-    ldr     sp, =(IRQ_STACK_P_BASE)         /*  设置 irq 模式的 sp                                      */
-    mov     r0, lr
-    mrs     r1, spsr
-    ldr     pc, =dabt_c_handler
+    sub     lr, lr, #8                      /*  调整返回地址                                            */
+
+    ldr     sp, =(IRQ_STACK_P_BASE)         /*  设置 dabt 模式的 sp                                     */
+
+    stmfd   sp!, {r0-r12, lr}               /*  保存寄存器和返回地址到 dabt 堆栈                        */
+
+    ldr     lr, =dabt_c_handler_return      /*  返回地址                                                */
+
+    ldr     pc, =dabt_c_handler             /*  进入 dabt c 处理程序                                    */
+
+dabt_c_handler_return:
+    ldmfd   sp!, {r0-r12, pc}^              /*  dabt 中断处理返回, ^ 表示复制 spsr 到 cpsr              */
 /*********************************************************************************************************
   FIQ 快速中断处理程序
 *********************************************************************************************************/

@@ -19,14 +19,14 @@
 ** Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 **
 **--------------------------------------------------------------------------------------------------------
-** File name:               trap.c
-** Last modified Date:      2012-2-25
+** File name:               vmm.h
+** Last modified Date:      2012-3-1
 ** Last Version:            1.0.0
-** Descriptions:            异常处理程序
+** Descriptions:            虚拟内存管理
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing
-** Created date:            2012-2-25
+** Created date:            2012-3-1
 ** Version:                 1.0.0
 ** Descriptions:            创建文件
 **
@@ -37,74 +37,20 @@
 ** Descriptions:
 **
 *********************************************************************************************************/
-#include "kern/config.h"
-#include "kern/types.h"
-#include "kern/kern.h"
-#include "kern/mmu.h"
+#ifndef VMM_H_
+#define VMM_H_
 
 /*
- * 未定义指令异常处理程序
+ * MVA 映射
  */
-void undf_c_handler(uint32_t lr, uint32_t spsr)
-{
-    printk("%s, current tid = %d\n", __func__, current->tid);
-    printk("lr   = 0x%x\n", lr);
-    printk("spsr = 0x%x\n", spsr);
-
-    while (1);
-}
+int mva_map(task_t *task, uint32_t mva);
 
 /*
- * 预取指中止异常处理程序
+ * 初始化虚拟内存管理
  */
-void pabt_c_handler(uint32_t lr, uint32_t spsr)
-{
-    printk("%s, current tid = %d\n", __func__, current->tid);
-    printk("fault address = 0x%x\n", mmu_get_fault_address());
-    printk("fault status  = 0x%x\n", mmu_get_prefetch_fault_status());
-    printk("lr   = 0x%x\n", lr);
-    printk("spsr = 0x%x\n", spsr);
+void vmm_init(void);
 
-    while (1);
-}
-
-/*
- * 数据访问中止异常处理程序
- */
-//void dabt_c_handler(uint32_t lr, uint32_t spsr)
-//{
-//    printk("%s, current tid = %d\n", __func__, current->tid);
-//    printk("fault address = 0x%x\n", mmu_get_fault_address());
-//    printk("fault status  = 0x%x\n", mmu_get_data_fault_status());
-//    printk("lr   = 0x%x\n", lr);
-//    printk("spsr = 0x%x\n", spsr);
-//
-//    while (1);
-//}
-void dabt_c_handler(void)
-{
-    static int i = 0;
-
-    if (data_abort_process(mmu_get_fault_address()) < 0) {
-        printk("%s, current tid = %d\n", __func__, current->tid);
-        printk("fault address = 0x%x\n", mmu_get_fault_address());
-        printk("fault status  = 0x%x\n", mmu_get_prefetch_fault_status());
-        while (1) ;
-    }
-    //printk("dabt cnt=%d\n", ++i);
-}
-
-/*
- * FIQ 快速中断处理程序
- */
-void fiq_c_handler(uint32_t lr, uint32_t spsr)
-{
-    printk("%s, current tid = %d\n", __func__, current->tid);
-    printk("lr   = 0x%x\n", lr);
-    printk("spsr = 0x%x\n", spsr);
-
-    while (1);
-}
+#endif                                                                  /*  VMM_H_                      */
 /*********************************************************************************************************
   END FILE
 *********************************************************************************************************/

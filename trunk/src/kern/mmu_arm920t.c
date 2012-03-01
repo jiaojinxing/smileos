@@ -567,13 +567,13 @@ void mmu_init(void)
      * 每个进程的 va_base = 0, mva = va + 32 * MB * pid,
      *
      */
-    for (i = 1; i <= PROCESS_NR; i++) {
-        mmu_map_section(MMU_TBL_BASE,
-                0 + PROCESS_SPACE_SIZE * i,
-                PROCESS_MEM_BASE + PROCESS_MEM_SIZE * (i - 1),
-                PROCESS_MEM_SIZE / MB,
-                SECTION_ATTR(AP_USER_RW, DOMAIN_CHECK, CACHE_EN, BUFFER_EN));
-    }
+//    for (i = 1; i <= PROCESS_NR; i++) {
+//        mmu_map_section(MMU_TBL_BASE,
+//                0 + PROCESS_SPACE_SIZE * i,
+//                PROCESS_MEM_BASE + PROCESS_MEM_SIZE * (i - 1),
+//                PROCESS_MEM_SIZE / MB,
+//                SECTION_ATTR(AP_USER_RW, DOMAIN_CHECK, CACHE_EN, BUFFER_EN));
+//    }
 
     /*
      * BSP 内存映射

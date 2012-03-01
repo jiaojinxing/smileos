@@ -40,43 +40,55 @@
 #ifndef S3C2440_CONFIG_H_
 #define S3C2440_CONFIG_H_
 
-#define PHY_MEM_BASE        (0x30000000)                                /*  物理内存基址                */
-#define PHY_MEM_SIZE        (64 * MB)                                   /*  物理内存大小                */
+#define PAGE_SIZE           (4 * KB)
+#define PAGE_OFFSET         (12)
+#define FRAME_SIZE          (PAGE_SIZE)
 
-#define KERN_MEM_SIZE       (3 * MB)                                    /*  内核内存大小                */
+#define SECTION_SIZE        (1 * MB)
+#define SECTION_OFFSET      (20)
+
+#define PHY_MEM_SIZE        (64 * MB)                                   /*  物理内存大小                */
+#define PHY_MEM_BASE        (0x30000000)                                /*  物理内存基址                */
+
+#define KERN_MEM_SIZE       (7 * MB)                                    /*  内核内存大小                */
 #define KERN_MEM_BASE       PHY_MEM_BASE                                /*  内核内存基址                */
 
 #define INT_MEM_SIZE        (1 * MB)                                    /*  中断内存大小                */
 #define INT_MEM_BASE        (KERN_MEM_BASE + KERN_MEM_SIZE)             /*  中断内存基址                */
 
+#define VMM_MEM_SIZE        (PHY_MEM_SIZE - KERN_MEM_SIZE-INT_MEM_SIZE) /*  VMM 内存大小                */
+#define VMM_MEM_BASE        (INT_MEM_BASE + INT_MEM_SIZE)               /*  VMM 内存基址                */
+
 #define PROCESS_SPACE_SIZE  (32 * MB)                                   /*  进程空间大小                */
-#define PROCESS_MEM_SIZE    (4 * MB)                                    /*  进程内存大小                */
-#define PROCESS_MEM_BASE    (INT_MEM_BASE + INT_MEM_SIZE)               /*  进程内存基址                */
-                                                                        /*  进程数, 含进程 0            */
-#define PROCESS_NR          ((PHY_MEM_SIZE - KERN_MEM_SIZE - INT_MEM_SIZE) / PROCESS_MEM_SIZE + 1)
+#define PROCESS_NR          (15)                                        /*  进程数, 含进程 0            */
 
-#define MMU_TBL_ALIGNED     (32 * KB)                                   /*  MMU 转换表基址对齐大小      */
-                                                                        /*  MMU 转换表基址              */
-#define MMU_TBL_BASE        (KERN_MEM_BASE + KERN_MEM_SIZE - MMU_TBL_ALIGNED)
+#define PAGE_TBL_SIZE       (1 * KB)
+#define PAGE_TBL_NR         (1024)
+#define PAGE_TBL_BASE       (KERN_MEM_BASE + KERN_MEM_SIZE - PAGE_TBL_NR * PAGE_TBL_SIZE)
+
 #define MMU_TBL_SIZE        (16 * KB)                                   /*  MMU 转换表大小              */
+#define MMU_TBL_BASE        (PAGE_TBL_BASE - MMU_TBL_SIZE)              /*  MMU 转换表基址              */
 
-#define PROCESS0_STACK_BASE MMU_TBL_BASE
+#define PROCESS0_STACK_BASE (MMU_TBL_BASE)
 
 #define KERN_LOAD_ADDR      (KERN_MEM_BASE)                             /*  内核加载地址                */
 
 #define VECTOR_V_ADDR       (0xFFFFF0000)                               /*  向量虚拟地址                */
 #define VECTOR_P_ADDR       (INT_MEM_BASE + 0xF0000)                    /*  向量物理地址                */
 
-#define IRQ_STACK_P_BASE    VECTOR_P_ADDR                               /*  IRQ 堆栈物理基址            */
-#define IRQ_STACK_V_BASE    VECTOR_V_ADDR                               /*  IRQ 堆栈虚拟基址            */
+#define IRQ_STACK_P_BASE    (VECTOR_P_ADDR)                             /*  IRQ 堆栈物理基址            */
+#define IRQ_STACK_V_BASE    (VECTOR_V_ADDR)                             /*  IRQ 堆栈虚拟基址            */
 
 #define UART_BAUD_RATE      115200                                      /*  UART 波特率                 */
 
 #define TICK_PER_SECOND     100                                         /*  每秒 tick 数                */
 
-#define PROCESS_HEAP_SIZE   (PROCESS_MEM_SIZE - 1 * MB)                 /*  进程堆大小                  */
+/*
+ * TODO
+ */
+#define PROCESS_HEAP_SIZE   (PROCESS_SPACE_SIZE - 1 * MB)               /*  进程堆大小                  */
 
-#define KERN_HEAP_SIZE      (1 * MB)                                    /*  内核堆大小                  */
+#define KERN_HEAP_SIZE      (2 * MB)                                    /*  内核堆大小                  */
 
 #ifdef SMILEOS_KTHREAD
 #define THREAD_NR           32                                          /*  线程数                      */
@@ -87,6 +99,8 @@
 #define TASK_NR             (PROCESS_NR + THREAD_NR)                    /*  任务数                      */
 
 #define KERN_STACK_SIZE     2048                                        /*  内核堆栈大小                */
+
+#define FRAME_NR            (VMM_MEM_SIZE / FRAME_SIZE)
 
 #endif                                                                  /*  S3C2440_CONFIG_H_           */
 /*********************************************************************************************************

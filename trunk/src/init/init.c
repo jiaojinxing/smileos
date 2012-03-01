@@ -60,7 +60,7 @@ int main(void)
 
     mmu_init();
 
-    memcpy((void *)VECTOR_P_ADDR, (void *)KERN_LOAD_ADDR, PAGE);
+    memcpy((void *)VECTOR_P_ADDR, (void *)KERN_LOAD_ADDR, PAGE_SIZE);
 
     sched_init();
 
@@ -69,49 +69,49 @@ int main(void)
     process_create(code, size, 15);
     process_create(code, size, 15);
     process_create(code, size, 15);
-    process_create(code, size, 15);
-    process_create(code, size, 15);
-    process_create(code, size, 15);
-    process_create(code, size, 15);
-    process_create(code, size, 15);
-    process_create(code, size, 15);
-    process_create(code, size, 15);
-    process_create(code, size, 15);
-    process_create(code, size, 15);
-    process_create(code, size, 15);
-    process_create(code, size, 15);
-    process_create(code, size, 15);
-
-    kthread_create(thread1, (void *)1, 32 * 1024, 5);
-    kthread_create(thread1, (void *)2, 32 * 1024, 5);
-    kthread_create(thread1, (void *)3, 32 * 1024, 5);
-    kthread_create(thread1, (void *)4, 32 * 1024, 5);
-    kthread_create(thread1, (void *)5, 32 * 1024, 5);
-    kthread_create(thread1, (void *)1, 32 * 1024, 5);
-    kthread_create(thread1, (void *)2, 32 * 1024, 5);
-    kthread_create(thread1, (void *)3, 32 * 1024, 5);
-    kthread_create(thread1, (void *)4, 32 * 1024, 5);
-    kthread_create(thread1, (void *)5, 32 * 1024, 5);
-    kthread_create(thread1, (void *)1, 32 * 1024, 5);
-    kthread_create(thread1, (void *)2, 32 * 1024, 5);
-    kthread_create(thread1, (void *)3, 32 * 1024, 5);
-    kthread_create(thread1, (void *)4, 32 * 1024, 5);
-    kthread_create(thread1, (void *)5, 32 * 1024, 5);
-    kthread_create(thread1, (void *)1, 32 * 1024, 5);
-    kthread_create(thread1, (void *)2, 32 * 1024, 5);
-    kthread_create(thread1, (void *)3, 32 * 1024, 5);
-    kthread_create(thread1, (void *)4, 32 * 1024, 5);
-    kthread_create(thread1, (void *)5, 32 * 1024, 5);
-    kthread_create(thread1, (void *)1, 32 * 1024, 5);
-    kthread_create(thread1, (void *)2, 32 * 1024, 5);
-    kthread_create(thread1, (void *)3, 32 * 1024, 5);
-    kthread_create(thread1, (void *)4, 32 * 1024, 5);
-    kthread_create(thread1, (void *)5, 32 * 1024, 5);
-    kthread_create(thread1, (void *)1, 32 * 1024, 5);
-    kthread_create(thread1, (void *)2, 32 * 1024, 5);
-    kthread_create(thread1, (void *)3, 32 * 1024, 5);
-    kthread_create(thread1, (void *)4, 32 * 1024, 5);
-    kthread_create(thread1, (void *)5, 32 * 1024, 5);
+//    process_create(code, size, 15);
+//    process_create(code, size, 15);
+//    process_create(code, size, 15);
+//    process_create(code, size, 15);
+//    process_create(code, size, 15);
+//    process_create(code, size, 15);
+//    process_create(code, size, 15);
+//    process_create(code, size, 15);
+//    process_create(code, size, 15);
+//    process_create(code, size, 15);
+//    process_create(code, size, 15);
+//    process_create(code, size, 15);
+//
+//    kthread_create(thread1, (void *)1, 32 * 1024, 5);
+//    kthread_create(thread1, (void *)2, 32 * 1024, 5);
+//    kthread_create(thread1, (void *)3, 32 * 1024, 5);
+//    kthread_create(thread1, (void *)4, 32 * 1024, 5);
+//    kthread_create(thread1, (void *)5, 32 * 1024, 5);
+//    kthread_create(thread1, (void *)1, 32 * 1024, 5);
+//    kthread_create(thread1, (void *)2, 32 * 1024, 5);
+//    kthread_create(thread1, (void *)3, 32 * 1024, 5);
+//    kthread_create(thread1, (void *)4, 32 * 1024, 5);
+//    kthread_create(thread1, (void *)5, 32 * 1024, 5);
+//    kthread_create(thread1, (void *)1, 32 * 1024, 5);
+//    kthread_create(thread1, (void *)2, 32 * 1024, 5);
+//    kthread_create(thread1, (void *)3, 32 * 1024, 5);
+//    kthread_create(thread1, (void *)4, 32 * 1024, 5);
+//    kthread_create(thread1, (void *)5, 32 * 1024, 5);
+//    kthread_create(thread1, (void *)1, 32 * 1024, 5);
+//    kthread_create(thread1, (void *)2, 32 * 1024, 5);
+//    kthread_create(thread1, (void *)3, 32 * 1024, 5);
+//    kthread_create(thread1, (void *)4, 32 * 1024, 5);
+//    kthread_create(thread1, (void *)5, 32 * 1024, 5);
+//    kthread_create(thread1, (void *)1, 32 * 1024, 5);
+//    kthread_create(thread1, (void *)2, 32 * 1024, 5);
+//    kthread_create(thread1, (void *)3, 32 * 1024, 5);
+//    kthread_create(thread1, (void *)4, 32 * 1024, 5);
+//    kthread_create(thread1, (void *)5, 32 * 1024, 5);
+//    kthread_create(thread1, (void *)1, 32 * 1024, 5);
+//    kthread_create(thread1, (void *)2, 32 * 1024, 5);
+//    kthread_create(thread1, (void *)3, 32 * 1024, 5);
+//    kthread_create(thread1, (void *)4, 32 * 1024, 5);
+//    kthread_create(thread1, (void *)5, 32 * 1024, 5);
 
     sched_start();
 

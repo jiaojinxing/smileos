@@ -42,7 +42,7 @@
 
 #define KB                  (1024)
 #define MB                  (1024 * KB)
-#define PAGE                (4 * KB)
+#define GB                  (1024 * MB)
 
 #ifdef S3C2440_BSP
 #include "../../bsp/s3c2440/s3c2440_config.h"
@@ -53,7 +53,7 @@
 #endif
 
 #ifndef PROCESS_HEAP_SIZE
-#define PROCESS_HEAP_SIZE   (3 * MB)                                    /*  进程堆大小                  */
+#define PROCESS_HEAP_SIZE   (31 * MB)                                   /*  进程堆大小                  */
 #endif
 
 #endif                                                                  /*  CONFIG_H_                   */
