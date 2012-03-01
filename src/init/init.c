@@ -82,7 +82,6 @@ int main(void)
     process_create(code, size, 15);
     process_create(code, size, 15);
 
-
     kthread_create(thread1, (void *)1, 32 * 1024, 5);
     kthread_create(thread1, (void *)2, 32 * 1024, 5);
     kthread_create(thread1, (void *)3, 32 * 1024, 5);
