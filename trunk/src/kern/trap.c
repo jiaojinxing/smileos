@@ -41,6 +41,7 @@
 #include "kern/types.h"
 #include "kern/kern.h"
 #include "kern/mmu.h"
+#include "kern/vmm.h"
 
 /*
  * 未定义指令异常处理程序
@@ -100,11 +101,14 @@ void dabt_c_handler(uint32_t lr, uint32_t spsr)
 
     case 5:     /* Translation */
     case 7:
+#if 0
+        mva = mmu_get_fault_address();
+#else
         mva = mmu_get_fault_address() + PROCESS_SPACE_SIZE *  current->pid;
+#endif
 
-        if (    mva >= PROCESS_SPACE_SIZE *  current->pid               /*  判断虚拟地址是否在当前进程  */
-             && mva <  PROCESS_SPACE_SIZE * (current->pid + 1)) {       /*  可以访问的 mva 范围内       */
-
+        if (    mva >= PROCESS_SPACE_SIZE *  current->pid               /*  判断出错地址是否在当前进程  */
+             && mva <  PROCESS_SPACE_SIZE * (current->pid + 1)) {       /*  可以访问的地址空间范围内    */
             process_space_page_map(current, mva);
         } else {
             printk("%s, current tid = %d\n", __func__, current->tid);

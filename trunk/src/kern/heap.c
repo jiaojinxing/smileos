@@ -22,7 +22,7 @@
 ** File name:               heap.c
 ** Last modified Date:      2012-2-23
 ** Last Version:            1.0.0
-** Descriptions:            堆内存管理
+** Descriptions:            动态内存堆
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing
@@ -55,10 +55,8 @@ extern int printf(const char *fmt, ...);
 
 static heap_t  process_heap;
 
-static uint8_t process_heap_mem[PROCESS_HEAP_SIZE];
-
 /*
- * 从堆分配内存
+ * 从内存堆分配内存
  */
 void *malloc(uint32_t size)
 {
@@ -70,7 +68,7 @@ void *malloc(uint32_t size)
 }
 
 /*
- * 释放内存回堆
+ * 释放内存回内存堆
  */
 void free(void *ptr)
 {
@@ -94,7 +92,12 @@ void *calloc(unsigned int nelem, unsigned int elsize)
  */
 void libc_init(void)
 {
-    heap_init(&process_heap, process_heap_mem, PROCESS_HEAP_SIZE);
+    extern unsigned char __bss_end;
+
+    /*
+     * 在 __bss_end 后, 进程栈空间前, 建立内存堆
+     */
+    heap_init(&process_heap, &__bss_end, PROCESS_SPACE_SIZE - (uint32_t)&__bss_end - PROCESS_STACK_SIZE);
 }
 #endif
 
@@ -142,7 +145,7 @@ int heap_init(heap_t *heap, uint8_t *base, uint32_t size)
 
     heap->free_list             = heap->block_list;                     /*  空闲内存块链表              */
 
-    heap->block_cnt             = 1;
+    heap->block_cnt             = 1;                                    /*  初始化统计信息              */
     heap->used_size             = 0;
     heap->alloc_cnt             = 0;
     heap->free_cnt              = 0;
@@ -192,7 +195,7 @@ void *heap_alloc(heap_t *heap, uint32_t size)
             new_blk = blk;
 
         } else {
-
+                                                                        /*  在内存块的高端地址处        */
             new_blk = (mem_block_t *)((char *)blk + blk->size - size);  /*  建立一个新的内存块          */
 
             if (blk->next != NULL) {                                    /*  新内存块加入内存块链表      */
@@ -211,7 +214,7 @@ void *heap_alloc(heap_t *heap, uint32_t size)
             heap->block_cnt++;
         }
 
-        new_blk->magic0 = MEM_BLOCK_MAGIC0;                             /*  魔数                        */
+        new_blk->magic0 = MEM_BLOCK_MAGIC0;                             /*  加入魔数                    */
 
         heap->alloc_cnt++;
         heap->used_size += new_blk->size + MEM_ALIGN_SIZE(sizeof(mem_block_t));
@@ -235,25 +238,25 @@ void *heap_free(heap_t *heap, void *ptr)
     mem_block_t *next;
 
     if (ptr == NULL) {
-        debug_output("%s: process %d memory pointer=NULL!\n", __func__, getpid());
+        debug_output("%s: process %d memptr=NULL!\n", __func__, getpid());
         return ptr;
     }
 
     if (ptr != MEM_ALIGN(ptr)) {
-        debug_output("%s: process %d memory pointer=0x%x is not aligned!\n", __func__, getpid(), ptr);
+        debug_output("%s: process %d memptr=0x%x is not aligned!\n", __func__, getpid(), ptr);
         return ptr;
     }
 
     if (((uint8_t *)ptr < (heap->base + MEM_ALIGN_SIZE(sizeof(mem_block_t)))) ||
         ((uint8_t *)ptr >= heap->base + heap->size)) {
-        debug_output("%s: process %d memory pointer=0x%x dose not belong to this heap!\n", __func__, getpid(), ptr);
+        debug_output("%s: process %d memptr=0x%x dose not belong to this heap!\n", __func__, getpid(), ptr);
         return ptr;
     }
                                                                         /*  指针所在的内存块节点        */
     blk  = (mem_block_t *)((char *)ptr - MEM_ALIGN_SIZE(sizeof(mem_block_t)));
 
     if (blk->magic0 != MEM_BLOCK_MAGIC0 || blk->status != MEM_BLOCK_STATE_USED) {
-        debug_output("%s: process %d memory pointer=0x%x is invalid!\n", __func__, getpid(), ptr);
+        debug_output("%s: process %d memptr=0x%x is invalid!\n", __func__, getpid(), ptr);
         return ptr;
     }
 
@@ -261,7 +264,7 @@ void *heap_free(heap_t *heap, void *ptr)
     next = blk->next;
 
     if (next != NULL && next->magic0 != MEM_BLOCK_MAGIC0) {             /*  写缓冲区溢出                */
-        debug_output("%s: process %d write buffer over, memory pointer=0x%x!\n", __func__, getpid(), ptr);
+        debug_output("%s: process %d write buffer over, memptr=0x%x!\n", __func__, getpid(), ptr);
         return ptr;
     }
 
@@ -303,8 +306,14 @@ void *heap_free(heap_t *heap, void *ptr)
         }
 
         heap->block_cnt--;
+
     } else {
-        blk->prev_free = NULL;                                          /*  把内存块加入空闲内存块链表  */
+        /*
+         * 把内存块加入空闲内存块链表的链头, 分配时尽可能使用已经使用过的内存,
+         * 因为使用过, 那么这些内存已经映射好, 即已经引入了页框,
+         * 既提升了程序的运行速度, 又减少了本进程使用的页框数
+         */
+        blk->prev_free = NULL;
         blk->next_free = heap->free_list;
         if (heap->free_list != NULL) {
             heap->free_list->prev_free = blk;
@@ -317,22 +326,26 @@ void *heap_free(heap_t *heap, void *ptr)
     heap->free_cnt++;
     heap->used_size -= blk->size + MEM_ALIGN_SIZE(sizeof(mem_block_t));
 
-#if 0
+    return NULL;
+}
+
+/*
+ * 打印堆信息
+ */
+void heap_info(heap_t *heap)
+{
     debug_output("heap block count = %d\n", heap->block_cnt);
     debug_output("heap alloc count = %d\n", heap->alloc_cnt);
     debug_output("heap free  count = %d\n", heap->free_cnt);
     debug_output("heap leak  count = %d\n", heap->alloc_cnt - heap->free_cnt);
     debug_output("heap used  size  = %dMB.%dKB.%dB\n",
-            heap->used_size/MB,
-            heap->used_size%MB/KB,
-            heap->used_size%KB);
+            heap->used_size / MB,
+            heap->used_size % MB / KB,
+            heap->used_size % KB);
     debug_output("heap free  size  = %dMB.%dKB.%dB\n",
-            (heap->size-heap->used_size)/MB,
-            (heap->size-heap->used_size)%MB/KB,
-            (heap->size-heap->used_size)%KB);
-#endif
-
-    return NULL;
+            (heap->size-heap->used_size) / MB,
+            (heap->size-heap->used_size) % MB / KB,
+            (heap->size-heap->used_size) % KB);
 }
 /*********************************************************************************************************
   END FILE

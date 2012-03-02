@@ -45,6 +45,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/time.h>
+#ifdef SMILEOS_KERNEL
+#include "kern/kern.h"
+#endif
 
 /*
  * 系统调用模板
@@ -162,7 +165,6 @@ int printf(const char *fmt, ...)
 int select(int maxfdp1, fd_set *readset, fd_set *writeset, fd_set *exceptset, struct timeval *timeout)
 {
 #ifdef SMILEOS_KERNEL
-#include "kern/kern.h"
     printk("can't call %s()!, kill kthread %d abort\n", __func__, current->tid);
 
     abort();
@@ -231,7 +233,6 @@ int *__errno(void)
 void _sbrk(void)
 {
 #ifdef SMILEOS_KERNEL
-#include "kern/kern.h"
     printk("can't call %s()!, kill kthread %d abort\n", __func__, current->tid);
 
     abort();

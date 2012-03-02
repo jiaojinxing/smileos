@@ -41,7 +41,7 @@
 #define VMM_H_
 
 /*
- * 进程空间的地址
+ * 映射进程空间里的虚拟地址, 页面映射
  */
 int process_space_page_map(task_t *task, uint32_t mva);
 

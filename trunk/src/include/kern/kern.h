@@ -50,9 +50,7 @@
  * 任务类型
  */
 #define TASK_TYPE_PROCESS       0
-#ifdef SMILEOS_KTHREAD
 #define TASK_TYPE_THREAD        1
-#endif
 
 /*
  * 任务状态
@@ -85,9 +83,7 @@ typedef struct _task {
     uint32_t            prio;
     uint32_t            content[20];
     uint32_t            kstack[KERN_STACK_SIZE];
-#ifdef SMILEOS_KTHREAD
     int                 type;
-#endif
     heap_t              heap;
     int                 errno;
     int                 resume_type;
@@ -136,12 +132,10 @@ void do_timer(void);
  */
 int32_t process_create(uint8_t *code, uint32_t size, uint32_t prio);
 
-#ifdef SMILEOS_KTHREAD
 /*
  * 创建线程
  */
 int32_t kthread_create(void (*func)(void *), void *arg, uint32_t stk_size, uint32_t prio);
-#endif
 
 /*
  * printk
