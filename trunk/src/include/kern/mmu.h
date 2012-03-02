@@ -246,7 +246,7 @@ void mmu_map_section_as_page(register uint32_t section_nr,
                              register uint32_t page_tbl_base);
 
 /*
- * Ó³ÉäÒ³Ãæ
+ * Ó³Éä 4K Ğ¡Ò³Ãæ
  */
 void mmu_map_page(register uint32_t page_tbl_base,
                   register uint32_t page_nr,

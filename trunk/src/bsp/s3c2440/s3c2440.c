@@ -40,6 +40,7 @@
 #include "kern/config.h"
 #include "kern/types.h"
 #include "kern/mmu.h"
+#include "kern/kern.h"
 #include "s3c2440.h"
 #include "s3c2440_clock.h"
 #include "s3c2440_uart.h"
@@ -75,6 +76,20 @@ void bsp_mem_map(void)
      * dm9000
      */
 }
+
+/*
+ * BSP 保留空间
+ */
+resv_space_t bsp_resv_space[] = {
+        {
+            0x48000000,
+            0x60000000 - 0x48000000
+        },
+        {
+            0,
+            0
+        }
+};
 
 /*
  * 初始化 BSP

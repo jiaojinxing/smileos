@@ -217,7 +217,7 @@ void schedule(void)
 
     current = &tasks[next];
 
-    if ((current->content[3] & ARM_MODE_MASK) == ARM_SVC_MODE) {        /*  重新设置该任务的内核栈地址  */
+    if ((current->content[3] & ARM_MODE_MASK) == ARM_SVC_MODE) {        /*  重新设置该任务的内核栈指针  */
         current->content[0] = (uint32_t)&current->kstack[KERN_STACK_SIZE];
     }
 
@@ -373,6 +373,40 @@ void sched_start(void)
 }
 
 /*
+ * 判断虚拟地址空间是否可用
+ */
+int space_ok(uint32_t virtual_base, uint32_t size)
+{
+    uint32_t end = virtual_base + size;
+    uint32_t high, low;
+    int i;
+
+    extern resv_space_t sys_resv_space[];
+    extern resv_space_t bsp_resv_space[];
+
+#define max(a, b)   (a) > (b) ? (a) : (b)
+#define min(a, b)   (a) < (b) ? (a) : (b)
+
+    for (i = 0; sys_resv_space[i].size != 0; i++) {
+        high = max(sys_resv_space[i].virtual_base, virtual_base);
+        low  = min(sys_resv_space[i].virtual_base + sys_resv_space[i].size, end);
+        if (high < low) {
+            return 0;
+        }
+    }
+
+    for (i = 0; bsp_resv_space[i].size != 0; i++) {
+        high = max(bsp_resv_space[i].virtual_base, virtual_base);
+        low  = min(bsp_resv_space[i].virtual_base + bsp_resv_space[i].size, end);
+        if (high < low) {
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
+/*
  * 创建进程
  */
 int32_t process_create(uint8_t *code, uint32_t size, uint32_t prio)
@@ -387,9 +421,11 @@ int32_t process_create(uint8_t *code, uint32_t size, uint32_t prio)
 
     reg = interrupt_disable();
 
-    for (i = 1, task = tasks + 1; i < PROCESS_NR; i++, task++){
+    for (i = 1, task = tasks + 1; i < PROCESS_NR; i++, task++) {
         if (task->state == TASK_UNALLOCATE) {
-            break;
+            if (space_ok(i * PROCESS_SPACE_SIZE, PROCESS_SPACE_SIZE)) {
+                break;
+            }
         }
     }
 
@@ -403,9 +439,7 @@ int32_t process_create(uint8_t *code, uint32_t size, uint32_t prio)
     task->state        = TASK_RUNNING;
     task->count        = 15;
     task->prio         = prio;
-#ifdef SMILEOS_KTHREAD
     task->type         = TASK_TYPE_PROCESS;
-#endif
 
     task->content[0]   = (uint32_t)&task->kstack[KERN_STACK_SIZE];  /*  svc 模式的 sp (满堆栈递减)      */
     task->content[1]   = ARM_SYS_MODE | ARM_FIQ_NO | ARM_IRQ_EN;    /*  cpsr, sys 模式, 关 FIQ, 开 IRQ  */
@@ -448,7 +482,6 @@ int32_t process_create(uint8_t *code, uint32_t size, uint32_t prio)
     return i;
 }
 
-#ifdef SMILEOS_KTHREAD
 /*
  * 创建内核线程
  */
@@ -507,7 +540,6 @@ int32_t kthread_create(void (*func)(void *), void *arg, uint32_t stk_size, uint3
 
     return i;
 }
-#endif
 
 /*
  * printk

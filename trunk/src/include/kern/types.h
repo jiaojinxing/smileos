@@ -109,6 +109,28 @@ typedef uint32_t                    mem_ptr_t;
 #define MEM_ALIGN_SIZE_LESS(size)   (((size) & ~(MEM_ALIGNMENT - 1)))
 #define MEM_ALIGN(addr)             ((void *)(((uint32_t)(addr) + MEM_ALIGNMENT - 1) & ~(uint32_t)(MEM_ALIGNMENT - 1)))
 #define MEM_ALIGN_LESS(addr)        ((void *)(((uint32_t)(addr)) & ~(uint32_t)(MEM_ALIGNMENT - 1)))
+/*********************************************************************************************************
+  为了更好地移植 LwIP, 加入以下数据类型定义
+*********************************************************************************************************/
+/* These types must be 16-bit, 32-bit or larger integer */
+typedef int             INT;
+typedef unsigned int    UINT;
+
+/* These types must be 8-bit integer */
+typedef char            CHAR;
+typedef unsigned char   UCHAR;
+typedef unsigned char   BYTE;
+
+/* These types must be 16-bit integer */
+typedef short           SHORT;
+typedef unsigned short  USHORT;
+typedef unsigned short  WORD;
+typedef unsigned short  WCHAR;
+
+/* These types must be 32-bit integer */
+typedef long            LONG;
+typedef unsigned int    ULONG;
+typedef unsigned int    DWORD;
 
 #endif                                                                  /*  TYPES_H_                    */
 /*********************************************************************************************************

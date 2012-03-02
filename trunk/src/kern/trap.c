@@ -87,6 +87,7 @@ void fiq_c_handler(uint32_t lr, uint32_t spsr)
 void dabt_c_handler(uint32_t lr, uint32_t spsr)
 {
     uint32_t mva;
+    static int cnt = 0;
 
     switch (mmu_get_data_fault_status() & 0x0F) {
     case 1:     /* Alignment */
@@ -101,6 +102,9 @@ void dabt_c_handler(uint32_t lr, uint32_t spsr)
 
     case 5:     /* Translation */
     case 7:
+        /*
+         * TODO: qemu-system-arm.exe 的 bug..., 真实硬件使用 #if 1
+         */
 #if 0
         mva = mmu_get_fault_address();
 #else
@@ -108,8 +112,9 @@ void dabt_c_handler(uint32_t lr, uint32_t spsr)
 #endif
 
         if (    mva >= PROCESS_SPACE_SIZE *  current->pid               /*  判断出错地址是否在当前进程  */
-             && mva <  PROCESS_SPACE_SIZE * (current->pid + 1)) {       /*  可以访问的地址空间范围内    */
+             && mva <  PROCESS_SPACE_SIZE * (current->pid + 1)) {       /*  的地址空间范围内            */
             process_space_page_map(current, mva);
+            printk("miss page interrupt cnt=%d\n", ++cnt);
         } else {
             printk("%s, current tid = %d\n", __func__, current->tid);
             printk("fault address = 0x%x\n", mmu_get_fault_address());
