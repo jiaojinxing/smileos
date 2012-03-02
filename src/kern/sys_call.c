@@ -161,9 +161,16 @@ int printf(const char *fmt, ...)
  */
 int select(int maxfdp1, fd_set *readset, fd_set *writeset, fd_set *exceptset, struct timeval *timeout)
 {
+#ifdef SMILEOS_KERNEL
+#include "kern/kern.h"
+    printk("can't call %s()!, kill kthread %d abort\n", __func__, current->tid);
+
+    abort();
+#else
     printf("can't call %s()!, kill process %d\n", __func__, getpid());
 
     abort();
+#endif
 
     return -1;
 }
@@ -225,9 +232,9 @@ void _sbrk(void)
 {
 #ifdef SMILEOS_KERNEL
 #include "kern/kern.h"
-    printk("can't call %s()!, current tid=%d, SmileOS abort\n", __func__, current->tid);
+    printk("can't call %s()!, kill kthread %d abort\n", __func__, current->tid);
 
-    while (1) ;
+    abort();
 #else
     printf("can't call %s()!, kill process %d\n", __func__, getpid());
 

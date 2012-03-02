@@ -85,8 +85,10 @@ void fiq_c_handler(uint32_t lr, uint32_t spsr)
  */
 void dabt_c_handler(uint32_t lr, uint32_t spsr)
 {
+    uint32_t mva;
+
     switch (mmu_get_data_fault_status() & 0x0F) {
-    case 1: /* Alignment */
+    case 1:     /* Alignment */
     case 3:
         printk("%s, current tid = %d\n", __func__, current->tid);
         printk("fault address = 0x%x\n", mmu_get_fault_address());
@@ -96,9 +98,15 @@ void dabt_c_handler(uint32_t lr, uint32_t spsr)
         while (1);
         break;
 
-    case 5: /* Translation */
+    case 5:     /* Translation */
     case 7:
-        if (address_translate_failed(mmu_get_fault_address()) < 0) {
+        mva = mmu_get_fault_address() + PROCESS_SPACE_SIZE *  current->pid;
+
+        if (    mva >= PROCESS_SPACE_SIZE *  current->pid               /*  判断虚拟地址是否在当前进程  */
+             && mva <  PROCESS_SPACE_SIZE * (current->pid + 1)) {       /*  可以访问的 mva 范围内       */
+
+            process_space_page_map(current, mva);
+        } else {
             printk("%s, current tid = %d\n", __func__, current->tid);
             printk("fault address = 0x%x\n", mmu_get_fault_address());
             printk("fault status  = 0x%x\n", mmu_get_data_fault_status());
@@ -108,7 +116,7 @@ void dabt_c_handler(uint32_t lr, uint32_t spsr)
         }
         break;
 
-    case 9: /* Domain */
+    case 9:     /* Domain */
     case 11:
         printk("%s, current tid = %d\n", __func__, current->tid);
         printk("fault address = 0x%x\n", mmu_get_fault_address());
@@ -118,7 +126,7 @@ void dabt_c_handler(uint32_t lr, uint32_t spsr)
         while (1);
         break;
 
-    case 13: /* Permission */
+    case 13:    /* Permission */
     case 15:
         printk("%s, current tid = %d\n", __func__, current->tid);
         printk("fault address = 0x%x\n", mmu_get_fault_address());
@@ -128,10 +136,10 @@ void dabt_c_handler(uint32_t lr, uint32_t spsr)
         while (1);
         break;
 
-            /* External abort on noncachable
-               nonbufferable access or noncachable
-               bufferable read
-             */
+                 /* External abort on noncachable
+                    nonbufferable access or noncachable
+                    bufferable read
+                  */
     case 8:
     case 10:
         printk("%s, current tid = %d\n", __func__, current->tid);

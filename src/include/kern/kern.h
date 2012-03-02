@@ -62,6 +62,9 @@
 #define TASK_SLEEPING           1
 #define TASK_SUSPEND            2
 
+/*
+ * 任务恢复类型
+ */
 #define TASK_RESUME_UNKNOW      0
 #define TASK_RESUME_MUTEX_COME  (1 << 1)
 #define TASK_RESUME_SEM_COME    (1 << 2)

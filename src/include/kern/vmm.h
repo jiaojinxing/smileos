@@ -41,9 +41,9 @@
 #define VMM_H_
 
 /*
- * MVA 映射
+ * 进程空间的地址
  */
-int mva_map(task_t *task, uint32_t mva);
+int process_space_page_map(task_t *task, uint32_t mva);
 
 /*
  * 初始化虚拟内存管理
