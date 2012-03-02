@@ -60,8 +60,6 @@ int main(void)
 
     mmu_init();
 
-    memcpy((void *)VECTOR_P_ADDR, (void *)KERN_LOAD_ADDR, PAGE_SIZE);
-
     sched_init();
 
     code = sbin_lookup("/2440_P1.hex", &size);

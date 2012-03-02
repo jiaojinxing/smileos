@@ -52,7 +52,7 @@
 #define PHY_MEM_BASE        (0x30000000)                                /*  物理内存基址                */
 
 #define KERN_MEM_SIZE       (7 * MB)                                    /*  内核内存大小                */
-#define KERN_MEM_BASE       PHY_MEM_BASE                                /*  内核内存基址                */
+#define KERN_MEM_BASE       (PHY_MEM_BASE)                              /*  内核内存基址                */
 
 #define INT_MEM_SIZE        (1 * MB)                                    /*  中断内存大小                */
 #define INT_MEM_BASE        (KERN_MEM_BASE + KERN_MEM_SIZE)             /*  中断内存基址                */
@@ -60,9 +60,6 @@
 #define VMM_MEM_SIZE        (PHY_MEM_SIZE - KERN_MEM_SIZE-INT_MEM_SIZE) /*  VMM 内存大小                */
 #define VMM_MEM_BASE        (INT_MEM_BASE + INT_MEM_SIZE)               /*  VMM 内存基址                */
 #define FRAME_NR            (VMM_MEM_SIZE / FRAME_SIZE)                 /*  页框数                      */
-
-#define PROCESS_SPACE_SIZE  (32 * MB)                                   /*  进程空间大小                */
-#define PROCESS_NR          (15)                                        /*  进程数, 含进程 0            */
 
 #define PAGE_TBL_SIZE       (1 * KB)                                    /*  页表大小                    */
 #define PAGE_TBL_NR         (1024)                                      /*  页表数                      */
@@ -82,21 +79,20 @@
 #define IRQ_STACK_P_BASE    (VECTOR_P_ADDR)                             /*  IRQ 堆栈物理基址            */
 #define IRQ_STACK_V_BASE    (VECTOR_V_ADDR)                             /*  IRQ 堆栈虚拟基址            */
 
-#define UART_BAUD_RATE      115200                                      /*  UART 波特率                 */
-
-#define TICK_PER_SECOND     100                                         /*  每秒 tick 数                */
-
 #define KERN_HEAP_SIZE      (2 * MB)                                    /*  内核堆大小                  */
+#define KERN_STACK_SIZE     2048                                        /*  内核栈大小                  */
 
+#define PROCESS_NR          (15)                                        /*  进程数, 含进程 0            */
 #ifdef SMILEOS_KTHREAD
 #define THREAD_NR           32                                          /*  线程数                      */
 #else
 #define THREAD_NR           0                                           /*  线程数                      */
 #endif
-
 #define TASK_NR             (PROCESS_NR + THREAD_NR)                    /*  任务数                      */
 
-#define KERN_STACK_SIZE     2048                                        /*  内核堆栈大小                */
+#define UART_BAUD_RATE      115200                                      /*  UART 波特率                 */
+
+#define TICK_PER_SECOND     100                                         /*  每秒 tick 数                */
 
 #endif                                                                  /*  S3C2440_CONFIG_H_           */
 /*********************************************************************************************************

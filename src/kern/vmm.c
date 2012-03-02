@@ -91,8 +91,9 @@ uint32_t page_table_alloc(uint32_t section_nr)
 
         tbl->prev = NULL;
         tbl->next = used_page_table_list;
-        if (used_page_table_list)
+        if (used_page_table_list) {
             used_page_table_list->prev = tbl;
+        }
         used_page_table_list = tbl;
 
         tbl->section_nr = section_nr;
@@ -173,15 +174,15 @@ uint32_t get_frame_addr(frame_t *frame)
 }
 
 /*
- * 进程空间的地址
+ * 映射进程空间里的虚拟地址, 页面映射
  */
 int process_space_page_map(task_t *task, uint32_t mva)
 {
     frame_t *frame;
     int      flag = 0;
 
-    if (   mva >= PROCESS_SPACE_SIZE *  task->pid                       /*  判断虚拟地址是否在当前进程  */
-        && mva <  PROCESS_SPACE_SIZE * (task->pid + 1)) {               /*  可以访问的 mva 范围内       */
+    if (   mva >= PROCESS_SPACE_SIZE *  task->pid                       /*  判断虚拟地址是否在进程      */
+        && mva <  PROCESS_SPACE_SIZE * (task->pid + 1)) {               /*  可以访问的地址空间范围内    */
 
         uint32_t section_nr = mva >> SECTION_OFFSET;                    /*  计算虚拟地址的段号          */
 
@@ -198,8 +199,7 @@ int process_space_page_map(task_t *task, uint32_t mva)
         }
 
         frame = frame_alloc();                                          /*  分配一个空闲的页框          */
-        if (frame) {                                                    /*  计算虚拟地址在页表里        */
-                                                                        /*  页号                        */
+        if (frame) {                                                    /*  计算虚拟地址在页表里的页号  */
             uint32_t page_nr = (mva & (SECTION_SIZE - 1)) >> PAGE_OFFSET;
 
             mmu_map_page(tbl, page_nr, get_frame_addr(frame));          /*  页面映射                    */

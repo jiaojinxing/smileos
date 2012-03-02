@@ -460,7 +460,7 @@ void mmu_map_sections(register uint32_t virtual_base,
 }
 
 /*
- * 映射段, 使用二级页表
+ * 映射段, 使用二级 4K 小页表
  */
 void mmu_map_section_as_page(register uint32_t section_nr,
                              register uint32_t page_tbl_base)
@@ -474,7 +474,7 @@ void mmu_map_section_as_page(register uint32_t section_nr,
 }
 
 /*
- * 映射页面
+ * 映射 4K 小页面
  */
 void mmu_map_page(register uint32_t page_tbl_base,
                   register uint32_t page_nr,
@@ -611,6 +611,11 @@ void mmu_init(void)
      * 使能 D-Cache
      */
     mmu_enable_dcache();
+
+    /*
+     * 拷贝异常向量跳转表
+     */
+    memcpy((void *)VECTOR_P_ADDR, (void *)KERN_LOAD_ADDR, PAGE_SIZE);
 }
 /*********************************************************************************************************
   END FILE

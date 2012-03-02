@@ -52,9 +52,8 @@
 #define TICK_PER_SECOND     100                                         /*  每秒 tick 数                */
 #endif
 
-#ifndef PROCESS_HEAP_SIZE
-#define PROCESS_HEAP_SIZE   (31 * MB)                                   /*  进程堆大小                  */
-#endif
+#define PROCESS_SPACE_SIZE  (32 * MB)                                   /*  进程空间大小                */
+#define PROCESS_STACK_SIZE  (64 * KB)                                   /*  进程栈大小                  */
 
 #endif                                                                  /*  CONFIG_H_                   */
 /*********************************************************************************************************

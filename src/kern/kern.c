@@ -61,7 +61,7 @@ task_t *current;
 uint64_t tick;
 
 /*
- * 内核堆
+ * 内核内存堆
  */
 static uint8_t kern_heap_mem[KERN_HEAP_SIZE];
 
@@ -73,7 +73,7 @@ static uint8_t started   = FALSE;
 static uint8_t wakeup    = FALSE;
 
 /*
- * 从内核堆分配内存
+ * 从内核内存堆分配内存
  */
 void *kmalloc(uint32_t size)
 {
@@ -90,7 +90,7 @@ void *kmalloc(uint32_t size)
 }
 
 /*
- * 释放内存回内核堆
+ * 释放内存回内核内存堆
  */
 void kfree(void *ptr)
 {
@@ -165,7 +165,7 @@ void sched_init(void)
     current = task;
 
     /*
-     * 初始化内核堆
+     * 初始化内核内存堆
      */
     heap_init(&tasks[0].heap, kern_heap_mem, KERN_HEAP_SIZE);
 
@@ -217,7 +217,7 @@ void schedule(void)
 
     current = &tasks[next];
 
-    if ((current->content[3] & ARM_MODE_MASK) == ARM_SVC_MODE) {
+    if ((current->content[3] & ARM_MODE_MASK) == ARM_SVC_MODE) {        /*  重新设置该任务的内核栈地址  */
         current->content[0] = (uint32_t)&current->kstack[KERN_STACK_SIZE];
     }
 
@@ -292,6 +292,7 @@ void do_timer(void)
     uint32_t reg;
 
     reg = interrupt_disable();
+
     tick++;
     wakeup = FALSE;
 
@@ -307,7 +308,6 @@ void do_timer(void)
                         while (prev != NULL && prev->next != t) {
                             prev = prev->next;
                         }
-
                         if (prev != NULL) {
                             prev->next = t->next;
                         }
@@ -336,7 +336,9 @@ void interrupt_enter(void)
     uint32_t reg;
 
     reg = interrupt_disable();
+
     int_level++;
+
     interrupt_resume(reg);
 }
 
@@ -348,6 +350,7 @@ void interrupt_exit(void)
     uint32_t reg;
 
     reg = interrupt_disable();
+
     if (--int_level == 0) {
         if ((current->state != TASK_RUNNING) || (current->count == 0) || wakeup) {
             wakeup = FALSE;
@@ -424,10 +427,16 @@ int32_t process_create(uint8_t *code, uint32_t size, uint32_t prio)
     task->content[17]  = 12;
     task->content[18]  = 0;                                         /*  pc                              */
 
+    /*
+     * 为拷贝代码到进程的地址空间, 预先映射好页面
+     */
     for (i = 0; i < (size + PAGE_SIZE - 1) / PAGE_SIZE; i++) {
         process_space_page_map(task, task->pid * PROCESS_SPACE_SIZE + i * PAGE_SIZE);
     }
 
+    /*
+     * 为进程栈空间映射一个页面
+     */
     process_space_page_map(task, (task->pid + 1) * PROCESS_SPACE_SIZE - PAGE_SIZE);
 
     memcpy((char *)(task->pid * PROCESS_SPACE_SIZE), code, size);
@@ -441,7 +450,7 @@ int32_t process_create(uint8_t *code, uint32_t size, uint32_t prio)
 
 #ifdef SMILEOS_KTHREAD
 /*
- * 创建线程
+ * 创建内核线程
  */
 int32_t kthread_create(void (*func)(void *), void *arg, uint32_t stk_size, uint32_t prio)
 {

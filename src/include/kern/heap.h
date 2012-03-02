@@ -77,6 +77,11 @@ void *heap_alloc(heap_t *heap, uint32_t size);
  */
 void *heap_free(heap_t *heap, void *ptr);
 
+/*
+ * ¥Ú”°∂—–≈œ¢
+ */
+void heap_info(heap_t *heap);
+
 #endif                                                                  /*  HEAP_H_                     */
 /*********************************************************************************************************
   END FILE
