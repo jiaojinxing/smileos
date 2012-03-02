@@ -65,6 +65,9 @@ uint64_t tick;
  */
 static uint8_t kern_heap_mem[KERN_HEAP_SIZE];
 
+/*
+ * 内核变量
+ */
 static uint8_t int_level = 0;
 static uint8_t started   = FALSE;
 static uint8_t wakeup    = FALSE;
@@ -173,7 +176,7 @@ void sched_init(void)
 }
 
 /*
- * 调度, 调用之前必须关中断
+ * 任务调度, 调用之前必须关中断
  */
 void schedule(void)
 {
@@ -422,10 +425,10 @@ int32_t process_create(uint8_t *code, uint32_t size, uint32_t prio)
     task->content[18]  = 0;                                         /*  pc                              */
 
     for (i = 0; i < (size + PAGE_SIZE - 1) / PAGE_SIZE; i++) {
-        mva_map(task, task->pid * PROCESS_SPACE_SIZE + i * PAGE_SIZE);
+        process_space_page_map(task, task->pid * PROCESS_SPACE_SIZE + i * PAGE_SIZE);
     }
 
-    mva_map(task, (task->pid + 1) * PROCESS_SPACE_SIZE - PAGE_SIZE);
+    process_space_page_map(task, (task->pid + 1) * PROCESS_SPACE_SIZE - PAGE_SIZE);
 
     memcpy((char *)(task->pid * PROCESS_SPACE_SIZE), code, size);
 

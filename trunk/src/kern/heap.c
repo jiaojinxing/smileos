@@ -235,25 +235,25 @@ void *heap_free(heap_t *heap, void *ptr)
     mem_block_t *next;
 
     if (ptr == NULL) {
-        debug_output("%s: process %d memory pointer is NULL!\n", __func__, getpid());
+        debug_output("%s: process %d memory pointer=NULL!\n", __func__, getpid());
         return ptr;
     }
 
     if (ptr != MEM_ALIGN(ptr)) {
-        debug_output("%s: process %d memory pointer is not aligned!\n", __func__, getpid());
+        debug_output("%s: process %d memory pointer=0x%x is not aligned!\n", __func__, getpid(), ptr);
         return ptr;
     }
 
     if (((uint8_t *)ptr < (heap->base + MEM_ALIGN_SIZE(sizeof(mem_block_t)))) ||
         ((uint8_t *)ptr >= heap->base + heap->size)) {
-        debug_output("%s: process %d memory pointer dose not belong to this heap!\n", __func__, getpid());
+        debug_output("%s: process %d memory pointer=0x%x dose not belong to this heap!\n", __func__, getpid(), ptr);
         return ptr;
     }
                                                                         /*  指针所在的内存块节点        */
     blk  = (mem_block_t *)((char *)ptr - MEM_ALIGN_SIZE(sizeof(mem_block_t)));
 
     if (blk->magic0 != MEM_BLOCK_MAGIC0 || blk->status != MEM_BLOCK_STATE_USED) {
-        debug_output("%s: process %d memory pointer is invalid!\n", __func__, getpid());
+        debug_output("%s: process %d memory pointer=0x%x is invalid!\n", __func__, getpid(), ptr);
         return ptr;
     }
 
@@ -261,7 +261,7 @@ void *heap_free(heap_t *heap, void *ptr)
     next = blk->next;
 
     if (next != NULL && next->magic0 != MEM_BLOCK_MAGIC0) {             /*  写缓冲区溢出                */
-        debug_output("%s: process %d write buffer over!\n", __func__, getpid());
+        debug_output("%s: process %d write buffer over, memory pointer=0x%x!\n", __func__, getpid(), ptr);
         return ptr;
     }
 

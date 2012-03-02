@@ -41,6 +41,7 @@
 #include "kern/types.h"
 #include "kern/kern.h"
 #include "kern/mmu.h"
+#include <string.h>
 
 /*
  * 页表
@@ -172,9 +173,9 @@ uint32_t get_frame_addr(frame_t *frame)
 }
 
 /*
- * MVA 映射
+ * 进程空间的地址
  */
-int mem_map(task_t *task, uint32_t mva)
+int process_space_page_map(task_t *task, uint32_t mva)
 {
     frame_t *frame;
     int      flag = 0;
@@ -191,7 +192,7 @@ int mem_map(task_t *task, uint32_t mva)
                 mmu_map_section_as_page(section_nr, tbl);               /*  映射该段                    */
                 flag = 1;
             } else {
-                printk("failed to alloc page table\n");
+                printk("failed to alloc page table, map failed, mva=0x%x, pid=%d\n", mva, task->pid);
                 return -1;
             }
         }
@@ -215,21 +216,13 @@ int mem_map(task_t *task, uint32_t mva)
                 mmu_unmap_section(section_nr);
                 page_table_free(tbl);
             }
-            printk("failed to alloc frame\n");
+            printk("failed to alloc frame, map failed, mva=0x%x, pid=%d\n", mva, task->pid);
             return -1;
         }
     } else {
         printk("invalid mva=0x%x, map failed, pid=%d\n", mva, task->pid);
         return -1;
     }
-}
-
-/*
- * 数据访问中止处理
- */
-int data_abort_process(uint32_t mva)
-{
-    return mva_map(current, mva);// + current->pid * PROCESS_SPACE_SIZE);
 }
 
 /*
