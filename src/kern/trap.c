@@ -98,7 +98,7 @@ void dabt_c_handler(uint32_t lr, uint32_t spsr)
 
     case 5: /* Translation */
     case 7:
-        if (translation_failed(mmu_get_fault_address()) < 0) {
+        if (address_translate_failed(mmu_get_fault_address()) < 0) {
             printk("%s, current tid = %d\n", __func__, current->tid);
             printk("fault address = 0x%x\n", mmu_get_fault_address());
             printk("fault status  = 0x%x\n", mmu_get_data_fault_status());
@@ -108,31 +108,35 @@ void dabt_c_handler(uint32_t lr, uint32_t spsr)
         }
         break;
 
-    case 9:
+    case 9: /* Domain */
     case 11:
         printk("%s, current tid = %d\n", __func__, current->tid);
         printk("fault address = 0x%x\n", mmu_get_fault_address());
-        printk("fault status  = 0x%x\n", mmu_get_prefetch_fault_status());
+        printk("fault status  = 0x%x\n", mmu_get_data_fault_status());
         printk("lr   = 0x%x\n", lr);
         printk("spsr = 0x%x\n", spsr);
         while (1);
         break;
 
-    case 13:
+    case 13: /* Permission */
     case 15:
         printk("%s, current tid = %d\n", __func__, current->tid);
         printk("fault address = 0x%x\n", mmu_get_fault_address());
-        printk("fault status  = 0x%x\n", mmu_get_prefetch_fault_status());
+        printk("fault status  = 0x%x\n", mmu_get_data_fault_status());
         printk("lr   = 0x%x\n", lr);
         printk("spsr = 0x%x\n", spsr);
         while (1);
         break;
 
+            /* External abort on noncachable
+               nonbufferable access or noncachable
+               bufferable read
+             */
     case 8:
     case 10:
         printk("%s, current tid = %d\n", __func__, current->tid);
         printk("fault address = 0x%x\n", mmu_get_fault_address());
-        printk("fault status  = 0x%x\n", mmu_get_prefetch_fault_status());
+        printk("fault status  = 0x%x\n", mmu_get_data_fault_status());
         printk("lr   = 0x%x\n", lr);
         printk("spsr = 0x%x\n", spsr);
         while (1);

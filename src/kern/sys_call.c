@@ -224,7 +224,7 @@ int *__errno(void)
 void _sbrk(void)
 {
 #ifdef SMILEOS_KERNEL
-    extern void printk(const char *fmt, ...);
+#include "kern/kern.h"
     printk("can't call %s()!, current tid=%d, SmileOS abort\n", __func__, current->tid);
 
     while (1) ;
