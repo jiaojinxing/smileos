@@ -40,6 +40,8 @@
 #include "kern/config.h"
 #include "kern/types.h"
 #include "kern/mmu.h"
+#include "kern/kern.h"
+#include <string.h>
 
 /*
  * 获得 ID
@@ -457,10 +459,12 @@ void mmu_map_sections(register uint32_t virtual_base,
     for (i = 0; i < size; i++) {
         *entry++ = attr | (((physical_base >> SECTION_OFFSET) + i) << SECTION_OFFSET);
     }
+
+
 }
 
 /*
- * 映射段, 使用二级 4K 小页表
+ * 映射段, 使用二级页表
  */
 void mmu_map_section_as_page(register uint32_t section_nr,
                              register uint32_t page_tbl_base)
@@ -491,8 +495,6 @@ void mmu_map_page(register uint32_t page_tbl_base,
             (BUFFER_EN  << 2) |
             (1          << 1);
 }
-
-extern void bsp_mem_map(void);
 
 /*
  * 建立转换表, 初始化 MMU Cache 等
@@ -581,10 +583,10 @@ void mmu_init(void)
                      INT_MEM_BASE,
                      1 * MB,
                      SECTION_ATTR(AP_USER_RW, DOMAIN_CHECK, CACHE_EN, BUFFER_EN));
-
     /*
      * BSP 内存映射
      */
+    extern void bsp_mem_map(void);
     bsp_mem_map();
 
     /*
@@ -617,6 +619,24 @@ void mmu_init(void)
      */
     memcpy((void *)VECTOR_P_ADDR, (void *)KERN_LOAD_ADDR, PAGE_SIZE);
 }
+
+/*
+ * 系统保留空间
+ */
+resv_space_t sys_resv_space[] = {
+        {
+                PHY_MEM_BASE,
+                PHY_MEM_SIZE
+        },
+        {
+                0xFFF00000,
+                1 * MB
+        },
+        {
+                0,
+                0
+        }
+};
 /*********************************************************************************************************
   END FILE
 *********************************************************************************************************/

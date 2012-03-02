@@ -78,7 +78,7 @@ void *heap_alloc(heap_t *heap, uint32_t size);
 void *heap_free(heap_t *heap, void *ptr);
 
 /*
- * 打印堆信息
+ * 打印内存堆信息
  */
 void heap_info(heap_t *heap);
 

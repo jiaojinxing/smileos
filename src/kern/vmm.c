@@ -182,7 +182,7 @@ int process_space_page_map(task_t *task, uint32_t mva)
     int      flag = 0;
 
     if (   mva >= PROCESS_SPACE_SIZE *  task->pid                       /*  判断虚拟地址是否在进程      */
-        && mva <  PROCESS_SPACE_SIZE * (task->pid + 1)) {               /*  可以访问的地址空间范围内    */
+        && mva <  PROCESS_SPACE_SIZE * (task->pid + 1)) {               /*  的地址空间范围内            */
 
         uint32_t section_nr = mva >> SECTION_OFFSET;                    /*  计算虚拟地址的段号          */
 
@@ -204,8 +204,11 @@ int process_space_page_map(task_t *task, uint32_t mva)
 
             mmu_map_page(tbl, page_nr, get_frame_addr(frame));          /*  页面映射                    */
 
-            frame->next     = used_frame_list;
-            used_frame_list = frame;
+            frame->prev = NULL;
+            frame->next = used_frame_list;
+            if (used_frame_list) {
+                used_frame_list->prev = frame;
+            }
 
             frame->process_next = task->frame_list;
             task->frame_list = frame;

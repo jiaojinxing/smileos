@@ -70,6 +70,14 @@
 #define TASK_RESUME_MSG_COME    (1 << 4)
 #define TASK_RESUME_MSG_OUT     (1 << 5)
 
+/*
+ * 保留地址空间
+ */
+typedef struct {
+    uint32_t            virtual_base;
+    uint32_t            size;
+} resv_space_t;
+
 struct _frame_t;
 /*
  * 任务控制块
@@ -90,6 +98,7 @@ typedef struct _task {
     struct _task       *next;
     struct _task      **wait_list;
     struct _frame_t    *frame_list;
+    uint32_t            section_map_entry[PROCESS_SPACE_SIZE/SECTION_SIZE];
 } task_t;
 
 /*
@@ -118,7 +127,7 @@ void sched_init(void);
 void sched_start(void);
 
 /*
- * 调度
+ * 任务调度, 调用之前必须关中断
  */
 void schedule(void);
 
@@ -133,7 +142,7 @@ void do_timer(void);
 int32_t process_create(uint8_t *code, uint32_t size, uint32_t prio);
 
 /*
- * 创建线程
+ * 创建内核线程
  */
 int32_t kthread_create(void (*func)(void *), void *arg, uint32_t stk_size, uint32_t prio);
 
@@ -153,12 +162,12 @@ void kputc(unsigned char c);
 unsigned char kgetc(void);
 
 /*
- * 从内核堆分配内存
+ * 从内核内存堆分配内存
  */
 void *kmalloc(uint32_t size);
 
 /*
- * 释放内存回内核堆
+ * 释放内存回内核内存堆
  */
 void kfree(void *ptr);
 

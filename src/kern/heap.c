@@ -56,7 +56,7 @@ extern int printf(const char *fmt, ...);
 static heap_t  process_heap;
 
 /*
- * 从内存堆分配内存
+ * malloc
  */
 void *malloc(uint32_t size)
 {
@@ -68,7 +68,7 @@ void *malloc(uint32_t size)
 }
 
 /*
- * 释放内存回内存堆
+ * free
  */
 void free(void *ptr)
 {
@@ -330,7 +330,7 @@ void *heap_free(heap_t *heap, void *ptr)
 }
 
 /*
- * 打印堆信息
+ * 打印内存堆信息
  */
 void heap_info(heap_t *heap)
 {

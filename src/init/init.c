@@ -57,14 +57,17 @@ int main(void)
 {
     uint8_t  *code;
     uint32_t  size;
+    int i;
 
     mmu_init();
 
     sched_init();
 
     code = sbin_lookup("/2440_P1.hex", &size);
-    process_create(code, size, 15);
-    process_create(code, size, 15);
+
+    for (i = 0; i < 100; i++) {
+        process_create(code, size, 15);
+    }
 
     kthread_create(thread1, (void *)1, 32 * 1024, 5);
 

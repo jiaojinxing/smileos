@@ -42,9 +42,9 @@
 
 #include "kern/types.h"
 
-#define CONFIG_SYS_CLK_FREQ     12000000                                /*  Fin = 12.00MHz              */
+#define CONFIG_SYS_CLK_FREQ     (12000000)                              /*  Fin = 12.00MHz              */
 
-#if CONFIG_SYS_CLK_FREQ == 12000000
+#if CONFIG_SYS_CLK_FREQ == (12000000)
     /*
      * Mpll = 2 * m * Fin / (p * 2^s), m = MDIV + 8, p = PDIV + 2, s = SDIV
      */
@@ -75,10 +75,10 @@
     #define     HDIVN           2                                       /*  HCLK = FCLK / 4             */
     #define     PDIVN           1                                       /*  PCLK = HCLK / 2             */
 
-    #define     FCLK            400000000
+    #define     FCLK            (400000000)
     #define     HCLK            (FCLK / 4)
     #define     PCLK            (HCLK / 2)
-    #define     UCLK            48000000
+    #define     UCLK            (48000000)
 #endif
 
 void set_mpll_clock(uint32_t sdiv, uint32_t pdiv, uint32_t mdiv);
