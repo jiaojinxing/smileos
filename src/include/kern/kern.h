@@ -99,11 +99,6 @@ typedef struct _task {
 extern task_t *current;
 
 /*
- * 任务控制块
- */
-extern task_t task[TASK_NR];
-
-/*
  * TICK
  */
 extern uint64_t tick;
@@ -169,30 +164,6 @@ void *kmalloc(uint32_t size);
  * 释放内存回内核堆
  */
 void kfree(void *ptr);
-
-///*
-// * 虚拟地址转物理地址
-// */
-//static inline uint32_t virt_to_phy(uint32_t va)
-//{
-//    if (current->pid > 0) {
-//        return PROCESS_MEM_BASE + PROCESS_MEM_SIZE * (current->pid - 1) + va;
-//    } else {
-//        return va;
-//    }
-//}
-//
-///*
-// * 虚拟地址转物理地址
-// */
-//static inline uint32_t __virt_to_phy(uint32_t va, int pid)
-//{
-//    if (pid > 0) {
-//        return PROCESS_MEM_BASE + PROCESS_MEM_SIZE * (pid - 1) + va;
-//    } else {
-//        return va;
-//    }
-//}
 
 /*
  * 进入临界区域

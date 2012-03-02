@@ -134,12 +134,12 @@ void mmu_disable_align_fault_check(void);
 /*
  * 设置系统和 ROM 保护位
  */
-void mmu_set_sys_rom_protect_bit(uint32_t s, uint32_t r);
+void mmu_set_sys_rom_protect_bit(register uint32_t sys, register uint32_t rom);
 
 /*
  * 设置异常向量地址
  */
-void mmu_set_vector_addr(uint32_t v);
+void mmu_set_vector_addr(register uint32_t vector_addr);
 
 /*
  * 使能 D-Cache
@@ -179,12 +179,12 @@ void mmu_invalidate_dcache(void);
 /*
  * 清理指定 index 的 D-Cache
  */
-void mmu_clean_dcache_index(uint32_t index);
+void mmu_clean_dcache_index(register uint32_t index);
 
 /*
  * 清理并无效指定 index 的 D-Cache
  */
-void mmu_clean_invalidate_dcache_index(uint32_t index);
+void mmu_clean_invalidate_dcache_index(register uint32_t index);
 
 /*
  * 回写写缓冲
@@ -227,19 +227,30 @@ uint32_t mmu_get_data_fault_status(void);
 uint32_t mmu_get_fault_address(void);
 
 /*
- * 映射段
+ * 取消映射段
  */
-void mmu_map_section(
-        register uint32_t ttb,
-        register uint32_t vaddr,
-        register uint32_t paddr,
-        register uint32_t n_mb,
-        register uint32_t attr);
+void mmu_unmap_section(register uint32_t section_nr);
 
 /*
- * 清除转换表
+ * 映射段
  */
-void mmu_clean_tt(uint32_t ttb);
+void mmu_map_sections(register uint32_t virtual_base,
+                      register uint32_t physical_base,
+                      register uint32_t size,
+                      register uint32_t attr);
+
+/*
+ * 映射段, 使用二级页表
+ */
+void mmu_map_section_as_page(register uint32_t section_nr,
+                             register uint32_t page_tbl_base);
+
+/*
+ * 映射页面
+ */
+void mmu_map_page(register uint32_t page_tbl_base,
+                  register uint32_t page_nr,
+                  register uint32_t frame_base);
 
 /*
  * 建立转换表, 初始化 MMU Cache 等

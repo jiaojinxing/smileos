@@ -66,11 +66,10 @@ void bsp_mem_map(void)
     /*
      * sfr
      */
-    mmu_map_section(MMU_TBL_BASE,
-            0x48000000,
-            0x48000000,
-           (0x60000000 - 0x48000000) / MB,
-            SECTION_ATTR(AP_USER_RW, DOMAIN_CHECK, CACHE_NO, BUFFER_NO));
+    mmu_map_sections(0x48000000,
+                     0x48000000,
+                     0x60000000 - 0x48000000,
+                     SECTION_ATTR(AP_USER_RW, DOMAIN_CHECK, CACHE_NO, BUFFER_NO));
 
     /*
      * dm9000

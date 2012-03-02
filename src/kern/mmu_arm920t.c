@@ -168,7 +168,7 @@ void mmu_disable_align_fault_check(void)
 /*
  * 设置系统和 ROM 保护位
  */
-void mmu_set_sys_rom_protect_bit(uint32_t s, uint32_t r)
+void mmu_set_sys_rom_protect_bit(register uint32_t sys, register uint32_t rom)
 {
     register uint32_t i;
 
@@ -178,13 +178,13 @@ void mmu_set_sys_rom_protect_bit(uint32_t s, uint32_t r)
 
     __asm__ __volatile__("mrc p15, 0, %0, c1, c0, 0":"=r"(i));
 
-    if (s) {
+    if (sys) {
         i |=  (1 << 8);
     } else {
         i &= ~(1 << 8);
     }
 
-    if (r) {
+    if (rom) {
         i |=  (1 << 9);
     } else {
         i &= ~(1 << 9);
@@ -196,7 +196,7 @@ void mmu_set_sys_rom_protect_bit(uint32_t s, uint32_t r)
 /*
  * 设置异常向量地址
  */
-void mmu_set_vector_addr(uint32_t v)
+void mmu_set_vector_addr(register uint32_t vector_addr)
 {
     register uint32_t i;
 
@@ -206,7 +206,7 @@ void mmu_set_vector_addr(uint32_t v)
 
     __asm__ __volatile__("mrc p15, 0, %0, c1, c0, 0":"=r"(i));
 
-    if (v) {
+    if (vector_addr) {
         i |=  (1 << 13);
     } else {
         i &= ~(1 << 13);
@@ -430,35 +430,66 @@ uint32_t mmu_get_fault_address(void)
 }
 
 /*
+ * 取消映射段
+ */
+void mmu_unmap_section(register uint32_t section_nr)
+{
+    uint32_t *entry = (uint32_t *)MMU_TBL_BASE + section_nr;
+
+    *entry = 0;
+}
+
+/*
  * 映射段
  */
-void mmu_map_section(
-        register uint32_t ttb,
-        register uint32_t vaddr,
-        register uint32_t paddr,
-        register uint32_t n_mb,
-        register uint32_t attr)
+void mmu_map_sections(register uint32_t virtual_base,
+                      register uint32_t physical_base,
+                      register uint32_t size,
+                      register uint32_t attr)
 {
-    volatile uint32_t *tte;
+    volatile uint32_t *entry;
     register int i;
 
-    tte  = (uint32_t *)ttb + (vaddr >> 20);
+    entry  = (uint32_t *)MMU_TBL_BASE + (virtual_base >> SECTION_OFFSET);
 
-    for (i = 0; i < n_mb; i++) {
-        *tte++ = attr | (((paddr >> 20) + i) << 20);
+    size   = (size + SECTION_SIZE - 1) / SECTION_SIZE;
+
+    for (i = 0; i < size; i++) {
+        *entry++ = attr | (((physical_base >> SECTION_OFFSET) + i) << SECTION_OFFSET);
     }
 }
 
 /*
- * 清除转换表
+ * 映射段, 使用二级页表
  */
-void mmu_clean_tt(register uint32_t ttb)
+void mmu_map_section_as_page(register uint32_t section_nr,
+                             register uint32_t page_tbl_base)
 {
-    register int i;
+    uint32_t *entry = (uint32_t *)MMU_TBL_BASE + section_nr;
 
-    for (i = 0; i < 4096; i++) {
-        *((volatile uint32_t *)ttb + i) = 0;
-    }
+    *entry = (page_tbl_base & (~(PAGE_TBL_SIZE - 1))) |
+            (DOMAIN_CHECK << 5) |
+            (1 << 4) |
+            (1 << 0);
+}
+
+/*
+ * 映射页面
+ */
+void mmu_map_page(register uint32_t page_tbl_base,
+                  register uint32_t page_nr,
+                  register uint32_t frame_base)
+{
+    uint32_t *entry = (uint32_t *)page_tbl_base + page_nr;
+
+    *entry = (frame_base & (~(FRAME_SIZE - 1))) |
+            (AP_USER_RW << 10) |
+            (AP_USER_RW << 8) |
+            (AP_USER_RW << 6) |
+            (AP_USER_RW << 4) |
+            (CACHE_EN   << 3) |
+            (BUFFER_EN  << 2) |
+            (1          << 1);
 }
 
 extern void bsp_mem_map(void);
@@ -514,7 +545,9 @@ void mmu_init(void)
     /*
      * 清除转换表
      */
-    mmu_clean_tt(MMU_TBL_BASE);
+    for (i = 0; i < SECTION_NR; i++) {
+        mmu_unmap_section(i);
+    }
 
     /*
      * 设置系统和 ROM 保护位
@@ -534,46 +567,20 @@ void mmu_init(void)
     /*
      * 将物理内存映射到相同的地址, kernel, process 0 运行在 PHYSICAL_MEM_BASE 以上空间
      */
-    mmu_map_section(MMU_TBL_BASE,
-            PHY_MEM_BASE,
-            PHY_MEM_BASE,
-            PHY_MEM_SIZE / MB,
-            SECTION_ATTR(AP_USER_RW, DOMAIN_CHECK, CACHE_EN, BUFFER_EN));
+    mmu_map_sections(PHY_MEM_BASE,
+                     PHY_MEM_BASE,
+                     PHY_MEM_SIZE,
+                     SECTION_ATTR(AP_USER_RW, DOMAIN_CHECK, CACHE_EN, BUFFER_EN));
 
     /*
      * 因为异常向量地址为 0xFFFF0000,
      * 将 0xFFF00000 映射到 INT_MEM_BASE,
      * 所以应该在 INT_MEM_BASE + 0xF0000 处(或 0xFFFF0000 处)放置异常向量跳转表
      */
-    mmu_map_section(MMU_TBL_BASE,
-            0xFFF00000,
-            INT_MEM_BASE,
-            INT_MEM_SIZE / MB,
-            SECTION_ATTR(AP_USER_RW, DOMAIN_CHECK, CACHE_EN, BUFFER_EN));
-
-    /*
-     * process 1 ~ PROCESS_NR
-     */
-    /*
-     *          pa             va
-     * dm9000   0x20000000     0x20000000
-     * sdram    0x30000000     0x30000000
-     * sfr      0x48000000     0x48000000
-     *
-     * 16 * 32 MB = 0x20000000, 最多建立 16 个进程, 64MB / 16 = 4MB
-     *
-     * 实际 PROCESS_NR = 14
-     *
-     * 每个进程的 va_base = 0, mva = va + 32 * MB * pid,
-     *
-     */
-//    for (i = 1; i <= PROCESS_NR; i++) {
-//        mmu_map_section(MMU_TBL_BASE,
-//                0 + PROCESS_SPACE_SIZE * i,
-//                PROCESS_MEM_BASE + PROCESS_MEM_SIZE * (i - 1),
-//                PROCESS_MEM_SIZE / MB,
-//                SECTION_ATTR(AP_USER_RW, DOMAIN_CHECK, CACHE_EN, BUFFER_EN));
-//    }
+    mmu_map_sections(0xFFF00000,
+                     INT_MEM_BASE,
+                     1 * MB,
+                     SECTION_ATTR(AP_USER_RW, DOMAIN_CHECK, CACHE_EN, BUFFER_EN));
 
     /*
      * BSP 内存映射
