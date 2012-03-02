@@ -69,32 +69,6 @@ void pabt_c_handler(uint32_t lr, uint32_t spsr)
 }
 
 /*
- * 数据访问中止异常处理程序
- */
-//void dabt_c_handler(uint32_t lr, uint32_t spsr)
-//{
-//    printk("%s, current tid = %d\n", __func__, current->tid);
-//    printk("fault address = 0x%x\n", mmu_get_fault_address());
-//    printk("fault status  = 0x%x\n", mmu_get_data_fault_status());
-//    printk("lr   = 0x%x\n", lr);
-//    printk("spsr = 0x%x\n", spsr);
-//
-//    while (1);
-//}
-void dabt_c_handler(void)
-{
-    static int i = 0;
-
-    if (data_abort_process(mmu_get_fault_address()) < 0) {
-        printk("%s, current tid = %d\n", __func__, current->tid);
-        printk("fault address = 0x%x\n", mmu_get_fault_address());
-        printk("fault status  = 0x%x\n", mmu_get_prefetch_fault_status());
-        while (1) ;
-    }
-    //printk("dabt cnt=%d\n", ++i);
-}
-
-/*
  * FIQ 快速中断处理程序
  */
 void fiq_c_handler(uint32_t lr, uint32_t spsr)
@@ -104,6 +78,69 @@ void fiq_c_handler(uint32_t lr, uint32_t spsr)
     printk("spsr = 0x%x\n", spsr);
 
     while (1);
+}
+
+/*
+ * 数据访问中止异常处理程序
+ */
+void dabt_c_handler(uint32_t lr, uint32_t spsr)
+{
+    switch (mmu_get_data_fault_status() & 0x0F) {
+    case 1: /* Alignment */
+    case 3:
+        printk("%s, current tid = %d\n", __func__, current->tid);
+        printk("fault address = 0x%x\n", mmu_get_fault_address());
+        printk("fault status  = 0x%x\n", mmu_get_data_fault_status());
+        printk("lr   = 0x%x\n", lr);
+        printk("spsr = 0x%x\n", spsr);
+        while (1);
+        break;
+
+    case 5: /* Translation */
+    case 7:
+        if (translation_failed(mmu_get_fault_address()) < 0) {
+            printk("%s, current tid = %d\n", __func__, current->tid);
+            printk("fault address = 0x%x\n", mmu_get_fault_address());
+            printk("fault status  = 0x%x\n", mmu_get_data_fault_status());
+            printk("lr   = 0x%x\n", lr);
+            printk("spsr = 0x%x\n", spsr);
+            while (1);
+        }
+        break;
+
+    case 9:
+    case 11:
+        printk("%s, current tid = %d\n", __func__, current->tid);
+        printk("fault address = 0x%x\n", mmu_get_fault_address());
+        printk("fault status  = 0x%x\n", mmu_get_prefetch_fault_status());
+        printk("lr   = 0x%x\n", lr);
+        printk("spsr = 0x%x\n", spsr);
+        while (1);
+        break;
+
+    case 13:
+    case 15:
+        printk("%s, current tid = %d\n", __func__, current->tid);
+        printk("fault address = 0x%x\n", mmu_get_fault_address());
+        printk("fault status  = 0x%x\n", mmu_get_prefetch_fault_status());
+        printk("lr   = 0x%x\n", lr);
+        printk("spsr = 0x%x\n", spsr);
+        while (1);
+        break;
+
+    case 8:
+    case 10:
+        printk("%s, current tid = %d\n", __func__, current->tid);
+        printk("fault address = 0x%x\n", mmu_get_fault_address());
+        printk("fault status  = 0x%x\n", mmu_get_prefetch_fault_status());
+        printk("lr   = 0x%x\n", lr);
+        printk("spsr = 0x%x\n", spsr);
+        while (1);
+        break;
+
+    default:
+        return;
+    }
 }
 /*********************************************************************************************************
   END FILE

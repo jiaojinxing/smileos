@@ -73,10 +73,10 @@ int syscall_template(void)
 /*
  * exit
  */
-void exit(int error_code) __attribute__ ((noreturn));
-void exit(int error_code)
+void exit(int error) __attribute__ ((noreturn));
+void exit(int error)
 {
-    __asm__ __volatile__("mov    r0,  %0": :"r"(error_code));
+    __asm__ __volatile__("mov    r0,  %0": :"r"(error));
     __asm__ __volatile__("mov    r7,  %0": :"M"(SYS_CALL_EXIT));
     __asm__ __volatile__("swi    0");
     __asm__ __volatile__("b      .");
@@ -225,7 +225,7 @@ void _sbrk(void)
 {
 #ifdef SMILEOS_KERNEL
     extern void printk(const char *fmt, ...);
-    printk("can't call %s()!, SmileOS abort\n", __func__);
+    printk("can't call %s()!, current tid=%d, SmileOS abort\n", __func__, current->tid);
 
     while (1) ;
 #else

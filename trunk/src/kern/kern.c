@@ -48,7 +48,7 @@
 /*
  * 任务控制块
  */
-task_t task[TASK_NR];
+static task_t tasks[TASK_NR];
 
 /*
  * 当前运行的任务
@@ -65,9 +65,9 @@ uint64_t tick;
  */
 static uint8_t kern_heap_mem[KERN_HEAP_SIZE];
 
-static int interrupt_level = 0;
-static int kern_started    = FALSE;
-static int wakeup_new      = FALSE;
+static uint8_t int_level = 0;
+static uint8_t started   = FALSE;
+static uint8_t wakeup    = FALSE;
 
 /*
  * 从内核堆分配内存
@@ -79,7 +79,7 @@ void *kmalloc(uint32_t size)
 
     reg = interrupt_disable();
 
-    ptr = heap_alloc(&task[0].heap, size);
+    ptr = heap_alloc(&tasks[0].heap, size);
 
     interrupt_resume(reg);
 
@@ -95,7 +95,7 @@ void kfree(void *ptr)
 
     reg = interrupt_disable();
 
-    heap_free(&task[0].heap, ptr);
+    heap_free(&tasks[0].heap, ptr);
 
     interrupt_resume(reg);
 }
@@ -105,67 +105,70 @@ void kfree(void *ptr)
  */
 void sched_init(void)
 {
-    task_t *t;
+    task_t *task;
     int     i;
 
-    interrupt_level = 0;
-    tick            = 0;
-    kern_started    = FALSE;
-    wakeup_new      = FALSE;
+    int_level = 0;
+    tick      = 0;
+    started   = FALSE;
+    wakeup    = FALSE;
 
     /*
      * 初始化任务控制块
      */
-    for (i = 0, t = task; i < TASK_NR; i++, t++) {
-        t->pid          = -1;
-        t->tid          = -1;
-        t->state        = TASK_UNALLOCATE;
-        t->count        = 0;
-        t->timer        = 0;
-        t->prio         = 0;
-        t->errno        = 0;
-        t->resume_type  = TASK_RESUME_UNKNOW;
-        t->wait_list    = NULL;
-        t->next         = NULL;
+    for (i = 0, task = tasks; i < TASK_NR; i++, task++) {
+        task->pid          = -1;
+        task->tid          = -1;
+        task->state        = TASK_UNALLOCATE;
+        task->count        = 0;
+        task->timer        = 0;
+        task->prio         = 0;
+        task->errno        = 0;
+        task->resume_type  = TASK_RESUME_UNKNOW;
+        task->wait_list    = NULL;
+        task->next         = NULL;
     }
 
     /*
      * 初始化空闲进程
      */
-    t               = task;
-    t->pid          = 0;
-    t->tid          = 0;
-    t->state        = TASK_RUNNING;
-    t->count        = 5;
-    t->prio         = 5;
+    task               = tasks;
+    task->pid          = 0;
+    task->tid          = 0;
+    task->state        = TASK_RUNNING;
+    task->count        = 5;
+    task->prio         = 5;
 
-    t->content[0]   = (uint32_t)&t->kstack[KERN_STACK_SIZE];        /*  svc 模式的 sp (满堆栈递减)      */
-    t->content[1]   = ARM_SYS_MODE | ARM_FIQ_NO | ARM_IRQ_EN;       /*  cpsr, sys 模式, 关 FIQ, 开 IRQ  */
-    t->content[2]   = PROCESS0_STACK_BASE;                          /*  sys 模式的 sp                   */
-    t->content[3]   = ARM_SVC_MODE;                                 /*  spsr, svc 模式                  */
-    t->content[4]   = 0;                                            /*  lr                              */
-    t->content[5]   = 0;                                            /*  r0 ~ r12                        */
-    t->content[6]   = 1;
-    t->content[7]   = 2;
-    t->content[8]   = 3;
-    t->content[9]   = 4;
-    t->content[10]  = 5;
-    t->content[11]  = 6;
-    t->content[12]  = 7;
-    t->content[13]  = 8;
-    t->content[14]  = 9;
-    t->content[15]  = 10;
-    t->content[16]  = 11;
-    t->content[17]  = 12;
-    t->content[18]  = 0;                                            /*  pc                              */
+    task->content[0]   = (uint32_t)&task->kstack[KERN_STACK_SIZE];  /*  svc 模式的 sp (满堆栈递减)      */
+    task->content[1]   = ARM_SYS_MODE | ARM_FIQ_NO | ARM_IRQ_EN;    /*  cpsr, sys 模式, 关 FIQ, 开 IRQ  */
+    task->content[2]   = PROCESS0_STACK_BASE;                       /*  sys 模式的 sp                   */
+    task->content[3]   = ARM_SVC_MODE;                              /*  spsr, svc 模式                  */
+    task->content[4]   = 0;                                         /*  lr                              */
+    task->content[5]   = 0;                                         /*  r0 ~ r12                        */
+    task->content[6]   = 1;
+    task->content[7]   = 2;
+    task->content[8]   = 3;
+    task->content[9]   = 4;
+    task->content[10]  = 5;
+    task->content[11]  = 6;
+    task->content[12]  = 7;
+    task->content[13]  = 8;
+    task->content[14]  = 9;
+    task->content[15]  = 10;
+    task->content[16]  = 11;
+    task->content[17]  = 12;
+    task->content[18]  = 0;                                         /*  pc                              */
 
-    current = t;
+    current = task;
 
     /*
      * 初始化内核堆
      */
-    heap_init(&task[0].heap, kern_heap_mem, KERN_HEAP_SIZE);
+    heap_init(&tasks[0].heap, kern_heap_mem, KERN_HEAP_SIZE);
 
+    /*
+     * 初始化虚拟内存管理
+     */
     vmm_init();
 }
 
@@ -176,20 +179,20 @@ void schedule(void)
 {
     int32_t max = -1;
     int     i, next = 0;
-    task_t *t;
+    task_t *task;
 
-    if (!kern_started) {
+    if (!started) {
         return;
     }
 
-    if (interrupt_level > 0) {
+    if (int_level > 0) {
         return;
     }
 
     while (1) {
-        for (i = 1, t = task + 1; i < TASK_NR; i++, t++) {
-            if ((t->state == TASK_RUNNING) && (max < (int32_t)t->count)) {
-                max  = (int32_t)t->count;
+        for (i = 1, task = tasks + 1; i < TASK_NR; i++, task++) {
+            if ((task->state == TASK_RUNNING) && (max < (int32_t)task->count)) {
+                max  = (int32_t)task->count;
                 next = i;
             }
         }
@@ -198,18 +201,18 @@ void schedule(void)
             break;
         }
 
-        for (i = 0, t = task; i < TASK_NR; i++, t++) {
-            t->count = (t->count >> 1) + t->prio;
+        for (i = 0, task = tasks; i < TASK_NR; i++, task++) {
+            task->count = (task->count >> 1) + task->prio;
         }
     }
 
-    if (current == &task[next]) {
+    if (current == &tasks[next]) {
         return;
     }
 
-    t = current;
+    task = current;
 
-    current = &task[next];
+    current = &tasks[next];
 
     if ((current->content[3] & ARM_MODE_MASK) == ARM_SVC_MODE) {
         current->content[0] = (uint32_t)&current->kstack[KERN_STACK_SIZE];
@@ -218,7 +221,7 @@ void schedule(void)
 #if 0
     if ((current->content[3] & ARM_MODE_MASK) == ARM_SVC_MODE) {
         printk("%s: switch to pid=%d, tid=%d, "
-                "pc=0x%x, lr=0x%x cpsr=0x%x sp_sys=0x%x, sp_svc=0x%x, "
+                "pc=0x%x, lr=0x%x, cpsr=0x%x, sp_sys=0x%x, sp_svc=0x%x, "
                 "r0=0x%x, r1=0x%x, r2=0x%x, r3=0x%x, r4=0x%x, r5=0x%x, r6=0x%x, r7=0x%x, r8=0x%x, r9=0x%x, r10=0x%x, r11=0x%x, r12=0x%x, "
                 "irq save\n",
                 __func__,
@@ -244,7 +247,7 @@ void schedule(void)
                 current->content[17]);
     } else {
         printk("%s: switch to pid=%d, tid=%d, "
-                "pc=0x%x, lr=0x%x cpsr=0x%x sp_sys=0x%x, sp_svc=0x%x, "
+                "pc=0x%x, lr=0x%x, cpsr=0x%x, sp_sys=0x%x, sp_svc=0x%x, "
                 "r0=0x%x, r1=0x%x, r2=0x%x, r3=0x%x, r4=0x%x, r5=0x%x, r6=0x%x, r7=0x%x, r8=0x%x, r9=0x%x, r10=0x%x, r11=0x%x, r12=0x%x, "
                 "svc save\n",
                 __func__,
@@ -271,9 +274,9 @@ void schedule(void)
     }
 #endif
 
-    extern void __switch_to(register task_t *cur, register task_t *next);
+    extern void __switch_to(register task_t *from, register task_t *to);
 
-    __switch_to(t, current);
+    __switch_to(task, current);
 }
 
 /*
@@ -287,9 +290,9 @@ void do_timer(void)
 
     reg = interrupt_disable();
     tick++;
-    wakeup_new = FALSE;
+    wakeup = FALSE;
 
-    for (i = 1, t = task + 1; i < TASK_NR; i++, t++) {
+    for (i = 1, t = tasks + 1; i < TASK_NR; i++, t++) {
         if (t->state == TASK_SLEEPING) {
             if (--t->timer == 0) {
                 t->state = TASK_RUNNING;
@@ -310,7 +313,7 @@ void do_timer(void)
                     t->wait_list   = NULL;
                     t->resume_type = TASK_RESUME_TIMEOUT;
                 }
-                wakeup_new = TRUE;
+                wakeup = TRUE;
             }
         }
     }
@@ -330,7 +333,7 @@ void interrupt_enter(void)
     uint32_t reg;
 
     reg = interrupt_disable();
-    interrupt_level++;
+    int_level++;
     interrupt_resume(reg);
 }
 
@@ -342,9 +345,9 @@ void interrupt_exit(void)
     uint32_t reg;
 
     reg = interrupt_disable();
-    if (--interrupt_level == 0) {
-        if ((current->state != TASK_RUNNING) || (current->count == 0) || wakeup_new) {
-            wakeup_new = FALSE;
+    if (--int_level == 0) {
+        if ((current->state != TASK_RUNNING) || (current->count == 0) || wakeup) {
+            wakeup = FALSE;
             schedule();
         }
     }
@@ -356,7 +359,7 @@ void interrupt_exit(void)
  */
 void sched_start(void)
 {
-    kern_started = TRUE;
+    started = TRUE;
 
     void __switch_to_process0(register uint32_t sp_svc);
 
@@ -369,7 +372,7 @@ void sched_start(void)
 int32_t process_create(uint8_t *code, uint32_t size, uint32_t prio)
 {
     int      i;
-    task_t  *t;
+    task_t  *task;
     uint32_t reg;
 
     if (code == NULL || size == 0) {
@@ -378,8 +381,8 @@ int32_t process_create(uint8_t *code, uint32_t size, uint32_t prio)
 
     reg = interrupt_disable();
 
-    for (i = 1, t = task + 1; i < PROCESS_NR; i++, t++){
-        if (t->state == TASK_UNALLOCATE) {
+    for (i = 1, task = tasks + 1; i < PROCESS_NR; i++, task++){
+        if (task->state == TASK_UNALLOCATE) {
             break;
         }
     }
@@ -389,42 +392,42 @@ int32_t process_create(uint8_t *code, uint32_t size, uint32_t prio)
         return -1;
     }
 
-    t->pid          = i;
-    t->tid          = i;
-    t->state        = TASK_RUNNING;
-    t->count        = 15;
-    t->prio         = prio;
+    task->pid          = i;
+    task->tid          = i;
+    task->state        = TASK_RUNNING;
+    task->count        = 15;
+    task->prio         = prio;
 #ifdef SMILEOS_KTHREAD
-    t->type         = TASK_TYPE_PROCESS;
+    task->type         = TASK_TYPE_PROCESS;
 #endif
 
-    t->content[0]   = (uint32_t)&t->kstack[KERN_STACK_SIZE];        /*  svc 模式的 sp (满堆栈递减)      */
-    t->content[1]   = ARM_SYS_MODE | ARM_FIQ_NO | ARM_IRQ_EN;       /*  cpsr, sys 模式, 关 FIQ, 开 IRQ  */
-    t->content[2]   = PROCESS_SPACE_SIZE;                           /*  sys 模式的 sp                   */
-    t->content[3]   = ARM_SVC_MODE;                                 /*  spsr, svc 模式                  */
-    t->content[4]   = 0;                                            /*  lr                              */
-    t->content[5]   = 0;                                            /*  r0 ~ r12                        */
-    t->content[6]   = 1;
-    t->content[7]   = 2;
-    t->content[8]   = 3;
-    t->content[9]   = 4;
-    t->content[10]  = 5;
-    t->content[11]  = 6;
-    t->content[12]  = 7;
-    t->content[13]  = 8;
-    t->content[14]  = 9;
-    t->content[15]  = 10;
-    t->content[16]  = 11;
-    t->content[17]  = 12;
-    t->content[18]  = 0;                                            /*  pc                              */
+    task->content[0]   = (uint32_t)&task->kstack[KERN_STACK_SIZE];  /*  svc 模式的 sp (满堆栈递减)      */
+    task->content[1]   = ARM_SYS_MODE | ARM_FIQ_NO | ARM_IRQ_EN;    /*  cpsr, sys 模式, 关 FIQ, 开 IRQ  */
+    task->content[2]   = PROCESS_SPACE_SIZE;                        /*  sys 模式的 sp                   */
+    task->content[3]   = ARM_SVC_MODE;                              /*  spsr, svc 模式                  */
+    task->content[4]   = 0;                                         /*  lr                              */
+    task->content[5]   = 0;                                         /*  r0 ~ r12                        */
+    task->content[6]   = 1;
+    task->content[7]   = 2;
+    task->content[8]   = 3;
+    task->content[9]   = 4;
+    task->content[10]  = 5;
+    task->content[11]  = 6;
+    task->content[12]  = 7;
+    task->content[13]  = 8;
+    task->content[14]  = 9;
+    task->content[15]  = 10;
+    task->content[16]  = 11;
+    task->content[17]  = 12;
+    task->content[18]  = 0;                                         /*  pc                              */
 
     for (i = 0; i < (size + PAGE_SIZE - 1) / PAGE_SIZE; i++) {
-        mva_map(t, t->pid * PROCESS_SPACE_SIZE + i * PAGE_SIZE);
+        mva_map(task, task->pid * PROCESS_SPACE_SIZE + i * PAGE_SIZE);
     }
 
-    mva_map(t, (t->pid + 1) * PROCESS_SPACE_SIZE - PAGE_SIZE);
+    mva_map(task, (task->pid + 1) * PROCESS_SPACE_SIZE - PAGE_SIZE);
 
-    memcpy(t->pid * PROCESS_SPACE_SIZE, code, size);
+    memcpy((char *)(task->pid * PROCESS_SPACE_SIZE), code, size);
 
     schedule();
 
@@ -440,14 +443,14 @@ int32_t process_create(uint8_t *code, uint32_t size, uint32_t prio)
 int32_t kthread_create(void (*func)(void *), void *arg, uint32_t stk_size, uint32_t prio)
 {
     int      i;
-    task_t  *t;
+    task_t  *task;
     uint32_t stk;
     uint32_t reg;
 
     reg = interrupt_disable();
 
-    for (i = PROCESS_NR, t = task + PROCESS_NR; i < TASK_NR; i++, t++) {
-        if (t->state == TASK_UNALLOCATE) {
+    for (i = PROCESS_NR, task = tasks + PROCESS_NR; i < TASK_NR; i++, task++) {
+        if (task->state == TASK_UNALLOCATE) {
             break;
         }
     }
@@ -459,32 +462,32 @@ int32_t kthread_create(void (*func)(void *), void *arg, uint32_t stk_size, uint3
 
     stk = (uint32_t)((char *)kmalloc(stk_size) + stk_size);
 
-    t->pid          = current->pid;
-    t->tid          = i;
-    t->state        = TASK_RUNNING;
-    t->count        = 15;
-    t->prio         = prio;
-    t->type         = TASK_TYPE_THREAD;
+    task->pid          = current->pid;
+    task->tid          = i;
+    task->state        = TASK_RUNNING;
+    task->count        = 15;
+    task->prio         = prio;
+    task->type         = TASK_TYPE_THREAD;
 
-    t->content[0]   = (uint32_t)&t->kstack[KERN_STACK_SIZE];        /*  svc 模式堆栈指针(满堆栈递减)    */
-    t->content[1]   = ARM_SYS_MODE | ARM_FIQ_NO | ARM_IRQ_EN;       /*  cpsr, sys 模式, 关 FIQ, 开 IRQ  */
-    t->content[2]   = stk;                                          /*  sys 模式的 sp                   */
-    t->content[3]   = ARM_SVC_MODE;                                 /*  spsr, svc 模式                  */
-    t->content[4]   = (uint32_t)func;                               /*  lr                              */
-    t->content[5]   = (uint32_t)arg;                                /*  r0 ~ r12                        */
-    t->content[6]   = 1;
-    t->content[7]   = 2;
-    t->content[8]   = 3;
-    t->content[9]   = 4;
-    t->content[10]  = 5;
-    t->content[11]  = 6;
-    t->content[12]  = 7;
-    t->content[13]  = 8;
-    t->content[14]  = 9;
-    t->content[15]  = 10;
-    t->content[16]  = 11;
-    t->content[17]  = 12;
-    t->content[18]  = (uint32_t)func;;                              /*  pc                              */
+    task->content[0]   = (uint32_t)&task->kstack[KERN_STACK_SIZE];  /*  svc 模式堆栈指针(满堆栈递减)    */
+    task->content[1]   = ARM_SYS_MODE | ARM_FIQ_NO | ARM_IRQ_EN;    /*  cpsr, sys 模式, 关 FIQ, 开 IRQ  */
+    task->content[2]   = stk;                                       /*  sys 模式的 sp                   */
+    task->content[3]   = ARM_SVC_MODE;                              /*  spsr, svc 模式                  */
+    task->content[4]   = (uint32_t)func;                            /*  lr                              */
+    task->content[5]   = (uint32_t)arg;                             /*  r0 ~ r12                        */
+    task->content[6]   = 1;
+    task->content[7]   = 2;
+    task->content[8]   = 3;
+    task->content[9]   = 4;
+    task->content[10]  = 5;
+    task->content[11]  = 6;
+    task->content[12]  = 7;
+    task->content[13]  = 8;
+    task->content[14]  = 9;
+    task->content[15]  = 10;
+    task->content[16]  = 11;
+    task->content[17]  = 12;
+    task->content[18]  = (uint32_t)func;;                           /*  pc                              */
 
     schedule();
 

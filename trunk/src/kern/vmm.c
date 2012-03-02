@@ -51,9 +51,9 @@ typedef struct _page_table_t {
     uint32_t              section_nr;
 } page_table_t;
 
-page_table_t  page_tables[PAGE_TBL_NR];
-page_table_t *free_page_table_list;
-page_table_t *used_page_table_list;
+static page_table_t  page_tables[PAGE_TBL_NR];
+static page_table_t *free_page_table_list;
+static page_table_t *used_page_table_list;
 
 /*
  * 根据段号查找页表
@@ -130,14 +130,15 @@ void page_table_free(uint32_t base)
  */
 typedef struct _frame_t {
     uint32_t         virtual_addr;
+    struct _frame_t *prev;
     struct _frame_t *next;
     struct _frame_t *process_next;
 } frame_t;
 
-frame_t frames[FRAME_NR];
+static frame_t frames[FRAME_NR];
 
-frame_t *free_frame_list;
-frame_t *used_frame_list;
+static frame_t *free_frame_list;
+static frame_t *used_frame_list;
 
 /*
  * 分配页框
@@ -171,49 +172,9 @@ uint32_t get_frame_addr(frame_t *frame)
 }
 
 /*
- * 映射段, 使用二级页表
- */
-void section_map(uint32_t section_nr, uint32_t page_tbl_base)
-{
-    uint32_t *entry = (uint32_t *)MMU_TBL_BASE + section_nr;
-
-    *entry = (page_tbl_base & (~(PAGE_TBL_SIZE - 1))) |
-            (DOMAIN_CHECK << 5) |
-            (1 << 4) |
-            (1 << 0);
-}
-
-/*
- * 取消映射段
- */
-void section_unmap(uint32_t section_nr)
-{
-    uint32_t *entry = (uint32_t *)MMU_TBL_BASE + section_nr;
-
-    *entry = 0;
-}
-
-/*
- * 映射页面
- */
-void page_map(uint32_t page_tbl_base, uint32_t page_nr, uint32_t frame_base)
-{
-    uint32_t *entry = (uint32_t *)page_tbl_base + page_nr;
-
-    *entry = (frame_base & (~(FRAME_SIZE - 1))) |
-            (AP_USER_RW << 10) |
-            (AP_USER_RW << 8) |
-            (AP_USER_RW << 6) |
-            (AP_USER_RW << 4) |
-            (CACHE_EN   << 3) |
-            (BUFFER_EN  << 2) |
-            (1          << 1);
-}
-
-/*
  * MVA 映射
  */
-int mva_map(task_t *task, uint32_t mva)
+int mem_map(task_t *task, uint32_t mva)
 {
     frame_t *frame;
     int      flag = 0;
@@ -227,7 +188,7 @@ int mva_map(task_t *task, uint32_t mva)
         if (!tbl) {                                                     /*  没找到                      */
             tbl = page_table_alloc(section_nr);                         /*  分配一个空闲的页表          */
             if (tbl) {
-                section_map(section_nr, tbl);                           /*  映射该段                    */
+                mmu_map_section_as_page(section_nr, tbl);               /*  映射该段                    */
                 flag = 1;
             } else {
                 printk("failed to alloc page table\n");
@@ -240,7 +201,7 @@ int mva_map(task_t *task, uint32_t mva)
                                                                         /*  页号                        */
             uint32_t page_nr = (mva & (SECTION_SIZE - 1)) >> PAGE_OFFSET;
 
-            page_map(tbl, page_nr, get_frame_addr(frame));              /*  页面映射                    */
+            mmu_map_page(tbl, page_nr, get_frame_addr(frame));          /*  页面映射                    */
 
             frame->next     = used_frame_list;
             used_frame_list = frame;
@@ -248,11 +209,10 @@ int mva_map(task_t *task, uint32_t mva)
             frame->process_next = task->frame_list;
             task->frame_list = frame;
 
-            //printk("map mva=0x%x => pa=0x%x, pid=%d\n", mva, get_frame_addr(frame), task->pid);
             return 0;
         } else {
             if (flag) {
-                section_unmap(section_nr);
+                mmu_unmap_section(section_nr);
                 page_table_free(tbl);
             }
             printk("failed to alloc frame\n");
@@ -277,8 +237,8 @@ int data_abort_process(uint32_t mva)
  */
 void vmm_init(void)
 {
-    int i;
-    frame_t *frame;
+    int           i;
+    frame_t      *frame;
     page_table_t *tbl;
 
     for (i = 0, frame = frames; i < FRAME_NR - 1; i++, frame++) {
@@ -295,7 +255,7 @@ void vmm_init(void)
     free_page_table_list = page_tables;
     used_page_table_list = NULL;
 
-    memset(PAGE_TBL_BASE, 0, PAGE_TBL_SIZE * PAGE_TBL_NR);
+    memset((void *)PAGE_TBL_BASE, 0, PAGE_TBL_SIZE * PAGE_TBL_NR);
 }
 /*********************************************************************************************************
   END FILE
