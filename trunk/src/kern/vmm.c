@@ -107,11 +107,11 @@ uint32_t page_table_alloc(uint32_t section_nr)
 /*
  * 释放页表
  */
-void page_table_free(uint32_t base)
+void page_table_free(uint32_t tbl_base)
 {
     page_table_t *tbl;
 
-    tbl = page_tables + (base - PAGE_TBL_BASE) / PAGE_TBL_SIZE;
+    tbl = page_tables + (tbl_base - PAGE_TBL_BASE) / PAGE_TBL_SIZE;
 
     if (tbl->prev) {
         tbl->prev->next = tbl->next;
@@ -174,17 +174,17 @@ uint32_t get_frame_addr(frame_t *frame)
 }
 
 /*
- * 映射进程空间里的虚拟地址, 页面映射
+ * 页面映射
  */
-int process_space_page_map(task_t *task, uint32_t mva)
+int vmm_map_page(task_t *task, uint32_t va)
 {
     frame_t *frame;
     int      flag = 0;
 
-    if (   mva >= PROCESS_SPACE_SIZE *  task->pid                       /*  判断虚拟地址是否在进程      */
-        && mva <  PROCESS_SPACE_SIZE * (task->pid + 1)) {               /*  的地址空间范围内            */
+    if (   va >= PROCESS_SPACE_SIZE *  task->pid                        /*  判断虚拟地址是否在进程      */
+        && va <  PROCESS_SPACE_SIZE * (task->pid + 1)) {                /*  的虚拟地址空间范围内        */
 
-        uint32_t section_nr = mva >> SECTION_OFFSET;                    /*  计算虚拟地址的段号          */
+        uint32_t section_nr = va >> SECTION_OFFSET;                     /*  计算虚拟地址的段号          */
 
         uint32_t tbl = page_table_lookup(section_nr);                   /*  查找该段的页表              */
         if (!tbl) {                                                     /*  没找到                      */
@@ -193,14 +193,14 @@ int process_space_page_map(task_t *task, uint32_t mva)
                 mmu_map_section_as_page(section_nr, tbl);               /*  映射该段                    */
                 flag = 1;
             } else {
-                printk("failed to alloc page table, map failed, mva=0x%x, pid=%d\n", mva, task->pid);
+                printk("failed to alloc page table, map failed, va=0x%x, pid=%d\n", va, task->pid);
                 return -1;
             }
         }
 
         frame = frame_alloc();                                          /*  分配一个空闲的页框          */
         if (frame) {                                                    /*  计算虚拟地址在页表里的页号  */
-            uint32_t page_nr = (mva & (SECTION_SIZE - 1)) >> PAGE_OFFSET;
+            uint32_t page_nr = (va & (SECTION_SIZE - 1)) >> PAGE_OFFSET;
 
             mmu_map_page(tbl, page_nr, get_frame_addr(frame));          /*  页面映射                    */
 
@@ -219,11 +219,11 @@ int process_space_page_map(task_t *task, uint32_t mva)
                 mmu_unmap_section(section_nr);
                 page_table_free(tbl);
             }
-            printk("failed to alloc frame, map failed, mva=0x%x, pid=%d\n", mva, task->pid);
+            printk("failed to alloc frame, map failed, va=0x%x, pid=%d\n", va, task->pid);
             return -1;
         }
     } else {
-        printk("invalid mva=0x%x, map failed, pid=%d\n", mva, task->pid);
+        printk("invalid va=0x%x, map failed, pid=%d\n", va, task->pid);
         return -1;
     }
 }

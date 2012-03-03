@@ -78,7 +78,7 @@ void free(void *ptr)
 /*
  * calloc
  */
-void *calloc(unsigned int nelem, unsigned int elsize)
+void *calloc(uint32_t nelem, uint32_t elsize)
 {
     void *ptr = malloc(nelem * MEM_ALIGN_SIZE(elsize));
     if (ptr != NULL) {
@@ -104,8 +104,8 @@ void libc_init(void)
 /*
  * ÄÚ´æ¿é×´Ì¬
  */
-#define MEM_BLOCK_STATE_FREE        0
-#define MEM_BLOCK_STATE_USED        (1 << 4)
+#define MEM_BLOCK_STATE_FREE        0x00
+#define MEM_BLOCK_STATE_USED        0xA5
 
 /*
  * ÄÚ´æ¿éÄ§Êý

@@ -41,9 +41,9 @@
 #define VMM_H_
 
 /*
- * 映射进程空间里的虚拟地址, 页面映射
+ * 页面映射
  */
-int process_space_page_map(task_t *task, uint32_t mva);
+int vmm_map_page(task_t *task, uint32_t va);
 
 /*
  * 初始化虚拟内存管理

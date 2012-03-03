@@ -126,7 +126,7 @@ void sys_mutex_lock(sys_mutex_t *mutex)
 void sys_mutex_unlock(sys_mutex_t *mutex)
 {
     struct sys_mutex *m;
-    task_t *t;
+    task_t *task;
     uint32_t reg;
 
     reg = interrupt_disable();
@@ -138,14 +138,14 @@ void sys_mutex_unlock(sys_mutex_t *mutex)
                     if (m->owner == current) {
                         m->lock--;
                         if (!m->lock) {
-                            t = m->wait_list;
-                            if (t) {
-                                t->timer = 0;
-                                t->state = TASK_RUNNING;
-                                m->wait_list = t->next;
-                                t->wait_list = NULL;
-                                t->next = NULL;
-                                t->resume_type = TASK_RESUME_MUTEX_COME;
+                            task = m->wait_list;
+                            if (task) {
+                                task->timer = 0;
+                                task->state = TASK_RUNNING;
+                                m->wait_list = task->next;
+                                task->wait_list = NULL;
+                                task->next = NULL;
+                                task->resume_type = TASK_RESUME_MUTEX_COME;
                                 schedule();
                             }
                         }
@@ -250,7 +250,7 @@ err_t sys_sem_new(sys_sem_t *sem, u8_t count)
 void sys_sem_signal(sys_sem_t *sem)
 {
     struct sys_sem *s;
-    task_t *t;
+    task_t *task;
     uint32_t reg;
 
     reg = interrupt_disable();
@@ -259,14 +259,14 @@ void sys_sem_signal(sys_sem_t *sem)
         if (s) {
             if (s->valid) {
                 s->count++;
-                t = s->wait_list;
-                if (t) {
-                    t->timer = 0;
-                    t->state = TASK_RUNNING;
-                    s->wait_list = t->next;
-                    t->wait_list = NULL;
-                    t->next = NULL;
-                    t->resume_type = TASK_RESUME_SEM_COME;
+                task = s->wait_list;
+                if (task) {
+                    task->timer = 0;
+                    task->state = TASK_RUNNING;
+                    s->wait_list = task->next;
+                    task->wait_list = NULL;
+                    task->next = NULL;
+                    task->resume_type = TASK_RESUME_SEM_COME;
                     schedule();
                 }
             }
@@ -455,7 +455,7 @@ void sys_mbox_post(sys_mbox_t *mbox, void *msg)
 {
     struct sys_mbox *q;
     task_t *end;
-    task_t *t;
+    task_t *task;
     uint32_t reg;
 
     reg = interrupt_disable();
@@ -469,14 +469,14 @@ void sys_mbox_post(sys_mbox_t *mbox, void *msg)
                     q->in = ++q->in % q->size;
                     q->cnt++;
 
-                    t = q->r_wait_list;
-                    if (t) {
-                        t->timer = 0;
-                        t->state = TASK_RUNNING;
-                        q->r_wait_list = t->next;
-                        t->wait_list = NULL;
-                        t->next = NULL;
-                        t->resume_type = TASK_RESUME_MSG_COME;
+                    task = q->r_wait_list;
+                    if (task) {
+                        task->timer = 0;
+                        task->state = TASK_RUNNING;
+                        q->r_wait_list = task->next;
+                        task->wait_list = NULL;
+                        task->next = NULL;
+                        task->resume_type = TASK_RESUME_MSG_COME;
                         schedule();
                     }
                 } else {
@@ -513,7 +513,7 @@ void sys_mbox_post(sys_mbox_t *mbox, void *msg)
 err_t sys_mbox_trypost(sys_mbox_t *mbox, void *msg)
 {
     struct sys_mbox *q;
-    task_t *t;
+    task_t *task;
     uint32_t reg;
 
     reg = interrupt_disable();
@@ -526,14 +526,14 @@ err_t sys_mbox_trypost(sys_mbox_t *mbox, void *msg)
                     q->in = ++q->in % q->size;
                     q->cnt++;
 
-                    t = q->r_wait_list;
-                    if (t) {
-                        t->timer = 0;
-                        t->state = TASK_RUNNING;
-                        q->r_wait_list = t->next;
-                        t->wait_list = NULL;
-                        t->next = NULL;
-                        t->resume_type = TASK_RESUME_MSG_COME;
+                    task = q->r_wait_list;
+                    if (task) {
+                        task->timer = 0;
+                        task->state = TASK_RUNNING;
+                        q->r_wait_list = task->next;
+                        task->wait_list = NULL;
+                        task->next = NULL;
+                        task->resume_type = TASK_RESUME_MSG_COME;
                         schedule();
                     }
                     interrupt_resume(reg);
@@ -557,7 +557,7 @@ u32_t sys_arch_mbox_fetch(sys_mbox_t *mbox, void **msg, u32_t timeout)
 {
     struct sys_mbox *q;
     task_t *end;
-    task_t *t;
+    task_t *task;
     u32_t start;
     uint32_t reg;
 
@@ -574,14 +574,14 @@ u32_t sys_arch_mbox_fetch(sys_mbox_t *mbox, void **msg, u32_t timeout)
                     q->out = ++q->out % q->size;
                     q->cnt--;
 
-                    t = q->w_wait_list;
-                    if (t) {
-                        t->timer = 0;
-                        t->state = TASK_RUNNING;
-                        q->w_wait_list = t->next;
-                        t->wait_list = NULL;
-                        t->next = NULL;
-                        t->resume_type = TASK_RESUME_MSG_OUT;
+                    task = q->w_wait_list;
+                    if (task) {
+                        task->timer = 0;
+                        task->state = TASK_RUNNING;
+                        q->w_wait_list = task->next;
+                        task->wait_list = NULL;
+                        task->next = NULL;
+                        task->resume_type = TASK_RESUME_MSG_OUT;
                         schedule();
                     }
                     interrupt_resume(reg);
@@ -635,7 +635,7 @@ u32_t sys_arch_mbox_fetch(sys_mbox_t *mbox, void **msg, u32_t timeout)
 u32_t sys_arch_mbox_tryfetch(sys_mbox_t *mbox, void **msg)
 {
     struct sys_mbox *q;
-    task_t *t;
+    task_t *task;
     uint32_t reg;
 
     reg = interrupt_disable();
@@ -648,14 +648,14 @@ u32_t sys_arch_mbox_tryfetch(sys_mbox_t *mbox, void **msg)
                     q->out = ++q->out % q->size;
                     q->cnt--;
 
-                    t = q->w_wait_list;
-                    if (t) {
-                        t->timer = 0;
-                        t->state = TASK_RUNNING;
-                        q->w_wait_list = t->next;
-                        t->wait_list = NULL;
-                        t->next = NULL;
-                        t->resume_type = TASK_RESUME_MSG_OUT;
+                    task = q->w_wait_list;
+                    if (task) {
+                        task->timer = 0;
+                        task->state = TASK_RUNNING;
+                        q->w_wait_list = task->next;
+                        task->wait_list = NULL;
+                        task->next = NULL;
+                        task->resume_type = TASK_RESUME_MSG_OUT;
                         schedule();
                     }
                     interrupt_resume(reg);

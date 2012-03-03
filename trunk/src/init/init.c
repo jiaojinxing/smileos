@@ -61,7 +61,7 @@ int main(void)
 
     mmu_init();
 
-    sched_init();
+    kernel_init();
 
     code = sbin_lookup("/2440_P1.hex", &size);
 
@@ -71,7 +71,7 @@ int main(void)
 
     kthread_create(thread1, (void *)1, 32 * 1024, 5);
 
-    sched_start();
+    kernel_start();
 
     while (1) {
     }

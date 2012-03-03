@@ -71,12 +71,12 @@
 #define TASK_RESUME_MSG_OUT     (1 << 5)
 
 /*
- * 保留地址空间
+ * 虚拟地址空间
  */
 typedef struct {
-    uint32_t            virtual_base;
+    uint32_t            base;
     uint32_t            size;
-} resv_space_t;
+} virtual_space_t;
 
 struct _frame_t;
 /*
@@ -92,13 +92,11 @@ typedef struct _task {
     uint32_t            content[20];
     uint32_t            kstack[KERN_STACK_SIZE];
     int                 type;
-    heap_t              heap;
     int                 errno;
     int                 resume_type;
     struct _task       *next;
     struct _task      **wait_list;
     struct _frame_t    *frame_list;
-    uint32_t            section_map_entry[PROCESS_SPACE_SIZE/SECTION_SIZE];
 } task_t;
 
 /*
@@ -117,14 +115,14 @@ extern uint64_t tick;
 typedef uint32_t sys_do_t;
 
 /*
- * 初始化调度器
+ * 初始化内核
  */
-void sched_init(void);
+void kernel_init(void);
 
 /*
- * 启动调度器
+ * 启动内核
  */
-void sched_start(void);
+void kernel_start(void);
 
 /*
  * 任务调度, 调用之前必须关中断
