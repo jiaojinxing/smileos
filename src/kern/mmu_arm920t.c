@@ -459,8 +459,6 @@ void mmu_map_sections(register uint32_t virtual_base,
     for (i = 0; i < size; i++) {
         *entry++ = attr | (((physical_base >> SECTION_OFFSET) + i) << SECTION_OFFSET);
     }
-
-
 }
 
 /*
@@ -621,9 +619,9 @@ void mmu_init(void)
 }
 
 /*
- * 系统保留空间
+ * 系统保留虚拟地址空间
  */
-resv_space_t sys_resv_space[] = {
+virtual_space_t sys_resv_space[] = {
         {
                 PHY_MEM_BASE,
                 PHY_MEM_SIZE

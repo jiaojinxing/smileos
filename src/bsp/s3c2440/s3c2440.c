@@ -80,7 +80,7 @@ void bsp_mem_map(void)
 /*
  * BSP ±£Áô¿Õ¼ä
  */
-resv_space_t bsp_resv_space[] = {
+virtual_space_t bsp_resv_space[] = {
         {
             0x48000000,
             0x60000000 - 0x48000000

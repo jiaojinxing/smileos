@@ -110,7 +110,7 @@ typedef uint32_t                    mem_ptr_t;
 #define MEM_ALIGN(addr)             ((void *)(((uint32_t)(addr) + MEM_ALIGNMENT - 1) & ~(uint32_t)(MEM_ALIGNMENT - 1)))
 #define MEM_ALIGN_LESS(addr)        ((void *)(((uint32_t)(addr)) & ~(uint32_t)(MEM_ALIGNMENT - 1)))
 /*********************************************************************************************************
-  为了更好地移植 LwIP, 加入以下数据类型定义
+  为了更好地移植 FATFS, 加入以下数据类型定义
 *********************************************************************************************************/
 /* These types must be 16-bit, 32-bit or larger integer */
 typedef int             INT;
