@@ -189,6 +189,11 @@ void interrupt_enter(void);
  */
 void interrupt_exit(void);
 
+/*
+ * »ñµÃ TICK
+ */
+uint64_t get_tick(void);
+
 #endif
 
 #endif                                                                  /*  KERN_H_                     */
