@@ -58,6 +58,8 @@ static page_table_t *used_page_table_list;
 
 /*
  * 根据段号查找页表
+ *
+ * TODO: 这样的查找算法还是挺慢的, 有待改进
  */
 uint32_t page_table_lookup(uint32_t section_nr)
 {
@@ -107,11 +109,11 @@ uint32_t page_table_alloc(uint32_t section_nr)
 /*
  * 释放页表
  */
-void page_table_free(uint32_t tbl_base)
+void page_table_free(uint32_t page_tbl_base)
 {
     page_table_t *tbl;
 
-    tbl = page_tables + (tbl_base - PAGE_TBL_BASE) / PAGE_TBL_SIZE;
+    tbl = page_tables + (page_tbl_base - PAGE_TBL_BASE) / PAGE_TBL_SIZE;
 
     if (tbl->prev) {
         tbl->prev->next = tbl->next;

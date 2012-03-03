@@ -45,8 +45,12 @@
 #include "kern/sbin.h"
 #include <string.h>
 
+int eth_init(void);
+
 static void thread1(void *arg)
 {
+    eth_init();
+
     while (1) {
         printf("hello SmileOS, kernel thread %d\n", (int)arg);
         sleep(1);
@@ -55,19 +59,19 @@ static void thread1(void *arg)
 
 int main(void)
 {
-    uint8_t  *code;
-    uint32_t  size;
-    int i;
+//    uint8_t  *code;
+//    uint32_t  size;
+//    int i;
 
     mmu_init();
 
     kernel_init();
 
-    code = sbin_lookup("/2440_P1.hex", &size);
-
-    for (i = 0; i < 100; i++) {
-        process_create(code, size, 15);
-    }
+//    code = sbin_lookup("/2440_P1.hex", &size);
+//
+//    for (i = 0; i < 100; i++) {
+//        process_create(code, size, 15);
+//    }
 
     kthread_create(thread1, (void *)1, 32 * 1024, 5);
 

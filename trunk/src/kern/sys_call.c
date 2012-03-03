@@ -124,7 +124,7 @@ void usleep(unsigned int us)
 /*
  * write
  */
-int write(int fd, char *data, unsigned int size)
+int write(int fd, const char *data, unsigned int size)
 {
     int ret;
 
@@ -155,6 +155,17 @@ int printf(const char *fmt, ...)
     write(0, buf, strlen(buf));
 
     va_end(va);
+
+    return 0;
+}
+
+/*
+ * puts
+ */
+int puts(const char *str)
+{
+    write(0, str, strlen(str));
+    write(0, "\n", 1);
 
     return 0;
 }

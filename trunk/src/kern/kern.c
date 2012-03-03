@@ -74,6 +74,23 @@ static uint8_t kernel_running = FALSE;
 static uint8_t wakeup         = FALSE;
 
 /*
+ * 获得 TICK
+ */
+uint64_t get_tick(void)
+{
+    uint32_t reg;
+    uint64_t __tick;
+
+    reg = interrupt_disable();
+
+    __tick = tick;
+
+    interrupt_resume(reg);
+
+    return __tick;
+}
+
+/*
  * 从内核内存堆分配内存
  */
 void *kmalloc(uint32_t size)

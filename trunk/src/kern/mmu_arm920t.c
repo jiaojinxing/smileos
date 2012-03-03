@@ -627,8 +627,8 @@ virtual_space_t sys_resv_space[] = {
                 PHY_MEM_SIZE
         },
         {
-                0xFFF00000,
-                1 * MB
+                0xC0000000,
+                1 * GB
         },
         {
                 0,

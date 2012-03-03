@@ -75,6 +75,10 @@ void bsp_mem_map(void)
     /*
      * dm9000
      */
+    mmu_map_sections(0x20000000,
+                     0x20000000,
+                     1 * MB,
+                     SECTION_ATTR(AP_USER_RW, DOMAIN_CHECK, CACHE_NO, BUFFER_NO));
 }
 
 /*
@@ -84,6 +88,10 @@ virtual_space_t bsp_resv_space[] = {
         {
             0x48000000,
             0x60000000 - 0x48000000
+        },
+        {
+            0x20000000,
+            1 * MB
         },
         {
             0,
@@ -103,6 +111,18 @@ void bsp_init(void)
     interrupt_init();
 
     timer_init();
+
+    /*
+     * Set GPA15 as nGCS4
+     */
+    GPACON |= 1 << 15;
+
+    /*
+     * DM9000 width 16, wait enable
+     */
+    BWSCON   = (BWSCON & (~(7 << 16))) | (5 << 16);
+
+    BANKCON4 = (1 << 13) | (1 << 11) | (6 << 8) | (1 << 6) | (1 << 4) | (0 << 2) | (0 << 0);
 }
 /*********************************************************************************************************
   END FILE

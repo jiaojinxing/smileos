@@ -74,12 +74,17 @@ void usleep(unsigned int us);
 /*
  * write
  */
-int write(int fd, char *data, unsigned int size);
+int write(int fd, const char *data, unsigned int size);
 
 /*
  * printf
  */
 int printf(const char *fmt, ...);
+
+/*
+ * puts
+ */
+int puts(const char *str);
 
 /*
  * select
