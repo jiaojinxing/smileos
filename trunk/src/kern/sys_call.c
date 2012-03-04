@@ -40,7 +40,6 @@
 #include "kern/config.h"
 #include "kern/types.h"
 #include "kern/sys_call.h"
-#include "kern/heap.h"
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>

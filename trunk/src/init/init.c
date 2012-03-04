@@ -47,9 +47,27 @@
 
 int eth_init(void);
 
+void tcpip_init_done(void *arg)
+{
+
+}
+
 static void thread1(void *arg)
 {
-    eth_init();
+    static struct netif ethernetif;
+    ip_addr_t           ip, submask, gateway;
+
+    tcpip_init(tcpip_init_done, NULL);
+
+    IP4_ADDR(&ip,       192, 168,   2,  60);
+    IP4_ADDR(&submask,  255, 255, 255,   0);
+    IP4_ADDR(&gateway,  192, 168,   2,   1);
+
+    netif_add(&ethernetif, &ip, &submask, &gateway, NULL, ethernetif_init, tcpip_input);
+
+    netif_set_default(&ethernetif);
+
+    netif_set_up(&ethernetif);
 
     while (1) {
         printf("hello SmileOS, kernel thread %d\n", (int)arg);
@@ -59,19 +77,19 @@ static void thread1(void *arg)
 
 int main(void)
 {
-//    uint8_t  *code;
-//    uint32_t  size;
-//    int i;
-
     mmu_init();
 
     kernel_init();
 
-//    code = sbin_lookup("/2440_P1.hex", &size);
-//
-//    for (i = 0; i < 100; i++) {
-//        process_create(code, size, 15);
-//    }
+    //    uint8_t  *code;
+    //    uint32_t  size;
+    //    int i;
+
+    //    code = sbin_lookup("/2440_P1.hex", &size);
+    //
+    //    for (i = 0; i < 100; i++) {
+    //        process_create(code, size, 15);
+    //    }
 
     kthread_create(thread1, (void *)1, 32 * 1024, 5);
 

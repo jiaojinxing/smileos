@@ -39,14 +39,13 @@
 *********************************************************************************************************/
 #include "kern/config.h"
 #include "kern/types.h"
-#include "kern/kern.h"
 #include "kern/heap.h"
-#include "kern/sys_call.h"
 
 /*
  * 进程代码项目应享有一份该文件, 用于实现用户态的 malloc 等, 因进程里使用非抢占的 pthread, 免锁免关中断
  */
 #ifdef SMILEOS_KERNEL
+#include "kern/kern.h"
 #define getpid()          current->tid
 #define debug_output      printk
 #else

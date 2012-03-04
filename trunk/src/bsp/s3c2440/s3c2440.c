@@ -40,7 +40,6 @@
 #include "kern/config.h"
 #include "kern/types.h"
 #include "kern/mmu.h"
-#include "kern/kern.h"
 #include "s3c2440.h"
 #include "s3c2440_clock.h"
 #include "s3c2440_uart.h"
@@ -52,11 +51,11 @@
  */
 void cpu_init(void)
 {
-    WTCON = 0;                                                          /*  关闭看门狗                  */
+    WTCON = 0x00;                                                       /*  关闭看门狗                  */
 
-    INTMSK = 0xffffffff;                                                /*  屏蔽所有中断                */
+    INTMSK = 0xFFFFFFFF;                                                /*  屏蔽所有中断                */
 
-    INTSUBMSK = 0x7fff;                                                 /*  屏蔽所有子中断              */
+    INTSUBMSK = 0x7FFF;                                                 /*  屏蔽所有子中断              */
 }
 
 /*
@@ -111,18 +110,6 @@ void bsp_init(void)
     interrupt_init();
 
     timer_init();
-
-    /*
-     * Set GPA15 as nGCS4
-     */
-    GPACON |= 1 << 15;
-
-    /*
-     * DM9000 width 16, wait enable
-     */
-    BWSCON   = (BWSCON & (~(7 << 16))) | (5 << 16);
-
-    BANKCON4 = (1 << 13) | (1 << 11) | (6 << 8) | (1 << 6) | (1 << 4) | (0 << 2) | (0 << 0);
 }
 /*********************************************************************************************************
   END FILE
