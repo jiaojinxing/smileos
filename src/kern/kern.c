@@ -42,6 +42,7 @@
 #include "kern/kern.h"
 #include "kern/arm.h"
 #include "kern/vmm.h"
+#include "kern/heap.h"
 #include <string.h>
 #include <stdarg.h>
 

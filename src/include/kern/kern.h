@@ -42,7 +42,6 @@
 
 #include "config.h"
 #include "types.h"
-#include "heap.h"
 
 #ifdef SMILEOS_KERNEL
 
@@ -70,13 +69,7 @@
 #define TASK_RESUME_MSG_COME    (1 << 4)
 #define TASK_RESUME_MSG_OUT     (1 << 5)
 
-/*
- * ÐéÄâµØÖ·¿Õ¼ä
- */
-typedef struct {
-    uint32_t            base;
-    uint32_t            size;
-} virtual_space_t;
+
 
 struct _frame_t;
 /*

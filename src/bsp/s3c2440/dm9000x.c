@@ -41,723 +41,928 @@
 #include "kern/types.h"
 #include "kern/kern.h"
 
+#include "lwip/opt.h"
+#include "lwip/def.h"
+#include "lwip/mem.h"
+#include "lwip/pbuf.h"
+#include "lwip/sys.h"
+#include <lwip/stats.h>
+#include <lwip/snmp.h>
+#include "netif/etharp.h"
+#include "netif/ppp_oe.h"
+
+/* Define those to better describe your network interface. */
+#define IFNAME0 'e'
+#define IFNAME1 'n'
+
+/**
+ * Helper struct to hold private data used to operate your ethernet interface.
+ * Keeping the ethernet address of the MAC in this struct is not necessary
+ * as it is already kept in the struct netif.
+ * But this is only an example, anyway...
+ */
+struct ethernetif {
+  struct eth_addr *ethaddr;
+  void (*outblk)(const void *data, int len);
+  void (*inblk)(void *data, int len);
+  void (*rx_status)(uint16_t *RxStatus, uint16_t *RxLen);
+};
+
+#define CONFIG_DRIVER_DM9000    1
+#include "dm9000x.h"
+
+/*
+ * 板级
+ */
 #define CONFIG_DM9000_BASE      0x20000300
 #define DM9000_IO               (CONFIG_DM9000_BASE)
 #define DM9000_DATA             (CONFIG_DM9000_BASE + 4)
 #define CONFIG_DM9000_NO_SROM   1
 
+/*
+ * ARCH IO 级
+ */
+#define writeb(d, r)            (*(volatile uint8_t  *)r) = (d)
+#define writew(d, r)            (*(volatile uint16_t *)r) = (d)
+#define writel(d, r)            (*(volatile uint32_t *)r) = (d)
+#define readb(r)                (*(volatile uint8_t  *)r)
+#define readw(r)                (*(volatile uint16_t *)r)
+#define readl(r)                (*(volatile uint32_t *)r)
+#define __le16_to_cpu(x)        ((uint16_t)(x))
+
+/*
+ * 系统级
+ */
 #define CONFIG_SYS_HZ           TICK_PER_SECOND
-
-#define CONFIG_DRIVER_DM9000    1
-
-//#define CONFIG_DM9000_DEBUG     0
-
 #define get_timer(a)            get_tick()
-
 #define printf                  printk
-
 extern void usleep(unsigned int us);
 #define udelay                  usleep
 
-typedef uint64_t                u64;
-typedef uint32_t                u32;
-typedef uint16_t                u16;
-typedef uint8_t                 u8;
+#define CONFIG_DM9000_DEBUG     0
 
-typedef struct {
-    u8      enetaddr[6];
-} bd_t;
 
-struct eth_device {
-    u8      enetaddr[6];
-    int     (*init)(struct eth_device *dev, bd_t *bd);
-    void    (*halt)(struct eth_device *netdev);
-    int     (*send)(struct eth_device *netdev, volatile void *packet, int length);
-    int     (*recv)(struct eth_device *netdev);
-    char    name[16];
-};
+static int dm9000_init(struct eth_device *dev);
 
-static u8 *NetRxPackets[1];
+#include "s3c2440.h"
 
-#define writeb(d, r)            (*(volatile u8  *)r) = (d)
-#define writew(d, r)            (*(volatile u16 *)r) = (d)
-#define writel(d, r)            (*(volatile u32 *)r) = (d)
-#define readb(r)                (*(volatile u8  *)r)
-#define readw(r)                (*(volatile u16 *)r)
-#define readl(r)                (*(volatile u32 *)r)
-#define __le16_to_cpu(x)        ((u16)(x))
-
-void NetReceive(volatile u8 *inpkt, int len)
+void dm9000_isr(void)
 {
-    printf("dm9000x recv a packet %d\n", len);
+    printk("dm9000_isr\n");
 }
 
-int eth_register(struct eth_device *dev)
+static int eint47_isr(uint32_t interrupt)
 {
-    dev->enetaddr[0] = 0x08;
-    dev->enetaddr[1] = 0x00;
-    dev->enetaddr[2] = 0x3E;
-    dev->enetaddr[3] = 0x26;
-    dev->enetaddr[4] = 0x0A;
-    dev->enetaddr[5] = 0x5B;
+    uint32_t sub_interrupt;
 
-    NetRxPackets[0] = (u8 *)kmalloc(13 * KB);
+    sub_interrupt = EINTPEND;
 
-    dev->init(dev, NULL);
+    if (sub_interrupt & (1 << 7)) {
+       dm9000_isr();
+    }
+
+    EINTPEND = sub_interrupt;
 
     return 0;
 }
 
-int dm9000_initialize(bd_t *bis);
-
-int eth_init(void)
-{
-    dm9000_initialize(NULL);
-
-    return 0;
-}
-
-/*
-  dm9000.c: Version 1.2 12/15/2003
-
-    A Davicom DM9000 ISA NIC fast Ethernet driver for Linux.
-    Copyright (C) 1997  Sten Wang
-
-    This program is free software; you can redistribute it and/or
-    modify it under the terms of the GNU General Public License
-    as published by the Free Software Foundation; either version 2
-    of the License, or (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-  (C)Copyright 1997-1998 DAVICOM Semiconductor,Inc. All Rights Reserved.
-
-V0.11   06/20/2001  REG_0A bit3=1, default enable BP with DA match
-    06/22/2001  Support DM9801 progrmming
-            E3: R25 = ((R24 + NF) & 0x00ff) | 0xf000
-            E4: R25 = ((R24 + NF) & 0x00ff) | 0xc200
-        R17 = (R17 & 0xfff0) | NF + 3
-            E5: R25 = ((R24 + NF - 3) & 0x00ff) | 0xc200
-        R17 = (R17 & 0xfff0) | NF
-
-v1.00           modify by simon 2001.9.5
-                    change for kernel 2.4.x
-
-v1.1   11/09/2001   fix force mode bug
-
-v1.2   03/18/2003       Weilun Huang <weilun_huang@davicom.com.tw>:
-            Fixed phy reset.
-            Added tx/rx 32 bit mode.
-            Cleaned up for kernel merge.
-
---------------------------------------
-
-       12/15/2003       Initial port to u-boot by
-                Sascha Hauer <saschahauer@web.de>
-
-       06/03/2008   Remy Bohmer <linux@bohmer.net>
-            - Fixed the driver to work with DM9000A.
-              (check on ISR receive status bit before reading the
-              FIFO as described in DM9000 programming guide and
-              application notes)
-            - Added autodetect of databus width.
-            - Made debug code compile again.
-            - Adapt eth_send such that it matches the DM9000*
-              application notes. Needed to make it work properly
-              for DM9000A.
-            - Adapted reset procedure to match DM9000 application
-              notes (i.e. double reset)
-            - some minor code cleanups
-            These changes are tested with DM9000{A,EP,E} together
-            with a 200MHz Atmel AT91SAM9261 core
-
-TODO: external MII is not functional, only internal at the moment.
-*/
-#ifndef SMILEOS
-#include <common.h>
-#include <command.h>
-#include <net.h>
-#include <asm/io.h>
-#include <dm9000.h>
-#endif
-
-#include "dm9000x.h"
-
-/* Board/System/Debug information/definition ---------------- */
-
-/* #define CONFIG_DM9000_DEBUG */
-
-#ifdef CONFIG_DM9000_DEBUG
+#if CONFIG_DM9000_DEBUG  > 0
 #define DM9000_DBG(fmt,args...) printf(fmt, ##args)
-#define DM9000_DMP_PACKET(func,packet,length)  \
-    do { \
-        int i;                          \
-        printf("%s: length: %d\n", func, length);       \
-        for (i = 0; i < length; i++) {              \
-            if (i % 8 == 0)                 \
-                printf("\n%s: %02x: ", func, i);    \
-            printf("%02x ", ((unsigned char *) packet)[i]); \
-        } printf("\n");                     \
-    } while(0)
 #else
 #define DM9000_DBG(fmt,args...)
-#define DM9000_DMP_PACKET(func,packet,length)
+#define DM9000_ERR(fmt,args...)
 #endif
 
-/* Structure/enum declaration ------------------------------- */
-typedef struct board_info {
-    u32 runt_length_counter;    /* counter: RX length < 64byte */
-    u32 long_length_counter;    /* counter: RX length > 1514byte */
-    u32 reset_counter;  /* counter: RESET */
-    u32 reset_tx_timeout;   /* RESET caused by TX Timeout */
-    u32 reset_rx_status;    /* RESET caused by RX Statsus wrong */
-    u16 tx_pkt_cnt;
-    u16 queue_start_addr;
-    u16 dbug_cnt;
-    u8 phy_addr;
-    u8 device_wait_reset;   /* device state */
-    unsigned char srom[128];
-    void (*outblk)(volatile void *data_ptr, int count);
-    void (*inblk)(void *data_ptr, int count);
-    void (*rx_status)(u16 *RxStatus, u16 *RxLen);
-    struct eth_device netdev;
-} board_info_t;
-static board_info_t dm9000_info;
+#define DM9000_outb(d,r)        writeb(d, (volatile uint8_t  *)(r))
+#define DM9000_outw(d,r)        writew(d, (volatile uint16_t *)(r))
+#define DM9000_outl(d,r)        writel(d, (volatile uint32_t *)(r))
+#define DM9000_inb(r)           readb((volatile uint8_t  *)(r))
+#define DM9000_inw(r)           readw((volatile uint16_t *)(r))
+#define DM9000_inl(r)           readl((volatile uint32_t *)(r))
 
-
-/* function declaration ------------------------------------- */
-static int dm9000_probe(void);
-static u16 dm9000_phy_read(int);
-static void dm9000_phy_write(int, u16);
-static u8 DM9000_ior(int);
-static void DM9000_iow(int reg, u8 value);
-
-/* DM9000 network board routine ---------------------------- */
-#ifndef CONFIG_DM9000_BYTE_SWAPPED
-#define DM9000_outb(d,r) writeb(d, (volatile u8 *)(r))
-#define DM9000_outw(d,r) writew(d, (volatile u16 *)(r))
-#define DM9000_outl(d,r) writel(d, (volatile u32 *)(r))
-#define DM9000_inb(r) readb((volatile u8 *)(r))
-#define DM9000_inw(r) readw((volatile u16 *)(r))
-#define DM9000_inl(r) readl((volatile u32 *)(r))
-#else
-#define DM9000_outb(d, r) __raw_writeb(d, r)
-#define DM9000_outw(d, r) __raw_writew(d, r)
-#define DM9000_outl(d, r) __raw_writel(d, r)
-#define DM9000_inb(r) __raw_readb(r)
-#define DM9000_inw(r) __raw_readw(r)
-#define DM9000_inl(r) __raw_readl(r)
-#endif
-
-#ifdef CONFIG_DM9000_DEBUG
-static void
-dump_regs(void)
-{
-    DM9000_DBG("\n");
-    DM9000_DBG("NCR   (0x00): %02x\n", DM9000_ior(0));
-    DM9000_DBG("NSR   (0x01): %02x\n", DM9000_ior(1));
-    DM9000_DBG("TCR   (0x02): %02x\n", DM9000_ior(2));
-    DM9000_DBG("TSRI  (0x03): %02x\n", DM9000_ior(3));
-    DM9000_DBG("TSRII (0x04): %02x\n", DM9000_ior(4));
-    DM9000_DBG("RCR   (0x05): %02x\n", DM9000_ior(5));
-    DM9000_DBG("RSR   (0x06): %02x\n", DM9000_ior(6));
-    DM9000_DBG("ISR   (0xFE): %02x\n", DM9000_ior(DM9000_ISR));
-    DM9000_DBG("\n");
-}
-#endif
-
-static void dm9000_outblk_8bit(volatile void *data_ptr, int count)
+/*
+ * 输出块 8 位模式
+ */
+static void dm9000_outblk_8bit(const void *data, int len)
 {
     int i;
-    for (i = 0; i < count; i++)
-        DM9000_outb((((u8 *) data_ptr)[i] & 0xff), DM9000_DATA);
+
+    for (i = 0; i < len; i++) {
+        DM9000_outb(((const uint8_t *)data)[i], DM9000_DATA);
+    }
 }
 
-static void dm9000_outblk_16bit(volatile void *data_ptr, int count)
+/*
+ * 输出块 16 位模式
+ */
+static void dm9000_outblk_16bit(const void *data, int len)
 {
     int i;
-    u32 tmplen = (count + 1) / 2;
 
-    for (i = 0; i < tmplen; i++)
-        DM9000_outw(((u16 *) data_ptr)[i], DM9000_DATA);
+    len = (len + 1) / 2;
+
+    for (i = 0; i < len; i++) {
+        DM9000_outw(((const uint16_t *)data)[i], DM9000_DATA);
+    }
 }
-static void dm9000_outblk_32bit(volatile void *data_ptr, int count)
+
+/*
+ * 输出块 32 位模式
+ */
+static void dm9000_outblk_32bit(const void *data, int len)
 {
     int i;
-    u32 tmplen = (count + 3) / 4;
 
-    for (i = 0; i < tmplen; i++)
-        DM9000_outl(((u32 *) data_ptr)[i], DM9000_DATA);
+    len = (len + 3) / 4;
+
+    for (i = 0; i < len; i++) {
+        DM9000_outl(((const uint32_t *)data)[i], DM9000_DATA);
+    }
 }
 
-static void dm9000_inblk_8bit(void *data_ptr, int count)
+/*
+ * 输入块 8 位模式
+ */
+static void dm9000_inblk_8bit(void *data, int len)
 {
     int i;
-    for (i = 0; i < count; i++)
-        ((u8 *) data_ptr)[i] = DM9000_inb(DM9000_DATA);
+
+    for (i = 0; i < len; i++) {
+        ((uint8_t *)data)[i] = DM9000_inb(DM9000_DATA);
+    }
 }
 
-static void dm9000_inblk_16bit(void *data_ptr, int count)
+/*
+ * 输入块 16 位模式
+ */
+static void dm9000_inblk_16bit(void *data, int len)
 {
     int i;
-    u32 tmplen = (count + 1) / 2;
 
-    for (i = 0; i < tmplen; i++)
-        ((u16 *) data_ptr)[i] = DM9000_inw(DM9000_DATA);
+    len = (len + 1) / 2;
+
+    for (i = 0; i < len; i++) {
+        ((uint16_t *)data)[i] = DM9000_inw(DM9000_DATA);
+    }
 }
-static void dm9000_inblk_32bit(void *data_ptr, int count)
+
+/*
+ * 输入块 32 位模式
+ */
+static void dm9000_inblk_32bit(void *data, int len)
 {
     int i;
-    u32 tmplen = (count + 3) / 4;
 
-    for (i = 0; i < tmplen; i++)
-        ((u32 *) data_ptr)[i] = DM9000_inl(DM9000_DATA);
+    len = (len + 3) / 4;
+
+    for (i = 0; i < len; i++) {
+        ((uint32_t *)data)[i] = DM9000_inl(DM9000_DATA);
+    }
 }
 
-static void dm9000_rx_status_32bit(u16 *RxStatus, u16 *RxLen)
+/*
+ * 获得接收状态 32 位模式
+ */
+static void dm9000_rx_status_32bit(uint16_t *status, uint16_t *len)
 {
-    u32 tmpdata;
+    uint32_t temp;
 
     DM9000_outb(DM9000_MRCMD, DM9000_IO);
 
-    tmpdata = DM9000_inl(DM9000_DATA);
-    *RxStatus = __le16_to_cpu(tmpdata);
-    *RxLen = __le16_to_cpu(tmpdata >> 16);
+    temp    = DM9000_inl(DM9000_DATA);
+    *status = __le16_to_cpu(temp);
+    *len    = __le16_to_cpu(temp >> 16);
 }
 
-static void dm9000_rx_status_16bit(u16 *RxStatus, u16 *RxLen)
+/*
+ * 获得接收状态 16 位模式
+ */
+static void dm9000_rx_status_16bit(uint16_t *status, uint16_t *len)
 {
     DM9000_outb(DM9000_MRCMD, DM9000_IO);
 
-    *RxStatus = __le16_to_cpu(DM9000_inw(DM9000_DATA));
-    *RxLen = __le16_to_cpu(DM9000_inw(DM9000_DATA));
+    *status = __le16_to_cpu(DM9000_inw(DM9000_DATA));
+    *len    = __le16_to_cpu(DM9000_inw(DM9000_DATA));
 }
 
-static void dm9000_rx_status_8bit(u16 *RxStatus, u16 *RxLen)
+/*
+ * 获得接收状态 8 位模式
+ */
+static void dm9000_rx_status_8bit(uint16_t *status, uint16_t *len)
 {
     DM9000_outb(DM9000_MRCMD, DM9000_IO);
 
-    *RxStatus =
-        __le16_to_cpu(DM9000_inb(DM9000_DATA) +
-              (DM9000_inb(DM9000_DATA) << 8));
-    *RxLen =
-        __le16_to_cpu(DM9000_inb(DM9000_DATA) +
-              (DM9000_inb(DM9000_DATA) << 8));
+    *status = __le16_to_cpu(DM9000_inb(DM9000_DATA) + (DM9000_inb(DM9000_DATA) << 8));
+    *len    = __le16_to_cpu(DM9000_inb(DM9000_DATA) + (DM9000_inb(DM9000_DATA) << 8));
 }
 
 /*
-  Search DM9000 board, allocate space and register it
-*/
-int
-dm9000_probe(void)
-{
-    u32 id_val;
-    id_val = DM9000_ior(DM9000_VIDL);
-    id_val |= DM9000_ior(DM9000_VIDH) << 8;
-    id_val |= DM9000_ior(DM9000_PIDL) << 16;
-    id_val |= DM9000_ior(DM9000_PIDH) << 24;
-    if (id_val == DM9000_ID) {
-        printf("dm9000 i/o: 0x%x, id: 0x%x \n", CONFIG_DM9000_BASE,
-               id_val);
-        return 0;
-    } else {
-        printf("dm9000 not found at 0x%08x id: 0x%08x\n",
-               CONFIG_DM9000_BASE, id_val);
-        return -1;
-    }
-}
-
-/* General Purpose dm9000 reset routine */
-static void
-dm9000_reset(void)
-{
-    DM9000_DBG("resetting DM9000\n");
-
-    /* Reset DM9000,
-       see DM9000 Application Notes V1.22 Jun 11, 2004 page 29 */
-
-    /* DEBUG: Make all GPIO0 outputs, all others inputs */
-    DM9000_iow(DM9000_GPCR, GPCR_GPIO0_OUT);
-    /* Step 1: Power internal PHY by writing 0 to GPIO0 pin */
-    DM9000_iow(DM9000_GPR, 0);
-    /* Step 2: Software reset */
-    DM9000_iow(DM9000_NCR, (NCR_LBK_INT_MAC | NCR_RST));
-
-    do {
-        DM9000_DBG("resetting the DM9000, 1st reset\n");
-        udelay(25); /* Wait at least 20 us */
-    } while (DM9000_ior(DM9000_NCR) & 1);
-
-    DM9000_iow(DM9000_NCR, 0);
-    DM9000_iow(DM9000_NCR, (NCR_LBK_INT_MAC | NCR_RST)); /* Issue a second reset */
-
-    do {
-        DM9000_DBG("resetting the DM9000, 2nd reset\n");
-        udelay(25); /* Wait at least 20 us */
-    } while (DM9000_ior(DM9000_NCR) & 1);
-
-    /* Check whether the ethernet controller is present */
-    if ((DM9000_ior(DM9000_PIDL) != 0x0) ||
-        (DM9000_ior(DM9000_PIDH) != 0x90))
-        printf("ERROR: resetting DM9000 -> not responding\n");
-}
-
-/* Initialize dm9000 board
-*/
-static int dm9000_init(struct eth_device *dev, bd_t *bd)
-{
-    int i, oft, lnk;
-    u8 io_mode;
-    struct board_info *db = &dm9000_info;
-
-    DM9000_DBG("%s\n", __func__);
-
-    /* RESET device */
-    dm9000_reset();
-
-    if (dm9000_probe() < 0)
-        return -1;
-
-    /* Auto-detect 8/16/32 bit mode, ISR Bit 6+7 indicate bus width */
-    io_mode = DM9000_ior(DM9000_ISR) >> 6;
-
-    switch (io_mode) {
-    case 0x0:  /* 16-bit mode */
-        printf("DM9000: running in 16 bit mode\n");
-        db->outblk    = dm9000_outblk_16bit;
-        db->inblk     = dm9000_inblk_16bit;
-        db->rx_status = dm9000_rx_status_16bit;
-        break;
-    case 0x01:  /* 32-bit mode */
-        printf("DM9000: running in 32 bit mode\n");
-        db->outblk    = dm9000_outblk_32bit;
-        db->inblk     = dm9000_inblk_32bit;
-        db->rx_status = dm9000_rx_status_32bit;
-        break;
-    case 0x02: /* 8 bit mode */
-        printf("DM9000: running in 8 bit mode\n");
-        db->outblk    = dm9000_outblk_8bit;
-        db->inblk     = dm9000_inblk_8bit;
-        db->rx_status = dm9000_rx_status_8bit;
-        break;
-    default:
-        /* Assume 8 bit mode, will probably not work anyway */
-        printf("DM9000: Undefined IO-mode:0x%x\n", io_mode);
-        db->outblk    = dm9000_outblk_8bit;
-        db->inblk     = dm9000_inblk_8bit;
-        db->rx_status = dm9000_rx_status_8bit;
-        break;
-    }
-
-    /* Program operating register, only internal phy supported */
-    DM9000_iow(DM9000_NCR, 0x0);
-    /* TX Polling clear */
-    DM9000_iow(DM9000_TCR, 0);
-    /* Less 3Kb, 200us */
-    DM9000_iow(DM9000_BPTR, BPTR_BPHW(3) | BPTR_JPT_600US);
-    /* Flow Control : High/Low Water */
-    DM9000_iow(DM9000_FCTR, FCTR_HWOT(3) | FCTR_LWOT(8));
-    /* SH FIXME: This looks strange! Flow Control */
-    DM9000_iow(DM9000_FCR, 0x0);
-    /* Special Mode */
-    DM9000_iow(DM9000_SMCR, 0);
-    /* clear TX status */
-    DM9000_iow(DM9000_NSR, NSR_WAKEST | NSR_TX2END | NSR_TX1END);
-    /* Clear interrupt status */
-    DM9000_iow(DM9000_ISR, ISR_ROOS | ISR_ROS | ISR_PTS | ISR_PRS);
-
-    printf("MAC: %pM\n", dev->enetaddr);
-
-    /* fill device MAC address registers */
-    for (i = 0, oft = DM9000_PAR; i < 6; i++, oft++)
-        DM9000_iow(oft, dev->enetaddr[i]);
-    for (i = 0, oft = 0x16; i < 8; i++, oft++)
-        DM9000_iow(oft, 0xff);
-
-    /* read back mac, just to be sure */
-    for (i = 0, oft = 0x10; i < 6; i++, oft++)
-        DM9000_DBG("%02x:", DM9000_ior(oft));
-    DM9000_DBG("\n");
-
-    /* Activate DM9000 */
-    /* RX enable */
-    DM9000_iow(DM9000_RCR, RCR_DIS_LONG | RCR_DIS_CRC | RCR_RXEN);
-    /* Enable TX/RX interrupt mask */
-    DM9000_iow(DM9000_IMR, IMR_PAR);
-
-    i = 0;
-    while (!(dm9000_phy_read(1) & 0x20)) {  /* autonegation complete bit */
-        udelay(1000);
-        i++;
-        if (i == 10000) {
-            printf("could not establish link\n");
-            return 0;
-        }
-    }
-
-    /* see what we've got */
-    lnk = dm9000_phy_read(17) >> 12;
-    printf("operating at ");
-    switch (lnk) {
-    case 1:
-        printf("10M half duplex ");
-        break;
-    case 2:
-        printf("10M full duplex ");
-        break;
-    case 4:
-        printf("100M half duplex ");
-        break;
-    case 8:
-        printf("100M full duplex ");
-        break;
-    default:
-        printf("unknown: %d ", lnk);
-        break;
-    }
-    printf("mode\n");
-    return 0;
-}
-
-/*
-  Hardware start transmission.
-  Send a packet to media from the upper layer.
-*/
-static int dm9000_send(struct eth_device *netdev, volatile void *packet,
-             int length)
-{
-    int tmo;
-    struct board_info *db = &dm9000_info;
-
-    DM9000_DMP_PACKET(__func__ , packet, length);
-
-    DM9000_iow(DM9000_ISR, IMR_PTM); /* Clear Tx bit in ISR */
-
-    /* Move data to DM9000 TX RAM */
-    DM9000_outb(DM9000_MWCMD, DM9000_IO); /* Prepare for TX-data */
-
-    /* push the data to the TX-fifo */
-    (db->outblk)(packet, length);
-
-    /* Set TX length to DM9000 */
-    DM9000_iow(DM9000_TXPLL, length & 0xff);
-    DM9000_iow(DM9000_TXPLH, (length >> 8) & 0xff);
-
-    /* Issue TX polling command */
-    DM9000_iow(DM9000_TCR, TCR_TXREQ); /* Cleared after TX complete */
-
-    /* wait for end of transmission */
-    tmo = get_timer(0) + 5 * CONFIG_SYS_HZ;
-    while ( !(DM9000_ior(DM9000_NSR) & (NSR_TX1END | NSR_TX2END)) ||
-        !(DM9000_ior(DM9000_ISR) & IMR_PTM) ) {
-        if (get_timer(0) >= tmo) {
-            printf("transmission timeout\n");
-            break;
-        }
-    }
-    DM9000_iow(DM9000_ISR, IMR_PTM); /* Clear Tx bit in ISR */
-
-    DM9000_DBG("transmit done\n\n");
-    return 0;
-}
-
-/*
-  Stop the interface.
-  The interface is stopped when it is brought.
-*/
-static void dm9000_halt(struct eth_device *netdev)
-{
-    DM9000_DBG("%s\n", __func__);
-
-    /* RESET devie */
-    dm9000_phy_write(0, 0x8000);    /* PHY RESET */
-    DM9000_iow(DM9000_GPR, 0x01);   /* Power-Down PHY */
-    DM9000_iow(DM9000_IMR, 0x80);   /* Disable all interrupt */
-    DM9000_iow(DM9000_RCR, 0x00);   /* Disable RX */
-}
-
-/*
-  Received a packet and pass to upper layer
-*/
-static int dm9000_rx(struct eth_device *netdev)
-{
-    u8 rxbyte, *rdptr = (u8 *) NetRxPackets[0];
-    u16 RxStatus, RxLen = 0;
-    struct board_info *db = &dm9000_info;
-
-    /* Check packet ready or not, we must check
-       the ISR status first for DM9000A */
-    if (!(DM9000_ior(DM9000_ISR) & 0x01)) /* Rx-ISR bit must be set. */
-        return 0;
-
-    DM9000_iow(DM9000_ISR, 0x01); /* clear PR status latched in bit 0 */
-
-    /* There is _at least_ 1 package in the fifo, read them all */
-    for (;;) {
-        DM9000_ior(DM9000_MRCMDX);  /* Dummy read */
-
-        /* Get most updated data,
-           only look at bits 0:1, See application notes DM9000 */
-        rxbyte = DM9000_inb(DM9000_DATA) & 0x03;
-
-        /* Status check: this byte must be 0 or 1 */
-        if (rxbyte > DM9000_PKT_RDY) {
-            DM9000_iow(DM9000_RCR, 0x00);   /* Stop Device */
-            DM9000_iow(DM9000_ISR, 0x80);   /* Stop INT request */
-            printf("DM9000 error: status check fail: 0x%x\n",
-                rxbyte);
-            return 0;
-        }
-
-        if (rxbyte != DM9000_PKT_RDY)
-            return 0; /* No packet received, ignore */
-
-        DM9000_DBG("receiving packet\n");
-
-        /* A packet ready now  & Get status/length */
-        (db->rx_status)(&RxStatus, &RxLen);
-
-        DM9000_DBG("rx status: 0x%04x rx len: %d\n", RxStatus, RxLen);
-
-        /* Move data from DM9000 */
-        /* Read received packet from RX SRAM */
-        (db->inblk)(rdptr, RxLen);
-
-        if ((RxStatus & 0xbf00) || (RxLen < 0x40)
-            || (RxLen > DM9000_PKT_MAX)) {
-            if (RxStatus & 0x100) {
-                printf("rx fifo error\n");
-            }
-            if (RxStatus & 0x200) {
-                printf("rx crc error\n");
-            }
-            if (RxStatus & 0x8000) {
-                printf("rx length error\n");
-            }
-            if (RxLen > DM9000_PKT_MAX) {
-                printf("rx length too big\n");
-                dm9000_reset();
-            }
-        } else {
-            DM9000_DMP_PACKET(__func__ , rdptr, RxLen);
-
-            DM9000_DBG("passing packet to upper layer\n");
-            NetReceive(NetRxPackets[0], RxLen);
-        }
-    }
-    return 0;
-}
-
-/*
-  Read a word data from SROM
-*/
-#if !defined(CONFIG_DM9000_NO_SROM)
-void dm9000_read_srom_word(int offset, u8 *to)
-{
-    DM9000_iow(DM9000_EPAR, offset);
-    DM9000_iow(DM9000_EPCR, 0x4);
-    udelay(8000);
-    DM9000_iow(DM9000_EPCR, 0x0);
-    to[0] = DM9000_ior(DM9000_EPDRL);
-    to[1] = DM9000_ior(DM9000_EPDRH);
-}
-
-void dm9000_write_srom_word(int offset, u16 val)
-{
-    DM9000_iow(DM9000_EPAR, offset);
-    DM9000_iow(DM9000_EPDRH, ((val >> 8) & 0xff));
-    DM9000_iow(DM9000_EPDRL, (val & 0xff));
-    DM9000_iow(DM9000_EPCR, 0x12);
-    udelay(8000);
-    DM9000_iow(DM9000_EPCR, 0);
-}
-#endif
-
-static void dm9000_get_enetaddr(struct eth_device *dev)
-{
-#if !defined(CONFIG_DM9000_NO_SROM)
-    int i;
-    for (i = 0; i < 3; i++)
-        dm9000_read_srom_word(i, dev->enetaddr + (2 * i));
-#endif
-}
-
-/*
-   Read a byte from I/O port
-*/
-static u8
-DM9000_ior(int reg)
+ * 从 io 端口读一个字节
+ */
+static uint8_t dm9000_io_read(uint8_t reg)
 {
     DM9000_outb(reg, DM9000_IO);
     return DM9000_inb(DM9000_DATA);
 }
 
 /*
-   Write a byte to I/O port
-*/
-static void
-DM9000_iow(int reg, u8 value)
+ * 从 io 端口写一个字节
+ */
+static void dm9000_io_write(uint8_t reg, uint8_t value)
 {
     DM9000_outb(reg, DM9000_IO);
     DM9000_outb(value, DM9000_DATA);
 }
 
 /*
-   Read a word from phyxcer
-*/
-static u16
-dm9000_phy_read(int reg)
+ * Read a word from phyxcer
+ */
+static uint16_t dm9000_phy_read(uint8_t reg)
 {
-    u16 val;
+    uint16_t value;
 
-    /* Fill the phyxcer register into REG_0C */
-    DM9000_iow(DM9000_EPAR, DM9000_PHY | reg);
-    DM9000_iow(DM9000_EPCR, 0xc);   /* Issue phyxcer read command */
-    udelay(100);            /* Wait read complete */
-    DM9000_iow(DM9000_EPCR, 0x0);   /* Clear phyxcer read command */
-    val = (DM9000_ior(DM9000_EPDRH) << 8) | DM9000_ior(DM9000_EPDRL);
+    /*
+     * Fill the phyxcer register into REG_0C
+     */
+    dm9000_io_write(DM9000_EPAR, DM9000_PHY | reg);
 
-    /* The read data keeps on REG_0D & REG_0E */
-    DM9000_DBG("dm9000_phy_read(0x%x): 0x%x\n", reg, val);
-    return val;
+    dm9000_io_write(DM9000_EPCR, 0x0c);                                 /*  Issue phyxcer read command  */
+    udelay(100);                                                        /*  Wait read complete          */
+    dm9000_io_write(DM9000_EPCR, 0x00);                                 /*  Clear phyxcer read command  */
+
+    value = (dm9000_io_read(DM9000_EPDRH) << 8) | dm9000_io_read(DM9000_EPDRL);
+
+    /*
+     * The read data keeps on REG_0D & REG_0E
+     */
+    DM9000_DBG("dm9000_phy_read(reg:0x%x, value:0x%x)\n", reg, value);
+
+    return value;
 }
 
 /*
    Write a word to phyxcer
 */
-static void
-dm9000_phy_write(int reg, u16 value)
+static void dm9000_phy_write(uint8_t reg, uint16_t value)
 {
+    /*
+     * Fill the phyxcer register into REG_0C
+     */
+    dm9000_io_write(DM9000_EPAR, DM9000_PHY | reg);
 
-    /* Fill the phyxcer register into REG_0C */
-    DM9000_iow(DM9000_EPAR, DM9000_PHY | reg);
+    /*
+     * Fill the written data into REG_0D & REG_0E
+     */
+    dm9000_io_write(DM9000_EPDRL, (value & 0xff));
+    dm9000_io_write(DM9000_EPDRH, ((value >> 8) & 0xff));
 
-    /* Fill the written data into REG_0D & REG_0E */
-    DM9000_iow(DM9000_EPDRL, (value & 0xff));
-    DM9000_iow(DM9000_EPDRH, ((value >> 8) & 0xff));
-    DM9000_iow(DM9000_EPCR, 0xa);   /* Issue phyxcer write command */
-    udelay(500);            /* Wait write complete */
-    DM9000_iow(DM9000_EPCR, 0x0);   /* Clear phyxcer write command */
+    dm9000_io_write(DM9000_EPCR, 0x0a);                                 /*  Issue phyxcer write command */
+    udelay(500);                                                        /*  Wait write complete         */
+    dm9000_io_write(DM9000_EPCR, 0x00);                                 /*  Clear phyxcer write command */
+
     DM9000_DBG("dm9000_phy_write(reg:0x%x, value:0x%x)\n", reg, value);
 }
 
-int dm9000_initialize(bd_t *bis)
+/*
+ * 探测 dm9000 芯片
+ */
+static int dm9000_probe(void)
 {
-    struct eth_device *dev = &(dm9000_info.netdev);
+    uint32_t id;
 
-    /* Load MAC address from EEPROM */
-    dm9000_get_enetaddr(dev);
+    id  = dm9000_io_read(DM9000_VIDL);
+    id |= dm9000_io_read(DM9000_VIDH) << 8;
+    id |= dm9000_io_read(DM9000_PIDL) << 16;
+    id |= dm9000_io_read(DM9000_PIDH) << 24;
 
-    dev->init = dm9000_init;
-    dev->halt = dm9000_halt;
-    dev->send = dm9000_send;
-    dev->recv = dm9000_rx;
-    sprintf(dev->name, "dm9000");
+    if (id == DM9000_ID) {
+        printf("DM9000 i/o: 0x%x, id: 0x%x \n", CONFIG_DM9000_BASE, id);
+        return 0;
+    } else {
+        printf("DM9000 not found at 0x%x id: 0x%x\n", CONFIG_DM9000_BASE, id);
+        return -1;
+    }
+}
 
-    eth_register(dev);
+/*
+ * 复位 dm9000 芯片
+ */
+static void dm9000_reset(void)
+{
+    DM9000_DBG("resetting DM9000\n");
+
+    /*
+     * Reset DM9000,
+     * see DM9000 Application Notes V1.22 Jun 11, 2004 page 29
+     */
+
+    /*
+     * DEBUG: Make all GPIO0 outputs, all others inputs
+     */
+    dm9000_io_write(DM9000_GPCR, GPCR_GPIO0_OUT);
+
+    /*
+     * Step 1: Power internal PHY by writing 0 to GPIO0 pin
+     */
+    dm9000_io_write(DM9000_GPR, 0x00);
+
+    /*
+     * Step 2: Software reset
+     */
+    dm9000_io_write(DM9000_NCR, (NCR_LBK_INT_MAC | NCR_RST));
+
+    do {
+        DM9000_DBG("resetting the DM9000, 1st reset\n");
+        udelay(25);                                                     /*  Wait at least 20 us         */
+    } while (dm9000_io_read(DM9000_NCR) & 1);
+
+    dm9000_io_write(DM9000_NCR, 0x00);
+    dm9000_io_write(DM9000_NCR, (NCR_LBK_INT_MAC | NCR_RST));           /*  Issue a second reset        */
+
+    do {
+        DM9000_DBG("resetting the DM9000, 2nd reset\n");
+        udelay(25);                                                     /*  Wait at least 20 us         */
+    } while (dm9000_io_read(DM9000_NCR) & 1);
+
+    /*
+     * Check whether the ethernet controller is present
+     */
+    if ((dm9000_io_read(DM9000_PIDL) != 0x00) ||
+        (dm9000_io_read(DM9000_PIDH) != 0x90)) {
+        printf("ERROR: resetting DM9000 -> not responding\n");
+    }
+}
+
+/*
+ * 初始化 dm9000 芯片
+ */
+static int dm9000_init(struct netif *netif)
+{
+    struct ethernetif *ethernetif = netif->state;
+    int i;
+    uint8_t io_mode, oft;
+    uint16_t lnk;
+
+    /*
+     * 复位 dm9000 芯片
+     */
+    dm9000_reset();
+
+    /*
+     * 探测 dm9000 芯片
+     */
+    if (dm9000_probe() < 0) {
+        return -1;
+    }
+
+    /*
+     * Auto-detect 8/16/32 bit mode, ISR Bit 6+7 indicate bus width
+     */
+    io_mode = dm9000_io_read(DM9000_ISR) >> 6;
+    switch (io_mode) {
+    case 0x00:  /* 16-bit mode */
+        printf("DM9000: running in 16 bit mode\n");
+        ethernetif->outblk    = dm9000_outblk_16bit;
+        ethernetif->inblk     = dm9000_inblk_16bit;
+        ethernetif->rx_status = dm9000_rx_status_16bit;
+        break;
+
+    case 0x01:  /* 32-bit mode */
+        printf("DM9000: running in 32 bit mode\n");
+        ethernetif->outblk    = dm9000_outblk_32bit;
+        ethernetif->inblk     = dm9000_inblk_32bit;
+        ethernetif->rx_status = dm9000_rx_status_32bit;
+        break;
+
+    case 0x02:  /* 8 bit mode */
+        printf("DM9000: running in 8 bit mode\n");
+        ethernetif->outblk    = dm9000_outblk_8bit;
+        ethernetif->inblk     = dm9000_inblk_8bit;
+        ethernetif->rx_status = dm9000_rx_status_8bit;
+        break;
+
+    default:    /* Assume 8 bit mode, will probably not work anyway */
+        printf("DM9000: Undefined IO-mode:0x%x\n", io_mode);
+        ethernetif->outblk    = dm9000_outblk_8bit;
+        ethernetif->inblk     = dm9000_inblk_8bit;
+        ethernetif->rx_status = dm9000_rx_status_8bit;
+        break;
+    }
+
+    /*
+     * Program operating register, only internal phy supported
+     */
+    dm9000_io_write(DM9000_NCR, 0x00);
+
+    /*
+     * TX Polling clear
+     */
+    dm9000_io_write(DM9000_TCR, 0x00);
+
+    /*
+     * Less 3Kb, 200us
+     */
+    dm9000_io_write(DM9000_BPTR, BPTR_BPHW(3) | BPTR_JPT_600US);
+
+    /*
+     * Flow Control : High/Low Water
+     */
+    dm9000_io_write(DM9000_FCTR, FCTR_HWOT(3) | FCTR_LWOT(8));
+
+    /*
+     * SH FIXME: This looks strange! Flow Control
+     */
+    dm9000_io_write(DM9000_FCR, 0x00);
+
+    /*
+     * Special Mode
+     */
+    dm9000_io_write(DM9000_SMCR, 0x00);
+
+    /*
+     * clear TX status
+     */
+    dm9000_io_write(DM9000_NSR, NSR_WAKEST | NSR_TX2END | NSR_TX1END);
+
+    /*
+     * Clear interrupt status
+     */
+    dm9000_io_write(DM9000_ISR, ISR_ROOS | ISR_ROS | ISR_PTS | ISR_PRS);
+
+    /*
+     * fill device MAC address registers
+     */
+    for (i = 0, oft = DM9000_PAR; i < 6; i++, oft++) {
+        dm9000_io_write(oft, ethernetif->ethaddr[i]);
+    }
+
+    for (i = 0, oft = DM9000_MAR; i < 8; i++, oft++) {
+        dm9000_io_write(oft, 0xff);
+    }
+
+    /*
+     * read back mac, just to be sure
+     */
+    printf("DM9000: MAC=");
+    for (i = 0, oft = DM9000_PAR; i < 6; i++, oft++) {
+        printf("%x:", dm9000_io_read(oft));
+    }
+    printf("\n");
+
+    /*
+     * Activate DM9000
+     */
+    /*
+     * RX enable
+     */
+    dm9000_io_write(DM9000_RCR, RCR_DIS_LONG | RCR_DIS_CRC | RCR_RXEN);
+
+    /*
+     * Enable TX/RX interrupt mask
+     */
+    dm9000_io_write(DM9000_IMR, IMR_PAR);
+
+    i = 0;
+    while (!(dm9000_phy_read(1) & 0x20)) {                              /*  autonegation complete bit   */
+        udelay(1000);
+        i++;
+        if (i == 10000) {
+            printf("DM9000: could not establish link\n");
+            return 0;
+        }
+    }
+
+    lnk = dm9000_phy_read(17) >> 12;                                    /*  see what we've got          */
+    printf("DM9000: operating at ");
+    switch (lnk) {
+    case 1:
+        printf("10M half duplex ");
+        break;
+
+    case 2:
+        printf("10M full duplex ");
+        break;
+
+    case 4:
+        printf("100M half duplex ");
+        break;
+
+    case 8:
+        printf("100M full duplex ");
+        break;
+
+    default:
+        printf("unknown: %d ", lnk);
+        break;
+    }
+    printf("mode\n");
+
+    /*
+     * Enable TX/RX interrupt mask
+     */
+    dm9000_io_write(DM9000_IMR, IMR_PAR | IMR_PTM | IMR_PRM);
 
     return 0;
+}
+
+/*
+ * dump dm9000 寄存器
+ */
+static void dm9000_dump_regs(void)
+{
+    printf("\n");
+    printf("NCR   (0x00): 0x%x\n", dm9000_io_read(0));
+    printf("NSR   (0x01): 0x%x\n", dm9000_io_read(1));
+    printf("TCR   (0x02): 0x%x\n", dm9000_io_read(2));
+    printf("TSRI  (0x03): 0x%x\n", dm9000_io_read(3));
+    printf("TSRII (0x04): 0x%x\n", dm9000_io_read(4));
+    printf("RCR   (0x05): 0x%x\n", dm9000_io_read(5));
+    printf("RSR   (0x06): 0x%x\n", dm9000_io_read(6));
+    printf("ISR   (0xFE): 0x%x\n", dm9000_io_read(DM9000_ISR));
+    printf("\n");
+}
+
+/**
+ * This function should do the actual transmission of the packet. The packet is
+ * contained in the pbuf that is passed to the function. This pbuf
+ * might be chained.
+ *
+ * @param netif the lwip network interface structure for this ethernetif
+ * @param p the MAC packet to send (e.g. IP packet including MAC addresses and type)
+ * @return ERR_OK if the packet could be sent
+ *         an err_t value if the packet couldn't be sent
+ *
+ * @note Returning ERR_MEM here if a DMA queue of your MAC is full can lead to
+ *       strange results. You might consider waiting for space in the DMA queue
+ *       to become availale since the stack doesn't retry to send a packet
+ *       dropped because of memory failure (except for the TCP timers).
+ */
+
+static err_t
+low_level_output(struct netif *netif, struct pbuf *p)
+{
+  struct ethernetif *ethernetif = netif->state;
+  struct pbuf *q;
+
+  initiate transfer();
+
+#if ETH_PAD_SIZE
+  pbuf_header(p, -ETH_PAD_SIZE); /* drop the padding word */
+#endif
+
+  for(q = p; q != NULL; q = q->next) {
+    /* Send the data from the pbuf to the interface, one pbuf at a
+       time. The size of the data in each pbuf is kept in the ->len
+       variable. */
+    send data from(q->payload, q->len);
+  }
+
+  signal that packet should be sent();
+
+#if ETH_PAD_SIZE
+  pbuf_header(p, ETH_PAD_SIZE); /* reclaim the padding word */
+#endif
+
+  LINK_STATS_INC(link.xmit);
+
+  return ERR_OK;
+}
+
+sys_sem_t rx_sem;
+int32_t rx_thread;
+
+/**
+ * Should allocate a pbuf and transfer the bytes of the incoming
+ * packet from the interface into the pbuf.
+ *
+ * @param netif the lwip network interface structure for this ethernetif
+ * @return a pbuf filled with the received packet (including MAC header)
+ *         NULL on memory error
+ */
+static struct pbuf *
+dm9000_recv(struct netif *netif)
+{
+    struct ethernetif *ethernetif = netif->state;
+    struct pbuf *p, *q;
+    u8_t  byte;
+    u16_t len;
+    u16_t status;
+
+    /*
+     * There is _at least_ 1 package in the fifo, read them all
+     */
+    for (;;) {
+        /*
+         * Dummy read
+         */
+        dm9000_io_read(DM9000_MRCMDX);
+
+        /*
+         * Get most updated data,
+         * only look at bits 0:1, See application notes DM9000
+         */
+        byte = DM9000_inb(DM9000_DATA) & 0x03;
+
+        /*
+         * Status check: this byte must be 0 or 1
+         */
+        if (byte > DM9000_PKT_RDY) {
+            dm9000_io_write(DM9000_RCR, 0x00);                          /*  Stop Device                 */
+            dm9000_io_write(DM9000_ISR, 0x80);                          /*  Stop INT request            */
+            DM9000_ERR("DM9000 error: status check fail: 0x%x\n", byte);
+            break;
+        }
+
+        if (byte != DM9000_PKT_RDY) {
+            break;                                                      /*  No packet received, ignore  */
+        }
+
+        DM9000_DBG("DM9000 debug: receiving packet\n");
+
+        /*
+         * A packet ready now & Get status/length
+         */
+        (ethernetif->rx_status)(&status, &len);
+
+        DM9000_DBG("DM9000 debug: rx status: 0x%x rx len: %d\n", status, len);
+
+        /*
+         * We allocate a pbuf chain of pbufs from the pool.
+         */
+        p = pbuf_alloc(PBUF_RAW, len, PBUF_POOL);
+        if (p != NULL) {
+            for (q = p; q != NULL; q = q->next) {
+                /*
+                 * Move data from DM9000
+                 * Read received packet from RX SRAM
+                 */
+                (ethernetif->inblk)(q->payload, q->len);
+            }
+        }
+
+        if ((status & 0xbf00) || (len < 0x40) || (len > DM9000_PKT_MAX)) {
+            if (status & 0x100) {
+                printf("rx fifo error\n");
+            }
+
+            if (status & 0x200) {
+                printf("rx crc error\n");
+            }
+
+            if (status & 0x8000) {
+                printf("rx length error\n");
+            }
+
+            if (len > DM9000_PKT_MAX) {
+                printf("rx length too big\n");
+                dm9000_reset();
+            }
+        } else {
+            DM9000_DBG("passing packet to upper layer\n");
+            return p;
+        }
+
+        LINK_STATS_INC(link.recv);
+    }
+
+    return NULL;
+}
+
+/**
+ * This function should be called when a packet is ready to be read
+ * from the interface. It uses the function low_level_input() that
+ * should handle the actual reception of bytes from the network
+ * interface. Then the type of the received packet is determined and
+ * the appropriate input function is called.
+ *
+ * @param netif the lwip network interface structure for this ethernetif
+ */
+static void
+ethernetif_input(void *arg)
+{
+    struct netif *netif = (struct netif *)arg;
+    struct ethernetif *ethernetif;
+    struct eth_hdr *ethhdr;
+    struct pbuf *p;
+
+    ethernetif = netif->state;
+
+    while (1) {
+/********************************************************************************************************/
+        /*
+         * 等待接收信号量
+         */
+        if (sys_arch_sem_wait(&rx_sem, 0) == SYS_ARCH_TIMEOUT) {
+            continue;
+        }
+
+        /*
+         * 接收数据到 pbuf
+         */
+        p = dm9000_recv(netif);
+/********************************************************************************************************/
+
+        /*
+         * no packet could be read, silently ignore this
+         */
+        if (p == NULL) {
+            continue;
+        }
+
+        /*
+         * points to packet payload, which starts with an Ethernet header
+         */
+        ethhdr = p->payload;
+
+        switch (htons(ethhdr->type)) {
+        /*
+         * IP or ARP packet?
+         */
+        case ETHTYPE_IP:
+        case ETHTYPE_ARP:
+#if PPPOE_SUPPORT
+        /*
+         * PPPoE packet?
+         */
+        case ETHTYPE_PPPOEDISC:
+        case ETHTYPE_PPPOE:
+#endif /* PPPOE_SUPPORT */
+            /*
+             * full packet send to tcpip_thread to process
+             */
+            if (netif->input(p, netif) != ERR_OK) {
+                LWIP_DEBUGF(NETIF_DEBUG, ("ethernetif_input: IP input error\n"));
+                pbuf_free(p);
+                p = NULL;
+            }
+            break;
+
+        default:
+            pbuf_free(p);
+            p = NULL;
+            break;
+        }
+    }
+}
+
+/**
+ * In this function, the hardware should be initialized.
+ * Called from ethernetif_init().
+ *
+ * @param netif the already initialized lwip network interface structure
+ *        for this ethernetif
+ */
+static void
+low_level_init(struct netif *netif)
+{
+    struct ethernetif *ethernetif = netif->state;
+
+    /*
+     * set MAC hardware address length
+     */
+    netif->hwaddr_len = ETHARP_HWADDR_LEN;
+
+    /*
+     * set MAC hardware address
+     */
+    netif->hwaddr[0] = 0x08;
+    netif->hwaddr[1] = 0x08;
+    netif->hwaddr[2] = 0x3E;
+    netif->hwaddr[3] = 0x26;
+    netif->hwaddr[4] = 0x0A;
+    netif->hwaddr[5] = 0x5B;
+
+    /*
+     * maximum transfer unit
+     */
+    netif->mtu = 1500;
+
+    /*
+     * device capabilities
+     */
+    netif->flags = NETIF_FLAG_BROADCAST | NETIF_FLAG_ETHARP | NETIF_FLAG_LINK_UP;
+
+/********************************************************************************************************/
+    /*
+     * 创建接收信号量
+     */
+    sys_sem_new(&rx_sem, 0);
+
+    /*
+     * 创建接收线程
+     */
+    rx_thread = kthread_create(ethernetif_input, (void *)netif, 1024 * 8, 15);
+
+    /*
+     * mini2440 开发板上的 DM9000 芯片挂在 BANK4
+     */
+    /*
+     * 设置 GPA15 为 nGCS4
+     */
+    GPACON  |= 1 << 15;
+
+    /*
+     * 设置 BANK4 总线宽度为 16 位, 使能等待
+     */
+    BWSCON   = (BWSCON & (~(0x07 << 16))) | (0x05 << 16);
+
+    /*
+     * 设置 BANK4 的访问时序以适合 DM9000 芯片
+     */
+    BANKCON4 = (1 << 13) | (1 << 11) | (6 << 8) | (1 << 6) | (1 << 4) | (0 << 2) | (0 << 0);
+
+    /*
+     * 初始化 DM9000 芯片
+     */
+    dm9000_init(netif);
+
+    /*
+     * 安装 EINT4-7 中断服务程序, 并使能 EINT4-7 中断
+     */
+    interrupt_install(INTEINT4_7, eint47_isr, NULL);
+
+    interrupt_umask(INTEINT4_7);
+
+    /*
+     * 设置 GPF7 为 EINT7
+     */
+    GPFCON = (GPFCON & (~(0x03 << 14))) | (0x02 << 14);
+
+    /*
+     * 关闭 GPF7 的上拉电阻
+     */
+    GPFUP = GPFUP | (1 << 7);
+
+    /*
+     * 设置 EINT7 高电平中断
+     */
+    EXTINT0 = (EXTINT0 & (~(0x07 << 28))) | (0x01 << 28);
+
+    /*
+     * 使能 EINT7
+     */
+    EINTMASK = EINTMASK & (~(1 << 7));
+/********************************************************************************************************/
+}
+
+/**
+ * Should be called at the beginning of the program to set up the
+ * network interface. It calls the function low_level_init() to do the
+ * actual setup of the hardware.
+ *
+ * This function should be passed as a parameter to netif_add().
+ *
+ * @param netif the lwip network interface structure for this ethernetif
+ * @return ERR_OK if the loopif is initialized
+ *         ERR_MEM if private data couldn't be allocated
+ *         any other err_t on error
+ */
+err_t
+ethernetif_init(struct netif *netif)
+{
+    struct ethernetif *ethernetif;
+
+    LWIP_ASSERT("netif != NULL", (netif != NULL));
+
+    ethernetif = mem_malloc(sizeof(struct ethernetif));
+    if (ethernetif == NULL) {
+        LWIP_DEBUGF(NETIF_DEBUG, ("ethernetif_init: out of memory\n"));
+        return ERR_MEM;
+    }
+
+#if LWIP_NETIF_HOSTNAME
+    /*
+     * Initialize interface hostname
+     */
+    netif->hostname = "lwip";
+#endif /* LWIP_NETIF_HOSTNAME */
+
+    /*
+     * Initialize the snmp variables and counters inside the struct netif.
+     * The last argument should be replaced with your link speed, in units
+     * of bits per second.
+     */
+    NETIF_INIT_SNMP(netif, snmp_ifType_ethernet_csmacd, LINK_SPEED_OF_YOUR_NETIF_IN_BPS);
+
+    netif->state = ethernetif;
+    netif->name[0] = IFNAME0;
+    netif->name[1] = IFNAME1;
+
+    /*
+     * We directly use etharp_output() here to save a function call.
+     * You can instead declare your own function an call etharp_output()
+     * from it if you have to do some checks before sending (e.g. if link
+     * is available...)
+     */
+    netif->output = etharp_output;
+    netif->linkoutput = low_level_output;
+
+    ethernetif->ethaddr = (struct eth_addr *)&(netif->hwaddr[0]);
+
+    /*
+     * initialize the hardware
+     */
+    low_level_init(netif);
+
+    return ERR_OK;
 }

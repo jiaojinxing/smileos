@@ -40,7 +40,6 @@
 #include "kern/config.h"
 #include "kern/types.h"
 #include "kern/mmu.h"
-#include "kern/kern.h"
 #include <string.h>
 
 /*
