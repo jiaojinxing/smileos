@@ -86,6 +86,21 @@ extern void printk(const char *fmt, ...);
 
 #define LWIP_PLATFORM_DIAG(x)       { printk x; }
 #define LWIP_PLATFORM_ASSERT(x)     { printk("lwip assert: %s\n", x); }
+
+typedef uint32_t sys_prot_t;
+
+/*
+ * 进入临界区域
+ */
+uint32_t interrupt_disable(void);
+
+/*
+ * 退出临界区域
+ */
+void interrupt_resume(register uint32_t reg);
+
+#define sys_arch_protect            interrupt_disable
+#define sys_arch_unprotect          interrupt_resume
 /*********************************************************************************************************
   OS 数据类型
 *********************************************************************************************************/

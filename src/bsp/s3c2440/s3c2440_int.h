@@ -42,11 +42,11 @@
 
 #include "kern/types.h"
 
-typedef int (*isr_t)(uint32_t interrupt);
+typedef int (*isr_t)(uint32_t interrupt, void *arg);
 
 void irq_c_handler(void);
 
-int isr_invaild(uint32_t interrupt);
+int isr_invaild(uint32_t interrupt, void *arg);
 
 void interrupt_init(void);
 
@@ -54,7 +54,7 @@ void interrupt_mask(uint32_t interrupt);
 
 void interrupt_umask(uint32_t interrupt);
 
-void interrupt_install(uint32_t interrupt, isr_t new_isr, isr_t *old_isr);
+void interrupt_install(uint32_t interrupt, isr_t new_isr, isr_t *old_isr, void *arg);
 
 #endif                                                                  /*  S3C2440_INT_H_              */
 /*********************************************************************************************************

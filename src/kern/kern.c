@@ -123,6 +123,18 @@ void kfree(void *ptr)
 }
 
 /*
+ * kcalloc
+ */
+void *kcalloc(uint32_t nelem, uint32_t elsize)
+{
+    void *ptr = malloc(nelem * MEM_ALIGN_SIZE(elsize));
+    if (ptr != NULL) {
+        memset(ptr, 0, nelem * MEM_ALIGN_SIZE(elsize));
+    }
+    return ptr;
+}
+
+/*
  * ³õÊ¼»¯ÄÚºË
  */
 void kernel_init(void)
