@@ -163,6 +163,11 @@ void *kmalloc(uint32_t size);
 void kfree(void *ptr);
 
 /*
+ * kcalloc
+ */
+void *kcalloc(uint32_t nelem, uint32_t elsize);
+
+/*
  * 进入临界区域
  */
 uint32_t interrupt_disable(void);

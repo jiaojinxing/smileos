@@ -720,6 +720,7 @@ void sys_mbox_set_invalid(sys_mbox_t *mbox)
         q = *mbox;
         if (q) {
             q->valid = FALSE;
+
         }
     }
     interrupt_resume(reg);
@@ -734,6 +735,13 @@ void sys_mbox_set_invalid(sys_mbox_t *mbox)
  * @param prio priority of the new thread (may be ignored by ports) */
 sys_thread_t sys_thread_new(const char *name, lwip_thread_fn thread, void *arg, int stacksize, int prio)
 {
+    if (stacksize < 16 * KB) {
+        stacksize = 16 * KB;
+    }
+
+    if (prio < 6) {
+        prio = 6;
+    }
     return kthread_create(thread, arg, stacksize, prio);
 }
 

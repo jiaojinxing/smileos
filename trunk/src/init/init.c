@@ -45,11 +45,19 @@
 #include "kern/sbin.h"
 #include <string.h>
 
-int eth_init(void);
+#include "lwip/init.h"
+#include "lwip/tcpip.h"
+#include "lwip/api.h"
+#include "lwip/sys.h"
+#include "lwip/opt.h"
+#include "lwip/sys.h"
+#include "lwip/sockets.h"
+
+err_t ethernetif_init(struct netif *netif);
 
 void tcpip_init_done(void *arg)
 {
-
+    printf("tcpip_init_done\n");
 }
 
 static void thread1(void *arg)
@@ -77,25 +85,26 @@ static void thread1(void *arg)
 
 int main(void)
 {
+    uint8_t  *code;
+    uint32_t  size;
+    int i;
+
     mmu_init();
 
     kernel_init();
 
-    //    uint8_t  *code;
-    //    uint32_t  size;
-    //    int i;
+    code = sbin_lookup("/2440_P1.hex", &size);
 
-    //    code = sbin_lookup("/2440_P1.hex", &size);
-    //
-    //    for (i = 0; i < 100; i++) {
-    //        process_create(code, size, 15);
-    //    }
+    for (i = 0; i < 1; i++) {
+        process_create(code, size, 15);
+    }
 
-    kthread_create(thread1, (void *)1, 32 * 1024, 5);
+    kthread_create(thread1, (void *)1, 32 * 1024, 15);
 
     kernel_start();
 
     while (1) {
+        printk("main\n");
     }
 
     return 0;

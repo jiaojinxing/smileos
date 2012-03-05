@@ -45,7 +45,8 @@
 
 #define INTERRUPT_NR      INTGLOBAL
 
-static isr_t isr_table[INTERRUPT_NR];
+static isr_t  isr_table[INTERRUPT_NR];
+static void  *isr_arg_table[INTERRUPT_NR];
 
 void irq_c_handler(void)
 {
@@ -62,7 +63,7 @@ void irq_c_handler(void)
 
     isr = isr_table[interrupt];
 
-    isr(interrupt);
+    isr(interrupt, isr_arg_table[interrupt]);
 
     SRCPND = 1 << interrupt;
 
@@ -71,7 +72,7 @@ void irq_c_handler(void)
     interrupt_exit();
 }
 
-int isr_invaild(uint32_t interrupt)
+int isr_invaild(uint32_t interrupt, void *arg)
 {
     return -1;
 }
@@ -132,7 +133,7 @@ void interrupt_umask(uint32_t interrupt)
     }
 }
 
-void interrupt_install(uint32_t interrupt, isr_t new_isr, isr_t *old_isr)
+void interrupt_install(uint32_t interrupt, isr_t new_isr, isr_t *old_isr, void *arg)
 {
     if (interrupt < INTERRUPT_NR) {
         if (old_isr != NULL) {
@@ -140,7 +141,8 @@ void interrupt_install(uint32_t interrupt, isr_t new_isr, isr_t *old_isr)
         }
 
         if (new_isr != NULL) {
-            isr_table[interrupt] = new_isr;
+            isr_table[interrupt]     = new_isr;
+            isr_arg_table[interrupt] = arg;
         } else {
             isr_table[interrupt] = (isr_t)isr_invaild;
         }

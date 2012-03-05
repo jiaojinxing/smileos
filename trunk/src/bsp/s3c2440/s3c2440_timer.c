@@ -44,7 +44,7 @@
 #include "s3c2440_int.h"
 #include "s3c2440_clock.h"
 
-static int timer4_isr(uint32_t interrupt)
+static int timer4_isr(uint32_t interrupt, void *arg)
 {
     do_timer();
 
@@ -80,7 +80,7 @@ void timer_init(void)
     /*
      * install isr
      */
-    interrupt_install(INTTIMER4, timer4_isr, NULL);
+    interrupt_install(INTTIMER4, timer4_isr, NULL, NULL);
 
     interrupt_umask(INTTIMER4);
 
