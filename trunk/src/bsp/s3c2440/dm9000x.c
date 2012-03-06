@@ -434,7 +434,7 @@ dm9000_init(struct netif *netif)
         break;
 
     default:    /* Assume 8 bit mode, will probably not work anyway */
-        LWIP_DEBUGF(NETIF_DEBUG, ("dm9000_init: running in 0x%x bit mode\n", io_mode));
+        LWIP_DEBUGF(NETIF_DEBUG, ("dm9000_init: running in 0x%x bit mode\n", mode));
         ethernetif->outblk    = dm9000_outblk_8bit;
         ethernetif->inblk     = dm9000_inblk_8bit;
         ethernetif->rx_status = dm9000_rx_status_8bit;
@@ -544,7 +544,7 @@ dm9000_init(struct netif *netif)
         break;
 
     default:
-        LWIP_DEBUGF(NETIF_DEBUG, ("dm9000_init: operating at unknown 0x%x mode\n", lnk));
+        LWIP_DEBUGF(NETIF_DEBUG, ("dm9000_init: operating at unknown 0x%x mode\n", link));
         break;
     }
 
