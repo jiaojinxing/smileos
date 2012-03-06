@@ -69,13 +69,15 @@
 #define TASK_RESUME_MSG_COME    (1 << 4)
 #define TASK_RESUME_MSG_OUT     (1 << 5)
 
-
-
 struct _frame_t;
 /*
  * 任务控制块
  */
 typedef struct _task {
+    /************************************/
+    /*
+     * 关键区域, 请勿修改
+     */
     int32_t             pid;
     int32_t             tid;
     uint32_t            state;
@@ -84,6 +86,8 @@ typedef struct _task {
     uint32_t            prio;
     uint32_t            content[20];
     uint32_t            kstack[KERN_STACK_SIZE];
+    /************************************/
+    char                name[32];
     int                 type;
     int                 errno;
     int                 resume_type;
@@ -91,6 +95,11 @@ typedef struct _task {
     struct _task      **wait_list;
     struct _frame_t    *frame_list;
 } task_t;
+
+/*
+ * 任务控制块
+ */
+extern task_t tasks[TASK_NR];
 
 /*
  * 当前运行的任务
@@ -123,14 +132,14 @@ void schedule(void);
 void do_timer(void);
 
 /*
- * 创建任务
+ * 创建进程
  */
-int32_t process_create(uint8_t *code, uint32_t size, uint32_t prio);
+int32_t process_create(const char *name, uint8_t *code, uint32_t size, uint32_t prio);
 
 /*
  * 创建内核线程
  */
-int32_t kthread_create(void (*func)(void *), void *arg, uint32_t stk_size, uint32_t prio);
+int32_t kthread_create(const char *name, void (*func)(void *), void *arg, uint32_t stk_size, uint32_t prio);
 
 /*
  * printk
@@ -186,6 +195,11 @@ void interrupt_exit(void);
  * 获得 TICK
  */
 uint64_t get_tick(void);
+
+/*
+ * 是否在中断处理中
+ */
+int in_interrupt(void);
 
 #endif
 

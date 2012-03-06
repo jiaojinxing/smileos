@@ -49,7 +49,7 @@
 /*
  * 任务控制块
  */
-static task_t tasks[TASK_NR];
+task_t tasks[TASK_NR];
 
 /*
  * 当前运行的任务
@@ -85,6 +85,23 @@ uint64_t get_tick(void)
     interrupt_resume(reg);
 
     return __tick;
+}
+
+/*
+ * 是否在中断处理中
+ */
+int in_interrupt(void)
+{
+    int ret;
+    uint32_t reg;
+
+    reg = interrupt_disable();
+
+    ret = interrupt_nest > 0 ? TRUE : FALSE;
+
+    interrupt_resume(reg);
+
+    return ret;
 }
 
 /*
@@ -161,6 +178,8 @@ void kernel_init(void)
         task->next         = NULL;
         task->wait_list    = NULL;
         task->frame_list   = NULL;
+
+        memset(task->name, 0, sizeof(task->name));
     }
 
     /*
@@ -199,6 +218,8 @@ void kernel_init(void)
     task->content[16]  = 11;
     task->content[17]  = 12;
     task->content[18]  = 0;                                         /*  pc                              */
+
+    strcpy(task->name, "idle");
 
     current = task;
 
@@ -447,7 +468,7 @@ int virtual_space_usable(uint32_t base, uint32_t size)
 /*
  * 创建进程
  */
-int32_t process_create(uint8_t *code, uint32_t size, uint32_t prio)
+int32_t process_create(const char *name, uint8_t *code, uint32_t size, uint32_t prio)
 {
     int      i;
     task_t  *task;
@@ -505,6 +526,12 @@ int32_t process_create(uint8_t *code, uint32_t size, uint32_t prio)
     task->content[17]  = 12;
     task->content[18]  = 0;                                         /*  pc                              */
 
+    if (name != NULL) {
+        strcpy(task->name, name);
+    } else {
+        strcpy(task->name, "???");
+    }
+
     /*
      * 为拷贝代码到进程的虚拟地址空间, 预先映射好页面
      */
@@ -530,7 +557,7 @@ int32_t process_create(uint8_t *code, uint32_t size, uint32_t prio)
 /*
  * 创建内核线程
  */
-int32_t kthread_create(void (*func)(void *), void *arg, uint32_t stk_size, uint32_t prio)
+int32_t kthread_create(const char *name, void (*func)(void *), void *arg, uint32_t stk_size, uint32_t prio)
 {
     int      i;
     task_t  *task;
@@ -584,6 +611,13 @@ int32_t kthread_create(void (*func)(void *), void *arg, uint32_t stk_size, uint3
     task->content[16]  = 11;
     task->content[17]  = 12;
     task->content[18]  = (uint32_t)func;;                           /*  pc                              */
+
+    if (name != NULL) {
+        strcpy(task->name, name);
+    } else {
+        strcpy(task->name, "???");
+    }
+
 
     interrupt_resume(reg);
 

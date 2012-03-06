@@ -44,7 +44,6 @@
 #include "kern/sys_call.h"
 #include "kern/sbin.h"
 #include <string.h>
-
 #include "lwip/init.h"
 #include "lwip/tcpip.h"
 #include "lwip/api.h"
@@ -53,19 +52,14 @@
 #include "lwip/sys.h"
 #include "lwip/sockets.h"
 
-static void tcpip_init_done(void *arg)
-{
-    printf("tcpip_init_done\n");
-}
-
-static void thread1(void *arg)
+static void init(void *arg)
 {
     static struct netif ethernetif;
     ip_addr_t           ip, submask, gateway;
 
-    tcpip_init(tcpip_init_done, NULL);
+    tcpip_init(NULL, NULL);
 
-    IP4_ADDR(&ip,       192, 168,   2,  60);
+    IP4_ADDR(&ip,       192, 168,   2,  218);
     IP4_ADDR(&submask,  255, 255, 255,   0);
     IP4_ADDR(&gateway,  192, 168,   2,   1);
 
@@ -76,9 +70,11 @@ static void thread1(void *arg)
 
     netif_set_up(&ethernetif);
 
+    extern void telnetd(void *arg);
+    kthread_create("telnetd", telnetd, NULL, 32 * 1024, 15);
+
     while (1) {
-        printf("hello SmileOS, kernel thread %d\n", (int)arg);
-        sleep(1);
+        sleep(1000);
     }
 }
 
@@ -95,10 +91,10 @@ int main(void)
     code = sbin_lookup("/2440_P1.hex", &size);
 
     for (i = 0; i < 1; i++) {
-        process_create(code, size, 15);
+        process_create("test", code, size, 15);
     }
 
-    kthread_create(thread1, (void *)1, 32 * 1024, 15);
+    kthread_create("init", init, NULL, 32 * 1024, 15);
 
     kernel_start();
 

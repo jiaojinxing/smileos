@@ -52,7 +52,7 @@
 #include "netif/ppp_oe.h"
 
 #undef  NETIF_DEBUG
-#define NETIF_DEBUG                     LWIP_DBG_ON
+#define NETIF_DEBUG             LWIP_DBG_ON
 
 /*
  * Define those to better describe your network interface.
@@ -68,11 +68,11 @@
  */
 struct ethernetif {
     struct eth_addr *ethaddr;
-    u8_t tx_packet_nr;
-    u16_t tx_packet_len;
-    void (*outblk)(const void *data, int len);
-    void (*inblk)(void *data, int len);
-    void (*rx_status)(u16_t *status, u16_t *len);
+    u8_t             tx_packet_nr;
+    u16_t            tx_packet_len;
+    void           (*outblk)(const void *data, int len);
+    void           (*inblk)(void *data, int len);
+    void           (*rx_status)(u16_t *status, u16_t *len);
 };
 
 #define CONFIG_DRIVER_DM9000    1
@@ -84,14 +84,10 @@ struct ethernetif {
 #define CONFIG_DM9000_BASE      0x20000300
 #define DM9000_IO               (CONFIG_DM9000_BASE)
 #define DM9000_DATA             (CONFIG_DM9000_BASE + 4)
-#define CONFIG_DM9000_NO_SROM   1
 
 /*
  * 系统级
  */
-#define CONFIG_SYS_HZ           TICK_PER_SECOND
-#define get_timer(a)            get_tick()
-#define printf                  printk
 extern void usleep(unsigned int us);
 #define udelay                  usleep
 
@@ -280,9 +276,10 @@ dm9000_phy_read(u8_t reg)
     return value;
 }
 
+#if 0
 /*
-   Write a word to phyxcer
-*/
+ * Write a word to phyxcer
+ */
 static void
 dm9000_phy_write(u8_t reg, u16_t value)
 {
@@ -301,6 +298,7 @@ dm9000_phy_write(u8_t reg, u16_t value)
     udelay(500);                                                        /*  Wait write complete         */
     dm9000_io_write(DM9000_EPCR, 0x00);                                 /*  Clear phyxcer write command */
 }
+#endif
 
 /*
  * 探测 dm9000 芯片
@@ -485,8 +483,7 @@ dm9000_init(struct netif *netif)
      * fill device MAC address registers
      */
     for (i = 0, oft = DM9000_PAR; i < 6; i++, oft++) {
-        u8_t *mac = ethernetif->ethaddr;
-        dm9000_io_write(oft, mac[i]);
+        dm9000_io_write(oft, ethernetif->ethaddr->addr[i]);
     }
 
     for (i = 0, oft = DM9000_MAR; i < 8; i++, oft++) {
@@ -557,7 +554,8 @@ dm9000_init(struct netif *netif)
 }
 
 static sys_sem_t rx_sem, tx_sem;
-static int32_t rx_thread;
+static sys_thread_t rx_thread;
+static sys_mutex_t dm9000_lock;
 
 /**
  * This function should do the actual transmission of the packet. The packet is
@@ -582,6 +580,8 @@ low_level_output(struct netif *netif, struct pbuf *p)
     struct pbuf *q;
     u16_t len = 0;
 
+    sys_mutex_lock(&dm9000_lock);
+
     dm9000_io_write(DM9000_IMR, IMR_PAR);
 
     DM9000_outb(DM9000_MWCMD, DM9000_IO);
@@ -600,14 +600,16 @@ low_level_output(struct netif *netif, struct pbuf *p)
         dm9000_io_write(DM9000_TCR, TCR_TXREQ);
     } else {
         ethernetif->tx_packet_nr++;
-        ethernetif->tx_packet_len += len;
+        ethernetif->tx_packet_len = len;
     }
 
     dm9000_io_write(DM9000_IMR, IMR_PAR | IMR_PTM | IMR_PRM);
 
-    sys_arch_sem_wait(&tx_sem, 0);
-
     LINK_STATS_INC(link.xmit);
+
+    sys_mutex_unlock(&dm9000_lock);
+
+    sys_arch_sem_wait(&tx_sem, 0);
 
     return ERR_OK;
 }
@@ -629,6 +631,8 @@ dm9000_recv(struct netif *netif)
     u16_t len;
     u16_t status;
 
+    sys_mutex_lock(&dm9000_lock);
+
     again:
 
     dm9000_io_read(DM9000_MRCMDX);
@@ -638,9 +642,11 @@ dm9000_recv(struct netif *netif)
         LWIP_DEBUGF(NETIF_DEBUG, ("dm9000_recv: rx error, stop device\n"));
         dm9000_io_write(DM9000_RCR, 0x00);                              /*  Stop Device                 */
         dm9000_io_write(DM9000_ISR, 0x80);                              /*  Stop INT request            */
+        sys_mutex_unlock(&dm9000_lock);
         return NULL;
     } else if (byte != DM9000_PKT_RDY) {
         LWIP_DEBUGF(NETIF_DEBUG, ("dm9000_recv: rx error, no data\n"));
+        sys_mutex_unlock(&dm9000_lock);
         return NULL;
     }
 
@@ -682,6 +688,7 @@ dm9000_recv(struct netif *netif)
         if (p != NULL) {
             LINK_STATS_INC(link.recv);
         }
+        sys_mutex_unlock(&dm9000_lock);
         return p;
     }
 }
@@ -771,6 +778,9 @@ dm9000_isr(struct netif *netif)
 {
     struct ethernetif *ethernetif = netif->state;
     u8_t int_status;
+    u8_t last_io;
+
+    last_io = DM9000_inb(DM9000_IO);
 
     dm9000_io_write(DM9000_IMR, IMR_PAR);
 
@@ -791,22 +801,23 @@ dm9000_isr(struct netif *netif)
     }
 
     if (int_status & ISR_PTS) {
-        int tx_status = dm9000_io_read(DM9000_NSR);
+        int tx_status;
 
+        tx_status = dm9000_io_read(DM9000_NSR);
         if (tx_status & (NSR_TX2END | NSR_TX1END)) {
-
             ethernetif->tx_packet_nr--;
             if (ethernetif->tx_packet_nr > 0) {
                 dm9000_io_write(DM9000_TXPLL, (ethernetif->tx_packet_len & 0xFF));
                 dm9000_io_write(DM9000_TXPLH, (ethernetif->tx_packet_len >> 8) & 0xFF);
                 dm9000_io_write(DM9000_TCR, TCR_TXREQ);
             }
-
             sys_sem_signal(&tx_sem);
         }
     }
 
     dm9000_io_write(DM9000_IMR, IMR_PAR | IMR_PTM | IMR_PRM);
+
+    DM9000_outb(last_io, DM9000_IO);
 }
 
 #include "s3c2440.h"
@@ -888,9 +899,18 @@ low_level_init(struct netif *netif)
     }
 
     /*
+     * 创建 dm9000 操作锁
+     */
+    ret = sys_mutex_new(&dm9000_lock);
+    if (ret != ERR_OK) {
+        LWIP_DEBUGF(NETIF_DEBUG, ("low_level_init: create dm9000 lock error\n"));
+        return;
+    }
+
+    /*
      * 创建接收线程
      */
-    rx_thread = kthread_create(ethernetif_input, (void *)netif, 1024 * 8, 15);
+    rx_thread = sys_thread_new("ethif_rx", ethernetif_input, (void *)netif, 1024 * 8, 15);
     if (rx_thread == -1) {
         LWIP_DEBUGF(NETIF_DEBUG, ("low_level_init: create rx thread error\n"));
         return;

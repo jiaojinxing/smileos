@@ -40,6 +40,7 @@
 #include "kern/config.h"
 #include "kern/types.h"
 #include "kern/kern.h"
+#include "kern/sys_call.h"
 #include "lwip/sys.h"
 
 /*
@@ -275,11 +276,9 @@ void sys_sem_signal(sys_sem_t *sem)
                     task->wait_list = NULL;
                     task->next = NULL;
                     task->resume_type = TASK_RESUME_SEM_COME;
-                    if (in_interrupt()) {
-                        return;
+                    if (!in_interrupt()) {
+                        yield();
                     }
-
-                    yield();
                 }
             }
         }
@@ -298,6 +297,10 @@ u32_t sys_arch_sem_wait(sys_sem_t *sem, u32_t timeout)
     task_t *end;
     u32_t start;
     uint32_t reg;
+
+    if (in_interrupt()) {
+        return SYS_ARCH_TIMEOUT;
+    }
 
     start = sys_now();
 
@@ -414,8 +417,6 @@ void sys_sem_set_invalid(sys_sem_t *sem)
 /* Time functions. */
 void sys_msleep(u32_t ms) /* only has a (close to) 1 jiffy resolution. */
 {
-    void usleep(unsigned int us);
-
     usleep(1000 * ms);
 }
 
@@ -441,8 +442,8 @@ err_t sys_mbox_new(sys_mbox_t *mbox, int size)
 {
     struct sys_mbox *q;
 
-    if (size < 10) {
-        size = 10;
+    if (size < 20) {
+        size = 20;
     }
 
     q = kmalloc(sizeof(struct sys_mbox) + (size - 1) * sizeof(void *));
@@ -473,6 +474,10 @@ void sys_mbox_post(sys_mbox_t *mbox, void *msg)
     task_t *end;
     task_t *task;
     uint32_t reg;
+
+    if (in_interrupt()) {
+        return;
+    }
 
     reg = interrupt_disable();
     if (mbox) {
@@ -550,7 +555,9 @@ err_t sys_mbox_trypost(sys_mbox_t *mbox, void *msg)
                         task->wait_list = NULL;
                         task->next = NULL;
                         task->resume_type = TASK_RESUME_MSG_COME;
-                        yield();
+                        if (!in_interrupt()) {
+                            yield();
+                        }
                     }
                     interrupt_resume(reg);
                     return ERR_OK;
@@ -576,6 +583,10 @@ u32_t sys_arch_mbox_fetch(sys_mbox_t *mbox, void **msg, u32_t timeout)
     task_t *task;
     u32_t start;
     uint32_t reg;
+
+    if (in_interrupt()) {
+        return SYS_ARCH_TIMEOUT;
+    }
 
     start = sys_now();
 
@@ -672,7 +683,9 @@ u32_t sys_arch_mbox_tryfetch(sys_mbox_t *mbox, void **msg)
                         task->wait_list = NULL;
                         task->next = NULL;
                         task->resume_type = TASK_RESUME_MSG_OUT;
-                        yield();
+                        if (!in_interrupt()) {
+                            yield();
+                        }
                     }
                     interrupt_resume(reg);
                     return 0;
@@ -736,7 +749,6 @@ void sys_mbox_set_invalid(sys_mbox_t *mbox)
         q = *mbox;
         if (q) {
             q->valid = FALSE;
-
         }
     }
     interrupt_resume(reg);
@@ -751,15 +763,15 @@ void sys_mbox_set_invalid(sys_mbox_t *mbox)
  * @param prio priority of the new thread (may be ignored by ports) */
 sys_thread_t sys_thread_new(const char *name, lwip_thread_fn thread, void *arg, int stacksize, int prio)
 {
-    if (stacksize < 16 * KB) {
-        stacksize = 16 * KB;
+    if (stacksize < 32 * KB) {
+        stacksize = 32 * KB;
     }
 
     if (prio < 15) {
         prio = 15;
     }
 
-    return kthread_create(thread, arg, stacksize, prio);
+    return kthread_create(name, thread, arg, stacksize, prio);
 }
 
 /* sys_init() must be called before anthing else. */
