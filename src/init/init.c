@@ -103,7 +103,6 @@ int main(void)
     kernel_start();
 
     while (1) {
-        printk("main\n");
     }
 
     return 0;
