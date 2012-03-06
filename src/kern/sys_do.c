@@ -49,9 +49,9 @@
 static void do_exit(int error_code)
 {
     if (current->type == TASK_TYPE_PROCESS) {
-        printk("process %d exit!\n", current->pid);
+        printk("process %d %s exit!\n", current->pid, current->name);
     } else {
-        printk("kthread %d exit!\n", current->tid);
+        printk("kthread %d %s exit!\n", current->tid, current->name);
     }
 
     current->state = TASK_UNALLOCATE;

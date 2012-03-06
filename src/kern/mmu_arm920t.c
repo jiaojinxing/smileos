@@ -614,7 +614,7 @@ void mmu_init(void)
     /*
      * 拷贝异常向量跳转表
      */
-    memcpy((void *)VECTOR_P_ADDR, (void *)KERN_LOAD_ADDR, PAGE_SIZE);
+    memcpy((char *)VECTOR_P_ADDR, (char *)KERN_LOAD_ADDR, PAGE_SIZE);
 }
 
 /*
