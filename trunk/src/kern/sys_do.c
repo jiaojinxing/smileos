@@ -89,6 +89,8 @@ static int do_write(int fd, void *data, uint32_t len)
  */
 static int do_gettimeofday(struct timeval *tv, void *tzp)
 {
+    uint64_t tick = get_tick();
+
     tv->tv_sec  = (tick / TICK_PER_SECOND);
     tv->tv_usec = (tick % TICK_PER_SECOND) * 1000000 / TICK_PER_SECOND;
 
@@ -112,6 +114,14 @@ static int *do_errno(void)
 {
     return &current->errno;
 }
+
+/*
+ * 释放 CPU 使用权
+ */
+static void do_yeild(void)
+{
+    schedule();
+}
 /*********************************************************************************************************
   系统调用处理表
 *********************************************************************************************************/
@@ -125,6 +135,7 @@ sys_do_t sys_do_table[] = {
         (sys_do_t)do_gettimeofday,
         (sys_do_t)do_getpid,
         (sys_do_t)do_errno,
+        (sys_do_t)do_yeild,
 };
 /*********************************************************************************************************
   END FILE

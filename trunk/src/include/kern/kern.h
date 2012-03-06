@@ -98,11 +98,6 @@ typedef struct _task {
 extern task_t *current;
 
 /*
- * TICK
- */
-extern uint64_t tick;
-
-/*
  * 系统调用处理
  */
 typedef uint32_t sys_do_t;

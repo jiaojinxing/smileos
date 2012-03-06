@@ -79,7 +79,9 @@ void free(void *ptr)
  */
 void *calloc(uint32_t nelem, uint32_t elsize)
 {
-    void *ptr = malloc(nelem * MEM_ALIGN_SIZE(elsize));
+    void *ptr;
+
+    ptr = malloc(nelem * MEM_ALIGN_SIZE(elsize));
     if (ptr != NULL) {
         memset(ptr, 0, nelem * MEM_ALIGN_SIZE(elsize));
     }
@@ -310,7 +312,7 @@ void *heap_free(heap_t *heap, void *ptr)
         /*
          * 把内存块加入空闲内存块链表的链头, 分配时尽可能使用已经使用过的内存,
          * 因为使用过, 那么这些内存已经映射好, 即已经引入了页框,
-         * 既提升了程序的运行速度, 又减少了本进程使用的页框数ny
+         * 既提升了程序的运行速度, 又减少了本进程使用的页框数
          */
         blk->prev_free = NULL;
         blk->next_free = heap->free_list;

@@ -66,14 +66,14 @@ uint32_t page_table_lookup(uint32_t section_nr)
     page_table_t *tbl;
 
     tbl = used_page_table_list;
-    while (tbl) {
+    while (tbl != NULL) {
         if (tbl->section_nr == section_nr) {
             break;
         }
         tbl = tbl->next;
     }
 
-    if (tbl) {
+    if (tbl != NULL) {
         return (tbl - page_tables) * PAGE_TBL_SIZE + PAGE_TBL_BASE;
     } else {
         return 0;
@@ -88,12 +88,12 @@ uint32_t page_table_alloc(uint32_t section_nr)
     page_table_t *tbl;
 
     tbl = free_page_table_list;
-    if (tbl) {
+    if (tbl != NULL) {
         free_page_table_list = tbl->next;
 
         tbl->prev = NULL;
         tbl->next = used_page_table_list;
-        if (used_page_table_list) {
+        if (used_page_table_list != NULL) {
             used_page_table_list->prev = tbl;
         }
         used_page_table_list = tbl;
@@ -115,13 +115,13 @@ void page_table_free(uint32_t page_tbl_base)
 
     tbl = page_tables + (page_tbl_base - PAGE_TBL_BASE) / PAGE_TBL_SIZE;
 
-    if (tbl->prev) {
+    if (tbl->prev != NULL) {
         tbl->prev->next = tbl->next;
     } else {
         used_page_table_list = tbl->next;
     }
 
-    if (tbl->next) {
+    if (tbl->next != NULL) {
         tbl->next->prev = tbl->prev;
     }
 
@@ -152,7 +152,7 @@ frame_t *frame_alloc(void)
     frame_t *free_frame;
 
     free_frame = free_frame_list;
-    if (free_frame) {
+    if (free_frame != NULL) {
         free_frame_list = free_frame->next;
     }
     return free_frame;
@@ -189,9 +189,9 @@ int vmm_map_page(task_t *task, uint32_t va)
         uint32_t section_nr = va >> SECTION_OFFSET;                     /*  计算虚拟地址的段号          */
 
         uint32_t tbl = page_table_lookup(section_nr);                   /*  查找该段的页表              */
-        if (!tbl) {                                                     /*  没找到                      */
+        if (tbl == 0) {                                                 /*  没找到                      */
             tbl = page_table_alloc(section_nr);                         /*  分配一个空闲的页表          */
-            if (tbl) {
+            if (tbl != NULL) {
                 mmu_map_section_as_page(section_nr, tbl);               /*  映射该段                    */
                 flag = 1;
             } else {
@@ -201,14 +201,14 @@ int vmm_map_page(task_t *task, uint32_t va)
         }
 
         frame = frame_alloc();                                          /*  分配一个空闲的页框          */
-        if (frame) {                                                    /*  计算虚拟地址在页表里的页号  */
+        if (frame != NULL) {                                            /*  计算虚拟地址在页表里的页号  */
             uint32_t page_nr = (va & (SECTION_SIZE - 1)) >> PAGE_OFFSET;
 
             mmu_map_page(tbl, page_nr, get_frame_addr(frame));          /*  页面映射                    */
 
             frame->prev = NULL;
             frame->next = used_frame_list;
-            if (used_frame_list) {
+            if (used_frame_list != NULL) {
                 used_frame_list->prev = frame;
             }
 
