@@ -57,11 +57,6 @@ static task_t tasks[TASK_NR];
 task_t *current;
 
 /*
- * TICK
- */
-uint64_t tick;
-
-/*
  * 内核内存堆
  */
 static heap_t  kernel_heap;
@@ -70,9 +65,10 @@ static uint8_t kernel_heap_mem[KERN_HEAP_SIZE];
 /*
  * 内核变量
  */
-static uint8_t interrupt_nest = 0;
-static uint8_t kernel_running = FALSE;
-static uint8_t wakeup         = FALSE;
+static uint64_t tick           = 0;
+static uint8_t  interrupt_nest = 0;
+static uint8_t  kernel_running = FALSE;
+static uint8_t  wakeup         = FALSE;
 
 /*
  * 获得 TICK
@@ -127,7 +123,9 @@ void kfree(void *ptr)
  */
 void *kcalloc(uint32_t nelem, uint32_t elsize)
 {
-    void *ptr = malloc(nelem * MEM_ALIGN_SIZE(elsize));
+    void *ptr;
+
+    ptr = kmalloc(nelem * MEM_ALIGN_SIZE(elsize));
     if (ptr != NULL) {
         memset(ptr, 0, nelem * MEM_ALIGN_SIZE(elsize));
     }
@@ -524,8 +522,6 @@ int32_t process_create(uint8_t *code, uint32_t size, uint32_t prio)
 
     memcpy((char *)(task->pid * PROCESS_SPACE_SIZE), code, size);
 
-    schedule();
-
     interrupt_resume(reg);
 
     return i;
@@ -588,8 +584,6 @@ int32_t kthread_create(void (*func)(void *), void *arg, uint32_t stk_size, uint3
     task->content[16]  = 11;
     task->content[17]  = 12;
     task->content[18]  = (uint32_t)func;;                           /*  pc                              */
-
-    schedule();
 
     interrupt_resume(reg);
 

@@ -46,7 +46,8 @@
 #define SYS_CALL_GETTIME    3
 #define SYS_CALL_GETPID     4
 #define SYS_CALL_ERRNO      5
-#define SYS_CALL_NR         6                                           /*  系统调用数                  */
+#define SYS_CALL_YIELD      6
+#define SYS_CALL_NR         7                                           /*  系统调用数                  */
 
 #ifndef __ASSEMBLER__
 #include <sys/time.h>
@@ -60,6 +61,11 @@ void exit(int error_code);
  * abort
  */
 void abort(void);
+
+/*
+ * yield
+ */
+void yield(void);
 
 /*
  * sleep

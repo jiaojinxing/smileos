@@ -67,8 +67,8 @@ typedef          long long          int64_t;
  * 虚拟地址空间
  */
 typedef struct {
-    uint32_t            base;
-    uint32_t            size;
+    uint32_t    base;
+    uint32_t    size;
 } virtual_space_t;
 /*********************************************************************************************************
   为了更好地移植 LwIP, 加入以下数据类型定义
@@ -101,11 +101,11 @@ typedef uint32_t                    mem_ptr_t;
   字节序
 *********************************************************************************************************/
 #ifndef LITTLE_ENDIAN
-#define LITTLE_ENDIAN 1234
+#define LITTLE_ENDIAN               1234
 #endif
 
 #ifndef BIG_ENDIAN
-#define BIG_ENDIAN 4321
+#define BIG_ENDIAN                  4321
 #endif
 
 #define BYTE_ORDER                  LITTLE_ENDIAN

@@ -93,6 +93,17 @@ void abort(void)
 }
 
 /*
+ * yield
+ */
+void yield(void)
+{
+    __asm__ __volatile__("mov    r7,  %0": :"M"(SYS_CALL_YIELD));
+    __asm__ __volatile__("stmdb  sp!, {lr}");
+    __asm__ __volatile__("swi    0");
+    __asm__ __volatile__("ldmia  sp!, {lr}");
+}
+
+/*
  * tsleep
  */
 static void tsleep(unsigned int t)

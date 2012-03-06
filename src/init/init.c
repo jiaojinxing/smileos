@@ -53,9 +53,7 @@
 #include "lwip/sys.h"
 #include "lwip/sockets.h"
 
-err_t ethernetif_init(struct netif *netif);
-
-void tcpip_init_done(void *arg)
+static void tcpip_init_done(void *arg)
 {
     printf("tcpip_init_done\n");
 }
@@ -71,6 +69,7 @@ static void thread1(void *arg)
     IP4_ADDR(&submask,  255, 255, 255,   0);
     IP4_ADDR(&gateway,  192, 168,   2,   1);
 
+    extern err_t ethernetif_init(struct netif *netif);
     netif_add(&ethernetif, &ip, &submask, &gateway, NULL, ethernetif_init, tcpip_input);
 
     netif_set_default(&ethernetif);
