@@ -96,9 +96,9 @@ int main(void)
 
     code = sbin_lookup("/2440_P1.hex", &size);
 
-//    for (i = 0; i < 1; i++) {
-//        process_create("test", code, size, 15);
-//    }
+    for (i = 0; i < 10; i++) {
+        process_create("test", code, size, 15);
+    }
 
     kthread_create("init", init, NULL, 32 * 1024, 10);
 

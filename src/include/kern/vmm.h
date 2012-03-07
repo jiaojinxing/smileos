@@ -40,10 +40,17 @@
 #ifndef VMM_H_
 #define VMM_H_
 
+#include "kern/types.h"
+
 /*
  * 页面映射
  */
-int vmm_map_page(task_t *task, uint32_t va);
+int vmm_map_process_page(task_t *task, uint32_t va);
+
+/*
+ * 释放进程的虚拟地址空间
+ */
+void vmm_free_process_space(task_t *task);
 
 /*
  * 初始化虚拟内存管理

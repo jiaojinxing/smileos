@@ -114,7 +114,7 @@ void dabt_c_handler(uint32_t lr, uint32_t spsr)
 
         if (    mva >= PROCESS_SPACE_SIZE *  current->pid               /*  判断出错地址是否在当前进程  */
              && mva <  PROCESS_SPACE_SIZE * (current->pid + 1)) {       /*  的虚拟地址空间范围内        */
-            vmm_map_page(current, mva);                                 /*  页面映射                    */
+            vmm_map_process_page(current, mva);                         /*  页面映射                    */
         } else {
             printk("%s, current tid = %d\n", __func__, current->tid);
             printk("fault address = 0x%x\n", mmu_get_fault_address());

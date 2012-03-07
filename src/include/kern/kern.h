@@ -44,7 +44,6 @@
 #include "types.h"
 
 #ifdef SMILEOS_KERNEL
-
 /*
  * 任务类型
  */
@@ -69,7 +68,7 @@
 #define TASK_RESUME_MSG_COME    (1 << 4)
 #define TASK_RESUME_MSG_OUT     (1 << 5)
 
-struct _frame_t;
+struct _vmm_frame_t;
 /*
  * 任务控制块
  */
@@ -78,22 +77,25 @@ typedef struct _task {
     /*
      * 关键区域, 请勿修改
      */
-    int32_t             pid;
-    int32_t             tid;
-    uint32_t            state;
-    uint32_t            count;
-    uint32_t            timer;
-    uint32_t            prio;
-    uint32_t            content[20];
-    uint32_t            kstack[KERN_STACK_SIZE];
+    int32_t                 pid;
+    int32_t                 tid;
+    uint32_t                state;
+    uint32_t                count;
+    uint32_t                timer;
+    uint32_t                prio;
+    uint32_t                content[20];
+    uint32_t                kstack[KERN_STACK_SIZE];
     /************************************/
-    char                name[32];
-    int                 type;
-    int                 errno;
-    int                 resume_type;
-    struct _task       *next;
-    struct _task      **wait_list;
-    struct _frame_t    *frame_list;
+    char                    name[32];
+    int                     type;
+    int                     errno;
+    int                     resume_type;
+    struct _task           *next;
+    struct _task          **wait_list;
+    struct _vmm_frame_t    *frame_list;
+    uint32_t                frame_nr;
+    uint32_t                utilization;
+    uint32_t                tick;
 } task_t;
 
 /*

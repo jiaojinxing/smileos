@@ -50,6 +50,8 @@ static void do_exit(int error_code)
 {
     if (current->type == TASK_TYPE_PROCESS) {
         printk("process %d %s exit!\n", current->pid, current->name);
+        extern void vmm_free_process_space(task_t *task);
+        vmm_free_process_space(current);
     } else {
         printk("kthread %d %s exit!\n", current->tid, current->name);
     }

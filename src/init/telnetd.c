@@ -68,23 +68,27 @@ static int get_task_info(task_t *task, char *buf)
     }
 
     if (strlen(task->name) < 5) {
-        return sprintf(buf, "%s\t %s\t\t %3u\t %s\t %3u\t %10u\t %3u\r\n",
+        return sprintf(buf, "%s\t %s\t\t %3u\t %s\t %3u\t %10u\t %3u\t %3u%%\t %10u\r\n",
                         task->type == TASK_TYPE_PROCESS ? "process" : "kthread",
                         task->name,
                         task->tid,
                         state,
                         task->count,
                         task->timer,
-                        task->prio);
+                        task->prio,
+                        task->utilization,
+                        task->frame_nr);
     } else {
-        return sprintf(buf, "%s\t %s\t %3u\t %s\t %3u\t %10u\t %3u\r\n",
+        return sprintf(buf, "%s\t %s\t %3u\t %s\t %3u\t %10u\t %3u\t %3u%%\t %10u\r\n",
                         task->type == TASK_TYPE_PROCESS ? "process" : "kthread",
                         task->name,
                         task->tid,
                         state,
                         task->count,
                         task->timer,
-                        task->prio);
+                        task->prio,
+                        task->utilization,
+                        task->frame_nr);
     }
 }
 
@@ -134,7 +138,7 @@ static void telnet_shell(void *arg)
                         cmd[pos] = '\0';
                         if (strcmp(cmd, "ts") == 0) {
 
-                            len = sprintf(buf, "type\t name\t\t pid\t state\t count\t timer\t\t prio\r\n");
+                            len = sprintf(buf, "type\t name\t\t pid\t state\t count\t timer\t\t prio\t usage\t frame_nr\r\n");
                             send(fd, buf, len, 0);
 
                             for (i = 0, task = tasks; i < TASK_NR; i++, task++) {
