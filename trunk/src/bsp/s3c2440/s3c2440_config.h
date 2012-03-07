@@ -59,7 +59,7 @@
 
 #define VMM_MEM_SIZE        (PHY_MEM_SIZE - KERN_MEM_SIZE-INT_MEM_SIZE) /*  VMM 内存大小                */
 #define VMM_MEM_BASE        (INT_MEM_BASE + INT_MEM_SIZE)               /*  VMM 内存基址                */
-#define FRAME_NR            (VMM_MEM_SIZE / FRAME_SIZE)                 /*  页框数                      */
+#define VMM_FRAME_NR        (VMM_MEM_SIZE / FRAME_SIZE)                 /*  页框数                      */
 
 #define PAGE_TBL_SIZE       (1 * KB)                                    /*  页表大小                    */
 #define PAGE_TBL_NR         (1024)                                      /*  页表数                      */

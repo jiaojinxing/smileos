@@ -61,7 +61,7 @@ static page_table_t *used_page_table_list;
  *
  * TODO: 这样的查找算法还是挺慢的, 有待改进
  */
-uint32_t page_table_lookup(uint32_t section_nr)
+uint32_t vmm_page_table_lookup(uint32_t section_nr)
 {
     page_table_t *tbl;
 
@@ -83,7 +83,7 @@ uint32_t page_table_lookup(uint32_t section_nr)
 /*
  * 分配页表
  */
-uint32_t page_table_alloc(uint32_t section_nr)
+uint32_t vmm_page_table_alloc(uint32_t section_nr)
 {
     page_table_t *tbl;
 
@@ -109,7 +109,7 @@ uint32_t page_table_alloc(uint32_t section_nr)
 /*
  * 释放页表
  */
-void page_table_free(uint32_t page_tbl_base)
+void vmm_page_table_free(uint32_t page_tbl_base)
 {
     page_table_t *tbl;
 
@@ -132,37 +132,55 @@ void page_table_free(uint32_t page_tbl_base)
 /*
  * 页框
  */
-typedef struct _frame_t {
-    uint32_t         virtual_addr;
-    struct _frame_t *prev;
-    struct _frame_t *next;
-    struct _frame_t *process_next;
-} frame_t;
+struct _vmm_frame_t;
+typedef struct _vmm_frame_t vmm_frame_t;
+struct _vmm_frame_t {
+    struct _vmm_frame_t *prev;
+    struct _vmm_frame_t *next;
+    struct _vmm_frame_t *process_next;
+};
 
-static frame_t frames[FRAME_NR];
+static vmm_frame_t vmm_frames[VMM_FRAME_NR];
 
-static frame_t *free_frame_list;
-static frame_t *used_frame_list;
+static vmm_frame_t *free_frame_list;
+static vmm_frame_t *used_frame_list;
 
 /*
  * 分配页框
  */
-frame_t *frame_alloc(void)
+vmm_frame_t *vmm_frame_alloc(void)
 {
-    frame_t *free_frame;
+    vmm_frame_t *frame;
 
-    free_frame = free_frame_list;
-    if (free_frame != NULL) {
-        free_frame_list = free_frame->next;
+    frame = free_frame_list;
+    if (frame != NULL) {
+        free_frame_list = frame->next;
+
+        frame->prev = NULL;
+        frame->next = used_frame_list;
+        if (used_frame_list != NULL) {
+            used_frame_list->prev = frame;
+        }
+        used_frame_list = frame;
     }
-    return free_frame;
+    return frame;
 }
 
 /*
  * 释放页框
  */
-void frame_free(frame_t *frame)
+void vmm_frame_free(vmm_frame_t *frame)
 {
+    if (frame->prev != NULL) {
+        frame->prev->next = frame->next;
+    } else {
+        used_frame_list = frame->next;
+    }
+
+    if (frame->next != NULL) {
+        frame->next->prev = frame->prev;
+    }
+
     frame->next = free_frame_list;
     free_frame_list = frame;
 }
@@ -170,27 +188,27 @@ void frame_free(frame_t *frame)
 /*
  * 获得页框的物理地址
  */
-uint32_t get_frame_addr(frame_t *frame)
+uint32_t vmm_get_frame_addr(vmm_frame_t *frame)
 {
-    return (frame - frames) * FRAME_SIZE + VMM_MEM_BASE;
+    return (frame - vmm_frames) * FRAME_SIZE + VMM_MEM_BASE;
 }
 
 /*
  * 页面映射
  */
-int vmm_map_page(task_t *task, uint32_t va)
+int vmm_map_process_page(task_t *task, uint32_t va)
 {
-    frame_t *frame;
-    int      flag = 0;
+    vmm_frame_t *frame;
+    int          flag = 0;
 
     if (   va >= PROCESS_SPACE_SIZE *  task->pid                        /*  判断虚拟地址是否在进程      */
         && va <  PROCESS_SPACE_SIZE * (task->pid + 1)) {                /*  的虚拟地址空间范围内        */
 
         uint32_t section_nr = va >> SECTION_OFFSET;                     /*  计算虚拟地址的段号          */
 
-        uint32_t tbl = page_table_lookup(section_nr);                   /*  查找该段的页表              */
+        uint32_t tbl = vmm_page_table_lookup(section_nr);               /*  查找该段的页表              */
         if (tbl == 0) {                                                 /*  没找到                      */
-            tbl = page_table_alloc(section_nr);                         /*  分配一个空闲的页表          */
+            tbl = vmm_page_table_alloc(section_nr);                     /*  分配一个空闲的页表          */
             if (tbl != NULL) {
                 mmu_map_section_as_page(section_nr, tbl);               /*  映射该段                    */
                 flag = 1;
@@ -200,26 +218,21 @@ int vmm_map_page(task_t *task, uint32_t va)
             }
         }
 
-        frame = frame_alloc();                                          /*  分配一个空闲的页框          */
+        frame = vmm_frame_alloc();                                      /*  分配一个空闲的页框          */
         if (frame != NULL) {                                            /*  计算虚拟地址在页表里的页号  */
             uint32_t page_nr = (va & (SECTION_SIZE - 1)) >> PAGE_OFFSET;
 
-            mmu_map_page(tbl, page_nr, get_frame_addr(frame));          /*  页面映射                    */
-
-            frame->prev = NULL;
-            frame->next = used_frame_list;
-            if (used_frame_list != NULL) {
-                used_frame_list->prev = frame;
-            }
+            mmu_map_page(tbl, page_nr, vmm_get_frame_addr(frame));      /*  页面映射                    */
 
             frame->process_next = task->frame_list;
             task->frame_list = frame;
+            task->frame_nr++;
 
             return 0;
         } else {
             if (flag) {
                 mmu_unmap_section(section_nr);
-                page_table_free(tbl);
+                vmm_page_table_free(tbl);
             }
             printk("failed to alloc frame, map failed, va=0x%x, pid=%d\n", va, task->pid);
             return -1;
@@ -231,19 +244,44 @@ int vmm_map_page(task_t *task, uint32_t va)
 }
 
 /*
+ * 释放进程的虚拟地址空间
+ */
+void vmm_free_process_space(task_t *task)
+{
+    int i;
+    vmm_frame_t *next;
+    uint32_t tbl;
+
+    while (task->frame_list != NULL) {                                  /*  释放进程占用的页框          */
+        next = task->frame_list->process_next;
+        vmm_frame_free(task->frame_list);
+        task->frame_list = next;
+    }
+    task->frame_nr = 0;
+
+    for (i = 0; i < PROCESS_SPACE_SIZE / SECTION_SIZE; i++) {
+        tbl = vmm_page_table_lookup(task->pid * PROCESS_SPACE_SIZE / SECTION_SIZE + i);
+        if (tbl != 0) {
+            vmm_page_table_free(tbl);                                   /*  释放页表                    */
+        }                                                               /*  取消映射段                  */
+        mmu_unmap_section(task->pid * PROCESS_SPACE_SIZE / SECTION_SIZE + i);
+    }
+}
+
+/*
  * 初始化虚拟内存管理
  */
 void vmm_init(void)
 {
     int           i;
-    frame_t      *frame;
+    vmm_frame_t      *frame;
     page_table_t *tbl;
 
-    for (i = 0, frame = frames; i < FRAME_NR - 1; i++, frame++) {
+    for (i = 0, frame = vmm_frames; i < VMM_FRAME_NR - 1; i++, frame++) {
         frame->next = frame + 1;
     }
     frame->next = NULL;
-    free_frame_list = frames;
+    free_frame_list = vmm_frames;
     used_frame_list = NULL;
 
     for (i = 0, tbl = page_tables; i < PAGE_TBL_NR - 1; i++, tbl++) {

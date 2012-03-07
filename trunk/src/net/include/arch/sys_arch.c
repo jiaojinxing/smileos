@@ -442,8 +442,8 @@ err_t sys_mbox_new(sys_mbox_t *mbox, int size)
 {
     struct sys_mbox *q;
 
-    if (size < 20) {
-        size = 20;
+    if (size < 100) {
+        size = 100;
     }
 
     q = kmalloc(sizeof(struct sys_mbox) + (size - 1) * sizeof(void *));
