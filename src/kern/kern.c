@@ -496,7 +496,7 @@ int32_t process_create(const char *name, uint8_t *code, uint32_t size, uint32_t 
     task->pid          = i;
     task->tid          = i;
     task->state        = TASK_RUNNING;
-    task->count        = 15;
+    task->count        = 10;
     task->timer        = 0;
     task->prio         = prio;
     task->type         = TASK_TYPE_PROCESS;
@@ -582,7 +582,7 @@ int32_t kthread_create(const char *name, void (*func)(void *), void *arg, uint32
     task->pid          = current->pid;
     task->tid          = i;
     task->state        = TASK_RUNNING;
-    task->count        = 15;
+    task->count        = 10;
     task->timer        = 0;
     task->prio         = prio;
     task->type         = TASK_TYPE_THREAD;

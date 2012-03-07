@@ -46,17 +46,46 @@
 #include <stdio.h>
 #include <ctype.h>
 
-int get_task_info(task_t *task, char *buf)
+/*
+ * 获得任务信息
+ */
+static int get_task_info(task_t *task, char *buf)
 {
-    return sprintf(buf, "%s %s %d %d %d %d %d %d\r\n",
-                    task->name,
-                    task->type == TASK_TYPE_PROCESS ? "process" : "kthread",
-                    task->pid,
-                    task->tid,
-                    task->state,
-                    task->count,
-                    task->timer,
-                    task->prio);
+    const char *state;
+
+    switch (task->state) {
+    case TASK_RUNNING:
+        state = "ready";
+        break;
+
+    case TASK_SLEEPING:
+        state = "sleep";
+        break;
+
+    case TASK_SUSPEND:
+        state = "wait";
+        break;
+    }
+
+    if (strlen(task->name) < 5) {
+        return sprintf(buf, "%s\t %s\t\t %3u\t %s\t %3u\t %10u\t %3u\r\n",
+                        task->type == TASK_TYPE_PROCESS ? "process" : "kthread",
+                        task->name,
+                        task->tid,
+                        state,
+                        task->count,
+                        task->timer,
+                        task->prio);
+    } else {
+        return sprintf(buf, "%s\t %s\t %3u\t %s\t %3u\t %10u\t %3u\r\n",
+                        task->type == TASK_TYPE_PROCESS ? "process" : "kthread",
+                        task->name,
+                        task->tid,
+                        state,
+                        task->count,
+                        task->timer,
+                        task->prio);
+    }
 }
 
 /*
@@ -105,7 +134,7 @@ static void telnet_shell(void *arg)
                         cmd[pos] = '\0';
                         if (strcmp(cmd, "ts") == 0) {
 
-                            len = sprintf(buf, "name type pid tid state count timer prio\r\n");
+                            len = sprintf(buf, "type\t name\t\t pid\t state\t count\t timer\t\t prio\r\n");
                             send(fd, buf, len, 0);
 
                             for (i = 0, task = tasks; i < TASK_NR; i++, task++) {
@@ -125,7 +154,7 @@ static void telnet_shell(void *arg)
                         } else if (strcmp(cmd, "exit") == 0) {
                             break;
                         } else {
-                            len = sprintf(buf, "unknow cmd\r\n");
+                            len = sprintf(buf, "unknown cmd\r\n");
                             send(fd, buf, len, 0);
                         }
                         pos = 0;
@@ -177,14 +206,13 @@ void telnetd(void *arg)
     listen(fd, 2);
 
     while (1) {
-
         addr_len = sizeof(remote_addr);
 
         client_fd = accept(fd, (struct sockaddr *)&remote_addr, &addr_len);
         if (client_fd > 0) {
             sprintf(name, "telnet%d", client_fd);
 
-            kthread_create(name, telnet_shell, (void *)client_fd, 32 * 1024, 15);
+            kthread_create(name, telnet_shell, (void *)client_fd, 32 * 1024, 10);
         } else {
             printf("failed to accept connect\n");
         }

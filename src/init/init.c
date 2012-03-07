@@ -52,6 +52,9 @@
 #include "lwip/sys.h"
 #include "lwip/sockets.h"
 
+/*
+ * 初始化线程
+ */
 static void init(void *arg)
 {
     static struct netif ethernetif;
@@ -71,13 +74,16 @@ static void init(void *arg)
     netif_set_up(&ethernetif);
 
     extern void telnetd(void *arg);
-    kthread_create("telnetd", telnetd, NULL, 32 * 1024, 15);
+    kthread_create("telnetd", telnetd, NULL, 32 * 1024, 10);
 
     while (1) {
         sleep(1000);
     }
 }
 
+/*
+ * 主函数
+ */
 int main(void)
 {
     uint8_t  *code;
@@ -90,11 +96,11 @@ int main(void)
 
     code = sbin_lookup("/2440_P1.hex", &size);
 
-    for (i = 0; i < 1; i++) {
-        process_create("test", code, size, 15);
-    }
+//    for (i = 0; i < 1; i++) {
+//        process_create("test", code, size, 15);
+//    }
 
-    kthread_create("init", init, NULL, 32 * 1024, 15);
+    kthread_create("init", init, NULL, 32 * 1024, 10);
 
     kernel_start();
 
