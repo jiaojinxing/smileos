@@ -82,8 +82,8 @@
 #define KERN_HEAP_SIZE      (2 * MB)                                    /*  内核动态内存堆大小          */
 #define KERN_STACK_SIZE     (2048)                                      /*  内核栈空间大小              */
 
-#define PROCESS_NR          (127)                                       /*  进程数, 含进程 0            */
-#define KTHREAD_NR          (32)                                        /*  内核线程数                  */
+#define PROCESS_NR          (16)                                        /*  进程数, 含进程 0            */
+#define KTHREAD_NR          (16)                                        /*  内核线程数                  */
 #define TASK_NR             (PROCESS_NR + KTHREAD_NR)                   /*  任务数                      */
 
 #define UART_BAUD_RATE      (115200)                                    /*  UART 波特率                 */

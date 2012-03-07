@@ -767,8 +767,8 @@ sys_thread_t sys_thread_new(const char *name, lwip_thread_fn thread, void *arg, 
         stacksize = 32 * KB;
     }
 
-    if (prio < 15) {
-        prio = 15;
+    if (prio < 10) {
+        prio = 10;
     }
 
     return kthread_create(name, thread, arg, stacksize, prio);
