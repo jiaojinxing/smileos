@@ -181,6 +181,8 @@ void kernel_init(void)
         task->tick         = 0;
         task->utilization  = 0;
         task->frame_nr     = 0;
+        task->page_tbl_list= NULL;
+        task->stack_low    = 0;
         memset(task->name, 0, sizeof(task->name));
     }
 
@@ -203,6 +205,8 @@ void kernel_init(void)
     task->tick         = 0;
     task->utilization  = 0;
     task->frame_nr     = 0;
+    task->page_tbl_list= NULL;
+    task->stack_low    = 0;
 
     task->content[0]   = (uint32_t)&task->kstack[KERN_STACK_SIZE];  /*  svc 模式的 sp (满堆栈递减)      */
     task->content[1]   = ARM_SYS_MODE | ARM_FIQ_NO | ARM_IRQ_EN;    /*  cpsr, sys 模式, 关 FIQ, 开 IRQ  */
@@ -445,7 +449,7 @@ void kernel_start(void)
 {
     kernel_running = TRUE;
 
-    void __switch_to_process0(register uint32_t sp_svc);
+    extern void __switch_to_process0(register uint32_t sp_svc);
 
     __switch_to_process0(current->content[0]);
 }
@@ -527,6 +531,8 @@ int32_t process_create(const char *name, uint8_t *code, uint32_t size, uint32_t 
     task->tick         = 0;
     task->utilization  = 0;
     task->frame_nr     = 0;
+    task->page_tbl_list= NULL;
+    task->stack_low    = 0;
 
     task->content[0]   = (uint32_t)&task->kstack[KERN_STACK_SIZE];  /*  svc 模式的 sp (满堆栈递减)      */
     task->content[1]   = ARM_SYS_MODE | ARM_FIQ_NO | ARM_IRQ_EN;    /*  cpsr, sys 模式, 关 FIQ, 开 IRQ  */
@@ -599,7 +605,18 @@ int32_t kthread_create(const char *name, void (*func)(void *), void *arg, uint32
         return -1;
     }
 
-    stk = (uint32_t)((char *)kmalloc(stk_size) + stk_size);
+    if (stk_size < 8 * KB) {
+        stk_size = 8 * KB;
+    }
+    stk_size = MEM_ALIGN_SIZE(stk_size);
+
+    task->stack_low = (uint32_t)kmalloc(stk_size);
+    if (task->stack_low == 0) {
+        interrupt_resume(reg);
+        return -1;
+    }
+
+    stk                = task->stack_low + stk_size;
 
     task->pid          = current->pid;
     task->tid          = i;
@@ -616,6 +633,7 @@ int32_t kthread_create(const char *name, void (*func)(void *), void *arg, uint32
     task->tick         = 0;
     task->utilization  = 0;
     task->frame_nr     = 0;
+    task->page_tbl_list= NULL;
 
     task->content[0]   = (uint32_t)&task->kstack[KERN_STACK_SIZE];  /*  svc 模式堆栈指针(满堆栈递减)    */
     task->content[1]   = ARM_SYS_MODE | ARM_FIQ_NO | ARM_IRQ_EN;    /*  cpsr, sys 模式, 关 FIQ, 开 IRQ  */
