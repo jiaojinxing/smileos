@@ -74,6 +74,7 @@ void irq_c_handler(void)
 
 int isr_invaild(uint32_t interrupt, void *arg)
 {
+    printk("interrupt invaild!\n");
     return -1;
 }
 
