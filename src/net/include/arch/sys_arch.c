@@ -43,6 +43,7 @@
 #include "kern/sys_call.h"
 #include "lwip/sys.h"
 
+#define debug_output printk
 /*
  * »¥³âÁ¿
  */
@@ -114,7 +115,9 @@ void sys_mutex_lock(sys_mutex_t *mutex)
                     current->state = TASK_SUSPEND;
                     current->wait_list = &m->wait_list;
                     current->resume_type = TASK_RESUME_UNKNOW;
+                    debug_output("task %s now wait mutex\n", current->name);
                     yield();
+                    debug_output("task %s now get mutex\n", current->name);
                     current->wait_list = NULL;
                     current->next = NULL;
                     current->resume_type = TASK_RESUME_UNKNOW;
@@ -334,7 +337,9 @@ u32_t sys_arch_sem_wait(sys_sem_t *sem, u32_t timeout)
                     current->state = TASK_SLEEPING;
                     current->wait_list = &s->wait_list;
                     current->resume_type = TASK_RESUME_UNKNOW;
+                    debug_output("task %s now wait sem\n", current->name);
                     yield();
+                    debug_output("task %s now get sem\n", current->name);
                     current->wait_list = NULL;
                     current->next = NULL;
                     current->timer = 0;
@@ -516,7 +521,9 @@ void sys_mbox_post(sys_mbox_t *mbox, void *msg)
                     current->state = TASK_SUSPEND;
                     current->wait_list = &q->w_wait_list;
                     current->resume_type = TASK_RESUME_UNKNOW;
+                    debug_output("task %s now wait queue empty\n", current->name);
                     yield();
+                    debug_output("task %s now get queue empty\n", current->name);
                     current->wait_list = NULL;
                     current->next = NULL;
                     current->resume_type = TASK_RESUME_UNKNOW;
@@ -633,7 +640,9 @@ u32_t sys_arch_mbox_fetch(sys_mbox_t *mbox, void **msg, u32_t timeout)
                     current->state = TASK_SLEEPING;
                     current->wait_list = &q->r_wait_list;
                     current->resume_type = TASK_RESUME_UNKNOW;
+                    debug_output("task %s now wait msg\n", current->name);
                     yield();
+                    debug_output("task %s now get msg\n", current->name);
                     current->wait_list = NULL;
                     current->next = NULL;
                     current->timer = 0;
