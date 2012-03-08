@@ -59,6 +59,7 @@ static void init(void *arg)
 {
     static struct netif ethernetif;
     ip_addr_t           ip, submask, gateway;
+    int                 i = 0;
 
     tcpip_init(NULL, NULL);
 
