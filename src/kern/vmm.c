@@ -49,6 +49,7 @@
 typedef struct _page_table_t {
     struct _page_table_t *prev;
     struct _page_table_t *next;
+    struct _page_table_t *process_next;
     uint32_t              section_nr;
 } page_table_t;
 
@@ -148,7 +149,7 @@ static vmm_frame_t *used_frame_list;
 /*
  * 分配页框
  */
-vmm_frame_t *vmm_frame_alloc(void)
+vmm_frame_t *vmm_frame_alloc(task_t *task)
 {
     vmm_frame_t *frame;
 
@@ -162,6 +163,10 @@ vmm_frame_t *vmm_frame_alloc(void)
             used_frame_list->prev = frame;
         }
         used_frame_list = frame;
+
+        frame->process_next = task->frame_list;
+        task->frame_list = frame;
+        task->frame_nr++;
     }
     return frame;
 }
@@ -218,16 +223,10 @@ int vmm_map_process_page(task_t *task, uint32_t va)
             }
         }
 
-        frame = vmm_frame_alloc();                                      /*  分配一个空闲的页框          */
+        frame = vmm_frame_alloc(task);                                  /*  分配一个空闲的页框          */
         if (frame != NULL) {                                            /*  计算虚拟地址在页表里的页号  */
             uint32_t page_nr = (va & (SECTION_SIZE - 1)) >> PAGE_OFFSET;
-
             mmu_map_page(tbl, page_nr, vmm_get_frame_addr(frame));      /*  页面映射                    */
-
-            frame->process_next = task->frame_list;
-            task->frame_list = frame;
-            task->frame_nr++;
-
             return 0;
         } else {
             if (flag) {
@@ -274,7 +273,7 @@ void vmm_free_process_space(task_t *task)
 void vmm_init(void)
 {
     int           i;
-    vmm_frame_t      *frame;
+    vmm_frame_t  *frame;
     page_table_t *tbl;
 
     for (i = 0, frame = vmm_frames; i < VMM_FRAME_NR - 1; i++, frame++) {

@@ -39,7 +39,6 @@
 *********************************************************************************************************/
 #include "kern/config.h"
 #include "kern/types.h"
-#include "kern/kern.h"
 
 #include "lwip/opt.h"
 #include "lwip/def.h"
@@ -877,7 +876,7 @@ low_level_init(struct netif *netif)
     /*
      * device capabilities
      */
-    netif->flags = NETIF_FLAG_BROADCAST | NETIF_FLAG_ETHARP | NETIF_FLAG_LINK_UP;
+    netif->flags = NETIF_FLAG_BROADCAST | NETIF_FLAG_ETHARP | NETIF_FLAG_LINK_UP | NETIF_FLAG_ETHERNET;
 
 /********************************************************************************************************/
     /*

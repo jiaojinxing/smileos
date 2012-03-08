@@ -40,6 +40,7 @@
 #include "kern/config.h"
 #include "kern/types.h"
 #include "kern/kern.h"
+#include "kern/vmm.h"
 /*********************************************************************************************************
   系统调用处理
 *********************************************************************************************************/
@@ -50,10 +51,10 @@ static void do_exit(int error_code)
 {
     if (current->type == TASK_TYPE_PROCESS) {
         printk("process %d %s exit!\n", current->pid, current->name);
-        extern void vmm_free_process_space(task_t *task);
         vmm_free_process_space(current);
     } else {
         printk("kthread %d %s exit!\n", current->tid, current->name);
+        kfree(current->stack_low);
     }
 
     current->state = TASK_UNALLOCATE;
