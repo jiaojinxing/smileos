@@ -57,24 +57,24 @@
  */
 static void init(void *arg)
 {
-//    static struct netif ethernetif;
-//    ip_addr_t           ip, submask, gateway;
-//
-//    tcpip_init(NULL, NULL);
-//
-//    IP4_ADDR(&ip,       192, 168,   2,  218);
-//    IP4_ADDR(&submask,  255, 255, 255,   0);
-//    IP4_ADDR(&gateway,  192, 168,   2,   1);
-//
-//    extern err_t ethernetif_init(struct netif *netif);
-//    netif_add(&ethernetif, &ip, &submask, &gateway, NULL, ethernetif_init, tcpip_input);
-//
-//    netif_set_default(&ethernetif);
-//
-//    netif_set_up(&ethernetif);
-//
-//    extern void telnetd(void *arg);
-//    kthread_create("telnetd", telnetd, NULL, 32 * 1024, 10);
+    static struct netif ethernetif;
+    ip_addr_t           ip, submask, gateway;
+
+    tcpip_init(NULL, NULL);
+
+    IP4_ADDR(&ip,       192, 168,   0,  30);
+    IP4_ADDR(&submask,  255, 255, 255,  0);
+    IP4_ADDR(&gateway,  192, 168,   0,  1);
+
+    extern err_t ethernetif_init(struct netif *netif);
+    netif_add(&ethernetif, &ip, &submask, &gateway, NULL, ethernetif_init, tcpip_input);
+
+    netif_set_default(&ethernetif);
+
+    netif_set_up(&ethernetif);
+
+    extern void telnetd(void *arg);
+    kthread_create("telnetd", telnetd, NULL, 32 * 1024, 10);
 
     while (1) {
         sleep(1000);
@@ -96,7 +96,7 @@ int main(void)
 
     code = sbin_lookup("/2440_P1.hex", &size);
 
-    for (i = 0; i < 10; i++) {
+    for (i = 0; i < 1; i++) {
         process_create("test", code, size, 15);
     }
 
