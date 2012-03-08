@@ -52,14 +52,14 @@ typedef struct _mem_block_t mem_block_t;
  * 内存堆
  */
 typedef struct {
-    mem_block_t    *free_list;
-    mem_block_t    *block_list;
-    uint8_t        *base;
-    uint32_t        size;
-    uint32_t        block_cnt;
-    uint32_t        used_size;
-    uint32_t        alloc_cnt;
-    uint32_t        free_cnt;
+    mem_block_t    *free_list;                                          /*  空闲内存块链表              */
+    mem_block_t    *block_list;                                         /*  内存块链表                  */
+    uint8_t        *base;                                               /*  基址                        */
+    uint32_t        size;                                               /*  大小                        */
+    uint32_t        block_cnt;                                          /*  内存块数目                  */
+    uint32_t        used_size;                                          /*  已用大小                    */
+    uint32_t        alloc_cnt;                                          /*  分配次数                    */
+    uint32_t        free_cnt;                                           /*  释放次数                    */
 } heap_t;
 
 /*

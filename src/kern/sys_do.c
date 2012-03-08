@@ -54,7 +54,7 @@ static void do_exit(int error_code)
         vmm_free_process_space(current);
     } else {
         printk("kthread %d %s exit!\n", current->tid, current->name);
-        kfree(current->stack_low);
+        kfree((void *)current->stack);
     }
 
     current->state = TASK_UNALLOCATE;

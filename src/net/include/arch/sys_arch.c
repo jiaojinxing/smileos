@@ -763,12 +763,12 @@ void sys_mbox_set_invalid(sys_mbox_t *mbox)
  * @param prio priority of the new thread (may be ignored by ports) */
 sys_thread_t sys_thread_new(const char *name, lwip_thread_fn thread, void *arg, int stacksize, int prio)
 {
-    if (stacksize < 32 * KB) {
-        stacksize = 32 * KB;
+    if (stacksize < 16 * KB) {
+        stacksize = 16 * KB;
     }
 
-    if (prio < 10) {
-        prio = 10;
+    if (prio < 5) {
+        prio = 5;
     }
 
     return kthread_create(name, thread, arg, stacksize, prio);
@@ -783,21 +783,14 @@ void sys_init(void)
 /** Ticks/jiffies since power up. */
 u32_t sys_jiffies(void)
 {
-    struct timeval tv;
-    u32_t jiffies;
-
-    gettimeofday(&tv, NULL);
-
-    jiffies = tv.tv_sec * TICK_PER_SECOND + tv.tv_usec * TICK_PER_SECOND / 1000000;
-
-    return jiffies;
+    return get_tick() / TICK_PER_SECOND * 1000;
 }
 
 /** Returns the current time in milliseconds,
  * may be the same as sys_jiffies or at least based on it. */
 u32_t sys_now(void)
 {
-    return sys_jiffies() / TICK_PER_SECOND * 1000;
+    return sys_jiffies();
 }
 /*********************************************************************************************************
   END FILE

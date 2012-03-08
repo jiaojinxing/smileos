@@ -448,8 +448,8 @@ void mmu_map_sections(register uint32_t virtual_base,
                       register uint32_t size,
                       register uint32_t attr)
 {
-    volatile uint32_t *entry;
-    register int i;
+    uint32_t *entry;
+    int i;
 
     entry  = (uint32_t *)MMU_TBL_BASE + (virtual_base >> SECTION_OFFSET);
 
@@ -626,6 +626,9 @@ virtual_space_t sys_resv_space[] = {
                 PHY_MEM_SIZE
         },
         {
+                /*
+                 * 在高端地址处保留 1GB 虚拟地址空间以作后用
+                 */
                 0xC0000000,
                 1 * GB
         },

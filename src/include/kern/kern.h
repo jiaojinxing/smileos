@@ -46,26 +46,26 @@
 /*
  * 任务类型
  */
-#define TASK_TYPE_PROCESS       0
-#define TASK_TYPE_THREAD        1
+#define TASK_TYPE_PROCESS       0                                       /*  进程                        */
+#define TASK_TYPE_THREAD        1                                       /*  内核线程                    */
 
 /*
  * 任务状态
  */
-#define TASK_UNALLOCATE         ((uint32_t)-1)
-#define TASK_RUNNING            0
-#define TASK_SLEEPING           1
-#define TASK_SUSPEND            2
+#define TASK_UNALLOCATE         ((uint32_t)-1)                          /*  未分配                      */
+#define TASK_RUNNING            0                                       /*  就绪                        */
+#define TASK_SLEEPING           1                                       /*  休睡                        */
+#define TASK_SUSPEND            2                                       /*  挂起                        */
 
 /*
  * 任务恢复类型
  */
-#define TASK_RESUME_UNKNOW      0
-#define TASK_RESUME_MUTEX_COME  (1 << 1)
-#define TASK_RESUME_SEM_COME    (1 << 2)
-#define TASK_RESUME_TIMEOUT     (1 << 3)
-#define TASK_RESUME_MSG_COME    (1 << 4)
-#define TASK_RESUME_MSG_OUT     (1 << 5)
+#define TASK_RESUME_UNKNOW      0                                       /*  未知                        */
+#define TASK_RESUME_MUTEX_COME  (1 << 1)                                /*  互斥量到达                  */
+#define TASK_RESUME_SEM_COME    (1 << 2)                                /*  信号到达                    */
+#define TASK_RESUME_TIMEOUT     (1 << 3)                                /*  超时                        */
+#define TASK_RESUME_MSG_COME    (1 << 4)                                /*  消息到达                    */
+#define TASK_RESUME_MSG_OUT     (1 << 5)                                /*  消息被读取                  */
 
 struct _vmm_frame_t;
 struct _page_table_t;
@@ -74,27 +74,29 @@ struct _page_table_t;
  */
 typedef struct _task {
 /********************************************************************************************************/
-    int32_t                 pid;
-    int32_t                 tid;
-    uint32_t                state;
-    uint32_t                count;
-    uint32_t                timer;
-    uint32_t                prio;
-    uint32_t                content[20];
-    uint32_t                kstack[KERN_STACK_SIZE];
+    /*
+     * 请勿修改该区域的成员变量, 位置也不能变!
+     */
+    int32_t                 pid;                                        /*  进程 ID                     */
+    int32_t                 tid;                                        /*  任务 ID                     */
+    uint32_t                state;                                      /*  状态                        */
+    uint32_t                count;                                      /*  状态                        */
+    uint32_t                timer;                                      /*  休睡剩余 tick 数            */
+    uint32_t                prio;                                       /*  优先级                      */
+    uint32_t                content[20];                                /*  工作寄存器                  */
+    uint32_t                kstack[KERN_STACK_SIZE];                    /*  内核栈                      */
 /********************************************************************************************************/
-    uint32_t                stack_low;
-    uint32_t                type;
-    uint32_t                resume_type;
-    uint32_t                frame_nr;
-    uint32_t                utilization;
-    uint32_t                tick;
-    int                     errno;
-    char                    name[32];
-    struct _task           *next;
-    struct _task          **wait_list;
-    struct _vmm_frame_t    *frame_list;
-    struct _page_table_t   *page_tbl_list;
+    uint32_t                stack;                                      /*  内核线程栈基址              */
+    uint32_t                type;                                       /*  任务类型                    */
+    uint32_t                resume_type;                                /*  恢复类型                    */
+    uint32_t                frame_nr;                                   /*  页框数                      */
+    uint32_t                utilization;                                /*  CPU 占用率                  */
+    uint32_t                tick;                                       /*  用于统计 CPU 占用率的 tick  */
+    int                     errno;                                      /*  错误号                      */
+    char                    name[32];                                   /*  名字                        */
+    struct _task           *next;                                       /*  后趋                        */
+    struct _task          **wait_list;                                  /*  等待链表                    */
+    struct _vmm_frame_t    *frame_list;                                 /*  页框链表                    */
 } task_t;
 
 /*
