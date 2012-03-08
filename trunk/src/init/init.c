@@ -74,7 +74,7 @@ static void init(void *arg)
     netif_set_up(&ethernetif);
 
     extern void telnetd(void *arg);
-    kthread_create("telnetd", telnetd, NULL, 32 * 1024, 10);
+    kthread_create("telnetd", telnetd, NULL, 16 * KB, 5);
 
     while (1) {
         sleep(1000);
@@ -88,7 +88,7 @@ int main(void)
 {
     uint8_t  *code;
     uint32_t  size;
-    int i;
+    int       i;
 
     mmu_init();
 
@@ -96,11 +96,11 @@ int main(void)
 
     code = sbin_lookup("/2440_P1.hex", &size);
 
-    for (i = 0; i < 1; i++) {
-        process_create("test", code, size, 15);
-    }
+//    for (i = 0; i < 1; i++) {
+//        process_create("test", code, size, 5);
+//    }
 
-    kthread_create("init", init, NULL, 32 * 1024, 10);
+    kthread_create("init", init, NULL, 16 * KB, 5);
 
     kernel_start();
 

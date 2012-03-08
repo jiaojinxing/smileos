@@ -247,9 +247,9 @@ int vmm_map_process_page(task_t *task, uint32_t va)
  */
 void vmm_free_process_space(task_t *task)
 {
-    int i;
+    int          i;
     vmm_frame_t *next;
-    uint32_t tbl;
+    uint32_t     tbl;
 
     while (task->frame_list != NULL) {                                  /*  释放进程占用的页框          */
         next = task->frame_list->process_next;

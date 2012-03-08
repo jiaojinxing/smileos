@@ -117,13 +117,13 @@ void libc_init(void)
  * 内存块
  */
 struct _mem_block_t {
-    uint32_t        magic0;
-    mem_block_t    *prev;
-    mem_block_t    *next;
-    mem_block_t    *prev_free;
-    mem_block_t    *next_free;
-    uint32_t        size;
-    uint8_t         status;
+    uint32_t        magic0;                                             /*  魔数                        */
+    mem_block_t    *prev;                                               /*  前趋                        */
+    mem_block_t    *next;                                               /*  后趋                        */
+    mem_block_t    *prev_free;                                          /*  空闲前趋                    */
+    mem_block_t    *next_free;                                          /*  空闲后趋                    */
+    uint32_t        size;                                               /*  大小                        */
+    uint8_t         status;                                             /*  状态                        */
 };
 
 /*
@@ -159,7 +159,8 @@ int heap_init(heap_t *heap, uint8_t *base, uint32_t size)
  */
 void *heap_alloc(heap_t *heap, uint32_t size)
 {
-    mem_block_t *blk, *new_blk;
+    mem_block_t *blk;
+    mem_block_t *new_blk;
 
     if (heap->free_list != NULL) {                                      /*  有空闲内存块                */
 
