@@ -93,9 +93,9 @@ static int get_task_info(task_t *task, char *buf)
 }
 
 /*
- * telnet shell 线程
+ * telnetd 线程
  */
-static void telnet_shell(void *arg)
+static void telnetd_thread(void *arg)
 {
     int  fd = (int)arg;
     int  len;
@@ -107,6 +107,7 @@ static void telnet_shell(void *arg)
     task_t *task;
     int  i;
     uint32_t reg;
+    int on = 1;
 
     len = sprintf(buf, "******************* SmileOS Shell *******************\r\n");
     send(fd, buf, len, 0);
@@ -115,6 +116,8 @@ static void telnet_shell(void *arg)
     send(fd, buf, len, 0);
 
     pos = 0;
+
+    setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (char *)&on, sizeof(on));
 
     while (1) {
         ret = recv(fd, &ch, 1, 0);
@@ -193,7 +196,7 @@ void telnetd(void *arg)
 
     fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (fd < 0) {
-        printf("failed to create socket\n");
+        printf("%s: failed to create socket\n", __func__);
         exit(-1);
     }
 
@@ -202,8 +205,8 @@ void telnetd(void *arg)
     local_addr.sin_addr.s_addr  = INADDR_ANY;
     local_addr.sin_port         = htons(23);
 
-    if (bind(fd, (struct sockaddr *)&local_addr, sizeof(local_addr))) {
-        printf("failed to bind port %d\n", ntohs(local_addr.sin_port));
+    if (bind(fd, (struct sockaddr *)&local_addr, sizeof(local_addr)) < 0) {
+        printf("%s: failed to bind port %d\n", __func__, ntohs(local_addr.sin_port));
         exit(-1);
     }
 
@@ -214,11 +217,11 @@ void telnetd(void *arg)
 
         client_fd = accept(fd, (struct sockaddr *)&remote_addr, &addr_len);
         if (client_fd > 0) {
-            sprintf(name, "telnet%d", client_fd);
+            sprintf(name, "%s%d", __func__, client_fd);
 
-            kthread_create(name, telnet_shell, (void *)client_fd, 16 * KB, 5);
+            kthread_create(name, telnetd_thread, (void *)client_fd, 16 * KB, 5);
         } else {
-            printf("failed to accept connect\n");
+            printf("%s: failed to accept connect\n", __func__);
         }
     }
 }
