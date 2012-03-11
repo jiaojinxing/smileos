@@ -51,11 +51,11 @@
  */
 void cpu_init(void)
 {
-    WTCON = 0x00;                                                       /*  关闭看门狗                  */
+    WTCON       = 0x00;                                                 /*  关闭看门狗                  */
 
-    INTMSK = 0xFFFFFFFF;                                                /*  屏蔽所有中断                */
+    INTMSK      = 0xFFFFFFFF;                                           /*  屏蔽所有中断                */
 
-    INTSUBMSK = 0x7FFF;                                                 /*  屏蔽所有子中断              */
+    INTSUBMSK   = 0x7FFF;                                               /*  屏蔽所有子中断              */
 }
 
 /*
@@ -64,7 +64,7 @@ void cpu_init(void)
 void bsp_mem_map(void)
 {
     /*
-     * sfr
+     * 特殊功能寄存器
      */
     mmu_map_sections(0x48000000,
                      0x48000000,
@@ -72,7 +72,7 @@ void bsp_mem_map(void)
                      SECTION_ATTR(AP_USER_RW, DOMAIN_CHECK, CACHE_NO, BUFFER_NO));
 
     /*
-     * dm9000
+     * DM9000
      */
     mmu_map_sections(0x20000000,
                      0x20000000,
@@ -85,12 +85,12 @@ void bsp_mem_map(void)
  */
 virtual_space_t bsp_resv_space[] = {
         {
-            0x48000000,
+            0x48000000,                                                 /*  特殊功能寄存器              */
             0x60000000 - 0x48000000
         },
         {
-            0x20000000,
-            1 * MB
+            0x20000000,                                                 /*  DM9000                      */
+            PAGE_SIZE
         },
         {
             0,

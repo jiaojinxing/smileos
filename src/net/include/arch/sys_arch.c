@@ -43,7 +43,6 @@
 #include "kern/sys_call.h"
 #include "lwip/sys.h"
 
-#define debug_output printk
 /*
  * »¥³âÁ¿
  */
@@ -115,9 +114,7 @@ void sys_mutex_lock(sys_mutex_t *mutex)
                     current->state = TASK_SUSPEND;
                     current->wait_list = &m->wait_list;
                     current->resume_type = TASK_RESUME_UNKNOW;
-                    debug_output("task %s now wait mutex\n", current->name);
                     yield();
-                    debug_output("task %s now get mutex\n", current->name);
                     current->wait_list = NULL;
                     current->next = NULL;
                     current->resume_type = TASK_RESUME_UNKNOW;
@@ -337,9 +334,7 @@ u32_t sys_arch_sem_wait(sys_sem_t *sem, u32_t timeout)
                     current->state = TASK_SLEEPING;
                     current->wait_list = &s->wait_list;
                     current->resume_type = TASK_RESUME_UNKNOW;
-                    debug_output("task %s now wait sem\n", current->name);
                     yield();
-                    debug_output("task %s now get sem\n", current->name);
                     current->wait_list = NULL;
                     current->next = NULL;
                     current->timer = 0;
@@ -419,7 +414,7 @@ void sys_sem_set_invalid(sys_sem_t *sem)
     interrupt_resume(reg);
 }
 
-/* Time functions. */
+/** Time functions. */
 void sys_msleep(u32_t ms) /* only has a (close to) 1 jiffy resolution. */
 {
     usleep(1000 * ms);
@@ -447,8 +442,8 @@ err_t sys_mbox_new(sys_mbox_t *mbox, int size)
 {
     struct sys_mbox *q;
 
-    if (size < 100) {
-        size = 100;
+    if (size < 50) {
+        size = 50;
     }
 
     q = kmalloc(sizeof(struct sys_mbox) + (size - 1) * sizeof(void *));
@@ -521,9 +516,7 @@ void sys_mbox_post(sys_mbox_t *mbox, void *msg)
                     current->state = TASK_SUSPEND;
                     current->wait_list = &q->w_wait_list;
                     current->resume_type = TASK_RESUME_UNKNOW;
-                    debug_output("task %s now wait queue empty\n", current->name);
                     yield();
-                    debug_output("task %s now get queue empty\n", current->name);
                     current->wait_list = NULL;
                     current->next = NULL;
                     current->resume_type = TASK_RESUME_UNKNOW;
@@ -640,9 +633,7 @@ u32_t sys_arch_mbox_fetch(sys_mbox_t *mbox, void **msg, u32_t timeout)
                     current->state = TASK_SLEEPING;
                     current->wait_list = &q->r_wait_list;
                     current->resume_type = TASK_RESUME_UNKNOW;
-                    debug_output("task %s now wait msg\n", current->name);
                     yield();
-                    debug_output("task %s now get msg\n", current->name);
                     current->wait_list = NULL;
                     current->next = NULL;
                     current->timer = 0;
@@ -772,18 +763,20 @@ void sys_mbox_set_invalid(sys_mbox_t *mbox)
  * @param prio priority of the new thread (may be ignored by ports) */
 sys_thread_t sys_thread_new(const char *name, lwip_thread_fn thread, void *arg, int stacksize, int prio)
 {
-    if (stacksize < 16 * KB) {
-        stacksize = 16 * KB;
+    if (stacksize < 8 * KB) {
+        stacksize = 8 * KB;
     }
 
     if (prio < 5) {
         prio = 5;
+    } else if (prio > 10) {
+        prio = 10;
     }
 
     return kthread_create(name, thread, arg, stacksize, prio);
 }
 
-/* sys_init() must be called before anthing else. */
+/** sys_init() must be called before anthing else. */
 void sys_init(void)
 {
 

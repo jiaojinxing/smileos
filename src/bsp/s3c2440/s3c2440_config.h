@@ -42,7 +42,6 @@
 
 #define PAGE_SIZE           (4 * KB)                                    /*  页面大小                    */
 #define PAGE_OFFSET         (12)                                        /*  页面大小偏移                */
-#define FRAME_SIZE          (PAGE_SIZE)                                 /*  页框大小                    */
 
 #define SECTION_SIZE        (1 * MB)                                    /*  段大小                      */
 #define SECTION_OFFSET      (20)                                        /*  段大小偏移                  */
@@ -59,7 +58,8 @@
 
 #define VMM_MEM_SIZE        (PHY_MEM_SIZE - KERN_MEM_SIZE-INT_MEM_SIZE) /*  VMM 内存大小                */
 #define VMM_MEM_BASE        (INT_MEM_BASE + INT_MEM_SIZE)               /*  VMM 内存基址                */
-#define VMM_FRAME_NR        (VMM_MEM_SIZE / FRAME_SIZE)                 /*  页框数                      */
+#define VMM_FRAME_SIZE      (PAGE_SIZE)                                 /*  页框大小                    */
+#define VMM_FRAME_NR        (VMM_MEM_SIZE / VMM_FRAME_SIZE)             /*  页框数                      */
 
 #define PAGE_TBL_SIZE       (1 * KB)                                    /*  页表大小                    */
 #define PAGE_TBL_NR         (1024)                                      /*  页表数                      */
@@ -88,7 +88,7 @@
 
 #define UART_BAUD_RATE      (115200)                                    /*  UART 波特率                 */
 
-#define TICK_PER_SECOND     (100)                                       /*  每秒 tick 数                */
+#define TICK_PER_SECOND     (100)                                       /*  每秒 TICK 数                */
 
 #endif                                                                  /*  S3C2440_CONFIG_H_           */
 /*********************************************************************************************************

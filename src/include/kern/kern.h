@@ -43,6 +43,9 @@
 #include "types.h"
 
 #ifdef SMILEOS_KERNEL
+/*********************************************************************************************************
+  内核数据类型
+*********************************************************************************************************/
 /*
  * 任务类型
  */
@@ -80,18 +83,18 @@ typedef struct _task {
     int32_t                 pid;                                        /*  进程 ID                     */
     int32_t                 tid;                                        /*  任务 ID                     */
     uint32_t                state;                                      /*  状态                        */
-    uint32_t                count;                                      /*  状态                        */
-    uint32_t                timer;                                      /*  休睡剩余 tick 数            */
-    uint32_t                prio;                                       /*  优先级                      */
-    uint32_t                content[20];                                /*  工作寄存器                  */
+    uint32_t                counter;                                    /*  剩余时间片                  */
+    uint32_t                timer;                                      /*  休睡剩余 TICK 数            */
+    uint32_t                priority;                                   /*  优先级                      */
+    uint32_t                content[20];                                /*  上下文                      */
     uint32_t                kstack[KERN_STACK_SIZE];                    /*  内核栈                      */
 /********************************************************************************************************/
-    uint32_t                stack;                                      /*  内核线程栈基址              */
+    uint32_t                stack;                                      /*  线程栈基址                  */
     uint32_t                type;                                       /*  任务类型                    */
     uint32_t                resume_type;                                /*  恢复类型                    */
     uint32_t                frame_nr;                                   /*  页框数                      */
     uint32_t                utilization;                                /*  CPU 占用率                  */
-    uint32_t                tick;                                       /*  用于统计 CPU 占用率的 tick  */
+    uint32_t                tick;                                       /*  任务被定时器中断的次数      */
     int                     errno;                                      /*  错误号                      */
     char                    name[32];                                   /*  名字                        */
     struct _task           *next;                                       /*  后趋                        */
@@ -100,20 +103,17 @@ typedef struct _task {
 } task_t;
 
 /*
- * 任务控制块
- */
-extern task_t tasks[TASK_NR];
-
-/*
- * 当前运行的任务
- */
-extern task_t *current;
-
-/*
  * 系统调用处理
  */
 typedef uint32_t sys_do_t;
-
+/*********************************************************************************************************
+  内核变量
+*********************************************************************************************************/
+extern task_t               tasks[TASK_NR];                             /*  任务控制块                  */
+extern task_t              *current;                                    /*  指向当前运行的任务          */
+/*********************************************************************************************************
+  内核函数
+*********************************************************************************************************/
 /*
  * 初始化内核
  */
@@ -125,7 +125,8 @@ void kernel_init(void);
 void kernel_start(void);
 
 /*
- * 任务调度, 调用之前必须关中断
+ * 任务调度
+ * 调用之前必须关中断
  */
 void schedule(void);
 
@@ -137,12 +138,12 @@ void do_timer(void);
 /*
  * 创建进程
  */
-int32_t process_create(const char *name, uint8_t *code, uint32_t size, uint32_t prio);
+int32_t process_create(const char *name, uint8_t *code, uint32_t size, uint32_t priority);
 
 /*
  * 创建内核线程
  */
-int32_t kthread_create(const char *name, void (*func)(void *), void *arg, uint32_t stk_size, uint32_t prio);
+int32_t kthread_create(const char *name, void (*func)(void *), void *arg, uint32_t stk_size, uint32_t priority);
 
 /*
  * printk
@@ -200,7 +201,7 @@ void interrupt_exit(void);
 uint64_t get_tick(void);
 
 /*
- * 是否在中断处理中
+ * 判断是否在中断处理中
  */
 int in_interrupt(void);
 

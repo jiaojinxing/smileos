@@ -54,56 +54,53 @@
 #include "lwip/sys.h"
 #include "lwip/sockets.h"
 
-//static void ftpd_list_thread(void *arg)
-//{
-//    struct sockaddr_in local_addr, remote_addr;
-//    socklen_t addr_len;
-//    int fd, client_fd;
-//    char buf[128];
-//    int len;
-//    int port = (int)arg;
-//
-//    fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-//    if (fd < 0) {
-//        printf("%s: failed to create socket\n", __func__);
-//        exit(-1);
-//    }
-//
-//    local_addr.sin_family       = AF_INET;
-//    local_addr.sin_len          = sizeof(struct sockaddr_in);
-//    local_addr.sin_addr.s_addr  = INADDR_ANY;
-//    local_addr.sin_port         = htons(port);
-//
-//    if (bind(fd, (struct sockaddr *)&local_addr, sizeof(local_addr)) < 0) {
-//        printf("%s: failed to bind port %d\n", __func__, ntohs(local_addr.sin_port));
-//        exit(-1);
-//    }
-//
-//    listen(fd, 2);
-//
-//    while (1) {
-//        addr_len = sizeof(remote_addr);
-//
-//        client_fd = accept(fd, (struct sockaddr *)&remote_addr, &addr_len);
-//        if (client_fd > 0) {
-//            const char list_str[] = "rw-rw-rw-   1 user     group";
-//            const char *month[12] = {"Jan ", "Feb ", "Mar ", "Apr ", "may ", "Jun ",
-//                                     "Jul ", "Aug ", "Sep ", "Oct ", "Nov ", "Dec "};
-//
-//            buf[0] = 'd';
-//            strcpy(&buf[1], list_str);
-//
-//            send(fd, buf, len, 0);
-//            break;
-//        } else {
-//            printf("%s: failed to accept connect\n", __func__);
-//        }
-//    }
-//
-//    closesocket(fd);
-//
-//    exit(0);
-//}
+static void ftpd_list_thread(void *arg)
+{
+    struct sockaddr_in local_addr, remote_addr;
+    socklen_t addr_len;
+    int fd, client_fd;
+    char buf[128];
+    int len;
+    int port = (int)arg;
+
+    fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (fd < 0) {
+        printf("%s: failed to create socket\n", __func__);
+        exit(-1);
+    }
+
+    local_addr.sin_family       = AF_INET;
+    local_addr.sin_len          = sizeof(struct sockaddr_in);
+    local_addr.sin_addr.s_addr  = INADDR_ANY;
+    local_addr.sin_port         = htons(port);
+
+    if (bind(fd, (struct sockaddr *)&local_addr, sizeof(local_addr)) < 0) {
+        printf("%s: failed to bind port %d\n", __func__, ntohs(local_addr.sin_port));
+        exit(-1);
+    }
+
+    listen(fd, 2);
+
+    while (1) {
+        addr_len = sizeof(remote_addr);
+
+        client_fd = accept(fd, (struct sockaddr *)&remote_addr, &addr_len);
+        if (client_fd > 0) {
+            printf("%s: accept connect\n", __func__);
+            len = sprintf(buf, "drw-r--r-- 1 admin admin %d Jan 1 2000 %s\r\n", 0, "..");
+            send(fd, buf, len, 0);
+            len = sprintf(buf, "drw-r--r-- 1 admin admin %d Jan 1 2000 %s\r\n", 0, "test");
+            send(fd, buf, len, 0);
+            break;
+        } else {
+            printf("%s: failed to accept connect\n", __func__);
+        }
+    }
+
+    closesocket(fd);
+
+    exit(0);
+}
 
 /*
  * ftpd 线程
@@ -144,7 +141,7 @@ static void ftpd_thread(void *arg)
                 send(fd, buf, len, 0);
             } else if (strncmp(cmd, "PASV", 4) == 0) {
                 extern struct netif *netif_default;
-                len = sprintf(buf, "200 %d,%d,%d,%d,%d,%d\r\n",
+                len = sprintf(buf, "200 %d,%d,%d,%d,%s,%s\r\n",
                         (netif_default->ip_addr.addr >> 0 ) & 0xFF,
                         (netif_default->ip_addr.addr >> 8 ) & 0xFF,
                         (netif_default->ip_addr.addr >> 16) & 0xFF,
@@ -152,13 +149,17 @@ static void ftpd_thread(void *arg)
                         /*
                          * 这里端口的表示方式有点怪异
                          */
-                        9,
-                        13);
+                        "9",
+                        "13");
                 send(fd, buf, len, 0);
             } else if (strncmp(cmd, "LIST", 4) == 0) {
-//                kthread_create(NULL, ftpd_list_thread, (void *)2317, 16 * KB, 5);
+
                 len = sprintf(buf, "150 Opening ASCII mode data connection for /\r\n");
                 send(fd, buf, len, 0);
+
+                kthread_create(NULL, ftpd_list_thread, (void *)2317, 16 * KB, 5);
+
+                sleep(1);
 
                 len = sprintf(buf, "226 Transfer complete\r\n");
                 send(fd, buf, len, 0);

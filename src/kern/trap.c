@@ -145,10 +145,11 @@ void dabt_c_handler(uint32_t lr, uint32_t spsr)
         while (1);
         break;
 
-                 /* External abort on noncachable
-                    nonbufferable access or noncachable
-                    bufferable read
-                  */
+                /*
+                 * External abort on noncachable
+                 * nonbufferable access or noncachable
+                 * bufferable read
+                 */
     case 8:
     case 10:
         printk("%s, current tid = %d\n", __func__, current->tid);

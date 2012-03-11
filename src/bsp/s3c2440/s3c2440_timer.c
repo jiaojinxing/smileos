@@ -56,7 +56,7 @@ void timer_init(void)
     /*
      * Timer input clock Frequency = PCLK / {prescaler value + 1} / {divider value}
      * {prescaler value} = 0 ~ 255
-     * {divider value} = 2, 4, 8, 16
+     * {divider value}   = 2, 4, 8, 16
      */
 
     /*

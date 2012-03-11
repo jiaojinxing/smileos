@@ -40,6 +40,9 @@
 #ifndef SYS_CALL_H_
 #define SYS_CALL_H_
 
+/*
+ * 系统调用号
+ */
 #define SYS_CALL_EXIT       0
 #define SYS_CALL_SLEEP      1
 #define SYS_CALL_WRITE      2

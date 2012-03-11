@@ -40,15 +40,79 @@
 #include "kern/config.h"
 #include "kern/types.h"
 #include "kern/heap.h"
+#include <string.h>
 
 /*
  * 进程代码项目应享有一份该文件, 用于实现用户态的 malloc 等, 因进程里使用非抢占的 pthread, 免锁免关中断
  */
 #ifdef SMILEOS_KERNEL
+
 #include "kern/kern.h"
+
 #define getpid()          current->tid
 #define debug_output      printk
+
+/*
+ * 内核内存堆
+ */
+static heap_t  kernel_heap;
+static uint8_t kernel_heap_mem[KERN_HEAP_SIZE];
+
+/*
+ * 从内核内存堆分配内存
+ */
+void *kmalloc(uint32_t size)
+{
+    void    *ptr;
+    uint32_t reg;
+
+    reg = interrupt_disable();
+
+    ptr = heap_alloc(&kernel_heap, size);
+
+    interrupt_resume(reg);
+
+    return ptr;
+}
+
+/*
+ * 释放内存回内核内存堆
+ */
+void kfree(void *ptr)
+{
+    uint32_t reg;
+
+    reg = interrupt_disable();
+
+    heap_free(&kernel_heap, ptr);
+
+    interrupt_resume(reg);
+}
+
+/*
+ * kcalloc
+ */
+void *kcalloc(uint32_t nelem, uint32_t elsize)
+{
+    void *ptr;
+
+    ptr = kmalloc(nelem * MEM_ALIGN_SIZE(elsize));
+    if (ptr != NULL) {
+        memset(ptr, 0, nelem * MEM_ALIGN_SIZE(elsize));
+    }
+    return ptr;
+}
+
+/*
+ * 创建内核内存堆
+ */
+void kheap_create(void)
+{
+    heap_init(&kernel_heap, kernel_heap_mem, KERN_HEAP_SIZE);
+}
+
 #else
+
 extern int printf(const char *fmt, ...);
 #define debug_output      printf
 
@@ -89,7 +153,7 @@ void *calloc(uint32_t nelem, uint32_t elsize)
 }
 
 /*
- * 初始化 c 库
+ * 初始化 C 库
  */
 void libc_init(void)
 {
@@ -100,6 +164,7 @@ void libc_init(void)
      */
     heap_init(&process_heap, &__bss_end, PROCESS_SPACE_SIZE - (uint32_t)&__bss_end - PROCESS_STACK_SIZE);
 }
+
 #endif
 
 /*
@@ -250,7 +315,7 @@ void *heap_free(heap_t *heap, void *ptr)
     }
 
     if (((uint8_t *)ptr < (heap->base + MEM_ALIGN_SIZE(sizeof(mem_block_t)))) ||
-        ((uint8_t *)ptr >= heap->base + heap->size)) {
+        ((uint8_t *)ptr > heap->base + heap->size - MEM_ALIGNMENT)) {
         debug_output("%s: process %d memptr=0x%x dose not belong to this heap!\n", __func__, getpid(), ptr);
         return ptr;
     }

@@ -46,16 +46,16 @@
     int32_t         pid;
     int32_t         tid;
     uint32_t        state;
-    uint32_t        count;
+    uint32_t        counter;
     uint32_t        timer;
-    uint32_t        prio;
+    uint32_t        priority;
     uint32_t        content[20];
     uint32_t        kstack[KERN_STACK_SIZE];
 */
 #define PID_OFFSET          0
 #define TID_OFFSET          4
 #define STATE_OFFSET        8
-#define COUNT_OFFSET        12
+#define COUNTER_OFFSET      12
 #define TIMER_OFFSET        16
 #define PRIORITY_OFFSET     20
 #define CONTENT_OFFSET      24
@@ -288,17 +288,22 @@ __switch_to_process0:
 .global pth_mctx_switch
 pth_mctx_switch:
     stmfd   sp!,  {lr}
+
     stmfd   sp!,  {r0-r12, lr}
+
     mrs     r2,   cpsr
     stmfd   sp!,  {r2}
+
     str     sp,   [r0]
 
     ldr     sp,   [r1]
+
     ldmfd   sp!,  {r2}
     msr     cpsr_cxsf, r2
+
     ldmfd   sp!,  {r0-r12, lr, pc}
 /*********************************************************************************************************
-  进退临界区域
+  进入临界区域
 *********************************************************************************************************/
 .globl interrupt_disable
 interrupt_disable:
@@ -306,7 +311,9 @@ interrupt_disable:
     orr     r1, r0, #(ARM_FIQ_NO + ARM_IRQ_NO)
     msr     cpsr_c, r1
     mov     pc, lr
-
+/*********************************************************************************************************
+  退出临界区域
+*********************************************************************************************************/
 .globl interrupt_resume
 interrupt_resume:
     msr     cpsr, r0

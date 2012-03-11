@@ -43,7 +43,7 @@
 #include "types.h"
 
 /*
- * domain
+ * Domain
  */
 #define DOMAIN_NO_ACCESS        0
 #define DOMAIN_CHECK            1
@@ -97,7 +97,7 @@
 uint32_t mmu_get_id(void);
 
 /*
- * 获得 cache 类型
+ * 获得 Cache 类型
  */
 uint32_t mmu_get_cache_type(void);
 
@@ -107,7 +107,7 @@ uint32_t mmu_get_cache_type(void);
 void mmu_set_ttb(register uint32_t i);
 
 /*
- * 设置 domain
+ * 设置 Domain
  */
 void mmu_set_domain(register uint32_t i);
 
