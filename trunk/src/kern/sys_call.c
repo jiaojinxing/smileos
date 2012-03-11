@@ -59,15 +59,15 @@ int syscall_template(void)
     int param4 = 0;
     int ret;
 
-    __asm__ __volatile__("mov    r0,  %0": :"r"(param1));
-    __asm__ __volatile__("mov    r1,  %0": :"r"(param2));
-    __asm__ __volatile__("mov    r2,  %0": :"r"(param3));
-    __asm__ __volatile__("mov    r3,  %0": :"r"(param4));
-    __asm__ __volatile__("mov    r7,  %0": :"M"(SYS_CALL_EXIT));
-    __asm__ __volatile__("stmdb  sp!, {lr}");
-    __asm__ __volatile__("swi    0");
-    __asm__ __volatile__("ldmia  sp!, {lr}");
-    __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
+    __asm__ __volatile__("mov    r0,  %0": :"r"(param1));               /*  R0 传递参数 1               */
+    __asm__ __volatile__("mov    r1,  %0": :"r"(param2));               /*  R1 传递参数 2               */
+    __asm__ __volatile__("mov    r2,  %0": :"r"(param3));               /*  R2 传递参数 3               */
+    __asm__ __volatile__("mov    r3,  %0": :"r"(param4));               /*  R3 传递参数 4               */
+    __asm__ __volatile__("mov    r7,  %0": :"M"(SYS_CALL_EXIT));        /*  R7 传递系统调用号           */
+    __asm__ __volatile__("stmdb  sp!, {lr}");                           /*  保存 LR 到堆栈              */
+    __asm__ __volatile__("swi    0");                                   /*  软件中断                    */
+    __asm__ __volatile__("ldmia  sp!, {lr}");                           /*  从堆栈恢复 LR               */
+    __asm__ __volatile__("mov    %0,  r0": "=r"(ret));                  /*  R0 传递返回值               */
 
     return ret;
 }
@@ -156,7 +156,7 @@ int write(int fd, const char *data, unsigned int size)
 int printf(const char *fmt, ...)
 {
     va_list va;
-    char    buf[128];
+    char    buf[256];
 
     va_start(va, fmt);
 

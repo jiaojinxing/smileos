@@ -52,6 +52,9 @@
 #include "lwip/sys.h"
 #include "lwip/sockets.h"
 
+/*
+ * LwIP 初始化完成处理函数
+ */
 static void tcpip_init_done(void *arg)
 {
     static struct netif ethernetif;

@@ -63,6 +63,14 @@ typedef          long long          int64_t;
 #define FALSE                       0
 #endif
 
+#ifndef KB
+#define KB                          (1024)
+#define MB                          (1024 * KB)
+#define GB                          (1024 * MB)
+#endif
+
+#define INT_MAX                     2147483647
+
 /*
  * –Èƒ‚µÿ÷∑ø’º‰
  */

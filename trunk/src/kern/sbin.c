@@ -52,7 +52,7 @@ uint8_t *sbin_lookup(char *name, uint32_t *size)
     int i;
 
     for (i = 0; websRomPageIndex[i].path; i++) {
-        if (!strcmp(name, websRomPageIndex[i].path)) {
+        if (strcmp(name, websRomPageIndex[i].path) == 0) {
             *size = websRomPageIndex[i].size;
             return websRomPageIndex[i].page;
         }

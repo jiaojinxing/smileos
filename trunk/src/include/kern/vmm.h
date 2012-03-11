@@ -43,7 +43,7 @@
 #include "kern/types.h"
 
 /*
- * 页面映射
+ * 通过一个虚拟地址映射进程虚拟地址空间中的一个页面
  */
 int vmm_map_process_page(task_t *task, uint32_t va);
 

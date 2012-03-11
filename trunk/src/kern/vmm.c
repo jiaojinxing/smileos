@@ -47,15 +47,15 @@
  * 页表
  */
 typedef struct _page_table_t {
-    struct _page_table_t *prev;
-    struct _page_table_t *next;
-    struct _page_table_t *process_next;
-    uint32_t              section_nr;
+    struct _page_table_t *prev;                                         /*  前趋                        */
+    struct _page_table_t *next;                                         /*  后趋                        */
+    struct _page_table_t *process_next;                                 /*  进程后趋(TODO: 目前未使用)  */
+    uint32_t              section_nr;                                   /*  段号                        */
 } page_table_t;
 
-static page_table_t  page_tables[PAGE_TBL_NR];
-static page_table_t *free_page_table_list;
-static page_table_t *used_page_table_list;
+static page_table_t  page_tables[PAGE_TBL_NR];                          /*  页表                        */
+static page_table_t *free_page_table_list;                              /*  空闲页表链表                */
+static page_table_t *used_page_table_list;                              /*  已用页表链表                */
 
 /*
  * 根据段号查找页表
@@ -66,16 +66,16 @@ uint32_t vmm_page_table_lookup(uint32_t section_nr)
 {
     page_table_t *tbl;
 
-    tbl = used_page_table_list;
+    tbl = used_page_table_list;                                         /*  在已用页表链表中查找        */
     while (tbl != NULL) {
-        if (tbl->section_nr == section_nr) {
+        if (tbl->section_nr == section_nr) {                            /*  段号匹配                    */
             break;
         }
         tbl = tbl->next;
     }
 
     if (tbl != NULL) {
-        return (tbl - page_tables) * PAGE_TBL_SIZE + PAGE_TBL_BASE;
+        return (tbl - page_tables) * PAGE_TBL_SIZE + PAGE_TBL_BASE;     /*  返回页表基址                */
     } else {
         return 0;
     }
@@ -88,20 +88,20 @@ uint32_t vmm_page_table_alloc(uint32_t section_nr)
 {
     page_table_t *tbl;
 
-    tbl = free_page_table_list;
+    tbl = free_page_table_list;                                         /*  在空闲页表链表链头处分配    */
     if (tbl != NULL) {
         free_page_table_list = tbl->next;
 
-        tbl->prev = NULL;
+        tbl->prev = NULL;                                               /*  加入到已用页表链表中        */
         tbl->next = used_page_table_list;
         if (used_page_table_list != NULL) {
             used_page_table_list->prev = tbl;
         }
         used_page_table_list = tbl;
 
-        tbl->section_nr = section_nr;
+        tbl->section_nr = section_nr;                                   /*  记录段号                    */
 
-        return (tbl - page_tables) * PAGE_TBL_SIZE + PAGE_TBL_BASE;
+        return (tbl - page_tables) * PAGE_TBL_SIZE + PAGE_TBL_BASE;     /*  返回页表基址                */
     } else {
         return 0;
     }
@@ -114,9 +114,9 @@ void vmm_page_table_free(uint32_t page_tbl_base)
 {
     page_table_t *tbl;
 
-    tbl = page_tables + (page_tbl_base - PAGE_TBL_BASE) / PAGE_TBL_SIZE;
+    tbl = page_tables + (page_tbl_base - PAGE_TBL_BASE) / PAGE_TBL_SIZE;/*  计算页表                    */
 
-    if (tbl->prev != NULL) {
+    if (tbl->prev != NULL) {                                            /*  从已用页表链表中删除        */
         tbl->prev->next = tbl->next;
     } else {
         used_page_table_list = tbl->next;
@@ -126,7 +126,7 @@ void vmm_page_table_free(uint32_t page_tbl_base)
         tbl->next->prev = tbl->prev;
     }
 
-    tbl->next = free_page_table_list;
+    tbl->next = free_page_table_list;                                   /*  加入到空闲页表链表中        */
     free_page_table_list = tbl;
 }
 
@@ -136,15 +136,15 @@ void vmm_page_table_free(uint32_t page_tbl_base)
 struct _vmm_frame_t;
 typedef struct _vmm_frame_t vmm_frame_t;
 struct _vmm_frame_t {
-    struct _vmm_frame_t *prev;
-    struct _vmm_frame_t *next;
-    struct _vmm_frame_t *process_next;
+    struct _vmm_frame_t *prev;                                          /*  前趋                        */
+    struct _vmm_frame_t *next;                                          /*  后趋                        */
+    struct _vmm_frame_t *process_next;                                  /*  进程后趋                    */
 };
 
-static vmm_frame_t vmm_frames[VMM_FRAME_NR];
+static vmm_frame_t vmm_frames[VMM_FRAME_NR];                            /*  页框                        */
 
-static vmm_frame_t *free_frame_list;
-static vmm_frame_t *used_frame_list;
+static vmm_frame_t *free_frame_list;                                    /*  空闲页框链表                */
+static vmm_frame_t *used_frame_list;                                    /*  已用页框链表                */
 
 /*
  * 分配页框
@@ -153,18 +153,18 @@ vmm_frame_t *vmm_frame_alloc(task_t *task)
 {
     vmm_frame_t *frame;
 
-    frame = free_frame_list;
+    frame = free_frame_list;                                            /*  在空闲页框链表链头处分配    */
     if (frame != NULL) {
         free_frame_list = frame->next;
 
-        frame->prev = NULL;
+        frame->prev = NULL;                                             /*  加入到已用页框链表中        */
         frame->next = used_frame_list;
         if (used_frame_list != NULL) {
             used_frame_list->prev = frame;
         }
         used_frame_list = frame;
 
-        frame->process_next = task->frame_list;
+        frame->process_next = task->frame_list;                         /*  加入到进程页框链表中        */
         task->frame_list = frame;
         task->frame_nr++;
     }
@@ -176,7 +176,7 @@ vmm_frame_t *vmm_frame_alloc(task_t *task)
  */
 void vmm_frame_free(vmm_frame_t *frame)
 {
-    if (frame->prev != NULL) {
+    if (frame->prev != NULL) {                                          /*  从已用页框链表中删除        */
         frame->prev->next = frame->next;
     } else {
         used_frame_list = frame->next;
@@ -186,7 +186,7 @@ void vmm_frame_free(vmm_frame_t *frame)
         frame->next->prev = frame->prev;
     }
 
-    frame->next = free_frame_list;
+    frame->next = free_frame_list;                                      /*  加入到空闲页框链表中        */
     free_frame_list = frame;
 }
 
@@ -195,11 +195,11 @@ void vmm_frame_free(vmm_frame_t *frame)
  */
 uint32_t vmm_get_frame_addr(vmm_frame_t *frame)
 {
-    return (frame - vmm_frames) * FRAME_SIZE + VMM_MEM_BASE;
+    return (frame - vmm_frames) * VMM_FRAME_SIZE + VMM_MEM_BASE;
 }
 
 /*
- * 页面映射
+ * 通过一个虚拟地址映射进程虚拟地址空间中的一个页面
  */
 int vmm_map_process_page(task_t *task, uint32_t va)
 {
@@ -258,7 +258,7 @@ void vmm_free_process_space(task_t *task)
     }
     task->frame_nr = 0;
 
-    for (i = 0; i < PROCESS_SPACE_SIZE / SECTION_SIZE; i++) {
+    for (i = 0; i < PROCESS_SPACE_SIZE / SECTION_SIZE; i++) {           /*  释放进程占用的页表          */
         tbl = vmm_page_table_lookup(task->pid * PROCESS_SPACE_SIZE / SECTION_SIZE + i);
         if (tbl != 0) {
             vmm_page_table_free(tbl);                                   /*  释放页表                    */
@@ -276,20 +276,37 @@ void vmm_init(void)
     vmm_frame_t  *frame;
     page_table_t *tbl;
 
+    /*
+     * 初始化空闲页框链表
+     */
     for (i = 0, frame = vmm_frames; i < VMM_FRAME_NR - 1; i++, frame++) {
         frame->next = frame + 1;
     }
     frame->next = NULL;
     free_frame_list = vmm_frames;
+
+    /*
+     * 初始化已用页框链表
+     */
     used_frame_list = NULL;
 
+    /*
+     * 初始化空闲页表链表
+     */
     for (i = 0, tbl = page_tables; i < PAGE_TBL_NR - 1; i++, tbl++) {
         tbl->next = tbl + 1;
     }
     tbl->next = NULL;
     free_page_table_list = page_tables;
+
+    /*
+     * 初始化已用页表链表
+     */
     used_page_table_list = NULL;
 
+    /*
+     * 清除所有页表
+     */
     memset((void *)PAGE_TBL_BASE, 0, PAGE_TBL_SIZE * PAGE_TBL_NR);
 }
 /*********************************************************************************************************

@@ -49,17 +49,17 @@
  */
 static void do_exit(int error_code)
 {
-    if (current->type == TASK_TYPE_PROCESS) {
+    if (current->type == TASK_TYPE_PROCESS) {                           /*  如果当前任务是进程          */
         printk("process %d %s exit!\n", current->pid, current->name);
-        vmm_free_process_space(current);
-    } else {
+        vmm_free_process_space(current);                                /*  释放进程的虚拟地址空间      */
+    } else {                                                            /*  如果当前任务是线程          */
         printk("kthread %d %s exit!\n", current->tid, current->name);
-        kfree((void *)current->stack);
+        kfree((void *)current->stack);                                  /*  释放线程的堆栈空间          */
     }
 
-    current->state = TASK_UNALLOCATE;
+    current->state = TASK_UNALLOCATE;                                   /*  释放当前任务的任务控制块    */
 
-    schedule();
+    schedule();                                                         /*  任务调度                    */
 }
 
 /*
@@ -67,11 +67,11 @@ static void do_exit(int error_code)
  */
 static int do_sleep(uint32_t time)
 {
-    current->timer = time != 0 ? time : 1;
+    current->timer = time != 0 ? time : 1;                              /*  休睡 TICK 数                */
 
-    current->state = TASK_SLEEPING;
+    current->state = TASK_SLEEPING;                                     /*  当前任务进入休睡态          */
 
-    schedule();
+    schedule();                                                         /*  任务调度                    */
 
     return 0;
 }
@@ -111,7 +111,7 @@ static int do_getpid(void)
 /*
  * 获得 errno 指针
  *
- * TODO: 最好把 errno 放在用户空间, 进程提交内核 errno 的地址, 这样用户空间访问 errno, 免进入内核, 以提高性能
+ * 进程最好记录该指针, 以免频繁切换用户态->内核态->用户态
  */
 static int *do_errno(void)
 {

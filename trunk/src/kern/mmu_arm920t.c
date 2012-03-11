@@ -57,7 +57,7 @@ uint32_t mmu_get_id(void)
 }
 
 /*
- * 获得 cache 类型
+ * 获得 Cache 类型
  */
 uint32_t mmu_get_cache_type(void)
 {
@@ -83,7 +83,7 @@ void mmu_set_ttb(register uint32_t i)
 }
 
 /*
- * 设置 domain
+ * 设置 Domain
  */
 void mmu_set_domain(register uint32_t i)
 {
@@ -449,7 +449,7 @@ void mmu_map_sections(register uint32_t virtual_base,
                       register uint32_t attr)
 {
     uint32_t *entry;
-    int i;
+    int       i;
 
     entry  = (uint32_t *)MMU_TBL_BASE + (virtual_base >> SECTION_OFFSET);
 
@@ -483,7 +483,7 @@ void mmu_map_page(register uint32_t page_tbl_base,
 {
     uint32_t *entry = (uint32_t *)page_tbl_base + page_nr;
 
-    *entry = (frame_base & (~(FRAME_SIZE - 1))) |
+    *entry = (frame_base & (~(VMM_FRAME_SIZE - 1))) |
             (AP_USER_RW << 10) |
             (AP_USER_RW << 8) |
             (AP_USER_RW << 6) |

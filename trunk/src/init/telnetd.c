@@ -68,25 +68,25 @@ static int get_task_info(task_t *task, char *buf)
     }
 
     if (strlen(task->name) < 5) {
-        return sprintf(buf, "%s\t %s\t\t %3u\t %s\t %3u\t %10u\t %3u\t %3u%%\t %10u\r\n",
+        return sprintf(buf, "%s\t %s\t\t %4u\t %s\t %4u\t %10u\t %4u\t %4u%%\t %4u\r\n",
                         task->type == TASK_TYPE_PROCESS ? "process" : "kthread",
                         task->name,
                         task->tid,
                         state,
-                        task->count,
+                        task->counter,
                         task->timer,
-                        task->prio,
+                        task->priority,
                         task->utilization,
                         task->frame_nr);
     } else {
-        return sprintf(buf, "%s\t %s\t %3u\t %s\t %3u\t %10u\t %3u\t %3u%%\t %10u\r\n",
+        return sprintf(buf, "%s\t %s\t %4u\t %s\t %4u\t %10u\t %4u\t %4u%%\t %4u\r\n",
                         task->type == TASK_TYPE_PROCESS ? "process" : "kthread",
                         task->name,
                         task->tid,
                         state,
-                        task->count,
+                        task->counter,
                         task->timer,
-                        task->prio,
+                        task->priority,
                         task->utilization,
                         task->frame_nr);
     }

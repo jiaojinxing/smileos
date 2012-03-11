@@ -50,9 +50,6 @@
 #include "netif/etharp.h"
 #include "netif/ppp_oe.h"
 
-#undef  NETIF_DEBUG
-#define NETIF_DEBUG             LWIP_DBG_ON
-
 /*
  * Define those to better describe your network interface.
  */
@@ -552,9 +549,10 @@ dm9000_init(struct netif *netif)
     return 0;
 }
 
-static sys_sem_t rx_sem, tx_sem;
+static sys_mutex_t  dm9000_lock;
+static sys_sem_t    rx_sem;
+static sys_sem_t    tx_sem;
 static sys_thread_t rx_thread;
-static sys_mutex_t dm9000_lock;
 
 /**
  * This function should do the actual transmission of the packet. The packet is

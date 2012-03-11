@@ -74,7 +74,8 @@ void irq_c_handler(void)
 
 int isr_invaild(uint32_t interrupt, void *arg)
 {
-    printk("interrupt invaild!\n");
+    printk("invaild interrupt %d!\n", interrupt);
+
     return -1;
 }
 
@@ -145,7 +146,7 @@ void interrupt_install(uint32_t interrupt, isr_t new_isr, isr_t *old_isr, void *
             isr_table[interrupt]     = new_isr;
             isr_arg_table[interrupt] = arg;
         } else {
-            isr_table[interrupt] = (isr_t)isr_invaild;
+            isr_table[interrupt]     = (isr_t)isr_invaild;
         }
     }
 }
