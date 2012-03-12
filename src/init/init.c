@@ -105,7 +105,7 @@ int main(void)
 
     code = sbin_lookup("/2440_P1.hex", &size);
 
-    for (i = 0; i < 10; i++) {
+    for (i = 0; i < 32; i++) {
         process_create("test", code, size, 5);
     }
 
