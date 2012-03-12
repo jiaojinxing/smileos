@@ -41,39 +41,52 @@
 #include "kern/types.h"
 #include "kern/kern.h"
 #include "kern/mmu.h"
+#include "tree.h"
 #include <string.h>
 
 /*
  * 页表
  */
-typedef struct _page_table_t {
-    struct _page_table_t *prev;                                         /*  前趋                        */
-    struct _page_table_t *next;                                         /*  后趋                        */
-    struct _page_table_t *process_next;                                 /*  进程后趋(TODO: 目前未使用)  */
-    uint32_t              section_nr;                                   /*  段号                        */
-} page_table_t;
+struct page_table {
+    RB_ENTRY(page_table)    node;                                       /*  红黑树节点                  */
+    uint32_t                section_nr;                                 /*  段号                        */
+};
 
-static page_table_t  page_tables[PAGE_TBL_NR];                          /*  页表                        */
-static page_table_t *free_page_table_list;                              /*  空闲页表链表                */
-static page_table_t *used_page_table_list;                              /*  已用页表链表                */
+static struct page_table  page_tables[PAGE_TBL_NR];                     /*  页表                        */
+static struct page_table *free_page_table_list;                         /*  空闲页表链表                */
+
+/*
+ * 页表比较函数
+ */
+static int page_table_compare(struct page_table *a, struct page_table *b)
+{
+    if (a->section_nr < b->section_nr) {
+        return -1;
+    } else if (a->section_nr > b->section_nr) {
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
+static RB_HEAD(page_table_tree, page_table) used_page_table_tree;       /*  已用页表红黑树              */
+
+/*
+ * 产生页表红黑树代码
+ */
+RB_GENERATE_INTERNAL(page_table_tree, page_table, node, page_table_compare, static);
 
 /*
  * 根据段号查找页表
- *
- * TODO: 这样的查找算法还是挺慢的, 有待改进
  */
 uint32_t vmm_page_table_lookup(uint32_t section_nr)
 {
-    page_table_t *tbl;
+    struct page_table *tbl;
+    struct page_table  tmp;
 
-    tbl = used_page_table_list;                                         /*  在已用页表链表中查找        */
-    while (tbl != NULL) {
-        if (tbl->section_nr == section_nr) {                            /*  段号匹配                    */
-            break;
-        }
-        tbl = tbl->next;
-    }
+    tmp.section_nr = section_nr;
 
+    tbl = page_table_tree_RB_FIND(&used_page_table_tree, &tmp);         /*  在已用页表红黑树中查找      */
     if (tbl != NULL) {
         return (tbl - page_tables) * PAGE_TBL_SIZE + PAGE_TBL_BASE;     /*  返回页表基址                */
     } else {
@@ -86,20 +99,14 @@ uint32_t vmm_page_table_lookup(uint32_t section_nr)
  */
 uint32_t vmm_page_table_alloc(uint32_t section_nr)
 {
-    page_table_t *tbl;
+    struct page_table *tbl;
 
     tbl = free_page_table_list;                                         /*  在空闲页表链表链头处分配    */
     if (tbl != NULL) {
-        free_page_table_list = tbl->next;
+        free_page_table_list = tbl->node.rbe_right;
 
-        tbl->prev = NULL;                                               /*  加入到已用页表链表中        */
-        tbl->next = used_page_table_list;
-        if (used_page_table_list != NULL) {
-            used_page_table_list->prev = tbl;
-        }
-        used_page_table_list = tbl;
-
-        tbl->section_nr = section_nr;                                   /*  记录段号                    */
+        tbl->section_nr = section_nr;
+        page_table_tree_RB_INSERT(&used_page_table_tree, tbl);          /*  加入到已用页表红黑树中      */
 
         return (tbl - page_tables) * PAGE_TBL_SIZE + PAGE_TBL_BASE;     /*  返回页表基址                */
     } else {
@@ -112,21 +119,13 @@ uint32_t vmm_page_table_alloc(uint32_t section_nr)
  */
 void vmm_page_table_free(uint32_t page_tbl_base)
 {
-    page_table_t *tbl;
+    struct page_table *tbl;
 
     tbl = page_tables + (page_tbl_base - PAGE_TBL_BASE) / PAGE_TBL_SIZE;/*  计算页表                    */
 
-    if (tbl->prev != NULL) {                                            /*  从已用页表链表中删除        */
-        tbl->prev->next = tbl->next;
-    } else {
-        used_page_table_list = tbl->next;
-    }
+    page_table_tree_RB_REMOVE(&used_page_table_tree, tbl);              /*  从已用页表红黑树中移除      */
 
-    if (tbl->next != NULL) {
-        tbl->next->prev = tbl->prev;
-    }
-
-    tbl->next = free_page_table_list;                                   /*  加入到空闲页表链表中        */
+    tbl->node.rbe_right = free_page_table_list;                         /*  加入到空闲页表链表中        */
     free_page_table_list = tbl;
 }
 
@@ -272,9 +271,9 @@ void vmm_free_process_space(task_t *task)
  */
 void vmm_init(void)
 {
-    int           i;
-    vmm_frame_t  *frame;
-    page_table_t *tbl;
+    int                i;
+    vmm_frame_t       *frame;
+    struct page_table *tbl;
 
     /*
      * 初始化空闲页框链表
@@ -294,15 +293,15 @@ void vmm_init(void)
      * 初始化空闲页表链表
      */
     for (i = 0, tbl = page_tables; i < PAGE_TBL_NR - 1; i++, tbl++) {
-        tbl->next = tbl + 1;
+        tbl->node.rbe_right = tbl + 1;
     }
-    tbl->next = NULL;
+    tbl->node.rbe_right = NULL;
     free_page_table_list = page_tables;
 
     /*
-     * 初始化已用页表链表
+     * 初始化已用页表红黑树
      */
-    used_page_table_list = NULL;
+    RB_INIT(&used_page_table_tree);
 
     /*
      * 清除所有页表
