@@ -398,6 +398,11 @@ int kern_sem_signal(kern_sem_t *sem)
                 s->count++;
                 task = s->wait_list;
                 if (task) {
+                    /*
+                     * 保证被中断唤醒的任务(一般是中断底半部处理)
+                     * 在中断完全退出后立即运行, 抬高任务的剩余时间片
+                     * (在任务调度时, 具有较高的竞争优先级)
+                     */
                     if (in_interrupt()) {
                         task->counter = task->priority + 2;
                     }

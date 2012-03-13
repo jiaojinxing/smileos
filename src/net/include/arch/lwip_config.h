@@ -95,7 +95,7 @@
 #define LW_CFG_LWIP_PPPOE               0                               /*  lwip pppoe 支持             */
 #define LW_CFG_LWIP_NUM_PPP             2                               /*  lwip ppp 最大会话数         */
 
-#define LW_CFG_LWIP_PRIORITY            5                               /*  lwip thread default priority*/
+#define LW_CFG_LWIP_PRIORITY            20                              /*  lwip thread default priority*/
 #define LW_CFG_LWIP_STK_SIZE            16 * KB                         /*  lwip thread default stksize */
 
 #define LW_CFG_LWIP_TCP_PCB             60                              /*  允许同时的 TCP 连接数       */
@@ -394,19 +394,19 @@
   inet thread
 *********************************************************************************************************/
 
-#define TCPIP_THREAD_NAME               "t_netproto"
+#define TCPIP_THREAD_NAME               "lwip"
 #define TCPIP_THREAD_STACKSIZE          LW_CFG_LWIP_STK_SIZE
 #define TCPIP_THREAD_PRIO               LW_CFG_LWIP_PRIORITY
 
-#define SLIPIF_THREAD_NAME              "t_slip"
+#define SLIPIF_THREAD_NAME              "slip"
 #define SLIPIF_THREAD_STACKSIZE         LW_CFG_LWIP_STK_SIZE
 #define SLIPIF_THREAD_PRIO              LW_CFG_LWIP_PRIORITY
 
-#define PPP_THREAD_NAME                 "t_ppp"
+#define PPP_THREAD_NAME                 "ppp"
 #define PPP_THREAD_STACKSIZE            LW_CFG_LWIP_STK_SIZE
 #define PPP_THREAD_PRIO                 LW_CFG_LWIP_PRIORITY
 
-#define DEFAULT_THREAD_NAME             "t_netdef"
+#define DEFAULT_THREAD_NAME             "netdef"
 #define DEFAULT_THREAD_STACKSIZE        LW_CFG_LWIP_STK_SIZE
 #define DEFAULT_THREAD_PRIO             LW_CFG_LWIP_PRIORITY
 
