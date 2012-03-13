@@ -89,13 +89,13 @@ extern  void     interrupt_resume(register uint32_t reg);
 /*********************************************************************************************************
   OS 数据类型
 *********************************************************************************************************/
-struct sys_mutex;
-struct sys_sem;
-struct sys_mbox;
+struct kern_mutex;
+struct kern_sem;
+struct kern_mbox;
 
-typedef struct sys_mutex *          sys_mutex_t;
-typedef struct sys_sem   *          sys_sem_t;
-typedef struct sys_mbox  *          sys_mbox_t;
+typedef struct kern_mutex *         sys_mutex_t;
+typedef struct kern_sem   *         sys_sem_t;
+typedef struct kern_mbox  *         sys_mbox_t;
 typedef int32_t                     sys_thread_t;
 
 #define SYS_MUTEX_NULL              0ul

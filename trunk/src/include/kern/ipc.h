@@ -58,7 +58,7 @@ int kern_mutex_new(kern_mutex_t *mutex);
 /*
  * 互斥量加锁
  */
-int kern_mutex_lock(kern_mutex_t *mutex);
+int kern_mutex_lock(kern_mutex_t *mutex, uint32_t timeout);
 
 /*
  * 互斥量解锁
@@ -126,7 +126,7 @@ int kern_mbox_trypost(kern_mbox_t *mbox, void *msg);
 /*
  * 投递邮件到邮箱
  */
-int kern_mbox_post(kern_mbox_t *mbox, void *msg);
+int kern_mbox_post(kern_mbox_t *mbox, void *msg, uint32_t timeout);
 
 /*
  * 尝试从邮箱里取出邮件
@@ -137,6 +137,11 @@ int kern_mbox_tryfetch(kern_mbox_t *mbox, void **msg);
  * 从邮箱里取出邮件
  */
 int kern_mbox_fetch(kern_mbox_t *mbox, void **msg, uint32_t timeout);
+
+/*
+ * 清空邮箱
+ */
+int kern_mbox_flush(kern_mbox_t *mbox);
 
 /*
  * 删除邮箱
