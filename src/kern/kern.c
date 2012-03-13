@@ -433,13 +433,23 @@ int32_t process_create(const char *name, uint8_t *code, uint32_t size, uint32_t 
      * 为拷贝代码到进程的虚拟地址空间, 预先映射好页面
      */
     for (i = 0; i < (size + PAGE_SIZE - 1) / PAGE_SIZE; i++) {
-        vmm_map_process_page(task, task->pid * PROCESS_SPACE_SIZE + i * PAGE_SIZE);
+        if (vmm_map_process_page(task, task->pid * PROCESS_SPACE_SIZE + i * PAGE_SIZE) < 0) {
+            vmm_free_process_space(task);
+            task->state = TASK_UNALLOCATE;
+            interrupt_resume(reg);
+            return -1;
+        }
     }
 
     /*
      * 为进程栈空间映射一个页面
      */
-    vmm_map_process_page(task, (task->pid + 1) * PROCESS_SPACE_SIZE - PAGE_SIZE);
+    if (vmm_map_process_page(task, (task->pid + 1) * PROCESS_SPACE_SIZE - PAGE_SIZE) < 0) {
+        vmm_free_process_space(task);
+        task->state = TASK_UNALLOCATE;
+        interrupt_resume(reg);
+        return -1;
+    }
 
     /*
      * 拷贝代码到进程的虚拟地址空间
