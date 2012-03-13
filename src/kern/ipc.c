@@ -42,6 +42,9 @@
 #include "kern/kern.h"
 #include "kern/sys_call.h"
 #include "kern/ipc.h"
+/*
+ * TODO: 加入终止等待函数, timeout 问题
+ */
 /*********************************************************************************************************
   操作宏
 *********************************************************************************************************/
@@ -108,6 +111,18 @@
                     if (!in_interrupt()) {                          \
                         yield();                                    \
                     }
+
+/*
+ * 恢复任务, 但不要进行任务调度
+ */
+#define resume_task_no_schedule(task, __wait_list, __resume_type)   \
+                    task->timer = 0;                                \
+                    task->state = TASK_RUNNING;                     \
+                    __wait_list = task->next;                       \
+                    task->wait_list = NULL;                         \
+                    task->next = NULL;                              \
+                    task->resume_type = __resume_type
+
 /*********************************************************************************************************
   互斥量
 *********************************************************************************************************/
@@ -143,7 +158,7 @@ int kern_mutex_new(kern_mutex_t *mutex)
 /*
  * 互斥量加锁
  */
-int kern_mutex_lock(kern_mutex_t *mutex)
+int kern_mutex_lock(kern_mutex_t *mutex, uint32_t timeout)
 {
     struct kern_mutex *m;
     uint32_t reg;
@@ -165,11 +180,16 @@ int kern_mutex_lock(kern_mutex_t *mutex)
                 } else if (m->owner == current) {
                     m->lock++;
                 } else {
-                    wait_event_forever(m->wait_list, resume_type);
-                    if (resume_type & TASK_RESUME_INTERRUPT) {
-                        goto error;
+                    if (timeout != 0) {
+                        wait_event_timeout(m->wait_list, resume_type, timeout);
+                    } else {
+                        wait_event_forever(m->wait_list, resume_type);
                     }
-                    goto again;
+                    if (resume_type & TASK_RESUME_INTERRUPT || resume_type & TASK_RESUME_TIMEOUT) {
+                        goto error;
+                    } else {
+                        goto again;
+                    }
                 }
                 interrupt_resume(reg);
                 return 0;
@@ -341,11 +361,16 @@ int kern_sem_wait(kern_sem_t *sem, uint32_t timeout)
                     interrupt_resume(reg);
                     return 0;
                 } else {
-                    wait_event_timeout(s->wait_list, resume_type, timeout);
+                    if (timeout != 0) {
+                        wait_event_timeout(s->wait_list, resume_type, timeout);
+                    } else {
+                        wait_event_forever(s->wait_list, resume_type);
+                    }
                     if (resume_type & TASK_RESUME_INTERRUPT || resume_type & TASK_RESUME_TIMEOUT) {
                         goto error;
+                    } else {
+                        goto again;
                     }
-                    goto again;
                 }
             }
         }
@@ -373,6 +398,9 @@ int kern_sem_signal(kern_sem_t *sem)
                 s->count++;
                 task = s->wait_list;
                 if (task) {
+                    if (in_interrupt()) {
+                        task->counter = task->priority + 2;
+                    }
                     resume_task(task, s->wait_list, TASK_RESUME_SEM_COME);
                 }
                 interrupt_resume(reg);
@@ -473,7 +501,7 @@ int kern_mbox_new(kern_mbox_t *mbox, uint32_t size)
     struct kern_mbox *q;
 
     if (size < 10) {
-        return 10;
+        size = 10;
     }
 
     q = kmalloc(sizeof(struct kern_mbox) + (size - 1) * sizeof(void *));
@@ -530,7 +558,7 @@ int kern_mbox_trypost(kern_mbox_t *mbox, void *msg)
 /*
  * 投递邮件到邮箱
  */
-int kern_mbox_post(kern_mbox_t *mbox, void *msg)
+int kern_mbox_post(kern_mbox_t *mbox, void *msg, uint32_t timeout)
 {
     struct kern_mbox *q;
     task_t *task;
@@ -556,15 +584,19 @@ int kern_mbox_post(kern_mbox_t *mbox, void *msg)
                     if (task) {
                         resume_task(task, q->r_wait_list, TASK_RESUME_MSG_COME);
                     }
-
                     interrupt_resume(reg);
                     return 0;
                 } else {
-                    wait_event_forever(q->w_wait_list, resume_type);
-                    if (resume_type & TASK_RESUME_INTERRUPT) {
-                        goto error;
+                    if (timeout != 0) {
+                        wait_event_timeout(q->w_wait_list, resume_type, timeout);
+                    } else {
+                        wait_event_forever(q->w_wait_list, resume_type);
                     }
-                    goto again;
+                    if (resume_type & TASK_RESUME_INTERRUPT || resume_type & TASK_RESUME_TIMEOUT) {
+                        goto error;
+                    } else {
+                        goto again;
+                    }
                 }
             }
         }
@@ -640,17 +672,55 @@ int kern_mbox_fetch(kern_mbox_t *mbox, void **msg, uint32_t timeout)
                     interrupt_resume(reg);
                     return 0;
                 } else {
-                    wait_event_timeout(q->r_wait_list, resume_type, timeout);
+                    if (timeout != 0) {
+                        wait_event_timeout(q->r_wait_list, resume_type, timeout);
+                    } else {
+                        wait_event_forever(q->r_wait_list, resume_type);
+                    }
                     if (resume_type & TASK_RESUME_INTERRUPT || resume_type & TASK_RESUME_TIMEOUT) {
                         goto error;
+                    } else {
+                        goto again;
                     }
-                    goto again;
                 }
             }
         }
     }
 
     error:
+    interrupt_resume(reg);
+    return -1;
+}
+
+/*
+ * 清空邮箱
+ */
+int kern_mbox_flush(kern_mbox_t *mbox)
+{
+    struct kern_mbox *q;
+    task_t *task;
+    uint32_t reg;
+    int i;
+
+    reg = interrupt_disable();
+    if (mbox) {
+        q = *mbox;
+        if (q) {
+            if (q->valid) {
+                q->cnt  = 0;
+                q->in   = 0;
+                q->out  = 0;
+
+                for (i = 0; ((task = q->w_wait_list) != NULL) && i < q->size; i++) {
+                    resume_task_no_schedule(task, q->w_wait_list, TASK_RESUME_MSG_OUT);
+                }
+
+                if (!in_interrupt()) {
+                    yield();
+                }
+            }
+        }
+    }
     interrupt_resume(reg);
     return -1;
 }
