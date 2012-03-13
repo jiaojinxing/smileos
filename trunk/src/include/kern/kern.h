@@ -71,7 +71,6 @@
 #define TASK_RESUME_MSG_OUT     (1 << 5)                                /*  消息被读取                  */
 
 struct _vmm_frame_t;
-struct _page_table_t;
 /*
  * 任务控制块
  */

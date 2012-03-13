@@ -58,8 +58,9 @@ static struct page_table *free_page_table_list;                         /*  空闲
 /*
  * 页表比较函数
  */
-static int page_table_compare(struct page_table *a, struct page_table *b)
+static inline int page_table_compare(struct page_table *a, struct page_table *b)
 {
+#if 0
     if (a->section_nr < b->section_nr) {
         return -1;
     } else if (a->section_nr > b->section_nr) {
@@ -67,6 +68,9 @@ static int page_table_compare(struct page_table *a, struct page_table *b)
     } else {
         return 0;
     }
+#else
+    return a->section_nr - b->section_nr;
+#endif
 }
 
 static RB_HEAD(page_table_tree, page_table) used_page_table_tree;       /*  已用页表红黑树              */
