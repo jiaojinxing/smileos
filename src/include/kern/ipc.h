@@ -68,7 +68,7 @@ int kern_mutex_unlock(kern_mutex_t *mutex);
 /*
  * 删除互斥量
  */
-void kern_mutex_free(kern_mutex_t *mutex);
+int kern_mutex_free(kern_mutex_t *mutex);
 
 /*
  * 判断互斥量是否有效
@@ -78,7 +78,7 @@ int kern_mutex_valid(kern_mutex_t *mutex);
 /*
  * 设置互斥量的有效性
  */
-void kern_mutex_set_valid(kern_mutex_t *mutex, int valid);
+int kern_mutex_set_valid(kern_mutex_t *mutex, int valid);
 /*********************************************************************************************************
   信号量
 *********************************************************************************************************/
@@ -100,7 +100,7 @@ int kern_sem_signal(kern_sem_t *sem);
 /*
  * 删除信号量
  */
-void kern_sem_free(kern_sem_t *sem);
+int kern_sem_free(kern_sem_t *sem);
 
 /*
  * 判断信号量是否有效
@@ -110,7 +110,7 @@ int kern_sem_valid(kern_sem_t *sem);
 /*
  * 设置信号量的有效性
  */
-void kern_sem_set_valid(kern_sem_t *sem, int valid);
+int kern_sem_set_valid(kern_sem_t *sem, int valid);
 /*********************************************************************************************************
   邮箱
 *********************************************************************************************************/
@@ -141,7 +141,7 @@ int kern_mbox_fetch(kern_mbox_t *mbox, void **msg, uint32_t timeout);
 /*
  * 删除邮箱
  */
-void kern_mbox_free(kern_mbox_t *mbox);
+int kern_mbox_free(kern_mbox_t *mbox);
 
 /*
  * 判断邮箱是否有效
@@ -151,7 +151,7 @@ int kern_mbox_valid(kern_mbox_t *mbox);
 /*
  * 设置邮箱的有效性
  */
-void kern_mbox_set_invalid(kern_mbox_t *mbox, int valid);
+int kern_mbox_set_valid(kern_mbox_t *mbox, int valid);
 
 #endif                                                                  /*  IPC_H_                      */
 /*********************************************************************************************************

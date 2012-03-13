@@ -48,7 +48,7 @@
 /*
  * 等待事件
  */
-#define wait_event_forever(__wait_list)                             \
+#define wait_event_forever(__wait_list, __resume_type)              \
                     if (!__wait_list) {                             \
                         __wait_list = current;                      \
                     } else {                                        \
@@ -66,12 +66,14 @@
                     current->resume_type = TASK_RESUME_UNKNOW;      \
                     yield();                                        \
                     current->wait_list = NULL;                      \
-                    current->next = NULL
+                    current->next = NULL;                           \
+                    __resume_type = current->resume_type;           \
+                    current->resume_type = TASK_RESUME_UNKNOW
 
 /*
  * 等待事件直至超时
  */
-#define wait_event_timeout(__wait_list, timeout)                    \
+#define wait_event_timeout(__wait_list, __resume_type, timeout)     \
                     if (!__wait_list) {                             \
                         __wait_list = current;                      \
                     } else {                                        \
@@ -89,7 +91,9 @@
                     yield();                                        \
                     current->wait_list = NULL;                      \
                     current->next = NULL;                           \
-                    current->timer = 0
+                    current->timer = 0;                             \
+                    __resume_type = current->resume_type;           \
+                    current->resume_type = TASK_RESUME_UNKNOW
 
 /*
  * 恢复任务
@@ -143,6 +147,7 @@ int kern_mutex_lock(kern_mutex_t *mutex)
 {
     struct kern_mutex *m;
     uint32_t reg;
+    uint32_t resume_type;
 
     if (in_interrupt()) {
         return -1;
@@ -160,16 +165,21 @@ int kern_mutex_lock(kern_mutex_t *mutex)
                 } else if (m->owner == current) {
                     m->lock++;
                 } else {
-                    wait_event_forever(m->wait_list);
-                    current->resume_type = TASK_RESUME_UNKNOW;
+                    wait_event_forever(m->wait_list, resume_type);
+                    if (resume_type & TASK_RESUME_INTERRUPT) {
+                        goto error;
+                    }
                     goto again;
                 }
+                interrupt_resume(reg);
+                return 0;
             }
         }
     }
-    interrupt_resume(reg);
 
-    return 0;
+    error:
+    interrupt_resume(reg);
+    return -1;
 }
 
 /*
@@ -199,20 +209,21 @@ int kern_mutex_unlock(kern_mutex_t *mutex)
                                 resume_task(task, m->wait_list, TASK_RESUME_MUTEX_COME);
                             }
                         }
+                        interrupt_resume(reg);
+                        return 0;
                     }
                 }
             }
         }
     }
     interrupt_resume(reg);
-
-    return 0;
+    return -1;
 }
 
 /*
  * 删除互斥量
  */
-void kern_mutex_free(kern_mutex_t *mutex)
+int kern_mutex_free(kern_mutex_t *mutex)
 {
     struct kern_mutex *m;
     uint32_t reg;
@@ -226,11 +237,14 @@ void kern_mutex_free(kern_mutex_t *mutex)
                     m->valid = FALSE;
                     kfree(m);
                     *mutex = NULL;
+                    interrupt_resume(reg);
+                    return 0;
                 }
             }
         }
     }
     interrupt_resume(reg);
+    return -1;
 }
 
 /*
@@ -256,7 +270,7 @@ int kern_mutex_valid(kern_mutex_t *mutex)
 /*
  * 设置互斥量的有效性
  */
-void kern_mutex_set_valid(kern_mutex_t *mutex, int valid)
+int kern_mutex_set_valid(kern_mutex_t *mutex, int valid)
 {
     struct kern_mutex *m;
     uint32_t reg;
@@ -266,9 +280,12 @@ void kern_mutex_set_valid(kern_mutex_t *mutex, int valid)
         m = *mutex;
         if (m) {
             m->valid = valid > 0 ? TRUE : FALSE;
+            interrupt_resume(reg);
+            return 0;
         }
     }
     interrupt_resume(reg);
+    return -1;
 }
 /*********************************************************************************************************
   信号量
@@ -307,6 +324,7 @@ int kern_sem_wait(kern_sem_t *sem, uint32_t timeout)
 {
     struct kern_sem *s;
     uint32_t reg;
+    uint32_t resume_type;
 
     if (in_interrupt()) {
         return -1;
@@ -323,22 +341,17 @@ int kern_sem_wait(kern_sem_t *sem, uint32_t timeout)
                     interrupt_resume(reg);
                     return 0;
                 } else {
-                    wait_event_timeout(s->wait_list, timeout);
-                    if (current->resume_type & TASK_RESUME_TIMEOUT) {
-                        current->resume_type = TASK_RESUME_UNKNOW;
-                        goto out;
+                    wait_event_timeout(s->wait_list, resume_type, timeout);
+                    if (resume_type & TASK_RESUME_INTERRUPT || resume_type & TASK_RESUME_TIMEOUT) {
+                        goto error;
                     }
-                    current->resume_type = TASK_RESUME_UNKNOW;
                     goto again;
                 }
-            } else {
-                goto out;
             }
-        } else {
-            goto out;
         }
     }
-    out:
+
+    error:
     interrupt_resume(reg);
     return -1;
 }
@@ -374,7 +387,7 @@ int kern_sem_signal(kern_sem_t *sem)
 /*
  * 删除信号量
  */
-void kern_sem_free(kern_sem_t *sem)
+int kern_sem_free(kern_sem_t *sem)
 {
     struct kern_sem *s;
     uint32_t reg;
@@ -388,11 +401,14 @@ void kern_sem_free(kern_sem_t *sem)
                     s->valid = FALSE;
                     kfree(s);
                     *sem = NULL;
+                    interrupt_resume(reg);
+                    return 0;
                 }
             }
         }
     }
     interrupt_resume(reg);
+    return -1;
 }
 
 /*
@@ -418,7 +434,7 @@ int kern_sem_valid(kern_sem_t *sem)
 /*
  * 设置信号量的有效性
  */
-void kern_sem_set_valid(kern_sem_t *sem, int valid)
+int kern_sem_set_valid(kern_sem_t *sem, int valid)
 {
     struct kern_sem *s;
     uint32_t reg;
@@ -428,9 +444,12 @@ void kern_sem_set_valid(kern_sem_t *sem, int valid)
         s = *sem;
         if (s) {
             s->valid = valid > 0 ? TRUE : FALSE;
+            interrupt_resume(reg);
+            return 0;
         }
     }
     interrupt_resume(reg);
+    return -1;
 }
 /*********************************************************************************************************
   邮箱
@@ -516,6 +535,7 @@ int kern_mbox_post(kern_mbox_t *mbox, void *msg)
     struct kern_mbox *q;
     task_t *task;
     uint32_t reg;
+    uint32_t resume_type;
 
     if (in_interrupt()) {
         return kern_mbox_trypost(mbox, msg);
@@ -536,16 +556,23 @@ int kern_mbox_post(kern_mbox_t *mbox, void *msg)
                     if (task) {
                         resume_task(task, q->r_wait_list, TASK_RESUME_MSG_COME);
                     }
+
+                    interrupt_resume(reg);
+                    return 0;
                 } else {
-                    wait_event_forever(q->w_wait_list);
-                    current->resume_type = TASK_RESUME_UNKNOW;
+                    wait_event_forever(q->w_wait_list, resume_type);
+                    if (resume_type & TASK_RESUME_INTERRUPT) {
+                        goto error;
+                    }
                     goto again;
                 }
             }
         }
     }
+
+    error:
     interrupt_resume(reg);
-    return 0;
+    return -1;
 }
 
 /*
@@ -589,6 +616,7 @@ int kern_mbox_fetch(kern_mbox_t *mbox, void **msg, uint32_t timeout)
     struct kern_mbox *q;
     task_t *task;
     uint32_t reg;
+    uint32_t resume_type;
 
     if (in_interrupt()) {
         return kern_mbox_tryfetch(mbox, msg);
@@ -612,18 +640,17 @@ int kern_mbox_fetch(kern_mbox_t *mbox, void **msg, uint32_t timeout)
                     interrupt_resume(reg);
                     return 0;
                 } else {
-                    wait_event_timeout(q->r_wait_list, timeout);
-                    if (current->resume_type & TASK_RESUME_TIMEOUT) {
-                        current->resume_type = TASK_RESUME_UNKNOW;
-                        goto out;
+                    wait_event_timeout(q->r_wait_list, resume_type, timeout);
+                    if (resume_type & TASK_RESUME_INTERRUPT || resume_type & TASK_RESUME_TIMEOUT) {
+                        goto error;
                     }
-                    current->resume_type = TASK_RESUME_UNKNOW;
                     goto again;
                 }
             }
         }
     }
-    out:
+
+    error:
     interrupt_resume(reg);
     return -1;
 }
@@ -631,7 +658,7 @@ int kern_mbox_fetch(kern_mbox_t *mbox, void **msg, uint32_t timeout)
 /*
  * 删除邮箱
  */
-void kern_mbox_free(kern_mbox_t *mbox)
+int kern_mbox_free(kern_mbox_t *mbox)
 {
     struct kern_mbox *q;
     uint32_t reg;
@@ -645,11 +672,14 @@ void kern_mbox_free(kern_mbox_t *mbox)
                     q->valid = FALSE;
                     kfree(q);
                     *mbox = NULL;
+                    interrupt_resume(reg);
+                    return 0;
                 }
             }
         }
     }
     interrupt_resume(reg);
+    return -1;
 }
 
 /*
@@ -675,7 +705,7 @@ int kern_mbox_valid(kern_mbox_t *mbox)
 /*
  * 设置邮箱的有效性
  */
-void kern_mbox_set_invalid(kern_mbox_t *mbox, int valid)
+int kern_mbox_set_valid(kern_mbox_t *mbox, int valid)
 {
     struct kern_mbox *q;
     uint32_t reg;
@@ -685,9 +715,12 @@ void kern_mbox_set_invalid(kern_mbox_t *mbox, int valid)
         q = *mbox;
         if (q) {
             q->valid = valid > 0 ? TRUE : FALSE;
+            interrupt_resume(reg);
+            return 0;
         }
     }
     interrupt_resume(reg);
+    return -1;
 }
 /*********************************************************************************************************
   END FILE
