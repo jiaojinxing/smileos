@@ -69,6 +69,7 @@
 #define TASK_RESUME_TIMEOUT     (1 << 3)                                /*  超时                        */
 #define TASK_RESUME_MSG_COME    (1 << 4)                                /*  消息到达                    */
 #define TASK_RESUME_MSG_OUT     (1 << 5)                                /*  消息被读取                  */
+#define TASK_RESUME_INTERRUPT   (1 << 6)                                /*  等待被中断                  */
 
 struct _vmm_frame_t;
 /*

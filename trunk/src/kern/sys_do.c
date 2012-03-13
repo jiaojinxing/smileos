@@ -52,6 +52,7 @@ static void do_exit(int error_code)
     if (current->type == TASK_TYPE_PROCESS) {                           /*  如果当前任务是进程          */
         printk("process %d %s exit!\n", current->pid, current->name);
         vmm_free_process_space(current);                                /*  释放进程的虚拟地址空间      */
+
     } else {                                                            /*  如果当前任务是线程          */
         printk("kthread %d %s exit!\n", current->tid, current->name);
         kfree((void *)current->stack);                                  /*  释放线程的堆栈空间          */
