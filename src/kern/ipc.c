@@ -43,7 +43,7 @@
 #include "kern/sys_call.h"
 #include "kern/ipc.h"
 /*
- * TODO: 加入终止等待函数, timeout 问题
+ * TODO: timeout 问题
  */
 /*********************************************************************************************************
   操作宏
@@ -156,7 +156,43 @@ int kern_mutex_new(kern_mutex_t *mutex)
 }
 
 /*
- * 互斥量加锁
+ * 尝试对互斥量进行加锁
+ */
+int kern_mutex_trylock(kern_mutex_t *mutex)
+{
+    struct kern_mutex *m;
+    uint32_t reg;
+
+    if (in_interrupt()) {
+        return -1;
+    }
+
+    reg = interrupt_disable();
+    if (mutex) {
+        m = *mutex;
+        if (m) {
+            if (m->valid) {
+                if (!m->lock) {
+                    m->lock++;
+                    m->owner = current;
+                } else if (m->owner == current) {
+                    m->lock++;
+                } else {
+                    goto error;
+                }
+                interrupt_resume(reg);
+                return 0;
+            }
+        }
+    }
+
+    error:
+    interrupt_resume(reg);
+    return -1;
+}
+
+/*
+ * 对互斥量进行加锁
  */
 int kern_mutex_lock(kern_mutex_t *mutex, uint32_t timeout)
 {
@@ -203,7 +239,7 @@ int kern_mutex_lock(kern_mutex_t *mutex, uint32_t timeout)
 }
 
 /*
- * 互斥量解锁
+ * 对互斥量进行解锁
  */
 int kern_mutex_unlock(kern_mutex_t *mutex)
 {
@@ -233,6 +269,37 @@ int kern_mutex_unlock(kern_mutex_t *mutex)
                         return 0;
                     }
                 }
+            }
+        }
+    }
+    interrupt_resume(reg);
+    return -1;
+}
+
+/*
+ * 终止等待互斥量
+ */
+int kern_mutex_abort(kern_mutex_t *mutex)
+{
+    struct kern_mutex *m;
+    task_t *task;
+    uint32_t reg;
+
+    reg = interrupt_disable();
+    if (mutex) {
+        m = *mutex;
+        if (m) {
+            if (m->valid) {
+                while ((task = m->wait_list) != NULL) {
+                    resume_task_no_schedule(task, m->wait_list, TASK_RESUME_INTERRUPT);
+                }
+
+                if (!in_interrupt()) {
+                    yield();
+                }
+
+                interrupt_resume(reg);
+                return 0;
             }
         }
     }
@@ -338,7 +405,36 @@ int kern_sem_new(kern_sem_t *sem, uint32_t count)
 }
 
 /*
- * 等待信号
+ * 尝试获得信号量
+ */
+int kern_sem_trywait(kern_sem_t *sem)
+{
+    struct kern_sem *s;
+    uint32_t reg;
+
+    reg = interrupt_disable();
+    if (sem) {
+        s = *sem;
+        if (s) {
+            if (s->valid) {
+                if (s->count) {
+                    s->count--;
+                    interrupt_resume(reg);
+                    return 0;
+                } else {
+                    goto error;
+                }
+            }
+        }
+    }
+
+    error:
+    interrupt_resume(reg);
+    return -1;
+}
+
+/*
+ * 获得信号量
  */
 int kern_sem_wait(kern_sem_t *sem, uint32_t timeout)
 {
@@ -347,7 +443,7 @@ int kern_sem_wait(kern_sem_t *sem, uint32_t timeout)
     uint32_t resume_type;
 
     if (in_interrupt()) {
-        return -1;
+        return kern_sem_trywait(sem);
     }
 
     reg = interrupt_disable();
@@ -382,7 +478,7 @@ int kern_sem_wait(kern_sem_t *sem, uint32_t timeout)
 }
 
 /*
- * 发送一个信号
+ * 发送一个信号量
  */
 int kern_sem_signal(kern_sem_t *sem)
 {
@@ -408,6 +504,37 @@ int kern_sem_signal(kern_sem_t *sem)
                     }
                     resume_task(task, s->wait_list, TASK_RESUME_SEM_COME);
                 }
+                interrupt_resume(reg);
+                return 0;
+            }
+        }
+    }
+    interrupt_resume(reg);
+    return -1;
+}
+
+/*
+ * 终止等待信号量
+ */
+int kern_sem_abort(kern_sem_t *sem)
+{
+    struct kern_sem *s;
+    task_t *task;
+    uint32_t reg;
+
+    reg = interrupt_disable();
+    if (sem) {
+        s = *sem;
+        if (s) {
+            if (s->valid) {
+                while ((task = s->wait_list) != NULL) {
+                    resume_task_no_schedule(task, s->wait_list, TASK_RESUME_INTERRUPT);
+                }
+
+                if (!in_interrupt()) {
+                    yield();
+                }
+
                 interrupt_resume(reg);
                 return 0;
             }
@@ -488,14 +615,14 @@ int kern_sem_set_valid(kern_sem_t *sem, int valid)
   邮箱
 *********************************************************************************************************/
 struct kern_mbox {
-    task_t      *r_wait_list;
-    task_t      *w_wait_list;
-    uint32_t     size;
-    uint32_t     cnt;
-    uint32_t     in;
-    uint32_t     out;
-    uint8_t      valid;
-    void        *msg[1];
+    task_t      *r_wait_list;                                           /*  读邮箱等待链表              */
+    task_t      *w_wait_list;                                           /*  写邮箱等待链表              */
+    uint32_t     size;                                                  /*  邮箱可容纳多少封邮件        */
+    uint32_t     cnt;                                                   /*  邮箱里的未读邮件数          */
+    uint32_t     in;                                                    /*  入队点                      */
+    uint32_t     out;                                                   /*  出队点                      */
+    uint8_t      valid;                                                 /*  有效性                      */
+    void        *msg[1];                                                /*  邮件队列                    */
 };
 
 /*
@@ -726,6 +853,106 @@ int kern_mbox_flush(kern_mbox_t *mbox)
             }
         }
     }
+    interrupt_resume(reg);
+    return -1;
+}
+
+/*
+ * 终止等待读取邮件
+ */
+int kern_mbox_abort_fetch(kern_mbox_t *mbox)
+{
+    struct kern_mbox *q;
+    task_t *task;
+    uint32_t reg;
+
+    reg = interrupt_disable();
+    if (mbox) {
+        q = *mbox;
+        if (q) {
+            if (q->valid) {
+                while ((task = q->r_wait_list) != NULL) {
+                    resume_task_no_schedule(task, q->r_wait_list, TASK_RESUME_INTERRUPT);
+                }
+
+                if (!in_interrupt()) {
+                    yield();
+                }
+
+                interrupt_resume(reg);
+                return 0;
+            }
+        }
+    }
+
+    interrupt_resume(reg);
+    return -1;
+}
+
+/*
+ * 终止等待投递邮件
+ */
+int kern_mbox_abort_post(kern_mbox_t *mbox)
+{
+    struct kern_mbox *q;
+    task_t *task;
+    uint32_t reg;
+
+    reg = interrupt_disable();
+    if (mbox) {
+        q = *mbox;
+        if (q) {
+            if (q->valid) {
+                while ((task = q->w_wait_list) != NULL) {
+                    resume_task_no_schedule(task, q->w_wait_list, TASK_RESUME_INTERRUPT);
+                }
+
+                if (!in_interrupt()) {
+                    yield();
+                }
+
+                interrupt_resume(reg);
+                return 0;
+            }
+        }
+    }
+
+    interrupt_resume(reg);
+    return -1;
+}
+
+/*
+ * 终止等待邮箱
+ */
+int kern_mbox_abort(kern_mbox_t *mbox)
+{
+    struct kern_mbox *q;
+    task_t *task;
+    uint32_t reg;
+
+    reg = interrupt_disable();
+    if (mbox) {
+        q = *mbox;
+        if (q) {
+            if (q->valid) {
+                while ((task = q->w_wait_list) != NULL) {
+                    resume_task_no_schedule(task, q->w_wait_list, TASK_RESUME_INTERRUPT);
+                }
+
+                while ((task = q->r_wait_list) != NULL) {
+                    resume_task_no_schedule(task, q->r_wait_list, TASK_RESUME_INTERRUPT);
+                }
+
+                if (!in_interrupt()) {
+                    yield();
+                }
+
+                interrupt_resume(reg);
+                return 0;
+            }
+        }
+    }
+
     interrupt_resume(reg);
     return -1;
 }

@@ -56,14 +56,24 @@ typedef struct kern_mbox  *          kern_mbox_t;
 int kern_mutex_new(kern_mutex_t *mutex);
 
 /*
- * 互斥量加锁
+ * 尝试对互斥量进行加锁
+ */
+int kern_mutex_trylock(kern_mutex_t *mutex);
+
+/*
+ * 对互斥量进行加锁
  */
 int kern_mutex_lock(kern_mutex_t *mutex, uint32_t timeout);
 
 /*
- * 互斥量解锁
+ * 对互斥量进行解锁
  */
 int kern_mutex_unlock(kern_mutex_t *mutex);
+
+/*
+ * 终止等待互斥量
+ */
+int kern_mutex_abort(kern_mutex_t *mutex);
 
 /*
  * 删除互斥量
@@ -88,14 +98,24 @@ int kern_mutex_set_valid(kern_mutex_t *mutex, int valid);
 int kern_sem_new(kern_sem_t *sem, uint32_t count);
 
 /*
- * 等待信号
+ * 尝试获得信号量
+ */
+int kern_sem_trywait(kern_sem_t *sem);
+
+/*
+ * 获得信号量
  */
 int kern_sem_wait(kern_sem_t *sem, uint32_t timeout);
 
 /*
- * 发送一个信号
+ * 发送一个信号量
  */
 int kern_sem_signal(kern_sem_t *sem);
+
+/*
+ * 终止等待信号量
+ */
+int kern_sem_abort(kern_sem_t *sem);
 
 /*
  * 删除信号量
@@ -118,6 +138,7 @@ int kern_sem_set_valid(kern_sem_t *sem, int valid);
  * 创建一个新的邮箱
  */
 int kern_mbox_new(kern_mbox_t *mbox, uint32_t size);
+
 /*
  * 尝试投递邮件到邮箱
  */
@@ -142,6 +163,21 @@ int kern_mbox_fetch(kern_mbox_t *mbox, void **msg, uint32_t timeout);
  * 清空邮箱
  */
 int kern_mbox_flush(kern_mbox_t *mbox);
+
+/*
+ * 终止等待读取邮件
+ */
+int kern_mbox_abort_fetch(kern_mbox_t *mbox);
+
+/*
+ * 终止等待投递邮件
+ */
+int kern_mbox_abort_post(kern_mbox_t *mbox);
+
+/*
+ * 终止等待邮箱
+ */
+int kern_mbox_abort(kern_mbox_t *mbox);
 
 /*
  * 删除邮箱

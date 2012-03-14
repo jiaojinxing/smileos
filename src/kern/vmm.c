@@ -136,12 +136,12 @@ void vmm_page_table_free(uint32_t page_tbl_base)
 /*
  * 页框
  */
-struct _vmm_frame_t;
-typedef struct _vmm_frame_t vmm_frame_t;
-struct _vmm_frame_t {
-    struct _vmm_frame_t *prev;                                          /*  前趋                        */
-    struct _vmm_frame_t *next;                                          /*  后趋                        */
-    struct _vmm_frame_t *process_next;                                  /*  进程后趋                    */
+struct vmm_frame;
+typedef struct vmm_frame vmm_frame_t;
+struct vmm_frame {
+    struct vmm_frame *prev;                                             /*  前趋                        */
+    struct vmm_frame *next;                                             /*  后趋                        */
+    struct vmm_frame *process_next;                                     /*  进程后趋                    */
 };
 
 static vmm_frame_t vmm_frames[VMM_FRAME_NR];                            /*  页框                        */
