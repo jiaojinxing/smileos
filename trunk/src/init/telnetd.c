@@ -180,8 +180,6 @@ static void telnetd_thread(void *arg)
     }
 
     closesocket(fd);
-
-    exit(0);
 }
 
 /*
@@ -207,6 +205,7 @@ void telnetd(void *arg)
 
     if (bind(fd, (struct sockaddr *)&local_addr, sizeof(local_addr)) < 0) {
         printf("%s: failed to bind port %d\n", __func__, ntohs(local_addr.sin_port));
+        closesocket(fd);
         exit(-1);
     }
 
@@ -219,7 +218,7 @@ void telnetd(void *arg)
         if (client_fd > 0) {
             sprintf(name, "%s%d", __func__, client_fd);
 
-            kthread_create(name, telnetd_thread, (void *)client_fd, 16 * KB, 15);
+            kthread_create(name, telnetd_thread, (void *)client_fd, 16 * KB, 10);
         } else {
             printf("%s: failed to accept connect\n", __func__);
         }

@@ -89,6 +89,8 @@ static void kern_vars_init(void)
         task->utilization  = 0;
         task->frame_nr     = 0;
         task->stack        = 0;
+        task->thread       = NULL;
+        task->arg          = NULL;
         memset(task->name, 0, sizeof(task->name));
     }
 }
@@ -120,6 +122,8 @@ static void idle_process_create(void)
     task->utilization  = 0;
     task->frame_nr     = 0;
     task->stack        = 0;
+    task->thread       = NULL;
+    task->arg          = NULL;
 
     /*
      * 初始化进程上下文
@@ -399,6 +403,8 @@ int32_t process_create(const char *name, uint8_t *code, uint32_t size, uint32_t 
     task->utilization  = 0;
     task->frame_nr     = 0;
     task->stack        = 0;
+    task->thread       = NULL;
+    task->arg          = NULL;
 
     /*
      * 初始化任务上下文
@@ -462,6 +468,17 @@ int32_t process_create(const char *name, uint8_t *code, uint32_t size, uint32_t 
 }
 
 /*
+ * 内核线程外壳
+ */
+static void kthread_shell(task_t *task)
+{
+    task->thread(task->arg);
+
+    extern void exit(int error);
+    exit(0);
+}
+
+/*
  * 创建内核线程
  */
 int32_t kthread_create(const char *name, void (*func)(void *), void *arg, uint32_t stk_size, uint32_t priority)
@@ -470,7 +487,7 @@ int32_t kthread_create(const char *name, void (*func)(void *), void *arg, uint32
     task_t  *task;
     uint32_t reg;
 
-    if (func == NULL || stk_size == 0 || priority == 0) {
+    if (func == NULL) {
         return -1;
     }
 
@@ -488,7 +505,11 @@ int32_t kthread_create(const char *name, void (*func)(void *), void *arg, uint32
         return -1;
     }
 
-    if (stk_size < 8 * KB) {                                            /*  堆栈空间最小 8 KB           */
+    if (priority < 2) {                                                 /*  优先级最小为 2              */
+        stk_size = 2;
+    }
+
+    if (stk_size < 8 * KB) {                                            /*  堆栈空间最小为 8 KB         */
         stk_size = 8 * KB;
     }
     stk_size = MEM_ALIGN_SIZE(stk_size);                                /*  对齐堆栈空间大小            */
@@ -514,13 +535,15 @@ int32_t kthread_create(const char *name, void (*func)(void *), void *arg, uint32
     task->tick         = 0;
     task->utilization  = 0;
     task->frame_nr     = 0;
+    task->thread       = func;
+    task->arg          = arg;
 
     task->content[0]   = (uint32_t)&task->kstack[KERN_STACK_SIZE];      /*  svc 模式堆栈指针(满堆栈递减)*/
     task->content[1]   = ARM_SYS_MODE | ARM_FIQ_NO | ARM_IRQ_EN;        /*  cpsr, sys 模式, 开 IRQ      */
     task->content[2]   = task->stack + stk_size;                        /*  sys 模式的 sp               */
     task->content[3]   = ARM_SVC_MODE;                                  /*  spsr, svc 模式              */
-    task->content[4]   = (uint32_t)func;                                /*  lr                          */
-    task->content[5]   = (uint32_t)arg;                                 /*  r0 ~ r12                    */
+    task->content[4]   = (uint32_t)kthread_shell;                       /*  lr                          */
+    task->content[5]   = (uint32_t)task;                                /*  r0 ~ r12                    */
     task->content[6]   = 1;
     task->content[7]   = 2;
     task->content[8]   = 3;
@@ -533,7 +556,7 @@ int32_t kthread_create(const char *name, void (*func)(void *), void *arg, uint32
     task->content[15]  = 10;
     task->content[16]  = 11;
     task->content[17]  = 12;
-    task->content[18]  = (uint32_t)func;                                /*  pc                          */
+    task->content[18]  = (uint32_t)kthread_shell;                       /*  pc                          */
 
     if (name != NULL) {
         strcpy(task->name, name);
