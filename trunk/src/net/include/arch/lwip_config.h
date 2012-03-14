@@ -469,6 +469,7 @@
 #define TCP_DEBUG                       (LWIP_DBG_ON | 0)               /*  仅允许 TCP UDP IP debug     */
 #define UDP_DEBUG                       (LWIP_DBG_ON | 0)
 #define IP_DEBUG                        (LWIP_DBG_ON | 0)
+#define SOCKETS_DEBUG                   (LWIP_DBG_ON | 0)
 #else
 #define LWIP_DBG_MIN_LEVEL              LWIP_DBG_LEVEL_SEVERE           /*  不允许主动打印信息          */
 #endif                                                                  /*  LW_CFG_LWIP_DEBUG > 0       */

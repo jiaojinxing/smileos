@@ -62,6 +62,7 @@ static void ftpd_list_thread(void *arg)
     char buf[128];
     int len;
     int port = (int)arg;
+    int on = 1;
 
     fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (fd < 0) {
@@ -74,28 +75,31 @@ static void ftpd_list_thread(void *arg)
     local_addr.sin_addr.s_addr  = INADDR_ANY;
     local_addr.sin_port         = htons(port);
 
+    setsockopt(fd, SOL_SOCKET, SO_REUSEPORT, &on, sizeof(on));
+    setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
+
     if (bind(fd, (struct sockaddr *)&local_addr, sizeof(local_addr)) < 0) {
-        printf("%s: failed to bind port %d\n", __func__, ntohs(local_addr.sin_port));
         closesocket(fd);
         exit(-1);
     }
 
     listen(fd, 2);
 
-    while (1) {
-        addr_len = sizeof(remote_addr);
+    addr_len = sizeof(remote_addr);
 
-        client_fd = accept(fd, (struct sockaddr *)&remote_addr, &addr_len);
-        if (client_fd > 0) {
-            printf("%s: accept connect\n", __func__);
-            len = sprintf(buf, "drw-r--r-- 1 admin admin %d Jan 1 2000 %s\r\n", 0, "..");
-            send(fd, buf, len, 0);
-            len = sprintf(buf, "drw-r--r-- 1 admin admin %d Jan 1 2000 %s\r\n", 0, "test");
-            send(fd, buf, len, 0);
-            break;
-        } else {
-            printf("%s: failed to accept connect\n", __func__);
-        }
+    client_fd = accept(fd, (struct sockaddr *)&remote_addr, &addr_len);
+    if (client_fd > 0) {
+        len = sprintf(buf, "drw-r--r-- 1 admin admin %d Jan 1 2000 %s\r\n", 0, "..");
+        send(client_fd, buf, len, 0);
+        len = sprintf(buf, "drw-r--r-- 1 admin admin %d Jan 1 2000 %s\r\n", 0, "test");
+        send(client_fd, buf, len, 0);
+        len = sprintf(buf, "drw-r--r-- 1 admin admin %d Jan 1 2000 %s\r\n", 0, "aa");
+        send(client_fd, buf, len, 0);
+        len = sprintf(buf, "drw-r--r-- 1 admin admin %d Jan 1 2000 %s\r\n", 0, "bb");
+        send(client_fd, buf, len, 0);
+        closesocket(client_fd);
+    } else {
+        printf("%s: failed to accept connect\n", __func__);
     }
 
     closesocket(fd);
@@ -156,11 +160,12 @@ static void ftpd_thread(void *arg)
                 len = sprintf(buf, "150 Opening ASCII mode data connection for /\r\n");
                 send(fd, buf, len, 0);
 
-                kthread_create(NULL, ftpd_list_thread, (void *)2317, 16 * KB, 10);
-
-                sleep(1);
+                ftpd_list_thread((void *)2317);
 
                 len = sprintf(buf, "226 Transfer complete\r\n");
+                send(fd, buf, len, 0);
+            } else if (strncmp(cmd, "CWD", 3) == 0) {
+                len = sprintf(buf, "200 /\r\n");
                 send(fd, buf, len, 0);
             } else {
                 printf("%s: unknown cmd %s\n", __func__, cmd);
