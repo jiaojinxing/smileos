@@ -104,7 +104,7 @@ void dabt_c_handler(uint32_t lr, uint32_t spsr)
         /*
          * qemu-system-arm.exe 的 bug..., 真实硬件使用 #if 1
          */
-#if 1
+#if 0
         mva = mmu_get_fault_address();
 #warning "you can't use qemu-system-arm.exe"
 #else

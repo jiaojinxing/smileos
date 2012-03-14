@@ -45,8 +45,8 @@
 /*
  * 内存块
  */
-struct _mem_block_t;
-typedef struct _mem_block_t mem_block_t;
+struct mem_block;
+typedef struct mem_block mem_block_t;
 
 /*
  * 内存堆
@@ -80,7 +80,7 @@ void *heap_free(heap_t *heap, void *ptr);
 /*
  * 打印内存堆信息
  */
-void heap_info(heap_t *heap);
+void heap_print_info(heap_t *heap);
 
 #endif                                                                  /*  HEAP_H_                     */
 /*********************************************************************************************************

@@ -199,7 +199,7 @@
 #define LWIP_CHECKSUM_ON_COPY           1                               /*  拷贝数据包同时计算 chksum   */
 
 /*********************************************************************************************************
-  sylixos do not use MEMP_NUM_NETCONN, because sylixos use another socket interface.
+  SmileOS do not use MEMP_NUM_NETCONN, because sylixos use another socket interface.
 *********************************************************************************************************/
 
 #define IP_FORWARD                      1                               /*  允许 IP 转发                */
@@ -268,7 +268,6 @@
                                             __netSnmpGetTimestamp(&sysuptime);  \
                                         }
 #define SNMP_PRIVATE_MIB_INIT()         __netSnmpPriMibInit()
-
 
 /*********************************************************************************************************
   IGMP
@@ -416,7 +415,7 @@
 
 #define ERRNO                                                           /*  include errno               */
 #define LWIP_SOCKET                     1
-#define LWIP_TIMEVAL_PRIVATE            0                               /*  SylixOS has already defined */
+#define LWIP_TIMEVAL_PRIVATE            0                               /*  SmileOS has already defined */
 #define LWIP_COMPAT_SOCKETS             1                               /*  some function conflict      */
 
 #define LWIP_POSIX_SOCKETS_IO_NAMES     0                               /*  do not have this!!!         */
@@ -453,7 +452,7 @@
                                                                         /*  PPPOE_SUPPORT > 0           */
 
 /*********************************************************************************************************
-  sylixos 需要使用 lwip core lock 模式, 来支持全双工 socket
+  SmileOS 需要使用 lwip core lock 模式, 来支持全双工 socket
 *********************************************************************************************************/
 
 #define LWIP_TCPIP_CORE_LOCKING         1

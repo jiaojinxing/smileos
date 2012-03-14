@@ -59,7 +59,7 @@ static uint8_t  running;                                                /*  内核
 /*
  * 初始化内核变量
  */
-static void kvars_init(void)
+static void kern_vars_init(void)
 {
     task_t *task;
     int     i;
@@ -152,10 +152,10 @@ static void idle_process_create(void)
  */
 void kernel_init(void)
 {
-    kvars_init();                                                       /*  初始化内核变量              */
+    kern_vars_init();                                                   /*  初始化内核变量              */
 
-    extern void kheap_create(void);
-    kheap_create();                                                     /*  创建内核内存堆              */
+    extern void kern_heap_create(void);
+    kern_heap_create();                                                 /*  创建内核内存堆              */
 
     idle_process_create();                                              /*  创建空闲进程                */
 

@@ -71,11 +71,11 @@
 #define TASK_RESUME_MSG_OUT     (1 << 5)                                /*  消息被读取                  */
 #define TASK_RESUME_INTERRUPT   (1 << 6)                                /*  等待被中断                  */
 
-struct _vmm_frame_t;
+struct vmm_frame;
 /*
  * 任务控制块
  */
-typedef struct _task {
+typedef struct task {
 /********************************************************************************************************/
     /*
      * 请勿修改该区域的成员变量, 位置也不能变!
@@ -97,9 +97,9 @@ typedef struct _task {
     uint32_t                tick;                                       /*  任务被定时器中断的次数      */
     int                     errno;                                      /*  错误号                      */
     char                    name[16];                                   /*  名字                        */
-    struct _task           *next;                                       /*  后趋                        */
-    struct _task          **wait_list;                                  /*  等待链表                    */
-    struct _vmm_frame_t    *frame_list;                                 /*  页框链表                    */
+    struct task            *next;                                       /*  后趋                        */
+    struct task           **wait_list;                                  /*  等待链表                    */
+    struct vmm_frame       *frame_list;                                 /*  页框链表                    */
 } task_t;
 
 /*

@@ -104,11 +104,11 @@ void yield(void)
 }
 
 /*
- * tsleep
+ * sleep_tick
  */
-static void tsleep(unsigned int t)
+static void sleep_tick(unsigned int tick)
 {
-    __asm__ __volatile__("mov    r0,  %0": :"r"(t));
+    __asm__ __volatile__("mov    r0,  %0": :"r"(tick));
     __asm__ __volatile__("mov    r7,  %0": :"M"(SYS_CALL_SLEEP));
     __asm__ __volatile__("stmdb  sp!, {lr}");
     __asm__ __volatile__("swi    0");
@@ -120,7 +120,7 @@ static void tsleep(unsigned int t)
  */
 void sleep(unsigned int s)
 {
-    tsleep(TICK_PER_SECOND * s);
+    sleep_tick(TICK_PER_SECOND * s);
 }
 
 /*
@@ -128,7 +128,7 @@ void sleep(unsigned int s)
  */
 void usleep(unsigned int us)
 {
-    tsleep(TICK_PER_SECOND * us / 1000000);
+    sleep_tick(TICK_PER_SECOND * us / 1000000);
 }
 
 /*

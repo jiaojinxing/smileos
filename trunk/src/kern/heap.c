@@ -43,7 +43,7 @@
 #include <string.h>
 
 /*
- * 进程代码项目应享有一份该文件, 用于实现用户态的 malloc 等, 因进程里使用非抢占的 pthread, 免锁免关中断
+ * 进程代码项目应享有一份该文件, 用于实现用户态的 malloc 等
  */
 #ifdef SMILEOS_KERNEL
 
@@ -55,8 +55,8 @@
 /*
  * 内核内存堆
  */
-static heap_t  kernel_heap;
-static uint8_t kernel_heap_mem[KERN_HEAP_SIZE];
+static heap_t  kern_heap;
+static uint8_t kern_heap_mem[KERN_HEAP_SIZE];
 
 /*
  * 从内核内存堆分配内存
@@ -68,7 +68,7 @@ void *kmalloc(uint32_t size)
 
     reg = interrupt_disable();
 
-    ptr = heap_alloc(&kernel_heap, size);
+    ptr = heap_alloc(&kern_heap, size);
 
     interrupt_resume(reg);
 
@@ -84,7 +84,7 @@ void kfree(void *ptr)
 
     reg = interrupt_disable();
 
-    heap_free(&kernel_heap, ptr);
+    heap_free(&kern_heap, ptr);
 
     interrupt_resume(reg);
 }
@@ -106,9 +106,9 @@ void *kcalloc(uint32_t nelem, uint32_t elsize)
 /*
  * 创建内核内存堆
  */
-void kheap_create(void)
+void kern_heap_create(void)
 {
-    heap_init(&kernel_heap, kernel_heap_mem, KERN_HEAP_SIZE);
+    heap_init(&kern_heap, kern_heap_mem, KERN_HEAP_SIZE);
 }
 
 #else
@@ -124,7 +124,9 @@ static heap_t  process_heap;
 void *malloc(uint32_t size)
 {
     void *ptr;
-
+    /*
+     * 因进程里使用非抢占的 pthread, 免锁免关中断
+     */
     ptr = heap_alloc(&process_heap, size);
 
     return ptr;
@@ -181,7 +183,7 @@ void libc_init(void)
 /*
  * 内存块
  */
-struct _mem_block_t {
+struct mem_block {
     uint32_t        magic0;                                             /*  魔数                        */
     mem_block_t    *prev;                                               /*  前趋                        */
     mem_block_t    *next;                                               /*  后趋                        */
@@ -399,7 +401,7 @@ void *heap_free(heap_t *heap, void *ptr)
 /*
  * 打印内存堆信息
  */
-void heap_info(heap_t *heap)
+void heap_print_info(heap_t *heap)
 {
     debug_output("heap block count = %d\n", heap->block_cnt);
     debug_output("heap alloc count = %d\n", heap->alloc_cnt);

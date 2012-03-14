@@ -64,11 +64,11 @@
  */
 struct ethernetif {
     struct eth_addr *mac_addr;
-    u8_t             tx_packet_nr;
-    u16_t            tx_packet_len;
-    void           (*out_blk)(const void *data, int len);
-    void           (*in_blk)(void *data, int len);
-    void           (*rx_status)(u16_t *status, u16_t *len);
+    u8_t  tx_packet_nr;
+    u16_t tx_packet_len;
+    void (*out_blk)(const void *data, int len);
+    void (*in_blk)(void *data, int len);
+    void (*rx_status)(u16_t *status, u16_t *len);
 };
 
 #define CONFIG_DRIVER_DM9000    1
@@ -899,7 +899,7 @@ low_level_init(struct netif *netif)
     }
 
     /*
-     * 创建 dm9000 操作锁
+     * 创建 DM9000 操作锁
      */
     ret = sys_mutex_new(&dm9000_lock);
     if (ret != ERR_OK) {
