@@ -235,6 +235,7 @@ int _gettimeofday(struct timeval *tv, void *tzp)
 /*
  * »ñµÃ errno Ö¸Õë
  */
+#ifndef SMILEOS_KERNEL
 int *__errno(void)
 {
     int *ret;
@@ -247,6 +248,21 @@ int *__errno(void)
 
     return ret;
 }
+#else
+int *__errno(void)
+{
+    int *ret;
+    uint32_t reg;
+
+    reg = interrupt_disable();
+
+    ret = &current->errno;
+
+    interrupt_resume(reg);
+
+    return ret;
+}
+#endif
 
 /*
  * _sbrk
