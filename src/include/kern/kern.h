@@ -89,8 +89,8 @@ typedef struct task {
     uint32_t                content[20];                                /*  上下文                      */
     uint32_t                kstack[KERN_STACK_SIZE];                    /*  内核栈                      */
 /********************************************************************************************************/
-    void                  (*thread)(void *arg);
-    void                   *arg;
+    void                  (*thread)(void *arg);                         /*  线程函数                    */
+    void                   *arg;                                        /*  线程参数                    */
     uint32_t                stack;                                      /*  线程栈基址                  */
     uint32_t                type;                                       /*  任务类型                    */
     uint32_t                resume_type;                                /*  恢复类型                    */
