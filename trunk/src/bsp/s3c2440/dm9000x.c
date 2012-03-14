@@ -575,7 +575,6 @@ low_level_output(struct netif *netif, struct pbuf *p)
 {
     struct ethernetif *ethernetif = netif->state;
     struct pbuf *q;
-    static u32_t time = 0;
 
     sys_mutex_lock(&dm9000_lock);
 
@@ -603,7 +602,7 @@ low_level_output(struct netif *netif, struct pbuf *p)
 
     LINK_STATS_INC(link.xmit);
 
-    LWIP_DEBUGF(NETIF_DEBUG, ("dm9000_send: %u send %d byte\n", time++, p->tot_len));
+    LWIP_DEBUGF(NETIF_DEBUG, ("dm9000_send: send %d byte\n", p->tot_len));
 
     sys_mutex_unlock(&dm9000_lock);
 
@@ -628,7 +627,6 @@ dm9000_recv(struct netif *netif)
     u8_t  byte;
     u16_t len;
     u16_t status;
-    static u32_t time = 0;
 
     sys_mutex_lock(&dm9000_lock);
 
@@ -687,7 +685,7 @@ dm9000_recv(struct netif *netif)
         if (p != NULL) {
             LINK_STATS_INC(link.recv);
         }
-        LWIP_DEBUGF(NETIF_DEBUG, ("dm9000_recv: %u recv %d byte\n", time++, p->tot_len));
+        LWIP_DEBUGF(NETIF_DEBUG, ("dm9000_recv: recv %d byte\n", p->tot_len));
         sys_mutex_unlock(&dm9000_lock);
         return p;
     }

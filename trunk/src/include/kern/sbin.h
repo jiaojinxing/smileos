@@ -45,7 +45,7 @@
 /*
  * ≤È’“ sbin
  */
-uint8_t *sbin_lookup(char *name, uint32_t *size);
+uint8_t *sbin_lookup(const char *name, uint32_t *size);
 
 #endif                                                                  /*  SBIN_H_                     */
 /*********************************************************************************************************

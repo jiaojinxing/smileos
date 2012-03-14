@@ -41,6 +41,7 @@
 #include "kern/types.h"
 #include "kern/kern.h"
 #include "kern/sys_call.h"
+#include "kern/sbin.h"
 #include <string.h>
 #include <sys/socket.h>
 #include <stdio.h>
@@ -89,6 +90,23 @@ static int get_task_info(task_t *task, char *buf)
                         task->priority,
                         task->utilization,
                         task->frame_nr);
+    }
+}
+
+/*
+ * Ö´ÐÐ sbin
+ */
+static int sbin_exec(const char *name)
+{
+    uint8_t  *code;
+    uint32_t  size;
+
+    code = sbin_lookup(name, &size);
+
+    if (code != NULL) {
+        return process_create(name, code, size, 10);
+    } else {
+        return -1;
     }
 }
 
@@ -161,8 +179,10 @@ static void telnetd_thread(void *arg)
                         } else if (strcmp(cmd, "exit") == 0) {
                             break;
                         } else {
-                            len = sprintf(buf, "unknown cmd\r\n");
-                            send(fd, buf, len, 0);
+                            if (sbin_exec(cmd) < 0) {
+                                len = sprintf(buf, "unknown cmd\r\n");
+                                send(fd, buf, len, 0);
+                            }
                         }
                         pos = 0;
                         len = sprintf(buf, ">:");

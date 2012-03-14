@@ -603,77 +603,13 @@ int in_interrupt(void)
     return ret;
 }
 
+#include <stdio.h>
+
 /*
  * printk
  */
 void printk(const char *fmt, ...)
 {
-#if 0
-    static const char digits[] = "0123456789abcdef";
-    va_list ap;
-    char buf[10];
-    char *s;
-    unsigned u;
-    int c, i, pad;
-
-    va_start(ap, fmt);
-    while ((c = *fmt++) != 0) {
-        if (c == '%') {
-            c = *fmt++;
-            /* ignore long */
-            if (c == 'l') {
-                c = *fmt++;
-            }
-            switch (c) {
-            case 'c':
-                kputc(va_arg(ap, int));
-                continue;
-            case 's':
-                s = va_arg(ap, char *);
-                if (s == NULL) {
-                    s = "<NULL>";
-                }
-                for (; *s; s++) {
-                    kputc((int)*s);
-                }
-                continue;
-            case 'd':
-                c = 'u';
-            case 'u':
-            case 'x':
-                u = va_arg(ap, unsigned);
-                s = buf;
-                if (c == 'u') {
-                    do {
-                        *s++ = digits[u % 10U];
-                    } while (u /= 10U);
-                } else {
-                    pad = 0;
-                    for (i = 0; i < 8; i++) {
-                        if (pad) {
-                            *s++ = '0';
-                        } else {
-                            *s++ = digits[u % 16U];
-                            if ((u /= 16U) == 0) {
-                                pad = 1;
-                            }
-                        }
-                    }
-                }
-                while (--s >= buf) {
-                    kputc((int)*s);
-                }
-                continue;
-            }
-        }
-        if (c == '\n') {
-            kputc('\r');
-        }
-        kputc((int)c);
-    }
-    va_end(ap);
-#endif
-
     va_list va;
     char    buf[256];
     int     i;
@@ -689,8 +625,6 @@ void printk(const char *fmt, ...)
     }
 
     va_end(va);
-
-    return 0;
 }
 /*********************************************************************************************************
   END FILE
