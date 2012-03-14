@@ -157,7 +157,7 @@ static void ftpd_thread(void *arg)
                 len = sprintf(buf, "150 Opening ASCII mode data connection for /\r\n");
                 send(fd, buf, len, 0);
 
-                kthread_create(NULL, ftpd_list_thread, (void *)2317, 16 * KB, 5);
+                kthread_create(NULL, ftpd_list_thread, (void *)2317, 16 * KB, 15);
 
                 sleep(1);
 
@@ -209,7 +209,7 @@ void ftpd(void *arg)
         if (client_fd > 0) {
             sprintf(name, "%s%d", __func__, client_fd);
 
-            kthread_create(name, ftpd_thread, (void *)client_fd, 16 * KB, 5);
+            kthread_create(name, ftpd_thread, (void *)client_fd, 16 * KB, 15);
         } else {
             printf("%s: failed to accept connect\n", __func__);
         }
