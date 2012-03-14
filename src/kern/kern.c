@@ -608,6 +608,7 @@ int in_interrupt(void)
  */
 void printk(const char *fmt, ...)
 {
+#if 0
     static const char digits[] = "0123456789abcdef";
     va_list ap;
     char buf[10];
@@ -671,6 +672,25 @@ void printk(const char *fmt, ...)
         kputc((int)c);
     }
     va_end(ap);
+#endif
+
+    va_list va;
+    char    buf[256];
+    int     i;
+
+    va_start(va, fmt);
+
+    vsprintf(buf, fmt, va);
+
+    i = 0;
+    while (buf[i]) {
+        kputc(buf[i]);
+        i++;
+    }
+
+    va_end(va);
+
+    return 0;
 }
 /*********************************************************************************************************
   END FILE

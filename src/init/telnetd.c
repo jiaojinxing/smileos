@@ -67,7 +67,7 @@ static int get_task_info(task_t *task, char *buf)
         break;
     }
 
-    if (strlen(task->name) < 5) {
+    if (strlen(task->name) < 7) {
         return sprintf(buf, "%s\t %s\t\t %4u\t %s\t %4u\t %10u\t %4u\t %4u%%\t %4u\r\n",
                         task->type == TASK_TYPE_PROCESS ? "process" : "kthread",
                         task->name,
