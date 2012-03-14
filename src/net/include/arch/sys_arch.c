@@ -256,10 +256,10 @@ void sys_mbox_set_invalid(sys_mbox_t *mbox)
  * @param prio priority of the new thread (may be ignored by ports) */
 sys_thread_t sys_thread_new(const char *name, lwip_thread_fn thread, void *arg, int stacksize, int prio)
 {
-    if (prio < 20) {                                                    /*  保证网络协议栈相关的任务    */
-        prio = 20;                                                      /*  的优先级在合理的范围        */
-    } else if (prio > 40) {                                             /*  以保证网络性能              */
-        prio = 40;
+    if (prio < 10) {                                                    /*  保证网络协议栈相关的任务    */
+        prio = 10;                                                      /*  的优先级在合理的范围        */
+    } else if (prio > 30) {                                             /*  以保证网络性能              */
+        prio = 30;
     }
 
     return kthread_create(name, thread, arg, stacksize, prio);
