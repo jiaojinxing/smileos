@@ -219,7 +219,7 @@ void telnetd(void *arg)
         if (client_fd > 0) {
             sprintf(name, "%s%d", __func__, client_fd);
 
-            kthread_create(name, telnetd_thread, (void *)client_fd, 16 * KB, 5);
+            kthread_create(name, telnetd_thread, (void *)client_fd, 16 * KB, 15);
         } else {
             printf("%s: failed to accept connect\n", __func__);
         }

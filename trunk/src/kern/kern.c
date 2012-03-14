@@ -107,9 +107,9 @@ static void idle_process_create(void)
     task->pid          = 0;
     task->tid          = 0;
     task->state        = TASK_RUNNING;
-    task->counter      = 5;
+    task->counter      = 20;
     task->timer        = 0;
-    task->priority     = 5;
+    task->priority     = 20;
     task->type         = TASK_TYPE_PROCESS;                             /*  任务类型为进程              */
     task->errno        = 0;
     task->resume_type  = TASK_RESUME_UNKNOW;

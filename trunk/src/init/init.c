@@ -72,10 +72,10 @@ static void tcpip_init_done(void *arg)
     netif_set_up(&ethernetif);
 
     extern void telnetd(void *arg);
-    kthread_create("telnetd", telnetd, NULL, 16 * KB, 5);
+    kthread_create("telnetd", telnetd, NULL, 16 * KB, 15);
 
     extern void ftpd(void *arg);
-    kthread_create("ftpd", ftpd, NULL, 16 * KB, 5);
+    kthread_create("ftpd", ftpd, NULL, 16 * KB, 15);
 }
 
 /*
@@ -106,10 +106,10 @@ int main(void)
     code = sbin_lookup("/2440_P1.hex", &size);
 
     for (i = 0; i < 0; i++) {
-        process_create("test", code, size, 5);
+        process_create("test", code, size, 15);
     }
 
-    kthread_create("init", init, NULL, 16 * KB, 5);
+    kthread_create("init", init, NULL, 16 * KB, 15);
 
     kernel_start();
 
