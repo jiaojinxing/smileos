@@ -110,6 +110,10 @@ void bsp_init(void)
     interrupt_init();
 
     timer_init();
+
+    void lcd_init(void);
+
+    lcd_init();
 }
 /*********************************************************************************************************
   END FILE
