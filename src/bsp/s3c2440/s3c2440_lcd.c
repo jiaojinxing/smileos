@@ -65,7 +65,7 @@
 
 #define FRM565      (1)                                                 /*  16 BPP 视频数据格式: RGB565 */
 #define PWREN       (1)                                                 /*  使能 LCD_PWREN 输出信号     */
-#define ENLEND      (0)                                                 /*  禁能 LEND 输出信号          */
+#define ENLEND      (1)                                                 /*  禁能 LEND 输出信号          */
 
 #define BSWP        (0)                                                 /*  字节不交换                  */
 #define HWSWP       (1)                                                 /*  半字交换                    */
@@ -82,7 +82,7 @@
 /*
  * 视频帧缓冲
  */
-static unsigned short framebuffer[LINEVAL][HOZVAL];
+static uint16_t framebuffer[LINEVAL][HOZVAL];
 
 /*
  * 初始化 LCD
@@ -111,8 +111,6 @@ void lcd_init(void)
     LCDCON3 = LCDCON3 & ~(0xFF) | HFPD;                                 /*  水平同步信号前肩            */
 
     LCDCON4 = LCDCON4 & ~(0xFF) | HSPW;                                 /*  水平同步信号脉宽            */
-
-#define LCD_CON5 ((1<<11) | (1 << 9) | (1 << 8) | (1 << 3) | (1 << 0))
 
     LCDCON5 = LCDCON5 & ~(1 << 12) | BPP24BL   << 12;                   /*  24 BPP 视频数据字节序       */
     LCDCON5 = LCDCON5 & ~(1 << 11) | FRM565    << 11;                   /*  16 BPP 视频数据格式         */
