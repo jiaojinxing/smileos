@@ -198,14 +198,28 @@ void schedule(void)
     }
 
     while (1) {
-        for (i = 1, task = tasks + 1; i < TASK_NR; i++, task++) {       /*  任务 0 不参与竞争           */
+        /*
+         * 先做内核线程调度再做进程调度
+         */
+        for (i = PROCESS_NR, task = tasks + PROCESS_NR; i < TASK_NR; i++, task++) {
             if ((task->state == TASK_RUNNING) && (max < (int32_t)task->counter)) {
                 max  = (int32_t)task->counter;                          /*  用剩余时间片来做竞争        */
                 next = i;
             }
         }
 
-        if (max != 0) {                                                 /*  找到了一个有剩余时间片的任务*/
+        if (max != 0) {                                                 /*  找到了一个有剩余时间片的线程*/
+            break;                                                      /*  跳出                        */
+        }
+
+        for (i = 1, task = tasks + 1; i < PROCESS_NR; i++, task++) {    /*  进程 0 不参与竞争           */
+            if ((task->state == TASK_RUNNING) && (max < (int32_t)task->counter)) {
+                max  = (int32_t)task->counter;                          /*  用剩余时间片来做竞争        */
+                next = i;
+            }
+        }
+
+        if (max != 0) {                                                 /*  找到了一个有剩余时间片的进程*/
             break;                                                      /*  跳出                        */
         }
 
