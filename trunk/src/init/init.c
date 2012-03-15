@@ -91,19 +91,9 @@ static void init(void *arg)
  */
 int main(void)
 {
-    uint8_t  *code;
-    uint32_t  size;
-    int       i;
-
     mmu_init();
 
     kernel_init();
-
-    code = sbin_lookup("/2440_P1.hex", &size);
-
-    for (i = 0; i < 0; i++) {
-        process_create("test", code, size, 10);
-    }
 
     kthread_create("init", init, NULL, 16 * KB, 10);
 

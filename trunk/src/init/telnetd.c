@@ -144,7 +144,6 @@ static void telnetd_thread(void *arg)
         }
 
         if (ret > 0) {
-            printf("%s: get 1 byte\n", __func__);
             if (iscntrl(ch)) {
                 if (ch == 0x08) {
                     if (pos > 0) {
