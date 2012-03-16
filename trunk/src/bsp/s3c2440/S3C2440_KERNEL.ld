@@ -25,6 +25,10 @@ SECTIONS
     *(.glue_7t)
   } > RAM
 
+  __exidx_start = .;
+  .ARM.exidx : { *(.ARM.exidx* .gnu.linkonce.armexidx.*) }
+  __exidx_end = .;
+
   . = ALIGN(4);
   _etext = . ;
   PROVIDE (etext = .);
