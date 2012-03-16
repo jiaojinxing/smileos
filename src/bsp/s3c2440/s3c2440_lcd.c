@@ -63,9 +63,9 @@
 #define VFPD        (5)                                                 /*  垂直同步信号前肩            */
 #define VSPW        (1)                                                 /*  垂直同步信号脉宽            */
 
-#define HBPD        (36)                                                /*  水平同步信号后肩            */
+#define HBPD        (39)                                                /*  水平同步信号后肩            */
 #define HOZVAL      (240)                                               /*  水平尺寸                    */
-#define HFPD        (19)                                                /*  水平同步信号前肩            */
+#define HFPD        (14)                                                /*  水平同步信号前肩            */
 #define HSPW        (5)                                                 /*  水平同步信号脉宽            */
 
 #define OFFSIZE     (0)                                                 /*  虚拟屏幕偏移大小(单位半字)  */
@@ -100,7 +100,7 @@ static uint16_t framebuffer[LINEVAL][HOZVAL];
 
 void lcd_putpixel(int x, int y, uint32_t col)
 {
-    uint32_t rgb565 = (((col >> 19) & 0x1F) << 11) |
+    uint16_t rgb565 = (((col >> 19) & 0x1F) << 11) |
                       (((col >> 10) & 0x3F) << 5)  |
                       (((col >>  3) & 0x1F) << 0);
 
@@ -171,7 +171,7 @@ void lcd_init(void)
         int y, x;
         for (y = 0; y < LCD_HEIGHT; y++) {
             for (x = 0; x < LCD_WIDTH; x++) {
-                lcd_putpixel(x, y, 0xD8BFD8);
+                lcd_putpixel(x, y, 0xFF0000);
             }
         }
     }
