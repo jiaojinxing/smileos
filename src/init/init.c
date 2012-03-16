@@ -60,9 +60,9 @@ static void tcpip_init_done(void *arg)
     static struct netif ethernetif;
     ip_addr_t           ip, submask, gateway;
 
-    IP4_ADDR(&ip,       192, 168,   2,  30);
+    IP4_ADDR(&ip,       192, 168,   0,  30);
     IP4_ADDR(&submask,  255, 255, 255,   0);
-    IP4_ADDR(&gateway,  192, 168,   2,   1);
+    IP4_ADDR(&gateway,  192, 168,   0,   1);
 
     extern err_t ethernetif_init(struct netif *netif);
     netif_add(&ethernetif, &ip, &submask, &gateway, NULL, ethernetif_init, tcpip_input);

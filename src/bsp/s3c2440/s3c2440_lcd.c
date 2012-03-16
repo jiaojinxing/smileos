@@ -40,11 +40,19 @@
 #include "kern/config.h"
 #include "kern/types.h"
 #include "s3c2440.h"
-
 /*
+ * 扩展阅读:
  * http://hi.baidu.com/760159/blog/item/b4c408894605c49ea4c272a3.html
  */
-
+/*********************************************************************************************************
+  LCD 型号配置
+*********************************************************************************************************/
+#define LCD_N35         (1)
+#define LCD_PANEL       LCD_N35
+/*********************************************************************************************************
+  LCD_N35
+*********************************************************************************************************/
+#if LCD_PANEL == LCD_N35
 #define CLKVAL      (4)                                                 /*  LCD 频率                    */
 #define PNRMODE     (3)                                                 /*  显示模式: TFT LCD panel     */
 #define BPPMODE     (12)                                                /*  BPP 模式: 16 bpp for TFT    */
@@ -65,7 +73,7 @@
 
 #define FRM565      (1)                                                 /*  16 BPP 视频数据格式: RGB565 */
 #define PWREN       (1)                                                 /*  使能 LCD_PWREN 输出信号     */
-#define ENLEND      (1)                                                 /*  禁能 LEND 输出信号          */
+#define ENLEND      (0)                                                 /*  禁能 LEND 输出信号          */
 
 #define BSWP        (0)                                                 /*  字节不交换                  */
 #define HWSWP       (1)                                                 /*  半字交换                    */
@@ -79,6 +87,12 @@
 #define INVPWREN    (0)                                                 /*  不反转 PWREN                */
 #define INVLEND     (0)                                                 /*  不反转 LEND                 */
 
+#define LCD_WIDTH   (HOZVAL)
+#define LCD_HEIGHT  (LINEVAL)
+#define LCD_BPP     16
+
+#endif
+
 /*
  * 视频帧缓冲
  */
@@ -89,7 +103,7 @@ static uint16_t framebuffer[LINEVAL][HOZVAL];
  */
 void lcd_init(void)
 {
-    GPGUP   = GPGUP  | (1 << 4);                                        /*  GPG4 禁止上拉               */
+    GPGUP   = GPGUP  | (1 << 4);                                        /*  GPG4 关闭上拉电阻           */
     GPGCON  = GPGCON & ~(3 << 8) | 3 << 8;                              /*  GPG4 -> LCD_PWREN           */
     GPGDAT  = GPGDAT | (1 << 4);                                        /*  打开 LCD 电源               */
 
@@ -138,9 +152,13 @@ void lcd_init(void)
     LCDSADDR3 = LCDSADDR3 & ~(0x7FF << 11) | OFFSIZE << 11;             /*  虚拟屏幕偏移大小            */
     LCDSADDR3 = LCDSADDR3 & ~(0x7FF) | PAGEWIDTH;                       /*  虚拟屏幕宽度                */
 
-    LPCSEL    = LPCSEL & ~(1) | 0;                                      /*  禁止 LPC3600/LCC3600 模式   */
+    LCDINTMSK = LCDINTMSK & ~(0x3) | 0;                                 /*  屏蔽中断                    */
+    LPCSEL    = LPCSEL & ~(1) | 0;                                      /*  禁能 LPC3600/LCC3600 模式   */
+    TPAL      = 0;                                                      /*  不使用调色板                */
 
     LCDCON1   = LCDCON1 & ~(1) | ENVID;                                 /*  开启视频输出                */
+
+    memset(framebuffer, 0xFF, sizeof(framebuffer));
 }
 /*********************************************************************************************************
   END FILE

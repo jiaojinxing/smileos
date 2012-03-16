@@ -135,7 +135,7 @@ static void telnetd_thread(void *arg)
 
     pos = 0;
 
-    setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (char *)&on, sizeof(on));
+    setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &on, sizeof(on));
 
     while (1) {
         ret = recv(fd, &ch, 1, 0);
