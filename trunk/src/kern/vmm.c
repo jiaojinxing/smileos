@@ -232,6 +232,9 @@ int vmm_map_process_page(task_t *task, uint32_t va)
             mmu_map_page(tbl, page_nr, vmm_get_frame_addr(frame));      /*  页面映射                    */
             return 0;
         } else {
+            /*
+             * TODO: 现在还不支持交换
+             */
             if (flag) {
                 mmu_unmap_section(section_nr);
                 vmm_page_table_free(tbl);
