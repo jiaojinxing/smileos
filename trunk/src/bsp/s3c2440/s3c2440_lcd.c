@@ -98,6 +98,15 @@
  */
 static uint16_t framebuffer[LINEVAL][HOZVAL];
 
+void lcd_putpixel(int x, int y, uint32_t col)
+{
+    uint32_t rgb565 = (((col >> 19) & 0x1F) << 11) |
+                      (((col >> 10) & 0x3F) << 5)  |
+                      (((col >>  3) & 0x1F) << 0);
+
+    framebuffer[y][x] = rgb565;
+}
+
 /*
  * 初始化 LCD
  */
@@ -158,7 +167,14 @@ void lcd_init(void)
 
     LCDCON1   = LCDCON1 & ~(1) | ENVID;                                 /*  开启视频输出                */
 
-    memset(framebuffer, 0xFF, sizeof(framebuffer));
+    {
+        int y, x;
+        for (y = 0; y < LCD_HEIGHT; y++) {
+            for (x = 0; x < LCD_WIDTH; x++) {
+                lcd_putpixel(x, y, 0xD8BFD8);
+            }
+        }
+    }
 }
 /*********************************************************************************************************
   END FILE
