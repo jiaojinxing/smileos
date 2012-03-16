@@ -22,6 +22,8 @@
 
 5. 打开Eclipse，并选择合适的目录作你的工作空间，把SmileOS.zip工程解压并放到工作空间内，Import SmileOS工程到工作空间。
 
+6. 使用SVN工具，update到最新的代码
+
                                                                     -------------------------
                                                                     jiaojinxing1987@gmail.com
                                                                         2012-3-16 22:37
