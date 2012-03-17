@@ -107,6 +107,17 @@ void lcd_putpixel(int x, int y, uint32_t col)
     framebuffer[y][x] = rgb565;
 }
 
+void lcd_clear(uint32_t col)
+{
+    int y, x;
+
+    for (y = 0; y < LCD_HEIGHT; y++) {
+        for (x = 0; x < LCD_WIDTH; x++) {
+            lcd_putpixel(x, y, col);
+        }
+    }
+}
+
 /*
  * 初始化 LCD
  */
@@ -166,15 +177,6 @@ void lcd_init(void)
     TPAL      = 0;                                                      /*  不使用调色板                */
 
     LCDCON1   = LCDCON1 & ~(1) | ENVID;                                 /*  开启视频输出                */
-
-    {
-        int y, x;
-        for (y = 0; y < LCD_HEIGHT; y++) {
-            for (x = 0; x < LCD_WIDTH; x++) {
-                lcd_putpixel(x, y, 0xFF0000);
-            }
-        }
-    }
 }
 /*********************************************************************************************************
   END FILE
