@@ -704,11 +704,8 @@ static void
 ethernetif_input(void *arg)
 {
     struct netif *netif = (struct netif *)arg;
-    struct ethernetif *ethernetif;
     struct eth_hdr *ethhdr;
     struct pbuf *p;
-
-    ethernetif = netif->state;
 
     while (1) {
 /********************************************************************************************************/
@@ -1031,3 +1028,6 @@ ethernetif_init(struct netif *netif)
 
     return ERR_OK;
 }
+/*********************************************************************************************************
+  END FILE
+*********************************************************************************************************/
