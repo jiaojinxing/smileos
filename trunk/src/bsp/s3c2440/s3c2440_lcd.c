@@ -167,7 +167,7 @@ void lcd_init(void)
     LCDSADDR1 = LCDSADDR1 & ~(0x1FFFFF) | ((uint32_t)framebuffer >> 1) & 0x1FFFFF;
 
     /* ÊÓÆµÖ¡»º³åÇøµÄ½áÊøµØÖ·µÍÎ»[21:1] -> LCDSADDR2[20:0] */
-    LCDSADDR2 = LCDSADDR2 & ~(0x1FFFFF) | (((uint32_t)framebuffer + LINEVAL * HOZVAL * 2) >> 1 ) & 0x1FFFFF;
+    LCDSADDR2 = LCDSADDR2 & ~(0x1FFFFF) | (((uint32_t)framebuffer + LINEVAL * HOZVAL * 2) >> 1) & 0x1FFFFF;
 
     LCDSADDR3 = LCDSADDR3 & ~(0x7FF << 11) | OFFSIZE << 11;             /*  ÐéÄâÆÁÄ»Æ«ÒÆ´óÐ¡            */
     LCDSADDR3 = LCDSADDR3 & ~(0x7FF) | PAGEWIDTH;                       /*  ÐéÄâÆÁÄ»¿í¶È                */

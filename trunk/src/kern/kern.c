@@ -184,9 +184,10 @@ void kernel_start(void)
  */
 void schedule(void)
 {
-    int32_t max = -1;
     int     i;
     int     next = 0;
+    int     flag = FALSE;
+    int32_t max  = -1;
     task_t *task;
 
     if (!running) {                                                     /*  如果内核还没启动            */
@@ -198,21 +199,39 @@ void schedule(void)
     }
 
     while (1) {
-
-        for (i = 1, task = tasks + 1; i < TASK_NR; i++, task++) {       /*  进程 0 不参与竞争           */
+        /*
+         * 先做线程调度, 再做进程调度
+         */
+        for (i = PROCESS_NR, task = tasks + PROCESS_NR; i < TASK_NR; i++, task++) {
             if ((task->state == TASK_RUNNING) && (max < (int32_t)task->counter)) {
                 max  = (int32_t)task->counter;                          /*  用剩余时间片来做竞争        */
                 next = i;
             }
         }
 
-        if (max != 0) {                                                 /*  找到了一个有剩余时间片的进程*/
-            break;                                                      /*  跳出                        */
+        if (max > 0) {                                                  /*  找到了一个有剩余时间片的线程*/
+            break;
+        }
+
+        for (i = 1, task = tasks + 1; i < PROCESS_NR; i++, task++) {    /*  进程 0 不参与竞争           */
+            if ((task->state == TASK_RUNNING) && (max < (int32_t)task->counter)) {
+                max  = (int32_t)task->counter;                          /*  用剩余时间片来做竞争        */
+                next = i;
+            }
+        }
+
+        if (max > 0) {                                                  /*  找到了一个有剩余时间片的进程*/
+            break;
+        } else if (flag) {
+            next = 0;
+            break;
         }
 
         for (i = 0, task = tasks; i < TASK_NR; i++, task++) {           /*  重置所有任务的剩余时间片    */
             task->counter = task->priority;
-        }                                                               /*  再次查找                    */
+        }
+
+        flag = TRUE;
     }
 
     if (current == &tasks[next]) {                                      /*  如果不需要切换任务          */
@@ -493,7 +512,6 @@ int32_t kthread_create(const char *name, void (*func)(void *), void *arg, uint32
     }
 
     reg = interrupt_disable();
-
                                                                         /*  遍历所有的线程控制块        */
     for (i = PROCESS_NR, task = tasks + PROCESS_NR; i < TASK_NR; i++, task++) {
         if (task->state == TASK_UNALLOCATE) {                           /*  如果线程控制块无效          */
@@ -507,7 +525,7 @@ int32_t kthread_create(const char *name, void (*func)(void *), void *arg, uint32
     }
 
     if (priority < 2) {                                                 /*  优先级最小为 2              */
-        stk_size = 2;
+        priority = 2;
     }
 
     if (stk_size < 8 * KB) {                                            /*  堆栈空间最小为 8 KB         */
