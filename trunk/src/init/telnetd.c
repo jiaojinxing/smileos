@@ -159,7 +159,7 @@ static void telnetd_thread(void *arg)
                         cmd[pos] = '\0';
                         if (strcmp(cmd, "ts") == 0) {
 
-                            len = sprintf(buf, "type\t name\t\t pid\t state\t count\t timer\t\t prio\t usage\t frame_nr\r\n");
+                            len = sprintf(buf, "type\t name\t\t pid\t state\t count\t timer\t\t prio\t cpu\t frame_nr\r\n");
                             send(fd, buf, len, 0);
 
                             for (i = 0, task = tasks; i < TASK_NR; i++, task++) {
