@@ -52,7 +52,7 @@
 */
 int ff_cre_syncobj (    /* TRUE:Function succeeded, FALSE:Could not create due to any error */
     BYTE vol,           /* Corresponding logical drive being processed */
-    _SYNC_t *sobj       /* Pointer to return the created sync object */
+    _SYNC_t* sobj       /* Pointer to return the created sync object */
 )
 {
     return !kern_mutex_new(sobj);
@@ -78,8 +78,8 @@ int ff_del_syncobj (    /* TRUE:Function succeeded, FALSE:Could not delete due t
 /* This function is called on entering file functions to lock the volume.
 /  When a zero is returned, the file function fails with FR_TIMEOUT.
 */
-int ff_req_grant (  /* TRUE:Got a grant to access the volume, FALSE:Could not get a grant */
-    _SYNC_t sobj    /* Sync object to wait */
+int ff_req_grant (      /* TRUE:Got a grant to access the volume, FALSE:Could not get a grant */
+    _SYNC_t sobj        /* Sync object to wait */
 )
 {
     return !kern_mutex_lock(&sobj, _FS_TIMEOUT);
@@ -91,7 +91,7 @@ int ff_req_grant (  /* TRUE:Got a grant to access the volume, FALSE:Could not ge
 /* This function is called on leaving file functions to unlock the volume.
 */
 void ff_rel_grant (
-    _SYNC_t sobj    /* Sync object to be signaled */
+    _SYNC_t sobj        /* Sync object to be signaled */
 )
 {
     kern_mutex_unlock(&sobj);
@@ -102,8 +102,8 @@ void ff_rel_grant (
 /*------------------------------------------------------------------------*/
 /* If a NULL is returned, the file function fails with FR_NOT_ENOUGH_CORE.
 */
-void* ff_memalloc ( /* Returns pointer to the allocated memory block */
-    UINT size       /* Number of bytes to allocate */
+void* ff_memalloc (     /* Returns pointer to the allocated memory block */
+    UINT size           /* Number of bytes to allocate */
 )
 {
     return kmalloc(size);
@@ -113,7 +113,7 @@ void* ff_memalloc ( /* Returns pointer to the allocated memory block */
 /* Free a memory block                                                    */
 /*------------------------------------------------------------------------*/
 void ff_memfree(
-    void* mblock    /* Pointer to the memory block to free */
+    void* mblock        /* Pointer to the memory block to free */
 )
 {
     kfree(mblock);
