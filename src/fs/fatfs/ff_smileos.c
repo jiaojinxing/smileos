@@ -120,50 +120,50 @@ void ff_memfree(
 }
 
 DWORD get_fattime (
-        void
+    void
 )
 {
     return 0;
 }
 
 DSTATUS disk_initialize (
-  BYTE Drive            /* Physical drive number */
+    BYTE Drive          /* Physical drive number */
 )
 {
     return 0;
 }
 
 DSTATUS disk_status (
-  BYTE Drive            /* Physical drive number */
+    BYTE Drive          /* Physical drive number */
 )
 {
     return 0;
 }
 
 DRESULT disk_read (
-  BYTE Drive,           /* Physical drive number */
-  BYTE* Buffer,         /* Pointer to the read data buffer */
-  DWORD SectorNumber,   /* Start sector number */
-  BYTE SectorCount      /* Number of sectros to read */
+    BYTE Drive,         /* Physical drive number */
+    BYTE* Buffer,       /* Pointer to the read data buffer */
+    DWORD SectorNumber, /* Start sector number */
+    BYTE SectorCount    /* Number of sectros to read */
 )
 {
     return 0;
 }
 
 DRESULT disk_write (
-  BYTE Drive,           /* Physical drive number */
-  const BYTE* Buffer,   /* Pointer to the write data (may be non aligned) */
-  DWORD SectorNumber,   /* Sector number to write */
-  BYTE SectorCount      /* Number of sectors to write */
+    BYTE Drive,         /* Physical drive number */
+    const BYTE* Buffer, /* Pointer to the write data (may be non aligned) */
+    DWORD SectorNumber, /* Sector number to write */
+    BYTE SectorCount    /* Number of sectors to write */
 )
 {
     return 0;
 }
 
 DRESULT disk_ioctl (
-  BYTE Drive,           /* Drive number */
-  BYTE Command,         /* Control command code */
-  void* Buffer          /* Parameter and data buffer */
+    BYTE Drive,         /* Drive number */
+    BYTE Command,       /* Control command code */
+    void* Buffer        /* Parameter and data buffer */
 )
 {
     return 0;
