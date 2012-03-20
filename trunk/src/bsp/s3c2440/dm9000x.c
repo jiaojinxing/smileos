@@ -71,15 +71,14 @@ struct ethernetif {
     void (*rx_status)(u16_t *status, u16_t *len);
 };
 
-#define CONFIG_DRIVER_DM9000    1
 #include "dm9000x.h"
 
 /*
  * 板级
  */
-#define CONFIG_DM9000_BASE      0x20000300
-#define DM9000_IO               (CONFIG_DM9000_BASE)
-#define DM9000_DATA             (CONFIG_DM9000_BASE + 4)
+#define DM9000_BASE             0x20000300
+#define DM9000_IO               (DM9000_BASE)
+#define DM9000_DATA             (DM9000_BASE + 4)
 
 /*
  * 系统级
@@ -231,7 +230,7 @@ dm9000_rx_status_8bit(u16_t *status, u16_t *len)
 }
 
 /*
- * 从 io 端口读一个字节
+ * 从 IO 端口读一个字节
  */
 static u8_t
 dm9000_io_read(u8_t reg)
@@ -241,7 +240,7 @@ dm9000_io_read(u8_t reg)
 }
 
 /*
- * 从 io 端口写一个字节
+ * 从 IO 端口写一个字节
  */
 static void
 dm9000_io_write(u8_t reg, u8_t value)
@@ -297,7 +296,7 @@ dm9000_phy_write(u8_t reg, u16_t value)
 #endif
 
 /*
- * 探测 dm9000 芯片
+ * 探测 DM9000 芯片
  */
 static err_t
 dm9000_probe(void)
@@ -310,16 +309,16 @@ dm9000_probe(void)
     id |= dm9000_io_read(DM9000_PIDH) << 24;
 
     if (id == DM9000_ID) {
-        LWIP_DEBUGF(NETIF_DEBUG, ("dm9000_probe: found at i/o: 0x%x, id: 0x%x\n", CONFIG_DM9000_BASE, id));
+        LWIP_DEBUGF(NETIF_DEBUG, ("dm9000_probe: found at i/o: 0x%x, id: 0x%x\n", DM9000_BASE, id));
         return 0;
     } else {
-        LWIP_DEBUGF(NETIF_DEBUG, ("dm9000_probe: no found at i/o: 0x%x, id: 0x%x\n", CONFIG_DM9000_BASE, id));
+        LWIP_DEBUGF(NETIF_DEBUG, ("dm9000_probe: no found at i/o: 0x%x, id: 0x%x\n", DM9000_BASE, id));
         return -1;
     }
 }
 
 /*
- * 复位 dm9000 芯片
+ * 复位 DM9000 芯片
  */
 static err_t
 dm9000_reset(void)
@@ -372,19 +371,18 @@ dm9000_reset(void)
 }
 
 /*
- * 初始化 dm9000 芯片
+ * 初始化 DM9000 芯片
  */
 static err_t
 dm9000_init(struct netif *netif)
 {
     struct ethernetif *ethernetif = netif->state;
-    u8_t mode, oft;
-    u16_t link;
+    u8_t  mode, oft, link;
     err_t ret;
-    int i;
+    int   i;
 
     /*
-     * 复位 dm9000 芯片
+     * 复位 DM9000 芯片
      */
     ret = dm9000_reset();
     if (ret < 0) {
@@ -393,7 +391,7 @@ dm9000_init(struct netif *netif)
     }
 
     /*
-     * 探测 dm9000 芯片
+     * 探测 DM9000 芯片
      */
     ret = dm9000_probe();
     if (ret < 0) {
@@ -428,7 +426,7 @@ dm9000_init(struct netif *netif)
         break;
 
     default:    /* Assume 8 bit mode, will probably not work anyway */
-        LWIP_DEBUGF(NETIF_DEBUG, ("dm9000_init: running in 0x%x bit mode\n", mode));
+        LWIP_DEBUGF(NETIF_DEBUG, ("dm9000_init: running in 0x%2x bit mode\n", mode));
         ethernetif->out_blk    = dm9000_out_blk_8bit;
         ethernetif->in_blk     = dm9000_in_blk_8bit;
         ethernetif->rx_status  = dm9000_rx_status_8bit;
@@ -451,12 +449,12 @@ dm9000_init(struct netif *netif)
     dm9000_io_write(DM9000_BPTR, BPTR_BPHW(3) | BPTR_JPT_600US);
 
     /*
-     * Flow Control : High/Low Water
+     * Flow Control: High/Low Water
      */
     dm9000_io_write(DM9000_FCTR, FCTR_HWOT(3) | FCTR_LWOT(8));
 
     /*
-     * SH FIXME: This looks strange! Flow Control
+     * TODO: This looks strange! Flow Control
      */
     dm9000_io_write(DM9000_FCR, 0x00);
 
@@ -466,7 +464,7 @@ dm9000_init(struct netif *netif)
     dm9000_io_write(DM9000_SMCR, 0x00);
 
     /*
-     * clear TX status
+     * Clear TX status
      */
     dm9000_io_write(DM9000_NSR, NSR_WAKEST | NSR_TX2END | NSR_TX1END);
 
@@ -476,7 +474,7 @@ dm9000_init(struct netif *netif)
     dm9000_io_write(DM9000_ISR, ISR_ROOS | ISR_ROS | ISR_PTS | ISR_PRS);
 
     /*
-     * fill device MAC address registers
+     * Fill device MAC address registers
      */
     for (i = 0, oft = DM9000_PAR; i < 6; i++, oft++) {
         dm9000_io_write(oft, ethernetif->mac_addr->addr[i]);
@@ -487,11 +485,11 @@ dm9000_init(struct netif *netif)
     }
 
     /*
-     * read back mac, just to be sure
+     * Read back MAC address
      */
     LWIP_DEBUGF(NETIF_DEBUG, ("dm9000_init: MAC="));
     for (i = 0, oft = DM9000_PAR; i < 6; i++, oft++) {
-        LWIP_DEBUGF(NETIF_DEBUG, ("%x:", dm9000_io_read(oft)));
+        LWIP_DEBUGF(NETIF_DEBUG, ("%2x:", dm9000_io_read(oft)));
     }
     LWIP_DEBUGF(NETIF_DEBUG, ("\n"));
 
@@ -537,7 +535,7 @@ dm9000_init(struct netif *netif)
         break;
 
     default:
-        LWIP_DEBUGF(NETIF_DEBUG, ("dm9000_init: operating at unknown 0x%x mode\n", link));
+        LWIP_DEBUGF(NETIF_DEBUG, ("dm9000_init: operating at unknown 0x%2x mode\n", link));
         break;
     }
 
@@ -601,8 +599,6 @@ low_level_output(struct netif *netif, struct pbuf *p)
     dm9000_io_write(DM9000_IMR, IMR_PAR | IMR_PTM | IMR_PRM);
 
     LINK_STATS_INC(link.xmit);
-
-    LWIP_DEBUGF(NETIF_DEBUG, ("dm9000_send: send %d byte\n", p->tot_len));
 
     sys_mutex_unlock(&dm9000_lock);
 
@@ -685,7 +681,6 @@ dm9000_recv(struct netif *netif)
         if (p != NULL) {
             LINK_STATS_INC(link.recv);
         }
-        LWIP_DEBUGF(NETIF_DEBUG, ("dm9000_recv: recv %d byte\n", p->tot_len));
         sys_mutex_unlock(&dm9000_lock);
         return p;
     }
@@ -827,12 +822,11 @@ eint47_isr(uint32_t interrupt, void *arg)
     uint32_t sub_interrupt;
 
     sub_interrupt = EINTPEND;
+    EINTPEND      = sub_interrupt;
 
     if (sub_interrupt & (1 << 7)) {
        dm9000_isr(arg);
     }
-
-    EINTPEND = sub_interrupt;
 
     return 0;
 }
@@ -943,7 +937,7 @@ low_level_init(struct netif *netif)
      */
     interrupt_install(INTEINT4_7, eint47_isr, NULL, (void *)netif);
 
-    interrupt_umask(INTEINT4_7);
+    interrupt_unmask(INTEINT4_7);
 
     /*
      * 设置 GPF7 为 EINT7

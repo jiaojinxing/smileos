@@ -22,7 +22,7 @@
 ** File name:               s3c2440_uart.c
 ** Last modified Date:      2012-2-2
 ** Last Version:            1.0.0
-** Descriptions:            s3c2440 UART
+** Descriptions:            S3C2440 UART
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing
@@ -42,6 +42,9 @@
 #include "s3c2440.h"
 #include "s3c2440_clock.h"
 
+/*
+ * ≥ı ºªØ UART
+ */
 void uart_init(void)
 {
     GPHCON  = (GPHCON & (~(0x0F << 4))) | (0x0A << 4);

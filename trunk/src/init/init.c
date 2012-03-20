@@ -99,9 +99,6 @@ int main(void)
 
     kernel_start();
 
-    void lcd_clear(uint32_t col);
-    lcd_clear(0xFF0000);
-
     while (1) {
     }
 

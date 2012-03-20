@@ -99,7 +99,8 @@ swi_handler:
                                             /*  因为切换了处理器模式, sp 也切换了, 所以多于 4 个参数时, */
                                             /*  会有问题                                                */
                                             /*
-                                                http://www.52rd.com/Blog/Detail_RD.Blog_zjhfqq_7625.html
+                                             *  扩展阅读:
+                                             *  http://www.52rd.com/Blog/Detail_RD.Blog_zjhfqq_7625.html
                                              */
 
     cmp     r7, #SYS_CALL_NR                /*  根据 EABI, 系统调用号使用 r7                            */

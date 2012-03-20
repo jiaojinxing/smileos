@@ -22,7 +22,7 @@
 ** File name:               s3c2440.h
 ** Last modified Date:      2012-2-2
 ** Last Version:            1.0.0
-** Descriptions:            s3c2440 寄存器定义
+** Descriptions:            S3C2440 寄存器定义
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing

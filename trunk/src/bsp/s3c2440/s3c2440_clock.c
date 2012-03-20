@@ -22,7 +22,7 @@
 ** File name:               s3c2440_clock.c
 ** Last modified Date:      2012-2-2
 ** Last Version:            1.0.0
-** Descriptions:            s3c2440 时钟
+** Descriptions:            S3C2440 时钟
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing
@@ -42,21 +42,24 @@
 #include "s3c2440.h"
 #include "s3c2440_clock.h"
 
-void set_mpll_clock(uint32_t sdiv, uint32_t pdiv, uint32_t mdiv)
+static void set_mpll_clock(uint32_t sdiv, uint32_t pdiv, uint32_t mdiv)
 {
     MPLLCON = (mdiv << 12) | (pdiv << 4) | (sdiv << 0);
 }
 
-void set_upll_clock(uint32_t sdiv, uint32_t pdiv, uint32_t mdiv)
+static void set_upll_clock(uint32_t sdiv, uint32_t pdiv, uint32_t mdiv)
 {
     UPLLCON = (mdiv << 12) | (pdiv << 4) | (sdiv << 0);
 }
 
-void set_divider(uint32_t divn_upll, uint32_t hdivn, uint32_t pdivn)
+static void set_divider(uint32_t divn_upll, uint32_t hdivn, uint32_t pdivn)
 {
     CLKDIVN = (divn_upll << 3) | (hdivn << 1) | (pdivn << 0);
 }
 
+/*
+ * 设置时钟
+ */
 void clock_init(void)
 {
     LOCKTIME = 0xFFFFFFFF;
