@@ -22,7 +22,7 @@
 ** File name:               s3c2440_int.h
 ** Last modified Date:      2012-2-2
 ** Last Version:            1.0.0
-** Descriptions:            s3c2440 中断
+** Descriptions:            S3C2440 中断
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing
@@ -42,18 +42,34 @@
 
 #include "kern/types.h"
 
+/*
+ * 中断服务程序类型
+ */
 typedef int (*isr_t)(uint32_t interrupt, void *arg);
 
-void irq_c_handler(void);
-
+/*
+ * 无效中断服务程序
+ */
 int isr_invaild(uint32_t interrupt, void *arg);
 
+/*
+ * 初始化中断
+ */
 void interrupt_init(void);
 
+/*
+ * 屏蔽中断
+ */
 void interrupt_mask(uint32_t interrupt);
 
-void interrupt_umask(uint32_t interrupt);
+/*
+ * 取消屏蔽中断
+ */
+void interrupt_unmask(uint32_t interrupt);
 
+/*
+ * 安装中断服务程序
+ */
 void interrupt_install(uint32_t interrupt, isr_t new_isr, isr_t *old_isr, void *arg);
 
 #endif                                                                  /*  S3C2440_INT_H_              */

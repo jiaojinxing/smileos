@@ -22,7 +22,7 @@
 ** File name:               s3c2440_int.c
 ** Last modified Date:      2012-2-2
 ** Last Version:            1.0.0
-** Descriptions:            s3c2440 中断
+** Descriptions:            S3C2440 中断
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing
@@ -45,33 +45,46 @@
 
 #define INTERRUPT_NR      INTGLOBAL
 
+/*
+ * 中断服务程序及其参数表
+ */
 static isr_t  isr_table[INTERRUPT_NR];
 static void  *isr_arg_table[INTERRUPT_NR];
 
+/*
+ * IRQ 中断处理程序
+ */
 void irq_c_handler(void)
 {
     uint32_t interrupt;
     isr_t    isr;
 
-    interrupt_enter();
+    /*
+     * 扩展阅读:
+     * http://hi.baidu.com/monkeystillman/blog/item/6c70184e93357dcfd1c86acf.html
+     */
 
-    interrupt = INTOFFSET;
+    interrupt_enter();                                                  /*  进入中断                    */
+
+    interrupt = INTOFFSET;                                              /*  获得中断号                  */
 
     if (interrupt >= INTERRUPT_NR) {
         return;
     }
 
-    isr = isr_table[interrupt];
-
+    isr = isr_table[interrupt];                                         /*  调用中断服务程序            */
     isr(interrupt, isr_arg_table[interrupt]);
 
-    SRCPND = 1 << interrupt;
+    SRCPND  = 1 << interrupt;                                           /*  清除中断源等待              */
 
-    INTPND = INTPND;
+    INTPND  = INTPND;                                                   /*  清除中断等待                */
 
-    interrupt_exit();
+    interrupt_exit();                                                   /*  退出中断                    */
 }
 
+/*
+ * 无效中断服务程序
+ */
 int isr_invaild(uint32_t interrupt, void *arg)
 {
     printk("invaild interrupt %d!\n", interrupt);
@@ -79,48 +92,34 @@ int isr_invaild(uint32_t interrupt, void *arg)
     return -1;
 }
 
+/*
+ * 初始化中断
+ */
 void interrupt_init(void)
 {
     int i;
 
-    /*
-     * clear all source pending
-     */
-    SRCPND = 0x00;
+    SRCPND      = 0x00;                                                 /*  清除所有中断源等待          */
 
-    /*
-     * clear all sub source pending
-     */
-    SUBSRCPND = 0x00;
+    SUBSRCPND   = 0x00;                                                 /*  清除所有子中断源等待        */
 
-    /*
-     * set all interrupt mode = IRQ mode
-     */
-    INTMOD = 0x00;
+    INTMOD      = 0x00;                                                 /*  设置所有中断模式为 IRQ      */
 
-    /*
-     * disable all interrupt
-     */
-    INTMSK = BIT_ALLMSK;
+    INTMSK      = BIT_ALLMSK;                                           /*  屏蔽所有中断                */
 
-    /*
-     * disable all sub interrupt
-     */
-    INTSUBMSK = BIT_SUB_ALLMSK;
+    INTSUBMSK   = BIT_SUB_ALLMSK;                                       /*  屏蔽所有子中断              */
 
-    /*
-     * clear all interrupt pending
-     */
-    INTPND = 0x00;
+    INTPND      = INTPND;                                               /*  清除所有中断等待            */
 
-    /*
-     * init isr table
-     */
-    for (i = 0; i < INTERRUPT_NR; i++) {
-        isr_table[i] = (isr_t)isr_invaild;
+    for (i = 0; i < INTERRUPT_NR; i++) {                                /*  初始化中断服务程序及其参数表*/
+        isr_table[i]     = (isr_t)isr_invaild;
+        isr_arg_table[i] = NULL;
     }
 }
 
+/*
+ * 屏蔽中断
+ */
 void interrupt_mask(uint32_t interrupt)
 {
     if (interrupt < INTERRUPT_NR) {
@@ -128,13 +127,19 @@ void interrupt_mask(uint32_t interrupt)
     }
 }
 
-void interrupt_umask(uint32_t interrupt)
+/*
+ * 取消屏蔽中断
+ */
+void interrupt_unmask(uint32_t interrupt)
 {
     if (interrupt < INTERRUPT_NR) {
         INTMSK &= ~(1 << interrupt);
     }
 }
 
+/*
+ * 安装中断服务程序
+ */
 void interrupt_install(uint32_t interrupt, isr_t new_isr, isr_t *old_isr, void *arg)
 {
     if (interrupt < INTERRUPT_NR) {

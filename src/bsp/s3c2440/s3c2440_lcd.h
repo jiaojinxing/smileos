@@ -19,14 +19,14 @@
 ** Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 **
 **--------------------------------------------------------------------------------------------------------
-** File name:               s3c2440_timer.c
-** Last modified Date:      2012-2-2
+** File name:               s3c2440_lcd.h
+** Last modified Date:      2012-3-20
 ** Last Version:            1.0.0
-** Descriptions:            S3C2440 定时器
+** Descriptions:            S3C2440 LCD 驱动
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing
-** Created date:            2012-2-2
+** Created date:            2012-3-20
 ** Version:                 1.0.0
 ** Descriptions:            创建文件
 **
@@ -37,48 +37,15 @@
 ** Descriptions:
 **
 *********************************************************************************************************/
-#include "kern/config.h"
-#include "kern/types.h"
-#include "kern/kern.h"
-#include "s3c2440.h"
-#include "s3c2440_int.h"
-#include "s3c2440_clock.h"
+#ifndef S3C2440_LCD_H_
+#define S3C2440_LCD_H_
 
 /*
- * 定时器 4 中断服务程序
+ * 初始化 LCD
  */
-static int timer4_isr(uint32_t interrupt, void *arg)
-{
-    do_timer();
+void lcd_init(void);
 
-    return 0;
-}
-
-/*
- * 初始化定时器
- */
-void timer_init(void)
-{
-    /*
-     * Timer input clock Frequency = PCLK / {prescaler value + 1} / {divider value}
-     * {prescaler value} = 0 ~ 255
-     * {divider value}   = 2, 4, 8, 16
-     */
-
-    TCFG0 = (TCFG0 & (~(0xFF << 8))) | (15 << 8);                       /*  Timer4, prescaler value = 15*/
-
-    TCFG1 = (TCFG1 & (~(0x0F << 16))) | (1 << 16);                      /*  Set timer4 MUX 1/4          */
-
-    TCNTB4 = (uint32_t)(PCLK / (4 * (15 + 1) * TICK_PER_SECOND)) - 1;
-
-    TCON = (TCON & (~(0x03 << 20))) | (2 << 20);                        /*  Manual update TCNTB4        */
-
-    interrupt_install(INTTIMER4, timer4_isr, NULL, NULL);               /*  Install isr                 */
-
-    interrupt_unmask(INTTIMER4);
-
-    TCON = (TCON & (~(0x03 << 20))) | (5 << 20);                        /*  Start timer4, Auto reload   */
-}
+#endif                                                                  /*  S3C2440_LCD_H_              */
 /*********************************************************************************************************
   END FILE
 *********************************************************************************************************/

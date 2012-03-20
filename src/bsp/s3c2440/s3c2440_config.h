@@ -22,7 +22,7 @@
 ** File name:               s3c2440_config.h
 ** Last modified Date:      2012-2-2
 ** Last Version:            1.0.0
-** Descriptions:            s3c2440 配置头文件
+** Descriptions:            S3C2440 配置头文件
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing

@@ -22,7 +22,7 @@
 ** File name:               s3c2440_clock.h
 ** Last modified Date:      2012-2-2
 ** Last Version:            1.0.0
-** Descriptions:            s3c2440 时钟
+** Descriptions:            S3C2440 时钟
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing
@@ -81,12 +81,9 @@
     #define     UCLK            (48000000)
 #endif
 
-void set_mpll_clock(uint32_t sdiv, uint32_t pdiv, uint32_t mdiv);
-
-void set_upll_clock(uint32_t sdiv, uint32_t pdiv, uint32_t mdiv);
-
-void set_divider(uint32_t divn_upll, uint32_t hdivn, uint32_t pdivn);
-
+/*
+ * 设置时钟
+ */
 void clock_init(void);
 
 #endif                                                                  /*  S3C2440_CLOCK_H_            */

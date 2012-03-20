@@ -22,7 +22,7 @@
 ** File name:               s3c2440_timer.h
 ** Last modified Date:      2012-2-2
 ** Last Version:            1.0.0
-** Descriptions:            s3c2440 定时器
+** Descriptions:            S3C2440 定时器
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing
@@ -42,6 +42,9 @@
 
 #include "kern/types.h"
 
+/*
+ * 初始化定时器
+ */
 void timer_init(void);
 
 #endif                                                                  /*  S3C2440_TIMER_H_            */

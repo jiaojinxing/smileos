@@ -22,7 +22,7 @@
 ** File name:               s3c2440.c
 ** Last modified Date:      2012-2-2
 ** Last Version:            1.0.0
-** Descriptions:            s3c2440 初始化
+** Descriptions:            S3C2440 初始化
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing
@@ -45,6 +45,7 @@
 #include "s3c2440_uart.h"
 #include "s3c2440_int.h"
 #include "s3c2440_timer.h"
+#include "s3c2440_lcd.h"
 
 /*
  * 初始化 CPU
@@ -53,9 +54,9 @@ void cpu_init(void)
 {
     WTCON       = 0x00;                                                 /*  关闭看门狗                  */
 
-    INTMSK      = 0xFFFFFFFF;                                           /*  屏蔽所有中断                */
+    INTMSK      = BIT_ALLMSK;                                           /*  屏蔽所有中断                */
 
-    INTSUBMSK   = 0x7FFF;                                               /*  屏蔽所有子中断              */
+    INTSUBMSK   = BIT_SUB_ALLMSK;                                       /*  屏蔽所有子中断              */
 }
 
 /*
@@ -110,8 +111,6 @@ void bsp_init(void)
     interrupt_init();
 
     timer_init();
-
-    void lcd_init(void);
 
     lcd_init();
 }
