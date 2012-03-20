@@ -61,7 +61,7 @@ void irq_c_handler(void)
 
     /*
      * 扩展阅读:
-     * http://hi.baidu.com/monkeystillman/blog/item/6c70184e93357dcfd1c86acf.html
+     * http://hi.baidu.com/ch314156/blog/item/027cdd62feb97f3caa184c29.html
      */
 
     interrupt_enter();                                                  /*  进入中断                    */
