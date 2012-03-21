@@ -19,14 +19,14 @@
 ** Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 **
 **--------------------------------------------------------------------------------------------------------
-** File name:               config.h
-** Last modified Date:      2012-2-2
+** File name:               devfs.c
+** Last modified Date:      2012-3-20
 ** Last Version:            1.0.0
-** Descriptions:            配置头文件
+** Descriptions:            设备文件系统
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing
-** Created date:            2012-2-2
+** Created date:            2012-3-20
 ** Version:                 1.0.0
 ** Descriptions:            创建文件
 **
@@ -37,30 +37,53 @@
 ** Descriptions:
 **
 *********************************************************************************************************/
-#ifndef CONFIG_H_
-#define CONFIG_H_
+#include "kern/config.h"
+#include "kern/types.h"
+#include "kern/kern.h"
+#include "vfs/vfs.h"
+#include "vfs/device.h"
+#include "vfs/driver.h"
+#include <string.h>
 
-#ifndef KB
-#define KB                          (1024)
-#define MB                          (1024 * KB)
-#define GB                          (1024 * MB)
-#endif
-#ifdef S3C2440_BSP
-#include "../../bsp/s3c2440/s3c2440_config.h"
-#endif
+static int devfs_mount(mount_point_t *point)
+{
+    return 0;
+}
 
-#ifndef TICK_PER_SECOND
-#define TICK_PER_SECOND             (100)                               /*  每秒 TICK 数                */
-#endif
+static int devfs_open(file_t *file, const char *path, int oflag, mode_t mode)
+{
+    return 0;
+}
 
-#define PROCESS_SPACE_SIZE          (32 * MB)                           /*  进程空间大小                */
-#define PROCESS_STACK_SIZE          (128 * KB)                          /*  进程栈空间大小              */
+static ssize_t devfs_read(file_t *file, void *buf, size_t len)
+{
+    return 0;
+}
 
-#define OPEN_MAX                    (20)
-#define NAME_MAX                    (128)
-#define PATH_MAX                    (512)
+static ssize_t devfs_write(file_t *file, const void *buf, size_t len)
+{
+    return 0;
+}
 
-#endif                                                                  /*  CONFIG_H_                   */
+static int devfs_ioctl(file_t *file, int cmd, void *arg)
+{
+    return 0;
+}
+
+static int devfs_close(file_t *file)
+{
+    return 0;
+}
+
+file_system_t devfs = {
+        .name  = "devfs",
+        .mount = devfs_mount,
+        .open  = devfs_open,
+        .read  = devfs_read,
+        .write = devfs_write,
+        .ioctl = devfs_ioctl,
+        .close = devfs_close,
+};
 /*********************************************************************************************************
   END FILE
 *********************************************************************************************************/
