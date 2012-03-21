@@ -104,7 +104,7 @@ static uint16_t framebuffer[LINEVAL][HOZVAL];
 void lcd_init(void)
 {
     GPGUP   = GPGUP  | (1 << 4);                                        /*  GPG4 关闭上拉电阻           */
-    GPGCON  = (GPGCON & ~(3 << 8)) | 3 << 8;                            /*  GPG4 -> LCD_PWREN           */
+    GPGCON  = (GPGCON & ~(0x3 << 8)) | 3 << 8;                          /*  GPG4 -> LCD_PWREN           */
     GPGDAT  = GPGDAT | (1 << 4);                                        /*  打开 LCD 电源               */
 
     GPCCON  = 0xAAAAAAAA;                                               /*  LCD 功能                    */
@@ -154,7 +154,7 @@ void lcd_init(void)
 
     LCDINTMSK = (LCDINTMSK & ~(0x3)) | 0;                               /*  屏蔽中断                    */
     LPCSEL    = (LPCSEL & ~(1)) | 0;                                    /*  禁能 LPC3600/LCC3600 模式   */
-    TPAL      = 0;                                                      /*  不使用调色板                */
+    TPAL      = 0x00;                                                   /*  不使用调色板                */
 
     LCDCON1   = (LCDCON1 & ~(1)) | ENVID;                               /*  开启视频输出                */
 }

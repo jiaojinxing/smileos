@@ -19,14 +19,14 @@
 ** Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 **
 **--------------------------------------------------------------------------------------------------------
-** File name:               config.h
-** Last modified Date:      2012-2-2
+** File name:               device.c
+** Last modified Date:      2012-3-20
 ** Last Version:            1.0.0
-** Descriptions:            配置头文件
+** Descriptions:            设备管理
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing
-** Created date:            2012-2-2
+** Created date:            2012-3-20
 ** Version:                 1.0.0
 ** Descriptions:            创建文件
 **
@@ -37,30 +37,86 @@
 ** Descriptions:
 **
 *********************************************************************************************************/
-#ifndef CONFIG_H_
-#define CONFIG_H_
+#include "kern/config.h"
+#include "kern/types.h"
+#include "kern/kern.h"
+#include "vfs/vfs.h"
+#include "vfs/device.h"
+#include "vfs/driver.h"
+#include <string.h>
 
-#ifndef KB
-#define KB                          (1024)
-#define MB                          (1024 * KB)
-#define GB                          (1024 * MB)
-#endif
-#ifdef S3C2440_BSP
-#include "../../bsp/s3c2440/s3c2440_config.h"
-#endif
+/*
+ * 设备链表
+ */
+static device_t *dev_list;
 
-#ifndef TICK_PER_SECOND
-#define TICK_PER_SECOND             (100)                               /*  每秒 TICK 数                */
-#endif
+/*
+ * 安装设备
+ */
+static int device_install(device_t *dev)
+{
+    dev->next = dev_list;
+    dev_list  = dev;
 
-#define PROCESS_SPACE_SIZE          (32 * MB)                           /*  进程空间大小                */
-#define PROCESS_STACK_SIZE          (128 * KB)                          /*  进程栈空间大小              */
+    return 0;
+}
 
-#define OPEN_MAX                    (20)
-#define NAME_MAX                    (128)
-#define PATH_MAX                    (512)
+/*
+ * 查找驱动
+ */
+device_t *device_lookup(const char *name)
+{
+    device_t *dev = dev_list;
 
-#endif                                                                  /*  CONFIG_H_                   */
+    if (name == NULL) {
+        return NULL;
+    }
+
+    while (dev != NULL) {
+        if (strcmp(dev->name, name) == 0) {
+            break;
+        }
+        dev = dev->next;
+    }
+    return dev;
+}
+
+/*
+ * 创建设备
+ */
+int device_create(const char *dev_name, const char *drv_name, void *ctx)
+{
+    driver_t *drv;
+    device_t *dev;
+
+    if (dev_name == NULL) {
+        return -1;
+    }
+
+    if (strncmp(dev_name, "/dev/", 5) != 0) {
+        return -1;
+    }
+
+    if (dev_name[5] == '\0') {
+        return -1;
+    }
+
+    if (device_lookup(dev_name) != NULL) {
+        return -1;
+    }
+
+    drv = driver_lookup(drv_name);
+    if (drv != NULL) {
+        dev = kmalloc(sizeof(device_t));
+        if (dev != NULL) {
+            strcpy(dev->name, dev_name);
+            dev->ctx = ctx;
+            device_install(dev);
+            return 0;
+        }
+    }
+    return -1;
+}
 /*********************************************************************************************************
   END FILE
 *********************************************************************************************************/

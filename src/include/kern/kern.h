@@ -72,6 +72,7 @@
 #define TASK_RESUME_INTERRUPT   (1 << 6)                                /*  等待被中断                  */
 
 struct vmm_frame;
+struct file;
 /*
  * 任务控制块
  */
@@ -102,6 +103,8 @@ typedef struct task {
     struct task            *next;                                       /*  后趋                        */
     struct task           **wait_list;                                  /*  等待链表                    */
     struct vmm_frame       *frame_list;                                 /*  页框链表                    */
+    struct file            *files;
+    char                    cwd[PATH_MAX];
 } task_t;
 
 /*
