@@ -44,6 +44,8 @@
 #include "vfs/device.h"
 #include "vfs/driver.h"
 #include "vfs/mount.h"
+#include "vfs/fs.h"
+#include <dirent.h>
 #include <string.h>
 #include <stdio.h>
 
@@ -64,8 +66,8 @@ process_file_info_t process_file_info[PROCESS_NR];
 int vfs_open(const char *path, int oflag, mode_t mode)
 {
     mount_point_t *point;
-    char           file_path[PATH_MAX];
-    char          *tmp;
+    char file_path[PATH_MAX];
+    char *tmp;
 
     if (path == NULL) {                                                 /*  PATH 合法性检查             */
         return -1;
@@ -98,8 +100,8 @@ int vfs_open(const char *path, int oflag, mode_t mode)
     *tmp = '/';                                                         /*  恢复 / 号                   */
 
     if (point != NULL) {
-        int     fd;
-        int     ret;
+        int fd;
+        int ret;
         file_t *file;
                                                                         /*  查找一个空闲的文件结构      */
         for (fd = 0, file = process_file_info[current->pid].files; fd < OPEN_MAX; fd++, file++) {
@@ -281,8 +283,8 @@ int vfs_close(int fd)
 DIR *vfs_opendir(const char *path)
 {
     mount_point_t *point;
-    char           file_path[PATH_MAX];
-    char          *tmp;
+    char file_path[PATH_MAX];
+    char *tmp;
 
     if (path == NULL) {                                                 /*  PATH 合法性检查             */
         return (DIR *)-1;
@@ -315,8 +317,8 @@ DIR *vfs_opendir(const char *path)
     }
 
     if (point != NULL) {
-        int     fd;
-        int     ret;
+        int fd;
+        int ret;
         file_t *file;
                                                                         /*  查找一个空闲的文件结构      */
         for (fd = 0, file = process_file_info[current->pid].files; fd < OPEN_MAX; fd++, file++) {
@@ -504,6 +506,62 @@ int vfs_closedir(DIR *dir)
     kern_mutex_unlock(&file->lock);
 
     return ret;
+}
+
+/*
+ * 初始化虚拟文件系统
+ */
+int vfs_init(void)
+{
+    process_file_info_t *info;
+    file_t *file;
+    int i;
+    int j;
+
+    driver_manager_init();
+
+    device_manager_init();
+
+    file_system_manager_init();
+
+    mount_point_manager_init();
+
+    extern file_system_t rootfs;
+    file_system_install(&rootfs);
+
+    extern file_system_t devfs;
+    file_system_install(&devfs);
+
+    mount("/",    NULL, "rootfs");
+
+    mount("/dev", NULL, "devfs");
+
+    for (i = 0, info = process_file_info; i < PROCESS_NR; i++, info++) {
+        strcpy(info->cwd, "/");
+        kern_mutex_new(&info->cwd_lock);
+
+        for (j = 0, file = info->files; j < OPEN_MAX; j++, file++) {
+            kern_mutex_new(&file->lock);
+            file->ctx   = NULL;
+            file->point = NULL;
+            file->used  = FALSE;
+        }
+    }
+
+    return 0;
+}
+
+void vfs_test(void)
+{
+    DIR *dir;
+    struct dirent *entry;
+
+    dir = vfs_opendir("/");
+
+    while ((entry = vfs_readdir(dir)) != NULL) {
+        printf("%s\n", entry->d_name);
+    }
+    vfs_closedir(dir);
 }
 /*********************************************************************************************************
   END FILE

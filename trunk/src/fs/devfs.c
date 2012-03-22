@@ -39,8 +39,29 @@
 *********************************************************************************************************/
 #include "kern/config.h"
 #include "kern/types.h"
+#include "kern/kern.h"
 #include "vfs/vfs.h"
+#include <dirent.h>
 #include <string.h>
+
+/*
+ * 设备链表
+ */
+extern device_t *dev_list;
+
+/*
+ * 设备管理锁
+ */
+extern kern_mutex_t devmgr_lock;
+
+/*
+ * 私有信息
+ */
+typedef struct {
+    struct dirent   entry;
+    device_t       *current;
+    long            loc;
+} privinfo_t;
 
 static int devfs_mount(mount_point_t *point, device_t *dev, const char *dev_name)
 {
@@ -72,14 +93,107 @@ static int devfs_close(mount_point_t *point, file_t *file)
     return 0;
 }
 
+static int devfs_opendir(mount_point_t *point, file_t *file, const char *path)
+{
+    privinfo_t *priv = kmalloc(sizeof(privinfo_t));
+
+    file->ctx = priv;
+
+    if (priv != NULL) {
+        kern_mutex_lock(&devmgr_lock, 0);
+        priv->current = dev_list;
+        kern_mutex_unlock(&devmgr_lock);
+        priv->loc     = 0;
+    }
+
+    return priv != NULL ? 0 : -1;
+}
+
+static struct dirent *devfs_readdir(mount_point_t *point, file_t *file)
+{
+    privinfo_t *priv = file->ctx;
+
+    if (priv != NULL && priv->current != NULL) {
+        strcpy(priv->entry.d_name, priv->current->name);
+        priv->entry.d_ino = priv->loc++;
+        kern_mutex_lock(&devmgr_lock, 0);
+        priv->current = priv->current->next;
+        kern_mutex_unlock(&devmgr_lock);
+        return &priv->entry;
+    }
+    return NULL;
+}
+
+static void devfs_rewinddir(mount_point_t *point, file_t *file)
+{
+    privinfo_t *priv = file->ctx;
+
+    if (priv != NULL) {
+        kern_mutex_lock(&devmgr_lock, 0);
+        priv->current = dev_list;
+        kern_mutex_unlock(&devmgr_lock);
+        priv->loc     = 0;
+    }
+}
+
+static void devfs_seekdir(mount_point_t *point, file_t *file, long loc)
+{
+    privinfo_t *priv = file->ctx;
+
+    kern_mutex_lock(&devmgr_lock, 0);
+    if (priv != NULL) {
+        device_t *dev = dev_list;
+        int i;
+
+        for (i = 0; i < loc && dev != NULL; i++) {
+            dev = dev->next;
+        }
+
+        if (point != NULL) {
+            priv->current = dev;
+            priv->loc     = loc;
+        }
+    }
+    kern_mutex_unlock(&devmgr_lock);
+}
+
+static long devfs_telldir(mount_point_t *point, file_t *file)
+{
+    privinfo_t *priv = file->ctx;
+
+    if (priv != NULL) {
+        return priv->loc;
+    }
+
+    return -1;
+}
+
+static int devfs_closedir(mount_point_t *point, file_t *file)
+{
+    privinfo_t *priv = file->ctx;
+
+    if (priv != NULL) {
+        kfree(priv);
+        return 0;
+    }
+
+    return -1;
+}
+
 file_system_t devfs = {
-        .name  = "devfs",
-        .mount = devfs_mount,
-        .open  = devfs_open,
-        .read  = devfs_read,
-        .write = devfs_write,
-        .ioctl = devfs_ioctl,
-        .close = devfs_close,
+        .name       = "devfs",
+        .mount      = devfs_mount,
+        .open       = devfs_open,
+        .read       = devfs_read,
+        .write      = devfs_write,
+        .ioctl      = devfs_ioctl,
+        .close      = devfs_close,
+        .opendir    = devfs_opendir,
+        .readdir    = devfs_readdir,
+        .rewinddir  = devfs_rewinddir,
+        .seekdir    = devfs_seekdir,
+        .telldir    = devfs_telldir,
+        .closedir   = devfs_closedir,
 };
 /*********************************************************************************************************
   END FILE

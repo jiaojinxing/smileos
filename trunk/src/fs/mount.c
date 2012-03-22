@@ -50,24 +50,24 @@
 /*
  * 挂载点链表
  */
-static mount_point_t *point_list;
+mount_point_t *point_list;
 
 /*
  * 挂载点管理锁
  */
-static kern_mutex_t point_lock;
+kern_mutex_t pointmgr_lock;
 
 /*
  * 安装挂载点
  */
 static int mount_point_install(mount_point_t *point)
 {
-    kern_mutex_lock(&point_lock, 0);
+    kern_mutex_lock(&pointmgr_lock, 0);
 
     point->next = point_list;
     point_list  = point;
 
-    kern_mutex_unlock(&point_lock);
+    kern_mutex_unlock(&pointmgr_lock);
 
     return 0;
 }
@@ -83,7 +83,7 @@ mount_point_t *mount_point_lookup(const char *name)
         return NULL;
     }
 
-    kern_mutex_lock(&point_lock, 0);
+    kern_mutex_lock(&pointmgr_lock, 0);
 
     point = point_list;
 
@@ -94,7 +94,7 @@ mount_point_t *mount_point_lookup(const char *name)
         point = point->next;
     }
 
-    kern_mutex_unlock(&point_lock);
+    kern_mutex_unlock(&pointmgr_lock);
 
     return point;
 }
@@ -106,11 +106,10 @@ int mount(const char *point_name, const char *dev_name, const char *fs_name)
 {
     mount_point_t *point;
     file_system_t *fs;
-    device_t      *dev;
-    int            ret;
+    device_t *dev;
+    int ret;
 
     if (point_name == NULL ||
-        dev_name   == NULL ||
         fs_name    == NULL) {
         return -1;
     }
@@ -162,7 +161,7 @@ int mount(const char *point_name, const char *dev_name, const char *fs_name)
  */
 int mount_point_manager_init(void)
 {
-    return kern_mutex_new(&point_lock);
+    return kern_mutex_new(&pointmgr_lock);
 }
 /*********************************************************************************************************
   END FILE
