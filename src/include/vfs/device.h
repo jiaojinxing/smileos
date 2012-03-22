@@ -40,8 +40,6 @@
 #ifndef DEVICE_H_
 #define DEVICE_H_
 
-#include "vfs/vfs.h"
-
 /*
  * 查找驱动
  */
@@ -51,6 +49,11 @@ device_t *device_lookup(const char *name);
  * 创建设备
  */
 int device_create(const char *dev_name, const char *drv_name, void *ctx);
+
+/*
+ * 初始化设备管理
+ */
+int device_manager_init(void);
 
 #endif                                                                  /*  DEVICE_H_                   */
 /*********************************************************************************************************

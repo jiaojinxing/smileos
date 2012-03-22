@@ -40,6 +40,9 @@
 #ifndef VFS_H_
 #define VFS_H_
 
+#include "kern/config.h"
+#include "kern/types.h"
+#include "kern/ipc.h"
 #include <sys/types.h>
 
 struct file;
@@ -47,7 +50,9 @@ struct driver;
 struct device;
 struct file_system;
 struct mount_point;
+struct _DIR;
 
+typedef struct _DIR         DIR;
 typedef struct file         file_t;
 typedef struct driver       driver_t;
 typedef struct device       device_t;
@@ -64,11 +69,11 @@ struct driver {
     /*
      * 驱动接口
      */
-    int     (*open)(void *ctx, int oflag, mode_t mode);
-    ssize_t (*read)(void *ctx, void *buf, size_t len);
-    ssize_t (*write)(void *ctx, const void *buf, size_t len);
-    int     (*ioctl)(void *ctx, int cmd, void *arg);
-    int     (*close)(void *ctx);
+    int     (*open)(void *ctx, file_t *file, int oflag, mode_t mode);
+    ssize_t (*read)(void *ctx, file_t *file, void *buf, size_t len);
+    ssize_t (*write)(void *ctx, file_t *file, const void *buf, size_t len);
+    int     (*ioctl)(void *ctx, file_t *file, int cmd, void *arg);
+    int     (*close)(void *ctx, file_t *file);
 };
 
 /*
@@ -94,12 +99,18 @@ struct file_system {
     /*
      * 文件系统接口
      */
-    int     (*mount)(mount_point_t *point);
-    int     (*open)(file_t *file, const char *path, int oflag, mode_t mode);
-    ssize_t (*read)(file_t *file, void *buf, size_t len);
-    ssize_t (*write)(file_t *file, const void *buf, size_t len);
-    int     (*ioctl)(file_t *file, int cmd, void *arg);
-    int     (*close)(file_t *file);
+    int     (*mount)(mount_point_t *point, device_t *dev, const char *dev_name);
+    int     (*open)(mount_point_t *point, file_t *file, const char *path, int oflag, mode_t mode);
+    ssize_t (*read)(mount_point_t *point, file_t *file, void *buf, size_t len);
+    ssize_t (*write)(mount_point_t *point, file_t *file, const void *buf, size_t len);
+    int     (*ioctl)(mount_point_t *point, file_t *file, int cmd, void *arg);
+    int     (*close)(mount_point_t *point, file_t *file);
+    int     (*opendir)(mount_point_t *point, file_t *file, const char *path);
+    struct dirent *(*readdir)(mount_point_t *point, file_t *file);
+    void    (*rewinddir)(mount_point_t *point, file_t *file);
+    void    (*seekdir)(mount_point_t *point, file_t *file, long loc);
+    long    (*telldir)(mount_point_t *point, file_t *file);
+    int     (*closedir)(mount_point_t *point, file_t *file);
 };
 
 /*
@@ -126,7 +137,9 @@ struct file {
     void                   *ctx;
     mount_point_t          *point;
     uint8_t                 used;
+    kern_mutex_t            lock;
 };
+
 
 #endif                                                                  /*  VFS_H_                      */
 /*********************************************************************************************************

@@ -19,14 +19,14 @@
 ** Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 **
 **--------------------------------------------------------------------------------------------------------
-** File name:               sys_call.h
-** Last modified Date:      2012-2-22
+** File name:               fs.c
+** Last modified Date:      2012-3-22
 ** Last Version:            1.0.0
-** Descriptions:            系统调用
+** Descriptions:            文件系统管理
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing
-** Created date:            2012-2-22
+** Created date:            2012-3-22
 ** Version:                 1.0.0
 ** Descriptions:            创建文件
 **
@@ -37,77 +37,80 @@
 ** Descriptions:
 **
 *********************************************************************************************************/
-#ifndef SYS_CALL_H_
-#define SYS_CALL_H_
+#include "kern/config.h"
+#include "kern/types.h"
+#include "kern/ipc.h"
+#include "vfs/vfs.h"
+#include <string.h>
+#include <stdio.h>
 
 /*
- * 系统调用号
+ * 文件系统链表
  */
-#define SYS_CALL_EXIT       0
-#define SYS_CALL_SLEEP      1
-#define SYS_CALL_WRITE      2
-#define SYS_CALL_GETTIME    3
-#define SYS_CALL_GETPID     4
-#define SYS_CALL_ERRNO      5
-#define SYS_CALL_YIELD      6
-#define SYS_CALL_NR         7                                           /*  系统调用数                  */
-
-#ifndef __ASSEMBLER__
-#include <sys/types.h>
+static file_system_t *fs_list;
 
 /*
- * exit
+ * 文件系统管理锁
  */
-void exit(int error_code);
+static kern_mutex_t fsmgr_lock;
 
 /*
- * abort
+ * 查找文件系统
  */
-void abort(void);
+file_system_t *file_system_lookup(const char *name)
+{
+    file_system_t *fs;
+
+    if (name == NULL) {
+        return NULL;
+    }
+
+    kern_mutex_lock(&fsmgr_lock, 0);
+
+    fs = fs_list;
+
+    while (fs != NULL) {
+        if (strcmp(fs->name, name) == 0) {
+            break;
+        }
+        fs = fs->next;
+    }
+
+    kern_mutex_unlock(&fsmgr_lock);
+
+    return fs;
+}
 
 /*
- * yield
+ * 安装文件系统
  */
-void yield(void);
+int file_system_install(file_system_t *fs)
+{
+    if (fs == NULL || fs->name == NULL) {
+        return -1;
+    }
+
+    if (file_system_lookup(fs->name) != NULL) {
+        return -1;
+    }
+
+    kern_mutex_lock(&fsmgr_lock, 0);
+
+    fs->next = fs_list;
+    fs_list  = fs;
+
+    kern_mutex_unlock(&fsmgr_lock);
+
+    return 0;
+}
 
 /*
- * sleep
+ * 初始化文件系统管理
  */
-void sleep(unsigned int s);
-
-/*
- * usleep
- */
-void usleep(unsigned int us);
-
-/*
- * write
- */
-int write(int fd, const char *data, unsigned int size);
-
-/*
- * printf
- */
-int printf(const char *fmt, ...);
-
-/*
- * puts
- */
-int puts(const char *str);
-
-/*
- * select
- */
-struct timeval;
-int select(int maxfdp1, fd_set *readset, fd_set *writeset, fd_set *exceptset, struct timeval *timeout);
-
-/*
- * getpid
- */
-int getpid(void);
-#endif
-
-#endif                                                                  /*  SYS_CALL_H_                 */
+int file_system_manager_init(void)
+{
+    return kern_mutex_new(&fsmgr_lock);
+}
 /*********************************************************************************************************
   END FILE
 *********************************************************************************************************/

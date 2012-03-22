@@ -40,8 +40,6 @@
 #ifndef DRIVER_H_
 #define DRIVER_H_
 
-#include "vfs/vfs.h"
-
 /*
  * 安装驱动
  */
@@ -51,6 +49,11 @@ int driver_install(driver_t *drv);
  * 查找驱动
  */
 driver_t *driver_lookup(const char *name);
+
+/*
+ * 初始化驱动管理
+ */
+int driver_manager_init(void);
 
 #endif                                                                  /*  DRIVER_H_                   */
 /*********************************************************************************************************
