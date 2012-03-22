@@ -48,12 +48,12 @@
 /*
  * 设备链表
  */
-static device_t *dev_list;
+device_t *dev_list;
 
 /*
  * 设备管理锁
  */
-static kern_mutex_t devmgr_lock;
+kern_mutex_t devmgr_lock;
 
 /*
  * 安装设备

@@ -97,6 +97,9 @@ int main(void)
 
     kthread_create("init", init, NULL, 16 * KB, 10);
 
+    extern int vfs_init(void);
+    vfs_init();
+
     kernel_start();
 
     while (1) {

@@ -93,6 +93,8 @@ static int get_task_info(task_t *task, char *buf)
     }
 }
 
+
+
 /*
  * Ö´ÐÐ sbin
  */
@@ -176,6 +178,12 @@ static void telnetd_thread(void *arg)
                             /*
                              * TODO:
                              */
+                        } else if (strcmp(cmd, "ls") == 0) {
+                            /*
+                             * TODO:
+                             */
+                            extern void vfs_test(void);
+                            vfs_test();
                         } else if (strcmp(cmd, "exit") == 0) {
                             break;
                         } else {
