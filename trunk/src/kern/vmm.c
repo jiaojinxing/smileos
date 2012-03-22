@@ -41,7 +41,7 @@
 #include "kern/types.h"
 #include "kern/kern.h"
 #include "kern/mmu.h"
-#include "tree.h"
+#include <sys/tree.h>
 #include <string.h>
 
 /*

@@ -40,8 +40,8 @@
 #include "kern/config.h"
 #include "kern/types.h"
 #include "kern/kern.h"
+#include "kern/ipc.h"
 #include "vfs/vfs.h"
-#include "vfs/device.h"
 #include "vfs/driver.h"
 #include <string.h>
 
@@ -51,12 +51,21 @@
 static device_t *dev_list;
 
 /*
+ * 设备管理锁
+ */
+static kern_mutex_t devmgr_lock;
+
+/*
  * 安装设备
  */
 static int device_install(device_t *dev)
 {
+    kern_mutex_lock(&devmgr_lock, 0);
+
     dev->next = dev_list;
     dev_list  = dev;
+
+    kern_mutex_unlock(&devmgr_lock);
 
     return 0;
 }
@@ -66,11 +75,15 @@ static int device_install(device_t *dev)
  */
 device_t *device_lookup(const char *name)
 {
-    device_t *dev = dev_list;
+    device_t *dev;;
 
     if (name == NULL) {
         return NULL;
     }
+
+    kern_mutex_lock(&devmgr_lock, 0);
+
+    dev = dev_list;
 
     while (dev != NULL) {
         if (strcmp(dev->name, name) == 0) {
@@ -78,6 +91,9 @@ device_t *device_lookup(const char *name)
         }
         dev = dev->next;
     }
+
+    kern_mutex_unlock(&devmgr_lock);
+
     return dev;
 }
 
@@ -89,7 +105,7 @@ int device_create(const char *dev_name, const char *drv_name, void *ctx)
     driver_t *drv;
     device_t *dev;
 
-    if (dev_name == NULL) {
+    if (dev_name == NULL || drv_name == NULL) {
         return -1;
     }
 
@@ -110,12 +126,21 @@ int device_create(const char *dev_name, const char *drv_name, void *ctx)
         dev = kmalloc(sizeof(device_t));
         if (dev != NULL) {
             strcpy(dev->name, dev_name);
+            dev->drv = drv;
             dev->ctx = ctx;
             device_install(dev);
             return 0;
         }
     }
     return -1;
+}
+
+/*
+ * 初始化设备管理
+ */
+int device_manager_init(void)
+{
+    return kern_mutex_new(&devmgr_lock);
 }
 /*********************************************************************************************************
   END FILE

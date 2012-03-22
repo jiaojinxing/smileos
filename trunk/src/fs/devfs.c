@@ -39,38 +39,35 @@
 *********************************************************************************************************/
 #include "kern/config.h"
 #include "kern/types.h"
-#include "kern/kern.h"
 #include "vfs/vfs.h"
-#include "vfs/device.h"
-#include "vfs/driver.h"
 #include <string.h>
 
-static int devfs_mount(mount_point_t *point)
+static int devfs_mount(mount_point_t *point, device_t *dev, const char *dev_name)
 {
     return 0;
 }
 
-static int devfs_open(file_t *file, const char *path, int oflag, mode_t mode)
+static int devfs_open(mount_point_t *point, file_t *file, const char *path, int oflag, mode_t mode)
 {
     return 0;
 }
 
-static ssize_t devfs_read(file_t *file, void *buf, size_t len)
+static ssize_t devfs_read(mount_point_t *point, file_t *file, void *buf, size_t len)
 {
     return 0;
 }
 
-static ssize_t devfs_write(file_t *file, const void *buf, size_t len)
+static ssize_t devfs_write(mount_point_t *point, file_t *file, const void *buf, size_t len)
 {
     return 0;
 }
 
-static int devfs_ioctl(file_t *file, int cmd, void *arg)
+static int devfs_ioctl(mount_point_t *point, file_t *file, int cmd, void *arg)
 {
     return 0;
 }
 
-static int devfs_close(file_t *file)
+static int devfs_close(mount_point_t *point, file_t *file)
 {
     return 0;
 }
