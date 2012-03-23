@@ -124,21 +124,25 @@ static struct dirent *devfs_readdir(mount_point_t *point, file_t *file)
     return NULL;
 }
 
-static void devfs_rewinddir(mount_point_t *point, file_t *file)
+static int devfs_rewinddir(mount_point_t *point, file_t *file)
 {
     privinfo_t *priv = file->ctx;
+    int ret = -1;
 
     if (priv != NULL) {
         kern_mutex_lock(&devmgr_lock, 0);
         priv->current = dev_list;
         kern_mutex_unlock(&devmgr_lock);
         priv->loc     = 0;
+        ret           = 0;
     }
+    return ret;
 }
 
-static void devfs_seekdir(mount_point_t *point, file_t *file, long loc)
+static int devfs_seekdir(mount_point_t *point, file_t *file, long loc)
 {
     privinfo_t *priv = file->ctx;
+    int ret = -1;
 
     kern_mutex_lock(&devmgr_lock, 0);
     if (priv != NULL) {
@@ -152,9 +156,11 @@ static void devfs_seekdir(mount_point_t *point, file_t *file, long loc)
         if (point != NULL) {
             priv->current = dev;
             priv->loc     = loc;
+            ret           = 0;
         }
     }
     kern_mutex_unlock(&devmgr_lock);
+    return ret;
 }
 
 static long devfs_telldir(mount_point_t *point, file_t *file)
