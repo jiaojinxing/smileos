@@ -114,7 +114,7 @@ static struct dirent *devfs_readdir(mount_point_t *point, file_t *file)
     privinfo_t *priv = file->ctx;
 
     if (priv != NULL && priv->current != NULL) {
-        strcpy(priv->entry.d_name, priv->current->name);
+        strcpy(priv->entry.d_name, priv->current->name + 5);
         priv->entry.d_ino = priv->loc++;
         kern_mutex_lock(&devmgr_lock, 0);
         priv->current = priv->current->next;
