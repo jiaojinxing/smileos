@@ -111,8 +111,31 @@ void bsp_init(void)
     interrupt_init();
 
     timer_init();
+}
 
-    lcd_init();
+#include "vfs/vfs.h"
+#include "vfs/driver.h"
+
+/*
+ * 安装驱动
+ */
+int drivers_install(void)
+{
+    extern driver_t fb_drv;
+    driver_install(&fb_drv);
+
+    return 0;
+}
+
+/*
+ * 创建设备
+ */
+int devices_create(void)
+{
+    extern int fb_create(void);
+    fb_create();
+
+    return 0;
 }
 /*********************************************************************************************************
   END FILE

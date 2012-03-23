@@ -60,9 +60,19 @@ static void tcpip_init_done(void *arg)
     static struct netif ethernetif;
     ip_addr_t           ip, submask, gateway;
 
+    /*
+     * 如果使用 qemu, 请把 #if 1 改为 #if 0
+     * 另外 kern/trap.c 文件也有一处要修改
+     */
+#if 1
     IP4_ADDR(&ip,       192, 168,   2,  30);
     IP4_ADDR(&submask,  255, 255, 255,   0);
     IP4_ADDR(&gateway,  192, 168,   2,   1);
+#else
+    IP4_ADDR(&ip,       192, 168,   0,  30);
+    IP4_ADDR(&submask,  255, 255, 255,   0);
+    IP4_ADDR(&gateway,  192, 168,   0,   1);
+#endif
 
     extern err_t ethernetif_init(struct netif *netif);
     netif_add(&ethernetif, &ip, &submask, &gateway, NULL, ethernetif_init, tcpip_input);
@@ -83,6 +93,15 @@ static void tcpip_init_done(void *arg)
  */
 static void init(void *arg)
 {
+    extern int vfs_init(void);
+    vfs_init();
+
+    extern int drivers_install(void);
+    drivers_install();
+
+    extern int devices_create(void);
+    devices_create();
+
     tcpip_init(tcpip_init_done, NULL);
 }
 
@@ -96,9 +115,6 @@ int main(void)
     kernel_init();
 
     kthread_create("init", init, NULL, 16 * KB, 10);
-
-    extern int vfs_init(void);
-    vfs_init();
 
     kernel_start();
 

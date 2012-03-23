@@ -102,7 +102,7 @@ void dabt_c_handler(uint32_t lr, uint32_t spsr)
     case 5:     /* Translation */
     case 7:
         /*
-         * qemu-system-arm.exe 的 bug..., 真实硬件使用 #if 1
+         * qemu-system-arm.exe 的 bug..., 真实硬件使用 #if 1, qemu 使用 #if 0
          */
 #if 1
         mva = mmu_get_fault_address();

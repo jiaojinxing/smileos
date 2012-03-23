@@ -158,14 +158,21 @@ void lcd_init(void)
 }
 
 #include "vfs/vfs.h"
+#include "vfs/device.h"
 
-int lcd_open(void *ctx, file_t *file, int oflag, mode_t mode)
+/*
+ * 打开 FrameBuffer
+ */
+int fb_open(void *ctx, file_t *file, int oflag, mode_t mode)
 {
     LCDCON1   = (LCDCON1 & ~(1)) | ENVID;                               /*  开启视频输出                */
     return 0;
 }
 
-int lcd_ioctl(void *ctx, file_t *file, int cmd, void *arg)
+/*
+ * 控制 FrameBuffer
+ */
+int fb_ioctl(void *ctx, file_t *file, int cmd, void *arg)
 {
     int ret = 0;
 
@@ -183,20 +190,38 @@ int lcd_ioctl(void *ctx, file_t *file, int cmd, void *arg)
     return ret;
 }
 
-int lcd_close(void *ctx, file_t *file)
+/*
+ * 关闭 FrameBuffer
+ */
+int fb_close(void *ctx, file_t *file)
 {
     LCDCON1 = (LCDCON1 & ~(1)) | 0;                                     /*  关闭视频输出                */
     return 0;
 }
 
-driver_t lcd_drv = {
-        .name  = "lcd",
-        .open  = lcd_open,
+/*
+ * FrameBuffer 驱动
+ */
+driver_t fb_drv = {
+        .name  = "fb",
+        .open  = fb_open,
         .read  = NULL,
         .write = NULL,
-        .ioctl = lcd_ioctl,
-        .close = lcd_close,
+        .ioctl = fb_ioctl,
+        .close = fb_close,
 };
+
+/*
+ * 创建 FrameBuffer 设备
+ */
+int fb_create(void)
+{
+    lcd_init();
+
+    device_create("/dev/fb0", "fb", NULL);
+
+    return 0;
+}
 /*********************************************************************************************************
   END FILE
 *********************************************************************************************************/
