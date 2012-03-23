@@ -50,6 +50,11 @@
 extern mount_point_t *point_list;
 
 /*
+ * 根文件系统挂载点
+ */
+extern mount_point_t *rootfs_point;
+
+/*
  * 挂载点管理锁
  */
 extern kern_mutex_t pointmgr_lock;
@@ -113,8 +118,8 @@ static struct dirent *rootfs_readdir(mount_point_t *point, file_t *file)
 {
     privinfo_t *priv = file->ctx;
 
-    if (priv != NULL && priv->current != NULL) {
-        strcpy(priv->entry.d_name, priv->current->name);
+    if (priv != NULL && priv->current != rootfs_point) {
+        strcpy(priv->entry.d_name, priv->current->name + 1);
         priv->entry.d_ino = priv->loc++;
         kern_mutex_lock(&pointmgr_lock, 0);
         priv->current = priv->current->next;
@@ -145,7 +150,7 @@ static void rootfs_seekdir(mount_point_t *point, file_t *file, long loc)
         mount_point_t *point = point_list;
         int i;
 
-        for (i = 0; i < loc && point != NULL; i++) {
+        for (i = 0; i < loc && point != rootfs_point; i++) {
             point = point->next;
         }
 

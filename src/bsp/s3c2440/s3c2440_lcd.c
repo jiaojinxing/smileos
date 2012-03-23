@@ -155,29 +155,48 @@ void lcd_init(void)
     LCDINTMSK = (LCDINTMSK & ~(0x3)) | 0;                               /*  屏蔽中断                    */
     LPCSEL    = (LPCSEL & ~(1)) | 0;                                    /*  禁能 LPC3600/LCC3600 模式   */
     TPAL      = 0x00;                                                   /*  不使用调色板                */
-
-    LCDCON1   = (LCDCON1 & ~(1)) | ENVID;                               /*  开启视频输出                */
 }
 
-//void lcd_putpixel(int x, int y, uint32_t col)
-//{
-//    uint16_t rgb565 = (((col >> 19) & 0x1F) << 11) |
-//                      (((col >> 10) & 0x3F) << 5)  |
-//                      (((col >>  3) & 0x1F) << 0);
-//
-//    framebuffer[y][x] = rgb565;
-//}
-//
-//void lcd_clear(uint32_t col)
-//{
-//    int y, x;
-//
-//    for (y = 0; y < LCD_HEIGHT; y++) {
-//        for (x = 0; x < LCD_WIDTH; x++) {
-//            lcd_putpixel(x, y, col);
-//        }
-//    }
-//}
+#include "vfs/vfs.h"
+
+int lcd_open(void *ctx, file_t *file, int oflag, mode_t mode)
+{
+    LCDCON1   = (LCDCON1 & ~(1)) | ENVID;                               /*  开启视频输出                */
+    return 0;
+}
+
+int lcd_ioctl(void *ctx, file_t *file, int cmd, void *arg)
+{
+    int ret = 0;
+
+    switch (cmd) {
+    case 0:
+        break;
+
+    case 1:
+        break;
+
+    default:
+        ret = -1;
+        break;
+    }
+    return ret;
+}
+
+int lcd_close(void *ctx, file_t *file)
+{
+    LCDCON1 = (LCDCON1 & ~(1)) | 0;                                     /*  关闭视频输出                */
+    return 0;
+}
+
+driver_t lcd_drv = {
+        .name  = "lcd",
+        .open  = lcd_open,
+        .read  = NULL,
+        .write = NULL,
+        .ioctl = lcd_ioctl,
+        .close = lcd_close,
+};
 /*********************************************************************************************************
   END FILE
 *********************************************************************************************************/
