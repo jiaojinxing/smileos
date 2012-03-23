@@ -129,21 +129,25 @@ static struct dirent *rootfs_readdir(mount_point_t *point, file_t *file)
     return NULL;
 }
 
-static void rootfs_rewinddir(mount_point_t *point, file_t *file)
+static int rootfs_rewinddir(mount_point_t *point, file_t *file)
 {
     privinfo_t *priv = file->ctx;
+    int ret = -1;
 
     if (priv != NULL) {
         kern_mutex_lock(&pointmgr_lock, 0);
         priv->current = point_list;
         kern_mutex_unlock(&pointmgr_lock);
         priv->loc     = 0;
+        ret           = 0;
     }
+    return ret;
 }
 
-static void rootfs_seekdir(mount_point_t *point, file_t *file, long loc)
+static int rootfs_seekdir(mount_point_t *point, file_t *file, long loc)
 {
     privinfo_t *priv = file->ctx;
+    int ret = -1;
 
     kern_mutex_lock(&pointmgr_lock, 0);
     if (priv != NULL) {
@@ -157,9 +161,11 @@ static void rootfs_seekdir(mount_point_t *point, file_t *file, long loc)
         if (point != rootfs_point) {
             priv->current = point;
             priv->loc     = loc;
+            ret           = 0;
         }
     }
     kern_mutex_unlock(&pointmgr_lock);
+    return ret;
 }
 
 static long rootfs_telldir(mount_point_t *point, file_t *file)

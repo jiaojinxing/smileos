@@ -45,6 +45,8 @@
 #include "kern/ipc.h"
 #include <sys/types.h>
 
+struct stat;
+struct dirent;
 struct file;
 struct driver;
 struct device;
@@ -97,7 +99,7 @@ struct file_system {
     struct file_system     *next;
 
     /*
-     * 文件系统接口
+     * 文件接口
      */
     int     (*mount)(mount_point_t *point, device_t *dev, const char *dev_name);
     int     (*open)(mount_point_t *point, file_t *file, const char *path, int oflag, mode_t mode);
@@ -105,10 +107,27 @@ struct file_system {
     ssize_t (*write)(mount_point_t *point, file_t *file, const void *buf, size_t len);
     int     (*ioctl)(mount_point_t *point, file_t *file, int cmd, void *arg);
     int     (*close)(mount_point_t *point, file_t *file);
+    int     (*fcntl)(mount_point_t *point, file_t *file, int cmd, void *arg);
+    int     (*fstat)(mount_point_t *point, file_t *file, struct stat *buf);
+    int     (*isatty)(mount_point_t *point, file_t *file);
+    int     (*lseek)(mount_point_t *point, file_t *file, off_t offset, int whence);
+
+    /*
+     * 文件系统接口
+     */
+    int     (*link)(mount_point_t *point, const char *path1, const char *path2);
+    int     (*mkdir)(mount_point_t *point, const char *path, mode_t mode);
+    int     (*rename)(mount_point_t *point, const char *old, const char *new);
+    int     (*stat)(mount_point_t *point, const char *path, struct stat *buf);
+    int     (*unlink)(mount_point_t *point, const char *path);
+
+    /*
+     * 目录接口
+     */
     int     (*opendir)(mount_point_t *point, file_t *file, const char *path);
     struct dirent *(*readdir)(mount_point_t *point, file_t *file);
-    void    (*rewinddir)(mount_point_t *point, file_t *file);
-    void    (*seekdir)(mount_point_t *point, file_t *file, long loc);
+    int     (*rewinddir)(mount_point_t *point, file_t *file);
+    int     (*seekdir)(mount_point_t *point, file_t *file, long loc);
     long    (*telldir)(mount_point_t *point, file_t *file);
     int     (*closedir)(mount_point_t *point, file_t *file);
 };
