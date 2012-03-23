@@ -556,7 +556,7 @@ void vfs_test(void)
     DIR *dir;
     struct dirent *entry;
 
-    dir = vfs_opendir("/");
+    dir = vfs_opendir("/dev");
 
     while ((entry = vfs_readdir(dir)) != NULL) {
         printf("%s\n", entry->d_name);

@@ -66,6 +66,10 @@ static int get_task_info(task_t *task, char *buf)
     case TASK_SUSPEND:
         state = "wait";
         break;
+
+    default:
+        state = "dead";
+        break;
     }
 
     if (strlen(task->name) < 7) {
