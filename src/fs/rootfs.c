@@ -154,7 +154,7 @@ static void rootfs_seekdir(mount_point_t *point, file_t *file, long loc)
             point = point->next;
         }
 
-        if (point != NULL) {
+        if (point != rootfs_point) {
             priv->current = point;
             priv->loc     = loc;
         }
