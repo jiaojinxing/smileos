@@ -53,6 +53,11 @@
 mount_point_t *point_list;
 
 /*
+ * 根文件系统挂载点
+ */
+mount_point_t *rootfs_point;
+
+/*
  * 挂载点管理锁
  */
 kern_mutex_t pointmgr_lock;
@@ -133,6 +138,8 @@ int mount(const char *point_name, const char *dev_name, const char *fs_name)
                         kfree(point);                                   /*  因为我不知道 / 号还有几个   */
                         return -1;                                      /*  所以当作出错来处理          */
                     }
+                } else {
+                    rootfs_point = point;
                 }
 
                 point->fs   = fs;

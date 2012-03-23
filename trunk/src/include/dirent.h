@@ -22,7 +22,7 @@
 ** File name:               dirent.h
 ** Last modified Date:      2012-3-22
 ** Last Version:            1.0.0
-** Descriptions:            虚拟文件系统
+** Descriptions:            目录项
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing

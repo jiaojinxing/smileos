@@ -70,27 +70,27 @@ static int devfs_mount(mount_point_t *point, device_t *dev, const char *dev_name
 
 static int devfs_open(mount_point_t *point, file_t *file, const char *path, int oflag, mode_t mode)
 {
-    return 0;
+    return point->dev->drv->open(point->dev->ctx, file, oflag, mode);
 }
 
 static ssize_t devfs_read(mount_point_t *point, file_t *file, void *buf, size_t len)
 {
-    return 0;
+    return point->dev->drv->read(point->dev->ctx, file, buf, len);
 }
 
 static ssize_t devfs_write(mount_point_t *point, file_t *file, const void *buf, size_t len)
 {
-    return 0;
+    return point->dev->drv->write(point->dev->ctx, file, buf, len);
 }
 
 static int devfs_ioctl(mount_point_t *point, file_t *file, int cmd, void *arg)
 {
-    return 0;
+    return point->dev->drv->ioctl(point->dev->ctx, file, cmd, arg);
 }
 
 static int devfs_close(mount_point_t *point, file_t *file)
 {
-    return 0;
+    return point->dev->drv->close(point->dev->ctx, file);
 }
 
 static int devfs_opendir(mount_point_t *point, file_t *file, const char *path)
