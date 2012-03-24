@@ -40,7 +40,7 @@
 #ifndef VFS_TYPES_H_
 #define VFS_TYPES_H_
 
-#include "kern/config.h"
+#include "vfs/config.h"
 #include <sys/types.h>
 
 struct stat;

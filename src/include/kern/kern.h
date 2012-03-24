@@ -179,6 +179,11 @@ void kfree(void *ptr);
 void *kcalloc(uint32_t nelem, uint32_t elsize);
 
 /*
+ * 打印内核内存堆信息
+ */
+void kern_heap_show(void);
+
+/*
  * 进入临界区域
  */
 uint32_t interrupt_disable(void);

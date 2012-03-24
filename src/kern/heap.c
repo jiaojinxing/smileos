@@ -104,6 +104,20 @@ void *kcalloc(uint32_t nelem, uint32_t elsize)
 }
 
 /*
+ * 打印内存堆信息
+ */
+void kern_heap_show(void)
+{
+    uint32_t reg;
+
+    reg = interrupt_disable();
+
+    heap_show(&kern_heap);
+
+    interrupt_resume(reg);
+}
+
+/*
  * 创建内核内存堆
  */
 void kern_heap_create(void)
@@ -113,10 +127,11 @@ void kern_heap_create(void)
 
 #else
 
-extern int printf(const char *fmt, ...);
+#include "kern/sys_call.h"
+
 #define debug_output      printf
 
-static heap_t  process_heap;
+static heap_t process_heap;
 
 /*
  * malloc
@@ -403,6 +418,7 @@ void *heap_free(heap_t *heap, void *ptr)
  */
 void heap_show(heap_t *heap)
 {
+    debug_output("\n********** heap info **********\n");
     debug_output("heap block count = %d\n", heap->block_cnt);
     debug_output("heap alloc count = %d\n", heap->alloc_cnt);
     debug_output("heap free  count = %d\n", heap->free_cnt);
@@ -415,21 +431,8 @@ void heap_show(heap_t *heap)
             (heap->size-heap->used_size) / MB,
             (heap->size-heap->used_size) % MB / KB,
             (heap->size-heap->used_size) % KB);
+    debug_output("************* end *************\n\n");
 }
-
-#ifdef SMILEOS_KERNEL
-/*
- * 打印内存堆信息
- */
-void kern_heap_show(void)
-{
-    uint32_t reg;
-
-    reg = interrupt_disable();
-    heap_show(&kern_heap);
-    interrupt_resume(reg);
-}
-#endif
 /*********************************************************************************************************
   END FILE
 *********************************************************************************************************/
