@@ -50,7 +50,7 @@
 #define PHY_MEM_SIZE        (64 * MB)                                   /*  物理内存大小                */
 #define PHY_MEM_BASE        (0x30000000)                                /*  物理内存基址                */
 
-#define KERN_MEM_SIZE       (7 * MB)                                    /*  内核内存大小                */
+#define KERN_MEM_SIZE       (8 * MB)                                    /*  内核内存大小                */
 #define KERN_MEM_BASE       (PHY_MEM_BASE)                              /*  内核内存基址                */
 
 #define INT_MEM_SIZE        (1 * MB)                                    /*  中断内存大小                */

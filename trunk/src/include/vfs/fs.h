@@ -40,6 +40,8 @@
 #ifndef FS_H_
 #define FS_H_
 
+#include "vfs/types.h"
+
 /*
  * 查找文件系统
  */

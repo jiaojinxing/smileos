@@ -40,125 +40,168 @@
 #ifndef VFS_H_
 #define VFS_H_
 
-#include "kern/config.h"
-#include "kern/types.h"
-#include "kern/ipc.h"
 #include <sys/types.h>
 
 struct stat;
 struct dirent;
-struct file;
-struct driver;
-struct device;
-struct file_system;
-struct mount_point;
 struct _DIR;
-
 typedef struct _DIR         DIR;
-typedef struct file         file_t;
-typedef struct driver       driver_t;
-typedef struct device       device_t;
-typedef struct file_system  file_system_t;
-typedef struct mount_point  mount_point_t;
 
 /*
- * 驱动
+ * 打开文件
  */
-struct driver {
-    const char             *name;
-    struct driver          *next;
-
-    /*
-     * 驱动接口
-     */
-    int     (*open)(void *ctx, file_t *file, int oflag, mode_t mode);
-    ssize_t (*read)(void *ctx, file_t *file, void *buf, size_t len);
-    ssize_t (*write)(void *ctx, file_t *file, const void *buf, size_t len);
-    int     (*ioctl)(void *ctx, file_t *file, int cmd, void *arg);
-    int     (*close)(void *ctx, file_t *file);
-};
+int vfs_open(const char *path, int oflag, mode_t mode);
 
 /*
- * 设备
+ * 关闭文件
  */
-struct device {
-    char                    name[NAME_MAX];
-    driver_t               *drv;
-    /*
-     * 一个驱动可以被多个设备使用, ctx 用于维护设备信息
-     */
-    void                   *ctx;
-    struct device          *next;
-};
+int vfs_close(int fd);
 
 /*
- * 文件系统
+ * 控制文件
  */
-struct file_system {
-    const char             *name;
-    struct file_system     *next;
-
-    /*
-     * 文件接口
-     */
-    int     (*mount)(mount_point_t *point, device_t *dev, const char *dev_name);
-    int     (*open)(mount_point_t *point, file_t *file, const char *path, int oflag, mode_t mode);
-    ssize_t (*read)(mount_point_t *point, file_t *file, void *buf, size_t len);
-    ssize_t (*write)(mount_point_t *point, file_t *file, const void *buf, size_t len);
-    int     (*ioctl)(mount_point_t *point, file_t *file, int cmd, void *arg);
-    int     (*close)(mount_point_t *point, file_t *file);
-    int     (*fcntl)(mount_point_t *point, file_t *file, int cmd, void *arg);
-    int     (*fstat)(mount_point_t *point, file_t *file, struct stat *buf);
-    int     (*isatty)(mount_point_t *point, file_t *file);
-    int     (*lseek)(mount_point_t *point, file_t *file, off_t offset, int whence);
-
-    /*
-     * 文件系统接口
-     */
-    int     (*link)(mount_point_t *point, const char *path1, const char *path2);
-    int     (*mkdir)(mount_point_t *point, const char *path, mode_t mode);
-    int     (*rename)(mount_point_t *point, const char *old, const char *new);
-    int     (*stat)(mount_point_t *point, const char *path, struct stat *buf);
-    int     (*unlink)(mount_point_t *point, const char *path);
-
-    /*
-     * 目录接口
-     */
-    int     (*opendir)(mount_point_t *point, file_t *file, const char *path);
-    struct dirent *(*readdir)(mount_point_t *point, file_t *file);
-    int     (*rewinddir)(mount_point_t *point, file_t *file);
-    int     (*seekdir)(mount_point_t *point, file_t *file, long loc);
-    long    (*telldir)(mount_point_t *point, file_t *file);
-    int     (*closedir)(mount_point_t *point, file_t *file);
-};
+int vfs_fcntl(int fd, int cmd, void *arg);
 
 /*
- * 挂载点
+ * 获得文件状态
  */
-struct mount_point {
-    char                    name[NAME_MAX];
-    file_system_t          *fs;
-    device_t               *dev;
-    /*
-     * 一个文件系统可以同时被多个设备挂载, ctx 用于维护文件系统信息
-     */
-    void                   *ctx;
-    struct mount_point     *next;
-};
+int vfs_fstat(int fd, struct stat *buf);
 
 /*
- * 文件
+ * 判断文件是不是终端
  */
-struct file {
-    /*
-     * 一个文件可以同时被多次打开, ctx 用于维护文件实例信息
-     */
-    void                   *ctx;
-    mount_point_t          *point;
-    uint8_t                 used;
-    kern_mutex_t            lock;
-};
+int vfs_isatty(int fd);
 
+/*
+ * 同步文件
+ */
+int vfs_fsync(int fd);
+
+/*
+ * 同步文件
+ */
+int vfs_fdatasync(int fd);
+
+/*
+ * 修改文件长度
+ */
+int vfs_ftruncate(int fd, off_t len);
+
+/*
+ * 读文件
+ */
+ssize_t vfs_read(int fd, void *buf, size_t len);
+
+/*
+ * 写文件
+ */
+ssize_t vfs_write(int fd, const void *buf, size_t len);
+
+/*
+ * 控制文件
+ */
+int vfs_ioctl(int fd, int cmd, void *arg);
+
+/*
+ * 调整文件读写位置
+ */
+off_t vfs_lseek(int fd, off_t offset, int whence);
+
+/*********************************************************************************************************
+ *                                          文件系统操作接口
+ */
+/*
+ * 给文件创建一个链接
+ */
+int vfs_link(const char *path1, const char *path2);
+
+/*
+ * 重命名(也可移动)文件
+ */
+int vfs_rename(const char *old, const char *new);
+
+/*
+ * 获得文件状态
+ */
+int vfs_stat(const char *path, struct stat *buf);
+
+/*
+ * 删除文件
+ */
+int vfs_unlink(const char *path);
+
+/*
+ * 创建目录
+ */
+int vfs_mkdir(const char *path, mode_t mode);
+
+/*
+ * 删除目录
+ */
+int vfs_rmdir(const char *path);
+
+/*
+ * 判断是否可访问
+ */
+int vfs_access(const char *path, mode_t mode);
+
+/*
+ * 修改文件长度
+ */
+int vfs_truncate(const char *path, off_t len);
+
+/*
+ * 同步
+ */
+int vfs_sync(const char *path);
+
+/*********************************************************************************************************
+ *                                          目录操作接口
+ */
+/*
+ * 打开目录
+ */
+DIR *vfs_opendir(const char *path);
+
+/*
+ * 关闭目录
+ */
+int vfs_closedir(DIR *dir);
+
+/*
+ * 读目录项
+ */
+struct dirent *vfs_readdir(DIR *dir);
+
+/*
+ * 重置目录读点
+ */
+int vfs_rewinddir(DIR *dir);
+
+/*
+ * 调整目录读点
+ */
+int vfs_seekdir(DIR *dir, long loc);
+
+/*
+ * 获得目录读点
+ */
+long vfs_telldir(DIR *dir);
+
+/*
+ * 改变当前工作目录
+ */
+int vfs_chdir(const char *path);
+
+/*
+ * 获得当前工作目录
+ */
+char *vfs_getcwd(char *buf, size_t size);
+
+/*
+ * 初始化虚拟文件系统
+ */
+int vfs_init(void);
 
 #endif                                                                  /*  VFS_H_                      */
 /*********************************************************************************************************

@@ -48,7 +48,7 @@
  */
 void undf_c_handler(uint32_t lr, uint32_t spsr)
 {
-    printk("%s, current tid = %d\n", __func__, current->tid);
+    printk("%s, current tid = %d, name=%s\n", __func__, current->tid, current->name);
     printk("lr   = 0x%x\n", lr);
     printk("spsr = 0x%x\n", spsr);
 
@@ -60,7 +60,7 @@ void undf_c_handler(uint32_t lr, uint32_t spsr)
  */
 void pabt_c_handler(uint32_t lr, uint32_t spsr)
 {
-    printk("%s, current tid = %d\n", __func__, current->tid);
+    printk("%s, current tid = %d, name=%s\n", __func__, current->tid, current->name);
     printk("fault address = 0x%x\n", mmu_get_fault_address());
     printk("fault status  = 0x%x\n", mmu_get_prefetch_fault_status());
     printk("lr   = 0x%x\n", lr);
@@ -74,7 +74,7 @@ void pabt_c_handler(uint32_t lr, uint32_t spsr)
  */
 void fiq_c_handler(uint32_t lr, uint32_t spsr)
 {
-    printk("%s, current tid = %d\n", __func__, current->tid);
+    printk("%s, current tid = %d, name=%s\n", __func__, current->tid, current->name);
     printk("lr   = 0x%x\n", lr);
     printk("spsr = 0x%x\n", spsr);
 
@@ -91,7 +91,7 @@ void dabt_c_handler(uint32_t lr, uint32_t spsr)
     switch (mmu_get_data_fault_status() & 0x0F) {
     case 1:     /* Alignment */
     case 3:
-        printk("%s, current tid = %d\n", __func__, current->tid);
+        printk("%s, current tid = %d, name=%s\n", __func__, current->tid, current->name);
         printk("fault address = 0x%x\n", mmu_get_fault_address());
         printk("fault status  = 0x%x\n", mmu_get_data_fault_status());
         printk("lr   = 0x%x\n", lr);
@@ -116,7 +116,7 @@ void dabt_c_handler(uint32_t lr, uint32_t spsr)
              && mva <  PROCESS_SPACE_SIZE * (current->pid + 1)) {       /*  µÄĞéÄâµØÖ·¿Õ¼ä·¶Î§ÄÚ        */
             vmm_map_process_page(current, mva);                         /*  Ò³ÃæÓ³Éä                    */
         } else {
-            printk("%s, current tid = %d\n", __func__, current->tid);
+            printk("%s, current tid = %d, name=%s\n", __func__, current->tid, current->name);
             printk("fault address = 0x%x\n", mmu_get_fault_address());
             printk("fault status  = 0x%x\n", mmu_get_data_fault_status());
             printk("lr   = 0x%x\n", lr);
@@ -127,7 +127,7 @@ void dabt_c_handler(uint32_t lr, uint32_t spsr)
 
     case 9:     /* Domain */
     case 11:
-        printk("%s, current tid = %d\n", __func__, current->tid);
+        printk("%s, current tid = %d, name=%s\n", __func__, current->tid, current->name);
         printk("fault address = 0x%x\n", mmu_get_fault_address());
         printk("fault status  = 0x%x\n", mmu_get_data_fault_status());
         printk("lr   = 0x%x\n", lr);
@@ -137,7 +137,7 @@ void dabt_c_handler(uint32_t lr, uint32_t spsr)
 
     case 13:    /* Permission */
     case 15:
-        printk("%s, current tid = %d\n", __func__, current->tid);
+        printk("%s, current tid = %d, name=%s\n", __func__, current->tid, current->name);
         printk("fault address = 0x%x\n", mmu_get_fault_address());
         printk("fault status  = 0x%x\n", mmu_get_data_fault_status());
         printk("lr   = 0x%x\n", lr);
@@ -152,7 +152,7 @@ void dabt_c_handler(uint32_t lr, uint32_t spsr)
                  */
     case 8:
     case 10:
-        printk("%s, current tid = %d\n", __func__, current->tid);
+        printk("%s, current tid = %d, name=%s\n", __func__, current->tid, current->name);
         printk("fault address = 0x%x\n", mmu_get_fault_address());
         printk("fault status  = 0x%x\n", mmu_get_data_fault_status());
         printk("lr   = 0x%x\n", lr);

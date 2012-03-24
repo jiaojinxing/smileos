@@ -40,6 +40,8 @@
 #ifndef MOUNT_H_
 #define MOUNT_H_
 
+#include "vfs/types.h"
+
 /*
  * ≤È’“π“‘ÿµ„
  */

@@ -40,7 +40,7 @@
 #ifndef _FFCONF
 #define _FFCONF         6502
 
-#include "kern/config.h"
+#include "vfs/config.h"
 
 #define	_FS_TINY		0                                               /*  每个文件使用各自的缓冲      */
 

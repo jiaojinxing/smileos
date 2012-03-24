@@ -41,7 +41,6 @@
 #include "kern/types.h"
 #include "kern/kern.h"
 #include "kern/ipc.h"
-#include "vfs/vfs.h"
 #include "vfs/driver.h"
 #include <string.h>
 

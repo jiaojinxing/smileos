@@ -40,6 +40,8 @@
 #ifndef DEVICE_H_
 #define DEVICE_H_
 
+#include "vfs/types.h"
+
 /*
  * ВщевЧ§ЖЏ
  */
