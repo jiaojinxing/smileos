@@ -291,9 +291,12 @@ static mount_point_t *vfs_mount_point_lookup2(char pathbuf[PATH_MAX + 1], char *
     return point;
 }
 
-#define VFS_FILE_TYPE_FILE  (1 << 1)
-#define VFS_FILE_TYPE_DIR   (1 << 2)
-#define VFS_FILE_TYPE_FREE  (0)
+/*
+ * 文件类型
+ */
+#define VFS_FILE_TYPE_FILE      (1 << 1)
+#define VFS_FILE_TYPE_DIR       (1 << 2)
+#define VFS_FILE_TYPE_FREE      (0)
 
 /*********************************************************************************************************
  *                                          文件操作接口
@@ -1081,7 +1084,7 @@ int vfs_init(void)
             kern_mutex_new(&file->lock);
             file->ctx   = NULL;
             file->point = NULL;
-            file->flag  = FALSE;
+            file->flag  = VFS_FILE_TYPE_FREE;
         }
     }
 
