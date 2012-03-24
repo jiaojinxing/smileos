@@ -82,13 +82,6 @@ void *heap_free(heap_t *heap, void *ptr);
  */
 void heap_show(heap_t *heap);
 
-#ifdef SMILEOS_KERNEL
-/*
- * 打印内存堆信息
- */
-void kern_heap_show(void);
-#endif
-
 #endif                                                                  /*  HEAP_H_                     */
 /*********************************************************************************************************
   END FILE

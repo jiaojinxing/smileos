@@ -37,9 +37,8 @@
 ** Descriptions:
 **
 *********************************************************************************************************/
-#include "kern/config.h"
-#include "kern/types.h"
 #include "kern/ipc.h"
+#include "vfs/config.h"
 #include "vfs/types.h"
 #include <string.h>
 #include <stdio.h>

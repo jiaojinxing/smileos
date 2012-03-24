@@ -40,12 +40,12 @@
 #ifndef DIRENT_H_
 #define DIRENT_H_
 
-#include "kern/config.h"
+#include "vfs/config.h"
 #include <sys/types.h>
 
 struct dirent {
     ino_t  d_ino;
-    char   d_name[NAME_MAX];
+    char   d_name[NAME_MAX + 1];
 };
 
 #endif                                                                  /*  DIRENT_H_                   */

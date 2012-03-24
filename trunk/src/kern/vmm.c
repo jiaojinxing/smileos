@@ -207,7 +207,7 @@ uint32_t vmm_get_frame_addr(vmm_frame_t *frame)
 int vmm_map_process_page(task_t *task, uint32_t va)
 {
     vmm_frame_t *frame;
-    int          flag = 0;
+    int          flag = FALSE;
 
     if (   va >= PROCESS_SPACE_SIZE *  task->pid                        /*  判断虚拟地址是否在进程      */
         && va <  PROCESS_SPACE_SIZE * (task->pid + 1)) {                /*  的虚拟地址空间范围内        */
@@ -219,7 +219,7 @@ int vmm_map_process_page(task_t *task, uint32_t va)
             tbl = vmm_page_table_alloc(section_nr);                     /*  分配一个空闲的页表          */
             if (tbl != NULL) {
                 mmu_map_section_as_page(section_nr, tbl);               /*  映射该段                    */
-                flag = 1;
+                flag = TRUE;
             } else {
                 printk("failed to alloc page table, map failed, va=0x%x, pid=%d\n", va, task->pid);
                 return -1;

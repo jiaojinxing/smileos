@@ -117,7 +117,7 @@ void sys_sem_signal(sys_sem_t *sem)
 u32_t sys_arch_sem_wait(sys_sem_t *sem, u32_t timeout)
 {
     if (timeout != 0) {
-        timeout = timeout * 1000 * TICK_PER_SECOND;
+        timeout = timeout * TICK_PER_SECOND / 1000;
     }
 
     if (kern_sem_wait(sem, timeout) < 0) {
@@ -199,7 +199,7 @@ err_t sys_mbox_trypost(sys_mbox_t *mbox, void *msg)
 u32_t sys_arch_mbox_fetch(sys_mbox_t *mbox, void **msg, u32_t timeout)
 {
     if (timeout != 0) {
-        timeout = timeout * 1000 * TICK_PER_SECOND;
+        timeout = timeout * TICK_PER_SECOND / 1000;
     }
 
     if (kern_mbox_fetch(mbox, msg, timeout) < 0) {

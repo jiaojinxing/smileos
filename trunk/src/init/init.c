@@ -40,12 +40,9 @@
 #include "kern/config.h"
 #include "kern/types.h"
 #include "kern/kern.h"
-#include "kern/mmu.h"
 #include "kern/heap.h"
-#include "kern/sys_call.h"
-#include "kern/sbin.h"
 #include "vfs/vfs.h"
-#include <string.h>
+
 #include "lwip/init.h"
 #include "lwip/tcpip.h"
 #include "lwip/api.h"
@@ -113,8 +110,6 @@ static void init(void *arg)
  */
 int main(void)
 {
-    mmu_init();
-
     kernel_init();
 
     kthread_create("init", init, NULL, 16 * KB, 10);

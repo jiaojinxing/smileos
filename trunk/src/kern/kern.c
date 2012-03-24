@@ -42,7 +42,7 @@
 #include "kern/kern.h"
 #include "kern/arm.h"
 #include "kern/vmm.h"
-#include "kern/heap.h"
+#include "kern/mmu.h"
 #include <string.h>
 #include <stdarg.h>
 /*********************************************************************************************************
@@ -156,6 +156,8 @@ static void idle_process_create(void)
  */
 void kernel_init(void)
 {
+    mmu_init();                                                         /*  初始化 MMU                  */
+
     kern_vars_init();                                                   /*  初始化内核变量              */
 
     extern void kern_heap_create(void);
@@ -381,8 +383,12 @@ int32_t process_create(const char *name, uint8_t *code, uint32_t size, uint32_t 
     task_t  *task;
     uint32_t reg;
 
-    if (code == NULL || size == 0 || priority == 0) {
+    if (code == NULL || size == 0) {
         return -1;
+    }
+
+    if (priority < 2) {                                                 /*  优先级最小为 2              */
+        priority = 2;
     }
 
     reg = interrupt_disable();
@@ -409,7 +415,7 @@ int32_t process_create(const char *name, uint8_t *code, uint32_t size, uint32_t 
      */
     task->pid          = i;
     task->tid          = i;
-    task->state        = TASK_RUNNING;
+    task->state        = TASK_SUSPEND;                                  /*  等拷贝完代码后再就绪        */
     task->counter      = priority;
     task->timer        = 0;
     task->priority     = priority;
@@ -477,11 +483,15 @@ int32_t process_create(const char *name, uint8_t *code, uint32_t size, uint32_t 
         return -1;
     }
 
+    interrupt_resume(reg);
+
     /*
      * 拷贝代码到进程的虚拟地址空间
      */
     memcpy((char *)(task->pid * PROCESS_SPACE_SIZE), code, size);
 
+    reg = interrupt_disable();
+    task->state = TASK_RUNNING;
     interrupt_resume(reg);
 
     return i;
@@ -511,6 +521,15 @@ int32_t kthread_create(const char *name, void (*func)(void *), void *arg, uint32
         return -1;
     }
 
+    if (priority < 2) {                                                 /*  优先级最小为 2              */
+        priority = 2;
+    }
+
+    if (stk_size < 8 * KB) {                                            /*  堆栈空间最小为 8 KB         */
+        stk_size = 8 * KB;
+    }
+    stk_size = MEM_ALIGN_SIZE(stk_size);                                /*  对齐堆栈空间大小            */
+
     reg = interrupt_disable();
                                                                         /*  遍历所有的线程控制块        */
     for (i = PROCESS_NR, task = tasks + PROCESS_NR; i < TASK_NR; i++, task++) {
@@ -523,15 +542,6 @@ int32_t kthread_create(const char *name, void (*func)(void *), void *arg, uint32
         interrupt_resume(reg);
         return -1;
     }
-
-    if (priority < 2) {                                                 /*  优先级最小为 2              */
-        priority = 2;
-    }
-
-    if (stk_size < 8 * KB) {                                            /*  堆栈空间最小为 8 KB         */
-        stk_size = 8 * KB;
-    }
-    stk_size = MEM_ALIGN_SIZE(stk_size);                                /*  对齐堆栈空间大小            */
 
     task->stack = (uint32_t)kmalloc(stk_size);                          /*  分配堆栈空间                */
     if (task->stack == 0) {
