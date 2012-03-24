@@ -94,6 +94,10 @@ static process_file_info_t process_file_info[PROCESS_NR];
  */
 static int vfs_path_normalization(char path[PATH_MAX + 1], int sprit_end)
 {
+    /*
+     * 文本状态机! 向李先静老师致敬!
+     * http://blog.csdn.net/absurd/article/details/4249574
+     */
     char *p;
     char ch;
     char prev1_ch;
