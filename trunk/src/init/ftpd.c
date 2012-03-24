@@ -120,7 +120,7 @@ static void ftpd_thread(void *arg)
 
     while (1) {
         len = recv(fd, cmd, sizeof(cmd) - 1, 0);
-        if (len < 0) {
+        if (len <= 0) {
             break;
         } else if (len > 0) {
             cmd[len] = '\0';
