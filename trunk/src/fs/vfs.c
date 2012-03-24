@@ -103,13 +103,16 @@ mount_point_t *vfs_mount_point_lookup(char pathbuf[PATH_MAX], char **ppath, cons
         }
         strcpy(pathbuf, path);
     } else {                                                            /*  如果是相对路径              */
+        /*
+         * cwd 要以 / 号开头和结尾
+         */
         kern_mutex_lock(&process_file_info[current->pid].cwd_lock, 0);  /*  在前面加入当前工作目录      */
         sprintf(pathbuf, "%s%s", process_file_info[current->pid].cwd, path);
         kern_mutex_unlock(&process_file_info[current->pid].cwd_lock);
     }
 
     /*
-     * TODO: 这里要加一次压缩目录操作, 去掉 .. 和 .
+     * TODO: 这里要做一次压缩目录操作, 去掉 .. 和 .
      */
 
     tmp = strchr(pathbuf + 1, '/');                                     /*  查找挂载点名后的 / 号       */
@@ -153,7 +156,7 @@ mount_point_t *vfs_mount_point_lookup2(char pathbuf[PATH_MAX], char **ppath, con
     }
 
     /*
-     * TODO: 这里要加一次压缩目录操作, 去掉 .. 和 .
+     * TODO: 这里要做一次压缩目录操作, 去掉 .. 和 .
      */
 
     if (pathbuf[1] == '0') {                                            /*  如果是根目录                */
@@ -192,7 +195,7 @@ mount_point_t *vfs_mount_point_lookup2(char pathbuf[PATH_MAX], char **ppath, con
             kern_mutex_unlock(&file->lock);                                                               \
             return -1;                                                                                    \
         }                                                                                                 \
-        point = file->point;                                            /*  挂载点                      */
+        point = file->point;                                            /*  获得挂载点                  */
 
 #define vfs_file_api_end                                                                                  \
         kern_mutex_unlock(&file->lock);                                 /*  解锁文件                    */
@@ -302,6 +305,8 @@ int vfs_isatty(int fd)
  */
 ssize_t vfs_read(int fd, void *buf, size_t len)
 {
+    ssize_t slen;
+
     if (buf == NULL || len < 0) {
         return -1;
     }
@@ -312,9 +317,9 @@ ssize_t vfs_read(int fd, void *buf, size_t len)
 
     {
         vfs_file_api_begin
-        ret = point->fs->read(point, file, buf, len);
+        slen = point->fs->read(point, file, buf, len);
         vfs_file_api_end
-        return ret;
+        return slen;
     }
 }
 
@@ -323,6 +328,8 @@ ssize_t vfs_read(int fd, void *buf, size_t len)
  */
 ssize_t vfs_write(int fd, const void *buf, size_t len)
 {
+    ssize_t slen;
+
     if (buf == NULL || len < 0) {
         return -1;
     }
@@ -333,9 +340,9 @@ ssize_t vfs_write(int fd, const void *buf, size_t len)
 
     {
         vfs_file_api_begin
-        ret = point->fs->write(point, file, buf, len);
+        slen = point->fs->write(point, file, buf, len);
         vfs_file_api_end
-        return ret;
+        return slen;
     }
 }
 
@@ -384,7 +391,7 @@ int vfs_link(const char *path1, const char *path2)
         return -1;
     }
 
-    if (point2 != point1) {
+    if (point2 != point1) {                                             /*  两个挂载点必须要相同        */
         return -1;
     }
 
@@ -434,7 +441,7 @@ int vfs_rename(const char *old, const char *new)
         return -1;
     }
 
-    if (point2 != point1) {
+    if (point2 != point1) {                                             /*  两个挂载点必须要相同        */
         return -1;
     }
 
