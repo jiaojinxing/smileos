@@ -48,6 +48,11 @@
 #include <sys/socket.h>
 #include <stdio.h>
 #include <ctype.h>
+#include <limits.h>
+
+#ifndef LINE_MAX
+#define LINE_MAX    512
+#endif
 
 /*
  * 获得任务信息
@@ -99,8 +104,32 @@ static int get_task_info(task_t *task, char *buf)
     }
 }
 
-static int ls(int argc, char **argv)
+static int do_ts(int argc, char **argv, int fd, char buf[LINE_MAX])
 {
+    int len;
+    int i;
+    uint32_t reg;
+    task_t *task;
+
+    len = sprintf(buf, "type\t name\t\t pid\t state\t count\t timer\t\t prio\t cpu\t frame_nr\r\n");
+    send(fd, buf, len, 0);
+
+    for (i = 0, task = tasks; i < TASK_NR; i++, task++) {
+        reg = interrupt_disable();
+        if (task->state != TASK_UNALLOCATE) {
+            len = get_task_info(task, buf);
+            interrupt_resume(reg);
+            send(fd, buf, len, 0);
+        } else {
+            interrupt_resume(reg);
+        }
+    }
+    return 0;
+}
+
+static int do_ls(int argc, char **argv, int fd, char buf[LINE_MAX])
+{
+    int len;
     DIR *dir;
     struct dirent *entry;
 
@@ -114,26 +143,95 @@ static int ls(int argc, char **argv)
     }
 
     while ((entry = vfs_readdir(dir)) != NULL) {
-        printf("%s\n", entry->d_name);
+        len = sprintf(buf, "%s ", entry->d_name);
+        send(fd, buf, len, 0);
     }
     vfs_closedir(dir);
+    len = sprintf(buf, "\r\n");
+    send(fd, buf, len, 0);
     return 0;
 }
 
-/*
- * 执行 sbin
- */
-static int sbin_exec(const char *name)
+static int do_cd(int argc, char **argv, int fd, char buf[LINE_MAX])
 {
-    uint8_t  *code;
-    uint32_t  size;
-
-    code = sbin_lookup(name, &size);
-    if (code != NULL) {
-        return process_create(name, code, size, 10);
+    if (argc == 2) {
+        return vfs_chdir(argv[1]);
     } else {
+        return 0;
+    }
+}
+
+/*
+ * 执行内建的 sbin 命令
+ */
+static int do_exec_buildin(int argc, char **argv, int fd, char buf[LINE_MAX])
+{
+    int len;
+    uint8_t *code;
+    uint32_t size;
+
+    code = sbin_lookup(argv[0], &size);
+    if (code != NULL) {
+        return process_create(argv[0], code, size, 10);
+    } else {
+        len = sprintf(buf, "unknown cmd\r\n");
+        send(fd, buf, len, 0);
         return -1;
     }
+}
+
+#define ARGMAX      32
+
+static int exec_cmd(char *cmd, int fd, char buf[LINE_MAX])
+{
+    static char *argv[ARGMAX];
+    char *p, *word = NULL;
+    int argc = 0;
+
+    if (cmd[0] != ' ' && cmd[0] != '\t') {
+        word = cmd;
+    }
+
+    p = cmd;
+    while (*p) {
+        if (word == NULL) {
+            if (*p != ' ' && *p != '\t') {
+                word = p;
+            }
+        } else {
+            if (*p == ' ' || *p == '\t') {
+                *p = '\0';
+                argv[argc++] = word;
+                word = NULL;
+                if (argc >= ARGMAX - 1) {
+                    return -1;
+                }
+            }
+        }
+        p++;
+    }
+
+    if (argc == 0 && word == NULL) {
+        return -1;
+    }
+
+    if (word) {
+        argv[argc++] = word;
+    }
+
+    argv[argc] = NULL;
+
+    if (strcmp(argv[0], "ts") == 0) {
+        do_ts(argc, argv, fd, buf);
+    } else if (strcmp(argv[0], "ls") == 0) {
+        do_ls(argc, argv, fd, buf);
+    } else if (strcmp(argv[0], "cd") == 0) {
+        do_cd(argc, argv, fd, buf);
+    } else {
+        do_exec_buildin(argc, argv, fd, buf);
+    }
+
+    return 0;
 }
 
 /*
@@ -145,23 +243,17 @@ static void telnetd_thread(void *arg)
     int  len;
     int  ret;
     int  pos;
-    char buf[128];
-    char cmd[128];
+    char buf[LINE_MAX];
+    char cmd[LINE_MAX];
     char ch;
-    task_t *task;
-    int  i;
-    uint32_t reg;
-    int on = 1;
 
     len = sprintf(buf, "******************* SmileOS Shell *******************\r\n");
     send(fd, buf, len, 0);
 
-    len = sprintf(buf, ">:");
+    len = sprintf(buf, "[%s]:", vfs_getcwd(NULL, 0));
     send(fd, buf, len, 0);
 
     pos = 0;
-
-    setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &on, sizeof(on));
 
     while (1) {
         ret = recv(fd, &ch, 1, 0);
@@ -171,7 +263,7 @@ static void telnetd_thread(void *arg)
 
         if (ret > 0) {
             if (iscntrl(ch)) {
-                if (ch == 0x08) {
+                if (ch == '\b') {
                     if (pos > 0) {
                         pos--;
                         len = sprintf(buf, " \b \b");
@@ -180,45 +272,15 @@ static void telnetd_thread(void *arg)
                         len = sprintf(buf, ":");
                         send(fd, buf, len, 0);
                     }
-                } else if (ch == 0x0D) {
+                } else if (ch == '\n') {
                     if (pos > 0) {
                         cmd[pos] = '\0';
-                        if (strcmp(cmd, "ts") == 0) {
-
-                            len = sprintf(buf, "type\t name\t\t pid\t state\t count\t timer\t\t prio\t cpu\t frame_nr\r\n");
-                            send(fd, buf, len, 0);
-
-                            for (i = 0, task = tasks; i < TASK_NR; i++, task++) {
-                                reg = interrupt_disable();
-                                if (task->state != TASK_UNALLOCATE) {
-                                    len = get_task_info(task, buf);
-                                    interrupt_resume(reg);
-                                    send(fd, buf, len, 0);
-                                } else {
-                                    interrupt_resume(reg);
-                                }
-                            }
-                        } else if (strcmp(cmd, "time") == 0) {
-                            /*
-                             * TODO:
-                             */
-                        } else if (strcmp(cmd, "ls") == 0) {
-                            ls(0, NULL);
-                        } else if (strcmp(cmd, "exit") == 0) {
-                            break;
-                        } else {
-                            if (sbin_exec(cmd) < 0) {
-                                len = sprintf(buf, "unknown cmd\r\n");
-                                send(fd, buf, len, 0);
-                            }
-                        }
                         pos = 0;
-                        len = sprintf(buf, ">:");
-                        send(fd, buf, len, 0);
-                    } else {
-                        len = sprintf(buf, ">:");
-                        send(fd, buf, len, 0);
+                        exec_cmd(cmd, fd, buf);
                     }
+
+                    len = sprintf(buf, "[%s]:", vfs_getcwd(NULL, 0));
+                    send(fd, buf, len, 0);
                 }
             } else if (isprint(ch)){
                 cmd[pos] = ch;

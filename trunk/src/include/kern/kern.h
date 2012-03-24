@@ -99,7 +99,7 @@ typedef struct task {
     uint32_t                utilization;                                /*  CPU 占用率                  */
     uint32_t                tick;                                       /*  任务被定时器中断的次数      */
     int                     errno;                                      /*  错误号                      */
-    char                    name[16];                                   /*  名字                        */
+    char                    name[32];                                   /*  名字                        */
     struct task            *next;                                       /*  后趋                        */
     struct task           **wait_list;                                  /*  等待链表                    */
     struct vmm_frame       *frame_list;                                 /*  页框链表                    */
