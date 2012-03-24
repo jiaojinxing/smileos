@@ -42,6 +42,8 @@
 #include "kern/kern.h"
 #include "kern/sys_call.h"
 #include "kern/sbin.h"
+#include "vfs/vfs.h"
+#include <dirent.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <stdio.h>
@@ -97,7 +99,26 @@ static int get_task_info(task_t *task, char *buf)
     }
 }
 
+static int ls(int argc, char **argv)
+{
+    DIR *dir;
+    struct dirent *entry;
 
+    if (argc < 2) {
+        dir = vfs_opendir(".");
+    } else {
+        dir = vfs_opendir(argv[1]);
+    }
+    if (dir == NULL) {
+        return -1;
+    }
+
+    while ((entry = vfs_readdir(dir)) != NULL) {
+        printf("%s\n", entry->d_name);
+    }
+    vfs_closedir(dir);
+    return 0;
+}
 
 /*
  * Ö´ÐÐ sbin
@@ -108,7 +129,6 @@ static int sbin_exec(const char *name)
     uint32_t  size;
 
     code = sbin_lookup(name, &size);
-
     if (code != NULL) {
         return process_create(name, code, size, 10);
     } else {
@@ -145,7 +165,7 @@ static void telnetd_thread(void *arg)
 
     while (1) {
         ret = recv(fd, &ch, 1, 0);
-        if (ret < 0) {
+        if (ret <= 0) {
             break;
         }
 
@@ -183,11 +203,7 @@ static void telnetd_thread(void *arg)
                              * TODO:
                              */
                         } else if (strcmp(cmd, "ls") == 0) {
-                            /*
-                             * TODO:
-                             */
-                            extern void vfs_test(void);
-                            vfs_test();
+                            ls(0, NULL);
                         } else if (strcmp(cmd, "exit") == 0) {
                             break;
                         } else {

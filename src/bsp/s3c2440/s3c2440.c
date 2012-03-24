@@ -113,7 +113,6 @@ void bsp_init(void)
     timer_init();
 }
 
-#include "vfs/vfs.h"
 #include "vfs/driver.h"
 
 /*

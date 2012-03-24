@@ -40,6 +40,8 @@
 #ifndef IPC_H_
 #define IPC_H_
 
+#include "kern/types.h"
+
 struct kern_mutex;
 struct kern_sem;
 struct kern_mbox;

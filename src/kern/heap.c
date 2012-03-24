@@ -401,7 +401,7 @@ void *heap_free(heap_t *heap, void *ptr)
 /*
  * 打印内存堆信息
  */
-void heap_print_info(heap_t *heap)
+void heap_show(heap_t *heap)
 {
     debug_output("heap block count = %d\n", heap->block_cnt);
     debug_output("heap alloc count = %d\n", heap->alloc_cnt);
@@ -416,6 +416,20 @@ void heap_print_info(heap_t *heap)
             (heap->size-heap->used_size) % MB / KB,
             (heap->size-heap->used_size) % KB);
 }
+
+#ifdef SMILEOS_KERNEL
+/*
+ * 打印内存堆信息
+ */
+void kern_heap_show(void)
+{
+    uint32_t reg;
+
+    reg = interrupt_disable();
+    heap_show(&kern_heap);
+    interrupt_resume(reg);
+}
+#endif
 /*********************************************************************************************************
   END FILE
 *********************************************************************************************************/

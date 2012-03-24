@@ -97,8 +97,8 @@ void abort(void)
  */
 void yield(void)
 {
-    __asm__ __volatile__("mov    r7,  %0": :"M"(SYS_CALL_YIELD));
     __asm__ __volatile__("stmdb  sp!, {r7, lr}");
+    __asm__ __volatile__("mov    r7,  %0": :"M"(SYS_CALL_YIELD));
     __asm__ __volatile__("swi    0");
     __asm__ __volatile__("ldmia  sp!, {r7, lr}");
 }
@@ -109,8 +109,8 @@ void yield(void)
 static void sleep_tick(unsigned int tick)
 {
     __asm__ __volatile__("mov    r0,  %0": :"r"(tick));
-    __asm__ __volatile__("mov    r7,  %0": :"M"(SYS_CALL_SLEEP));
     __asm__ __volatile__("stmdb  sp!, {r7, lr}");
+    __asm__ __volatile__("mov    r7,  %0": :"M"(SYS_CALL_SLEEP));
     __asm__ __volatile__("swi    0");
     __asm__ __volatile__("ldmia  sp!, {r7, lr}");
 }
@@ -141,8 +141,8 @@ int write(int fd, const char *data, unsigned int size)
     __asm__ __volatile__("mov    r0,  %0": :"r"(fd));
     __asm__ __volatile__("mov    r1,  %0": :"r"(data));
     __asm__ __volatile__("mov    r2,  %0": :"r"(size));
-    __asm__ __volatile__("mov    r7,  %0": :"M"(SYS_CALL_WRITE));
     __asm__ __volatile__("stmdb  sp!, {r7, lr}");
+    __asm__ __volatile__("mov    r7,  %0": :"M"(SYS_CALL_WRITE));
     __asm__ __volatile__("swi    0");
     __asm__ __volatile__("ldmia  sp!, {r7, lr}");
     __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
@@ -205,8 +205,8 @@ int getpid(void)
 {
     int ret;
 
-    __asm__ __volatile__("mov    r7,  %0": :"M"(SYS_CALL_GETPID));
     __asm__ __volatile__("stmdb  sp!, {r7, lr}");
+    __asm__ __volatile__("mov    r7,  %0": :"M"(SYS_CALL_GETPID));
     __asm__ __volatile__("swi    0");
     __asm__ __volatile__("ldmia  sp!, {r7, lr}");
     __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
@@ -223,8 +223,8 @@ int _gettimeofday(struct timeval *tv, void *tzp)
 
     __asm__ __volatile__("mov    r0,  %0": :"r"(tv));
     __asm__ __volatile__("mov    r1,  %0": :"r"(tzp));
-    __asm__ __volatile__("mov    r7,  %0": :"M"(SYS_CALL_GETTIME));
     __asm__ __volatile__("stmdb  sp!, {r7, lr}");
+    __asm__ __volatile__("mov    r7,  %0": :"M"(SYS_CALL_GETTIME));
     __asm__ __volatile__("swi    0");
     __asm__ __volatile__("ldmia  sp!, {r7, lr}");
     __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
@@ -240,8 +240,8 @@ int *__errno(void)
 {
     int *ret;
 
-    __asm__ __volatile__("mov    r7,  %0": :"M"(SYS_CALL_ERRNO));
     __asm__ __volatile__("stmdb  sp!, {r7, lr}");
+    __asm__ __volatile__("mov    r7,  %0": :"M"(SYS_CALL_ERRNO));
     __asm__ __volatile__("swi    0");
     __asm__ __volatile__("ldmia  sp!, {r7, lr}");
     __asm__ __volatile__("mov    %0,  r0": "=r"(ret));

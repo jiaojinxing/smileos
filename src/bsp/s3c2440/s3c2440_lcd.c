@@ -157,7 +157,6 @@ void lcd_init(void)
     TPAL      = 0x00;                                                   /*  不使用调色板                */
 }
 
-#include "vfs/vfs.h"
 #include "vfs/device.h"
 
 /*

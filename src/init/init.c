@@ -41,6 +41,7 @@
 #include "kern/types.h"
 #include "kern/kern.h"
 #include "kern/mmu.h"
+#include "kern/heap.h"
 #include "kern/sys_call.h"
 #include "kern/sbin.h"
 #include <string.h>
@@ -103,6 +104,8 @@ static void init(void *arg)
     devices_create();
 
     tcpip_init(tcpip_init_done, NULL);
+
+    kern_heap_show();
 }
 
 /*

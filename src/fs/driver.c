@@ -40,7 +40,7 @@
 #include "kern/config.h"
 #include "kern/types.h"
 #include "kern/ipc.h"
-#include "vfs/vfs.h"
+#include "vfs/types.h"
 #include <string.h>
 
 /*

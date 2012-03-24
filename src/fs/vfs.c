@@ -40,11 +40,12 @@
 #include "kern/config.h"
 #include "kern/types.h"
 #include "kern/kern.h"
-#include "vfs/vfs.h"
+#include "kern/ipc.h"
 #include "vfs/device.h"
 #include "vfs/driver.h"
 #include "vfs/mount.h"
 #include "vfs/fs.h"
+#include "vfs/vfs.h"
 #include <dirent.h>
 #include <string.h>
 #include <stdio.h>
@@ -53,12 +54,15 @@
  * 进程文件信息
  */
 typedef struct {
+    /*
+     * TODO: 一个 fd 对应一个 file_t 这样的设计很难实现 dup, dup2
+     */
     file_t              files[OPEN_MAX];                                /*  文件结构表                  */
-    char                cwd[PATH_MAX];                                  /*  当前工作目录                */
+    char                cwd[PATH_MAX + 1];                              /*  当前工作目录                */
     kern_mutex_t        cwd_lock;                                       /*  当前工作目录锁              */
 } process_file_info_t;
 
-process_file_info_t process_file_info[PROCESS_NR];
+static process_file_info_t process_file_info[PROCESS_NR];
 
 /*
  * newlib 需要如下的桩函数支持:
@@ -86,9 +90,118 @@ process_file_info_t process_file_info[PROCESS_NR];
  */
 
 /*
+ * 正常化 PATH
+ */
+int vfs_path_normalization(char path[PATH_MAX + 1], int sprit_end)
+{
+    char *p;
+    char ch;
+    char prev1_ch;
+    char prev2_ch;
+    enum {
+        BEGIN,
+        WORKING,
+    } state;
+    int pos;
+
+    pos   = 0;
+    state = BEGIN;
+
+    prev1_ch = '/';
+    prev2_ch = '/';
+
+    for (p = path; (ch = *p) != '\0'; p++) {                            /*  处理所有文本                */
+        switch (state) {
+        case BEGIN:                                                     /*  开始状态                    */
+            if (ch != '/') {                                            /*  如果不是以 / 号开始, 出错   */
+                return -1;
+            }
+            path[pos++] = ch;                                           /*  记录 / 号                   */
+            state = WORKING;
+            continue;
+            break;
+
+        case WORKING:
+            switch (ch) {
+            case '.':
+                if (prev2_ch == '/' && prev1_ch == '.' && (p[1] == '\0' || p[1] == '/')) {
+                    /*
+                     *  /../ 或 /..
+                     */
+                    /*
+                     * pos, prev1_ch, prev2_ch
+                     */
+                    pos -= 3;
+                    while (pos >= 0 && path[pos] != '/') {
+                        pos--;
+                    }
+                    if (pos < 0) {
+                        return -1;
+                    }
+                    if (pos == 0) {
+                        prev1_ch = '/';
+                        prev2_ch = '/';
+                    } else {
+                        prev2_ch = path[pos - 1];
+                        prev1_ch = '/';
+                    }
+                    pos++;
+                    continue;
+                } else if (prev1_ch == '/' && (p[1] == '\0' || p[1] == '/')) {
+                    /*
+                     *  /./ 或 /.
+                     *  skip it
+                     */
+                    continue;
+                } else {
+                    path[pos++] = ch;
+                }
+                break;
+
+            case '/':
+                if (prev1_ch == '/') {
+                    /*
+                     *  //
+                     *  skip it
+                     */
+                    continue;
+                } else {
+                    path[pos++] = ch;
+                }
+                break;
+
+            default:
+                path[pos++] = ch;
+                break;
+            }
+        }
+
+        prev2_ch = prev1_ch;
+        prev1_ch = ch;
+    }
+
+    if (sprit_end) {
+        if (pos >= 2 && path[pos - 1] != '/') {
+            path[pos] = '/';
+            path[pos + 1] = '\0';
+        } else {
+            path[pos] = '\0';
+        }
+    } else {
+        if (pos > 2 && path[pos - 1] == '/') {
+            path[pos - 1] = '\0';
+        } else {
+            path[pos] = '\0';
+        }
+    }
+
+    return 0;
+}
+
+/*
  * 查找挂载点, PATH 不能是挂载点
  */
-mount_point_t *vfs_mount_point_lookup(char pathbuf[PATH_MAX], char **ppath, const char *path)
+mount_point_t *vfs_mount_point_lookup(char pathbuf[PATH_MAX + 1], char **ppath, const char *path)
 {
     mount_point_t *point;
     char *tmp;
@@ -111,9 +224,9 @@ mount_point_t *vfs_mount_point_lookup(char pathbuf[PATH_MAX], char **ppath, cons
         kern_mutex_unlock(&process_file_info[current->pid].cwd_lock);
     }
 
-    /*
-     * TODO: 这里要做一次压缩目录操作, 去掉 .. 和 .
-     */
+    if (vfs_path_normalization(pathbuf, FALSE) < 0) {
+        return NULL;
+    }
 
     tmp = strchr(pathbuf + 1, '/');                                     /*  查找挂载点名后的 / 号       */
     if (tmp == NULL) {                                                  /*  没有到                      */
@@ -134,7 +247,7 @@ mount_point_t *vfs_mount_point_lookup(char pathbuf[PATH_MAX], char **ppath, cons
 /*
  * 查找挂载点, PATH 可以是挂载点
  */
-mount_point_t *vfs_mount_point_lookup2(char pathbuf[PATH_MAX], char **ppath, const char *path)
+mount_point_t *vfs_mount_point_lookup2(char pathbuf[PATH_MAX + 1], char **ppath, const char *path)
 {
     mount_point_t *point;
     char *tmp;
@@ -155,9 +268,9 @@ mount_point_t *vfs_mount_point_lookup2(char pathbuf[PATH_MAX], char **ppath, con
         kern_mutex_unlock(&process_file_info[current->pid].cwd_lock);
     }
 
-    /*
-     * TODO: 这里要做一次压缩目录操作, 去掉 .. 和 .
-     */
+    if (vfs_path_normalization(pathbuf, FALSE) < 0) {
+        return NULL;
+    }
 
     if (pathbuf[1] == '\0') {                                           /*  如果是根目录                */
         point = mount_point_lookup(pathbuf);
@@ -190,7 +303,7 @@ mount_point_t *vfs_mount_point_lookup2(char pathbuf[PATH_MAX], char **ppath, con
 
 #define vfs_file_api_begin                                                                                \
         vfs_file_api_begin0                                                                               \
-        if (!file->used) {                                              /*  如果文件未打开              */\
+        if (!file->flag) {                                              /*  如果文件未打开              */\
             kern_mutex_unlock(&file->lock);                                                               \
             return -1;                                                                                    \
         }                                                                                                 \
@@ -208,11 +321,11 @@ mount_point_t *vfs_mount_point_lookup2(char pathbuf[PATH_MAX], char **ppath, con
 int vfs_open(const char *path, int oflag, mode_t mode)
 {
     mount_point_t *point;
-    char pathbuf[PATH_MAX];
+    file_t *file;
+    char pathbuf[PATH_MAX + 1];
     char *filepath;
     int fd;
     int ret;
-    file_t *file;
 
     point = vfs_mount_point_lookup(pathbuf, &filepath, path);           /*  查找挂载点                  */
     if (point == NULL) {
@@ -221,7 +334,7 @@ int vfs_open(const char *path, int oflag, mode_t mode)
                                                                         /*  查找一个空闲的文件结构      */
     for (fd = 0, file = process_file_info[current->pid].files; fd < OPEN_MAX; fd++, file++) {
         kern_mutex_lock(&file->lock, 0);
-        if (!file->used) {
+        if (!file->flag) {
             break;
         }
         kern_mutex_unlock(&file->lock);
@@ -237,7 +350,7 @@ int vfs_open(const char *path, int oflag, mode_t mode)
         kern_mutex_unlock(&file->lock);
         return -1;
     }
-    file->used = TRUE;                                                  /*  占用文件结构                */
+    file->flag = TRUE;                                                  /*  占用文件结构                */
 
     kern_mutex_unlock(&file->lock);
 
@@ -252,14 +365,14 @@ int vfs_close(int fd)
     int ret;
 
     vfs_file_api_begin0
-    if (!file->used) {                                                  /*  如果文件未打开              */
+    if (!file->flag) {                                                  /*  如果文件未打开              */
         vfs_file_api_end
         return -1;
     }
     point = file->point;                                                /*  获得挂载点                  */
     ret = point->fs->close(point, file);
     if (ret == 0) {
-        file->used = FALSE;                                             /*  如果关闭成功, 释放文件结构  */
+        file->flag = FALSE;                                             /*  如果关闭成功, 释放文件结构  */
     }
     vfs_file_api_end
     return ret;
@@ -319,6 +432,19 @@ int vfs_fsync(int fd)
 
     vfs_file_api_begin
     ret = point->fs->fsync(point, file);
+    vfs_file_api_end
+    return ret;
+}
+
+/*
+ * 同步文件
+ */
+int vfs_fdatasync(int fd)
+{
+    int ret;
+
+    vfs_file_api_begin
+    ret = point->fs->fdatasync(point, file);
     vfs_file_api_end
     return ret;
 }
@@ -400,8 +526,6 @@ int vfs_ioctl(int fd, int cmd, void *arg)
  */
 off_t vfs_lseek(int fd, off_t offset, int whence)
 {
-    int ret;
-
     vfs_file_api_begin
     offset = point->fs->lseek(point, file, offset, whence);
     vfs_file_api_end
@@ -417,10 +541,10 @@ off_t vfs_lseek(int fd, off_t offset, int whence)
 int vfs_link(const char *path1, const char *path2)
 {
     mount_point_t *point1;
-    char pathbuf1[PATH_MAX];
+    char pathbuf1[PATH_MAX + 1];
     char *filepath1;
     mount_point_t *point2;
-    char pathbuf2[PATH_MAX];
+    char pathbuf2[PATH_MAX + 1];
     char *filepath2;
     int ret;
 
@@ -448,10 +572,10 @@ int vfs_link(const char *path1, const char *path2)
 int vfs_rename(const char *old, const char *new)
 {
     mount_point_t *point1;
-    char pathbuf1[PATH_MAX];
+    char pathbuf1[PATH_MAX + 1];
     char *filepath1;
     mount_point_t *point2;
-    char pathbuf2[PATH_MAX];
+    char pathbuf2[PATH_MAX + 1];
     char *filepath2;
     int ret;
 
@@ -479,7 +603,7 @@ int vfs_rename(const char *old, const char *new)
 int vfs_stat(const char *path, struct stat *buf)
 {
     mount_point_t *point;
-    char pathbuf[PATH_MAX];
+    char pathbuf[PATH_MAX + 1];
     char *filepath;
     int ret;
 
@@ -502,7 +626,7 @@ int vfs_stat(const char *path, struct stat *buf)
 int vfs_unlink(const char *path)
 {
     mount_point_t *point;
-    char pathbuf[PATH_MAX];
+    char pathbuf[PATH_MAX + 1];
     char *filepath;
     int ret;
 
@@ -521,7 +645,7 @@ int vfs_unlink(const char *path)
 int vfs_mkdir(const char *path, mode_t mode)
 {
     mount_point_t *point;
-    char pathbuf[PATH_MAX];
+    char pathbuf[PATH_MAX + 1];
     char *filepath;
     int ret;
 
@@ -540,7 +664,7 @@ int vfs_mkdir(const char *path, mode_t mode)
 int vfs_rmdir(const char *path)
 {
     mount_point_t *point;
-    char pathbuf[PATH_MAX];
+    char pathbuf[PATH_MAX + 1];
     char *filepath;
     int ret;
 
@@ -559,7 +683,7 @@ int vfs_rmdir(const char *path)
 int vfs_access(const char *path, mode_t mode)
 {
     mount_point_t *point;
-    char pathbuf[PATH_MAX];
+    char pathbuf[PATH_MAX + 1];
     char *filepath;
     int ret;
 
@@ -578,7 +702,7 @@ int vfs_access(const char *path, mode_t mode)
 int vfs_truncate(const char *path, off_t len)
 {
     mount_point_t *point;
-    char pathbuf[PATH_MAX];
+    char pathbuf[PATH_MAX + 1];
     char *filepath;
     int ret;
 
@@ -597,7 +721,7 @@ int vfs_truncate(const char *path, off_t len)
 int vfs_sync(const char *path)
 {
     mount_point_t *point;
-    char pathbuf[PATH_MAX];
+    char pathbuf[PATH_MAX + 1];
     char *filepath;
     int ret;
 
@@ -619,11 +743,12 @@ int vfs_sync(const char *path)
 DIR *vfs_opendir(const char *path)
 {
     mount_point_t *point;
-    char pathbuf[PATH_MAX];
+    file_t *file;
+    char pathbuf[PATH_MAX + 1];
     char *filepath;
     int fd;
     int ret;
-    file_t *file;
+
 
     point = vfs_mount_point_lookup2(pathbuf, &filepath, path);          /*  查找挂载点                  */
     if (point == NULL) {
@@ -633,7 +758,7 @@ DIR *vfs_opendir(const char *path)
                                                                         /*  查找一个空闲的文件结构      */
     for (fd = 0, file = process_file_info[current->pid].files; fd < OPEN_MAX; fd++, file++) {
         kern_mutex_lock(&file->lock, 0);
-        if (!file->used) {
+        if (!file->flag) {
             break;
         }
         kern_mutex_unlock(&file->lock);
@@ -649,7 +774,7 @@ DIR *vfs_opendir(const char *path)
         kern_mutex_unlock(&file->lock);
         return (DIR *)-1;
     }
-    file->used = TRUE;                                                  /*  占用文件结构                */
+    file->flag = TRUE;                                                  /*  占用文件结构                */
 
     kern_mutex_unlock(&file->lock);
 
@@ -665,14 +790,14 @@ int vfs_closedir(DIR *dir)
     int ret;
 
     vfs_file_api_begin0
-    if (!file->used) {                                                  /*  如果目录未打开              */
+    if (!file->flag) {                                                  /*  如果目录未打开              */
         vfs_file_api_end
         return -1;
     }
     point = file->point;                                                /*  获得挂载点                  */
     ret = point->fs->closedir(point, file);
     if (ret == 0) {
-        file->used = FALSE;                                             /*  如果关闭成功, 释放文件结构  */
+        file->flag = FALSE;                                             /*  如果关闭成功, 释放文件结构  */
     }
     vfs_file_api_end
     return ret;
@@ -685,10 +810,22 @@ struct dirent *vfs_readdir(DIR *dir)
 {
     int fd = (int)dir;
     struct dirent *entry;
+    mount_point_t *point;
+    file_t *file;
 
-    vfs_file_api_begin
+    if (fd < 0 || fd >= OPEN_MAX) {                                     /*  文件描述符合法性判断        */
+        return NULL;
+    }
+    file = process_file_info[current->pid].files + fd;                  /*  获得文件结构                */
+    kern_mutex_lock(&file->lock, 0);                                    /*  锁住文件                    */
+
+    if (!file->flag) {                                                  /*  如果文件未打开              */
+        kern_mutex_unlock(&file->lock);
+        return NULL;
+    }
+    point = file->point;                                                /*  获得挂载点                  */
     entry = point->fs->readdir(point, file);
-    vfs_file_api_end
+    kern_mutex_unlock(&file->lock);
     return entry;
 }
 
@@ -739,14 +876,44 @@ long vfs_telldir(DIR *dir)
  */
 int vfs_chdir(const char *path)
 {
+    char pathbuf[PATH_MAX + 1];
+    int ret;
+
     if (path == NULL) {
         return -1;
     }
 
     kern_mutex_lock(&process_file_info[current->pid].cwd_lock, 0);
-    //process_file_info[current->pid].cwd
+
+    if (path[0] == '/') {                                               /*  如果是绝对路径              */
+        strcpy(pathbuf, path);
+    } else {                                                            /*  如果是相对路径              */
+        sprintf(pathbuf, "%s%s", process_file_info[current->pid].cwd, path);
+    }
+
+    ret = vfs_path_normalization(pathbuf, TRUE);
+    if (ret == 0) {
+        strcpy(process_file_info[current->pid].cwd, pathbuf);
+    }
+
     kern_mutex_unlock(&process_file_info[current->pid].cwd_lock);
-    return 0;
+
+    return ret;
+}
+
+/*
+ * 获得当前工作目录
+ */
+char *vfs_getcwd(char *buf, size_t size)
+{
+    if (buf != NULL) {
+        kern_mutex_lock(&process_file_info[current->pid].cwd_lock, 0);
+        strcpy(buf, process_file_info[current->pid].cwd);
+        kern_mutex_unlock(&process_file_info[current->pid].cwd_lock);
+        return buf;
+    } else {
+        return process_file_info[current->pid].cwd;
+    }
 }
 
 /*
@@ -785,24 +952,11 @@ int vfs_init(void)
             kern_mutex_new(&file->lock);
             file->ctx   = NULL;
             file->point = NULL;
-            file->used  = FALSE;
+            file->flag  = FALSE;
         }
     }
 
     return 0;
-}
-
-void vfs_test(void)
-{
-    DIR *dir;
-    struct dirent *entry;
-
-    dir = vfs_opendir("/dev");
-
-    while ((entry = vfs_readdir(dir)) != NULL) {
-        printf("%s\n", entry->d_name);
-    }
-    vfs_closedir(dir);
 }
 /*********************************************************************************************************
   END FILE

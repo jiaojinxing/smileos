@@ -41,7 +41,6 @@
 #include "kern/types.h"
 #include "kern/kern.h"
 #include "kern/ipc.h"
-#include "vfs/vfs.h"
 #include "vfs/device.h"
 #include "vfs/fs.h"
 #include <string.h>
@@ -146,7 +145,7 @@ int mount(const char *point_name, const char *dev_name, const char *fs_name)
                 point->dev  = dev;
 
                 /*
-                 * 当设备为空时, 设备名有特别用途
+                 * 当设备为空时, 设备名可作挂载参数
                  */
                 ret = fs->mount(point, dev, dev_name);                  /*  挂载                        */
                 if (ret < 0) {
