@@ -44,6 +44,7 @@
 #include "kern/heap.h"
 #include "kern/sys_call.h"
 #include "kern/sbin.h"
+#include "vfs/vfs.h"
 #include <string.h>
 #include "lwip/init.h"
 #include "lwip/tcpip.h"
@@ -94,7 +95,6 @@ static void tcpip_init_done(void *arg)
  */
 static void init(void *arg)
 {
-    extern int vfs_init(void);
     vfs_init();
 
     extern int drivers_install(void);
