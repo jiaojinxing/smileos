@@ -104,9 +104,22 @@ struct file_system {
     struct file_system     *next;
 
     /*
-     * 文件接口
+     * 文件系统接口
      */
     int     (*mount)(mount_point_t *point, device_t *dev, const char *dev_name);
+    int     (*link)(mount_point_t *point, const char *path1, const char *path2);
+    int     (*unlink)(mount_point_t *point, const char *path);
+    int     (*mkdir)(mount_point_t *point, const char *path, mode_t mode);
+    int     (*rmdir)(mount_point_t *point, const char *path);
+    int     (*rename)(mount_point_t *point, const char *old, const char *new);
+    int     (*stat)(mount_point_t *point, const char *path, struct stat *buf);
+    int     (*access)(mount_point_t *point, const char *path, mode_t mode);
+    int     (*sync)(mount_point_t *point);
+    int     (*truncate)(mount_point_t *point, const char *path, off_t len);
+
+    /*
+     * 文件接口
+     */
     int     (*open)(mount_point_t *point, file_t *file, const char *path, int oflag, mode_t mode);
     ssize_t (*read)(mount_point_t *point, file_t *file, void *buf, size_t len);
     ssize_t (*write)(mount_point_t *point, file_t *file, const void *buf, size_t len);
@@ -119,19 +132,6 @@ struct file_system {
     int     (*fdatasync)(mount_point_t *point, file_t *file);
     int     (*ftruncate)(mount_point_t *point, file_t *file, off_t len);
     int     (*lseek)(mount_point_t *point, file_t *file, off_t offset, int whence);
-
-    /*
-     * 文件系统接口
-     */
-    int     (*link)(mount_point_t *point, const char *path1, const char *path2);
-    int     (*unlink)(mount_point_t *point, const char *path);
-    int     (*mkdir)(mount_point_t *point, const char *path, mode_t mode);
-    int     (*rmdir)(mount_point_t *point, const char *path);
-    int     (*rename)(mount_point_t *point, const char *old, const char *new);
-    int     (*stat)(mount_point_t *point, const char *path, struct stat *buf);
-    int     (*access)(mount_point_t *point, const char *path, mode_t mode);
-    int     (*sync)(mount_point_t *point);
-    int     (*truncate)(mount_point_t *point, const char *path, off_t len);
 
     /*
      * 目录接口

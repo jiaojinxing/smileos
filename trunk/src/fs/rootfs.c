@@ -74,31 +74,6 @@ static int rootfs_mount(mount_point_t *point, device_t *dev, const char *dev_nam
     return 0;
 }
 
-static int rootfs_open(mount_point_t *point, file_t *file, const char *path, int oflag, mode_t mode)
-{
-    return -1;
-}
-
-static ssize_t rootfs_read(mount_point_t *point, file_t *file, void *buf, size_t len)
-{
-    return -1;
-}
-
-static ssize_t rootfs_write(mount_point_t *point, file_t *file, const void *buf, size_t len)
-{
-    return -1;
-}
-
-static int rootfs_ioctl(mount_point_t *point, file_t *file, int cmd, void *arg)
-{
-    return -1;
-}
-
-static int rootfs_close(mount_point_t *point, file_t *file)
-{
-    return -1;
-}
-
 static int rootfs_opendir(mount_point_t *point, file_t *file, const char *path)
 {
     privinfo_t *priv = kmalloc(sizeof(privinfo_t));
@@ -195,11 +170,6 @@ static int rootfs_closedir(mount_point_t *point, file_t *file)
 file_system_t rootfs = {
         .name       = "rootfs",
         .mount      = rootfs_mount,
-        .open       = rootfs_open,
-        .read       = rootfs_read,
-        .write      = rootfs_write,
-        .ioctl      = rootfs_ioctl,
-        .close      = rootfs_close,
         .opendir    = rootfs_opendir,
         .readdir    = rootfs_readdir,
         .rewinddir  = rootfs_rewinddir,
