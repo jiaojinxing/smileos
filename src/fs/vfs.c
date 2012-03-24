@@ -864,7 +864,7 @@ DIR *vfs_opendir(const char *path)
         return (DIR *)0;
     }
                                                                         /*  查找一个空闲的文件结构      */
-    for (fd = 1 /* 不使用 0 */, file = process_file_info[current->pid].files; fd < OPEN_MAX; fd++, file++) {
+    for (fd = 1 /* 不使用 0 */, file = process_file_info[current->pid].files + 1; fd < OPEN_MAX; fd++, file++) {
         kern_mutex_lock(&file->lock, 0);
         if (!file->flag) {
             break;

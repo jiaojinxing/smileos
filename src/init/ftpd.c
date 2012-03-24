@@ -45,6 +45,11 @@
 #include <sys/socket.h>
 #include <stdio.h>
 #include <ctype.h>
+#include <limits.h>
+
+#ifndef LINE_MAX
+#define LINE_MAX    512
+#endif
 
 #include "lwip/init.h"
 #include "lwip/tcpip.h"
@@ -59,7 +64,7 @@ static void ftpd_list_thread(void *arg)
     struct sockaddr_in local_addr, remote_addr;
     socklen_t addr_len;
     int fd, client_fd;
-    char buf[128];
+    char buf[LINE_MAX];
     int len;
     int port = (int)arg;
     int on = 1;
@@ -111,8 +116,8 @@ static void ftpd_list_thread(void *arg)
 static void ftpd_thread(void *arg)
 {
     int  fd = (int)arg;
-    char buf[128];
-    char cmd[128];
+    char buf[LINE_MAX];
+    char cmd[LINE_MAX];
     int  len;
 
     len = sprintf(buf, "220 SmileOS FTP Server Ready\r\n");
