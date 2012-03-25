@@ -44,14 +44,31 @@
 #include "kern/vmm.h"
 
 /*
+ * FIQ 快速中断处理程序
+ */
+void fiq_c_handler(void)
+{
+    kcomplain("%s, current tid = %d name=%s\n", __func__, current->tid, current->name);
+    kcomplain("reboot SmileOS...\n");
+
+    extern void _start(void);
+    _start();
+}
+
+/*
  * 未定义指令异常处理程序
  */
 void undf_c_handler(uint32_t lr, uint32_t spsr)
 {
-    kcomplain("%s, current tid = %d name=%s\n", __func__, current->tid, current->name);
-    kcomplain("lr   = 0x%x\n", lr);
-    kcomplain("spsr = 0x%x\n", spsr);
-    while (1);
+    interrupt_enter();                                                  /*  进入中断                    */
+
+    printk("%s, current tid = %d name=%s\n", __func__, current->tid, current->name);
+    printk("lr   = 0x%x\n", lr);
+    printk("spsr = 0x%x\n", spsr);
+
+    task_kill(current->tid);                                            /*  杀死任务                    */
+
+    interrupt_exit();                                                   /*  退出中断                    */
 }
 
 /*
@@ -59,23 +76,17 @@ void undf_c_handler(uint32_t lr, uint32_t spsr)
  */
 void pabt_c_handler(uint32_t lr, uint32_t spsr)
 {
-    kcomplain("%s, current tid = %d name=%s\n", __func__, current->tid, current->name);
-    kcomplain("fault address = 0x%x\n", mmu_get_fault_address());
-    kcomplain("fault status  = 0x%x\n", mmu_get_prefetch_fault_status());
-    kcomplain("lr   = 0x%x\n", lr);
-    kcomplain("spsr = 0x%x\n", spsr);
-    while (1);
-}
+    interrupt_enter();                                                  /*  进入中断                    */
 
-/*
- * FIQ 快速中断处理程序
- */
-void fiq_c_handler(uint32_t lr, uint32_t spsr)
-{
-    kcomplain("%s, current tid = %d name=%s\n", __func__, current->tid, current->name);
-    kcomplain("lr   = 0x%x\n", lr);
-    kcomplain("spsr = 0x%x\n", spsr);
-    while (1);
+    printk("%s, current tid = %d name=%s\n", __func__, current->tid, current->name);
+    printk("fault address = 0x%x\n", mmu_get_fault_address());
+    printk("fault status  = 0x%x\n", mmu_get_prefetch_fault_status());
+    printk("lr   = 0x%x\n", lr);
+    printk("spsr = 0x%x\n", spsr);
+
+    task_kill(current->tid);                                            /*  杀死任务                    */
+
+    interrupt_exit();                                                   /*  退出中断                    */
 }
 
 /*
@@ -85,15 +96,17 @@ void dabt_c_handler(uint32_t lr, uint32_t spsr)
 {
     uint32_t mva;
 
+    interrupt_enter();                                                  /*  进入中断                    */
+
     switch (mmu_get_data_fault_status() & 0x0F) {
     case 1:     /* Alignment */
     case 3:
-        kcomplain("%s, current tid = %d name=%s\n", __func__, current->tid, current->name);
-        kcomplain("fault address = 0x%x\n", mmu_get_fault_address());
-        kcomplain("fault status  = 0x%x\n", mmu_get_data_fault_status());
-        kcomplain("lr   = 0x%x\n", lr);
-        kcomplain("spsr = 0x%x\n", spsr);
-        while (1);
+        printk("%s, current tid = %d name=%s\n", __func__, current->tid, current->name);
+        printk("fault address = 0x%x\n", mmu_get_fault_address());
+        printk("fault status  = 0x%x\n", mmu_get_data_fault_status());
+        printk("lr   = 0x%x\n", lr);
+        printk("spsr = 0x%x\n", spsr);
+        task_kill(current->tid);                                        /*  杀死任务                    */
         break;
 
     case 5:     /* Translation */
@@ -112,35 +125,36 @@ void dabt_c_handler(uint32_t lr, uint32_t spsr)
         if (    mva >= PROCESS_SPACE_SIZE *  current->pid               /*  判断出错地址是否在当前进程  */
              && mva <  PROCESS_SPACE_SIZE * (current->pid + 1)) {       /*  的虚拟地址空间范围内        */
             if (vmm_map_process_page(current, mva) == 0) {              /*  页面映射                    */
-                break;
+                interrupt_exit_no_schedule();                           /*  退出中断, 但不要调度        */
+                return;
             }
         }
-        kcomplain("%s, current tid = %d name=%s\n", __func__, current->tid, current->name);
-        kcomplain("fault address = 0x%x\n", mmu_get_fault_address());
-        kcomplain("fault status  = 0x%x\n", mmu_get_data_fault_status());
-        kcomplain("lr   = 0x%x\n", lr);
-        kcomplain("spsr = 0x%x\n", spsr);
-        while (1);
+        printk("%s, current tid = %d name=%s\n", __func__, current->tid, current->name);
+        printk("fault address = 0x%x\n", mmu_get_fault_address());
+        printk("fault status  = 0x%x\n", mmu_get_data_fault_status());
+        printk("lr   = 0x%x\n", lr);
+        printk("spsr = 0x%x\n", spsr);
+        task_kill(current->tid);                                        /*  杀死任务                    */
         break;
 
     case 9:     /* Domain */
     case 11:
-        kcomplain("%s, current tid = %d name=%s\n", __func__, current->tid, current->name);
-        kcomplain("fault address = 0x%x\n", mmu_get_fault_address());
-        kcomplain("fault status  = 0x%x\n", mmu_get_data_fault_status());
-        kcomplain("lr   = 0x%x\n", lr);
-        kcomplain("spsr = 0x%x\n", spsr);
-        while (1);
+        printk("%s, current tid = %d name=%s\n", __func__, current->tid, current->name);
+        printk("fault address = 0x%x\n", mmu_get_fault_address());
+        printk("fault status  = 0x%x\n", mmu_get_data_fault_status());
+        printk("lr   = 0x%x\n", lr);
+        printk("spsr = 0x%x\n", spsr);
+        task_kill(current->tid);                                        /*  杀死任务                    */
         break;
 
     case 13:    /* Permission */
     case 15:
-        kcomplain("%s, current tid = %d name=%s\n", __func__, current->tid, current->name);
-        kcomplain("fault address = 0x%x\n", mmu_get_fault_address());
-        kcomplain("fault status  = 0x%x\n", mmu_get_data_fault_status());
-        kcomplain("lr   = 0x%x\n", lr);
-        kcomplain("spsr = 0x%x\n", spsr);
-        while (1);
+        printk("%s, current tid = %d name=%s\n", __func__, current->tid, current->name);
+        printk("fault address = 0x%x\n", mmu_get_fault_address());
+        printk("fault status  = 0x%x\n", mmu_get_data_fault_status());
+        printk("lr   = 0x%x\n", lr);
+        printk("spsr = 0x%x\n", spsr);
+        task_kill(current->tid);                                        /*  杀死任务                    */
         break;
 
                 /*
@@ -150,17 +164,19 @@ void dabt_c_handler(uint32_t lr, uint32_t spsr)
                  */
     case 8:
     case 10:
-        kcomplain("%s, current tid = %d name=%s\n", __func__, current->tid, current->name);
-        kcomplain("fault address = 0x%x\n", mmu_get_fault_address());
-        kcomplain("fault status  = 0x%x\n", mmu_get_data_fault_status());
-        kcomplain("lr   = 0x%x\n", lr);
-        kcomplain("spsr = 0x%x\n", spsr);
-        while (1);
+        printk("%s, current tid = %d name=%s\n", __func__, current->tid, current->name);
+        printk("fault address = 0x%x\n", mmu_get_fault_address());
+        printk("fault status  = 0x%x\n", mmu_get_data_fault_status());
+        printk("lr   = 0x%x\n", lr);
+        printk("spsr = 0x%x\n", spsr);
+        task_kill(current->tid);                                        /*  杀死任务                    */
         break;
 
     default:
-        return;
+        break;
     }
+
+    interrupt_exit();                                                   /*  退出中断                    */
 }
 /*********************************************************************************************************
   END FILE

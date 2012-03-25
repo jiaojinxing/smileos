@@ -294,6 +294,20 @@ void interrupt_exit(void)
 }
 
 /*
+ * 退出中断, 但不要调度
+ */
+void interrupt_exit_no_schedule(void)
+{
+    uint32_t reg;
+
+    reg = interrupt_disable();
+
+    interrupt_nest--;                                                   /*  中断嵌套层次减一            */
+
+    interrupt_resume(reg);
+}
+
+/*
  * 判断虚拟地址空间是否可用
  */
 static int virtual_space_usable(uint32_t base, uint32_t size)
@@ -607,6 +621,34 @@ int32_t kthread_create(const char *name, void (*func)(void *), void *arg, uint32
     interrupt_resume(reg);
 
     return i;
+}
+
+/*
+ * 杀死任务
+ */
+void task_kill(int32_t tid)
+{
+    task_t *task;
+
+    if (tid > 0 && tid < TASK_NR) {
+
+        task = &tasks[tid];
+
+        if (task->type == TASK_TYPE_PROCESS) {                          /*  如果任务是进程              */
+            printk("kill process %s pid=%d!\n", task->name, task->pid);
+            vmm_free_process_space(task);                               /*  释放进程的虚拟地址空间      */
+
+        } else {                                                        /*  如果任务是线程              */
+            printk("kill kthread %s tid=%d!\n", task->name, task->tid);
+            kfree((void *)task->stack);                                 /*  释放线程的堆栈空间          */
+        }
+
+        task->state = TASK_UNALLOCATE;                                  /*  释放任务的任务控制块        */
+
+        if (tid == current->tid) {
+            schedule();
+        }
+    }
 }
 
 /*
