@@ -39,6 +39,7 @@
 *********************************************************************************************************/
 #include "kern/kern.h"
 #include "kern/ipc.h"
+#include "kern/sys_call.h"
 #include "vfs/config.h"
 #include "vfs/types.h"
 #include "vfs/device.h"

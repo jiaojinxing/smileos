@@ -211,9 +211,19 @@ void interrupt_enter(void);
 void interrupt_exit(void);
 
 /*
+ * 退出中断, 但不要调度
+ */
+void interrupt_exit_no_schedule(void);
+
+/*
  * 获得 TICK
  */
 uint64_t get_tick(void);
+
+/*
+ * 杀死任务
+ */
+void task_kill(int32_t tid);
 
 /*
  * 判断是否在中断处理中
