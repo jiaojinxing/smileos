@@ -83,7 +83,7 @@ RB_GENERATE_INTERNAL(page_table_tree, page_table, node, page_table_compare, stat
 /*
  * 根据段号查找页表
  */
-uint32_t vmm_page_table_lookup(uint32_t section_nr)
+static uint32_t vmm_page_table_lookup(uint32_t section_nr)
 {
     struct page_table *tbl;
     struct page_table  tmp;
@@ -101,7 +101,7 @@ uint32_t vmm_page_table_lookup(uint32_t section_nr)
 /*
  * 分配页表
  */
-uint32_t vmm_page_table_alloc(uint32_t section_nr)
+static uint32_t vmm_page_table_alloc(uint32_t section_nr)
 {
     struct page_table *tbl;
 
@@ -121,7 +121,7 @@ uint32_t vmm_page_table_alloc(uint32_t section_nr)
 /*
  * 释放页表
  */
-void vmm_page_table_free(uint32_t page_tbl_base)
+static void vmm_page_table_free(uint32_t page_tbl_base)
 {
     struct page_table *tbl;
 
@@ -152,7 +152,7 @@ static vmm_frame_t *used_frame_list;                                    /*  已用
 /*
  * 分配页框
  */
-vmm_frame_t *vmm_frame_alloc(task_t *task)
+static vmm_frame_t *vmm_frame_alloc(task_t *task)
 {
     vmm_frame_t *frame;
 
@@ -177,7 +177,7 @@ vmm_frame_t *vmm_frame_alloc(task_t *task)
 /*
  * 释放页框
  */
-void vmm_frame_free(vmm_frame_t *frame)
+static void vmm_frame_free(vmm_frame_t *frame)
 {
     if (frame->prev != NULL) {                                          /*  从已用页框链表中删除        */
         frame->prev->next = frame->next;
@@ -196,7 +196,7 @@ void vmm_frame_free(vmm_frame_t *frame)
 /*
  * 获得页框的物理地址
  */
-uint32_t vmm_get_frame_addr(vmm_frame_t *frame)
+static uint32_t vmm_get_frame_addr(vmm_frame_t *frame)
 {
     return (frame - vmm_frames) * VMM_FRAME_SIZE + VMM_MEM_BASE;
 }
@@ -221,7 +221,7 @@ int vmm_map_process_page(task_t *task, uint32_t va)
                 mmu_map_section_as_page(section_nr, tbl);               /*  映射该段                    */
                 flag = TRUE;
             } else {
-                printk("failed to alloc page table, map failed, va=0x%x, pid=%d\n", va, task->pid);
+                kcomplain("failed to alloc page table, mem map failed, va=0x%x, pid=%d\n", va, task->pid);
                 return -1;
             }
         }
@@ -239,11 +239,11 @@ int vmm_map_process_page(task_t *task, uint32_t va)
                 mmu_unmap_section(section_nr);
                 vmm_page_table_free(tbl);
             }
-            printk("failed to alloc frame, map failed, va=0x%x, pid=%d\n", va, task->pid);
+            kcomplain("failed to alloc page, mem map failed, va=0x%x, pid=%d\n", va, task->pid);
             return -1;
         }
     } else {
-        printk("invalid va=0x%x, map failed, pid=%d\n", va, task->pid);
+        kcomplain("invalid va=0x%x, mem map failed, pid=%d\n", va, task->pid);
         return -1;
     }
 }

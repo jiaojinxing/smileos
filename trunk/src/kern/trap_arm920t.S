@@ -70,6 +70,7 @@ _fiq:       .word fiq_handler                                           // FIQ
 *********************************************************************************************************/
 .extern cpu_init
 .extern bsp_init
+.extern kernel_mode
 reset_handler:
     msr     cpsr_c, #(ARM_FIQ_NO + ARM_IRQ_NO + ARM_SVC_MODE)           /*  进入 svc 模式, 关中断       */
 
@@ -102,18 +103,24 @@ swi_handler:
                                              *  扩展阅读:
                                              *  http://www.52rd.com/Blog/Detail_RD.Blog_zjhfqq_7625.html
                                              */
+    ldr     r4, =kernel_mode                /*  进入内核模式                                            */
+    mov     r5, #1
+    strb    r5, [r4]
 
     cmp     r7, #SYS_CALL_NR                /*  根据 EABI, 系统调用号使用 r7                            */
 
-    ldrls   r5, =sys_do_table               /*  系统调用处理跳转表                                      */
+    ldrls   r4, =sys_do_table               /*  系统调用处理跳转表                                      */
 
     ldrls   lr, =sys_do_return              /*  系统调用处理返回地址                                    */
 
-    ldrls   pc, [r5, r7, lsl #2]            /*  跳转到相应系统调用处理                                  */
+    ldrls   pc, [r4, r7, lsl #2]            /*  跳转到相应系统调用处理                                  */
 
     mov     r0, #-1                         /*  出错, 返回 -1, r0 用于返回值                            */
 
 sys_do_return:                              /*  一定会执行                                              */
+    ldr     r4, =kernel_mode                /*  退出内核模式                                            */
+    mov     r5, #0
+    strb    r5, [r4]
     ldmfd   sp!, {r4-r12, pc}^              /*  系统调用处理返回, ^ 表示复制 spsr 到 cpsr               */
 /*********************************************************************************************************
   IRQ 中断处理程序

@@ -44,15 +44,17 @@
 #include "kern/vmm.h"
 #include "kern/mmu.h"
 #include <string.h>
-#include <stdarg.h>
 /*********************************************************************************************************
   内核变量
 *********************************************************************************************************/
-task_t          tasks[TASK_NR];                                         /*  任务控制块                  */
-task_t         *current;                                                /*  指向当前运行的任务          */
-static uint64_t tick;                                                   /*  TICK                        */
-static uint8_t  interrupt_nest;                                         /*  中断嵌套层次                */
-static uint8_t  running;                                                /*  内核是否正在运行            */
+task_t              tasks[TASK_NR];                                     /*  任务控制块                  */
+task_t             *current;                                            /*  指向当前运行的任务          */
+static uint64_t     tick;                                               /*  TICK                        */
+static uint8_t      interrupt_nest;                                     /*  中断嵌套层次                */
+static uint8_t      running;                                            /*  内核是否正在运行            */
+uint8_t             kernel_mode;
+
+static void idle_process_create(void);
 /*********************************************************************************************************
   内核函数
 *********************************************************************************************************/
@@ -68,6 +70,7 @@ static void kern_vars_init(void)
     interrupt_nest = 0;                                                 /*  中断嵌套层次为 0            */
     tick           = 0;                                                 /*  TICK 为 0                   */
     current        = &tasks[0];                                         /*  当前任务为进程 0            */
+    kernel_mode    = FALSE;
 
     /*
      * 初始化所有的任务控制块
@@ -96,62 +99,6 @@ static void kern_vars_init(void)
 }
 
 /*
- * 创建空闲进程
- */
-static void idle_process_create(void)
-{
-    task_t *task;
-
-    /*
-     * 初始化进程控制块 0
-     */
-    task               = &tasks[0];
-    task->pid          = 0;
-    task->tid          = 0;
-    task->state        = TASK_RUNNING;
-    task->counter      = 20;
-    task->timer        = 0;
-    task->priority     = 20;
-    task->type         = TASK_TYPE_PROCESS;                             /*  任务类型为进程              */
-    task->errno        = 0;
-    task->resume_type  = TASK_RESUME_UNKNOW;
-    task->next         = NULL;
-    task->wait_list    = NULL;
-    task->frame_list   = NULL;
-    task->tick         = 0;
-    task->utilization  = 0;
-    task->frame_nr     = 0;
-    task->stack        = 0;
-    task->thread       = NULL;
-    task->arg          = NULL;
-
-    /*
-     * 初始化进程上下文
-     */
-    task->content[0]   = (uint32_t)&task->kstack[KERN_STACK_SIZE];      /*  svc 模式的 sp (满堆栈递减)  */
-    task->content[1]   = ARM_SYS_MODE | ARM_FIQ_NO | ARM_IRQ_EN;        /*  cpsr, sys 模式, 开 IRQ      */
-    task->content[2]   = PROCESS0_STACK_BASE;                           /*  sys 模式的 sp               */
-    task->content[3]   = ARM_SVC_MODE;                                  /*  spsr, svc 模式              */
-    task->content[4]   = 0;                                             /*  lr                          */
-    task->content[5]   = 0;                                             /*  r0 ~ r12                    */
-    task->content[6]   = 1;
-    task->content[7]   = 2;
-    task->content[8]   = 3;
-    task->content[9]   = 4;
-    task->content[10]  = 5;
-    task->content[11]  = 6;
-    task->content[12]  = 7;
-    task->content[13]  = 8;
-    task->content[14]  = 9;
-    task->content[15]  = 10;
-    task->content[16]  = 11;
-    task->content[17]  = 12;
-    task->content[18]  = 0;                                             /*  pc                          */
-
-    strcpy(task->name, "idle");
-}
-
-/*
  * 初始化内核
  */
 void kernel_init(void)
@@ -165,6 +112,9 @@ void kernel_init(void)
 
     idle_process_create();                                              /*  创建空闲进程                */
 
+    extern void kernlog_thread_create(void);
+    kernlog_thread_create();                                            /*  创建内核日志线程            */
+
     vmm_init();                                                         /*  初始化虚拟内存管理          */
 }
 
@@ -176,8 +126,7 @@ void kernel_start(void)
     running = TRUE;                                                     /*  内核已经启动                */
 
     extern void __switch_to_process0(register uint32_t sp_svc);
-
-    __switch_to_process0(current->content[0]);                          /*  切换到进程 0                */
+    __switch_to_process0(current->content[0]);                          /*  切换到进程 0 (空闲进程)     */
 }
 
 /*
@@ -199,6 +148,8 @@ void schedule(void)
     if (interrupt_nest > 0) {                                           /*  如果还没完全退出中断        */
         return;                                                         /*  直接返回                    */
     }
+
+    kernel_mode = FALSE;                                                /*  退出内核模式                */
 
     while (1) {
         /*
@@ -224,8 +175,8 @@ void schedule(void)
 
         if (max > 0) {                                                  /*  找到了一个有剩余时间片的进程*/
             break;
-        } else if (flag) {
-            next = 0;
+        } else if (flag) {                                              /*  如果没有一个任务就绪        */
+            next = 0;                                                   /*  运行空闲进程                */
             break;
         }
 
@@ -259,7 +210,7 @@ void do_timer(void)
     int      i;
     task_t  *task;
     uint32_t reg;
-    int      flag = 0;
+    int      flag = FALSE;
 
     reg = interrupt_disable();
 
@@ -267,11 +218,14 @@ void do_timer(void)
 
     tick++;                                                             /*  内核 TICK 加一              */
     if (tick % TICK_PER_SECOND == 0) {                                  /*  如果已经过去了一秒          */
-        flag = 1;
+        flag = TRUE;
     }
 
     for (i = 0, task = tasks; i < TASK_NR; i++, task++) {               /*  遍历所有任务                */
         if (task->state != TASK_UNALLOCATE) {                           /*  如果任务有效                */
+            /*
+             * TODO: 这样统计任务的 CPU 占用率不是很准确
+             */
             if (flag) {
                 task->utilization = task->tick;                         /*  任务的 CPU 占用率           */
                 task->tick        = 0;                                  /*  重置该任务被定时器中断的次数*/
@@ -339,11 +293,10 @@ void interrupt_exit(void)
     interrupt_resume(reg);
 }
 
-
 /*
  * 判断虚拟地址空间是否可用
  */
-int virtual_space_usable(uint32_t base, uint32_t size)
+static int virtual_space_usable(uint32_t base, uint32_t size)
 {
     uint32_t end = base + size;
     uint32_t high, low;
@@ -375,6 +328,62 @@ int virtual_space_usable(uint32_t base, uint32_t size)
 }
 
 /*
+ * 创建空闲进程
+ */
+static void idle_process_create(void)
+{
+    task_t *task;
+
+    /*
+     * 初始化进程控制块 0
+     */
+    task               = &tasks[0];
+    task->pid          = 0;
+    task->tid          = 0;
+    task->state        = TASK_RUNNING;
+    task->counter      = 20;
+    task->timer        = 0;
+    task->priority     = 20;
+    task->type         = TASK_TYPE_PROCESS;                             /*  任务类型为进程              */
+    task->errno        = 0;
+    task->resume_type  = TASK_RESUME_UNKNOW;
+    task->next         = NULL;
+    task->wait_list    = NULL;
+    task->frame_list   = NULL;
+    task->tick         = 0;
+    task->utilization  = 0;
+    task->frame_nr     = 0;
+    task->stack        = 0;
+    task->thread       = NULL;
+    task->arg          = NULL;
+
+    /*
+     * 初始化进程上下文
+     */
+    task->content[0]   = (uint32_t)&task->kstack[KERN_STACK_SIZE];      /*  svc 模式的 sp (满堆栈递减)  */
+    task->content[1]   = ARM_SYS_MODE | ARM_FIQ_NO | ARM_IRQ_EN;        /*  cpsr, sys 模式, 开 IRQ      */
+    task->content[2]   = PROCESS0_STACK_BASE;                           /*  sys 模式的 sp               */
+    task->content[3]   = ARM_SVC_MODE;                                  /*  spsr, svc 模式              */
+    task->content[4]   = 0;                                             /*  lr                          */
+    task->content[5]   = 0;                                             /*  r0 ~ r12                    */
+    task->content[6]   = 1;
+    task->content[7]   = 2;
+    task->content[8]   = 3;
+    task->content[9]   = 4;
+    task->content[10]  = 5;
+    task->content[11]  = 6;
+    task->content[12]  = 7;
+    task->content[13]  = 8;
+    task->content[14]  = 9;
+    task->content[15]  = 10;
+    task->content[16]  = 11;
+    task->content[17]  = 12;
+    task->content[18]  = 0;                                             /*  pc                          */
+
+    strcpy(task->name, "idle");
+}
+
+/*
  * 创建进程
  */
 int32_t process_create(const char *name, uint8_t *code, uint32_t size, uint32_t priority)
@@ -387,8 +396,8 @@ int32_t process_create(const char *name, uint8_t *code, uint32_t size, uint32_t 
         return -1;
     }
 
-    if (priority < 2) {                                                 /*  优先级最小为 2              */
-        priority = 2;
+    if (priority < 5) {                                                 /*  优先级最小为 5              */
+        priority = 5;
     }
 
     reg = interrupt_disable();
@@ -456,7 +465,7 @@ int32_t process_create(const char *name, uint8_t *code, uint32_t size, uint32_t 
     task->content[18]  = 0;                                             /*  pc                          */
 
     if (name != NULL) {
-        strcpy(task->name, name);
+        strlcpy(task->name, name, sizeof(task->name));
     } else {
         strcpy(task->name, "???");
     }
@@ -491,7 +500,9 @@ int32_t process_create(const char *name, uint8_t *code, uint32_t size, uint32_t 
     memcpy((char *)(task->pid * PROCESS_SPACE_SIZE), code, size);
 
     reg = interrupt_disable();
-    task->state = TASK_RUNNING;
+
+    task->state = TASK_RUNNING;                                         /*  进程进入就绪态              */
+
     interrupt_resume(reg);
 
     return i;
@@ -521,8 +532,8 @@ int32_t kthread_create(const char *name, void (*func)(void *), void *arg, uint32
         return -1;
     }
 
-    if (priority < 2) {                                                 /*  优先级最小为 2              */
-        priority = 2;
+    if (priority < 5) {                                                 /*  优先级最小为 5              */
+        priority = 5;
     }
 
     if (stk_size < 8 * KB) {                                            /*  堆栈空间最小为 8 KB         */
@@ -588,7 +599,7 @@ int32_t kthread_create(const char *name, void (*func)(void *), void *arg, uint32
     task->content[18]  = (uint32_t)kthread_shell;                       /*  pc                          */
 
     if (name != NULL) {
-        strcpy(task->name, name);
+        strlcpy(task->name, name, sizeof(task->name));
     } else {
         strcpy(task->name, "???");
     }
@@ -603,16 +614,16 @@ int32_t kthread_create(const char *name, void (*func)(void *), void *arg, uint32
  */
 uint64_t get_tick(void)
 {
-    uint64_t __tick;
+    uint64_t ret;
     uint32_t reg;
 
     reg = interrupt_disable();
 
-    __tick = tick;
+    ret = tick;
 
     interrupt_resume(reg);
 
-    return __tick;
+    return ret;
 }
 
 /*
@@ -632,28 +643,21 @@ int in_interrupt(void)
     return ret;
 }
 
-#include <stdio.h>
-
 /*
- * printk
+ * 判断是否在内核模式
  */
-void printk(const char *fmt, ...)
+int in_kernel(void)
 {
-    va_list va;
-    char    buf[256];
-    int     i;
+    int      ret;
+    uint32_t reg;
 
-    va_start(va, fmt);
+    reg = interrupt_disable();
 
-    vsprintf(buf, fmt, va);
+    ret = kernel_mode > 0 ? TRUE : FALSE;
 
-    i = 0;
-    while (buf[i]) {
-        kputc(buf[i]);
-        i++;
-    }
+    interrupt_resume(reg);
 
-    va_end(va);
+    return ret;
 }
 /*********************************************************************************************************
   END FILE

@@ -45,6 +45,7 @@
 #define MB                          (1024 * KB)
 #define GB                          (1024 * MB)
 #endif
+
 #ifdef S3C2440_BSP
 #include "../../bsp/s3c2440/s3c2440_config.h"
 #endif
@@ -55,6 +56,8 @@
 
 #define PROCESS_SPACE_SIZE          (32 * MB)                           /*  进程空间大小                */
 #define PROCESS_STACK_SIZE          (128 * KB)                          /*  进程栈空间大小              */
+
+#define LINE_SIZE                   (512)                               /*  行大小, limits.h 无此定义   */
 
 #endif                                                                  /*  KERN_CONFIG_H_              */
 /*********************************************************************************************************

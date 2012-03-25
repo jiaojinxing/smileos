@@ -311,8 +311,11 @@ pth_mctx_switch:
 .globl interrupt_disable
 interrupt_disable:
     mrs     r0, cpsr
+
     orr     r1, r0, #(ARM_FIQ_NO + ARM_IRQ_NO)
+
     msr     cpsr_c, r1
+
     mov     pc, lr
 /*********************************************************************************************************
   ÍË³öÁÙ½çÇøÓò
@@ -320,6 +323,7 @@ interrupt_disable:
 .globl interrupt_resume
 interrupt_resume:
     msr     cpsr, r0
+
     mov     pc, lr
 /*********************************************************************************************************
   END FILE
