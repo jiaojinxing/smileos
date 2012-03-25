@@ -50,11 +50,11 @@
 static void do_exit(int error_code)
 {
     if (current->type == TASK_TYPE_PROCESS) {                           /*  如果当前任务是进程          */
-        printk("process %d %s exit!\n", current->pid, current->name);
+        printk("process %s pid=%d exit!\n", current->name, current->pid);
         vmm_free_process_space(current);                                /*  释放进程的虚拟地址空间      */
 
     } else {                                                            /*  如果当前任务是线程          */
-        printk("kthread %d %s exit!\n", current->tid, current->name);
+        printk("kthread %s tid=%d exit!\n", current->name, current->tid);
         kfree((void *)current->stack);                                  /*  释放线程的堆栈空间          */
     }
 
@@ -93,7 +93,9 @@ static int do_write(int fd, void *data, uint32_t len)
  */
 static int do_gettimeofday(struct timeval *tv, void *tzp)
 {
-    uint64_t tick = get_tick();
+    uint64_t tick;
+
+    tick = get_tick();
 
     tv->tv_sec  = (tick / TICK_PER_SECOND);
     tv->tv_usec = (tick % TICK_PER_SECOND) * 1000000 / TICK_PER_SECOND;
@@ -106,7 +108,7 @@ static int do_gettimeofday(struct timeval *tv, void *tzp)
  */
 static int do_getpid(void)
 {
-    return (int)current->tid;
+    return (int)current->pid;
 }
 
 /*

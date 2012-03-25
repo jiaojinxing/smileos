@@ -223,9 +223,9 @@ static mount_point_t *vfs_mount_point_lookup(char pathbuf[PATH_MAX + 1], char **
         /*
          * cwd 要以 / 号开头和结尾
          */
-        kern_mutex_lock(&process_file_info[current->pid].cwd_lock, 0);  /*  在前面加入当前工作目录      */
-        sprintf(pathbuf, "%s%s", process_file_info[current->pid].cwd, path);
-        kern_mutex_unlock(&process_file_info[current->pid].cwd_lock);
+        kern_mutex_lock(&process_file_info[getpid()].cwd_lock, 0);  /*  在前面加入当前工作目录      */
+        sprintf(pathbuf, "%s%s", process_file_info[getpid()].cwd, path);
+        kern_mutex_unlock(&process_file_info[getpid()].cwd_lock);
     }
 
     if (vfs_path_normalization(pathbuf, FALSE) < 0) {
@@ -267,9 +267,9 @@ static mount_point_t *vfs_mount_point_lookup2(char pathbuf[PATH_MAX + 1], char *
         /*
          * cwd 要以 / 号开头和结尾
          */
-        kern_mutex_lock(&process_file_info[current->pid].cwd_lock, 0);  /*  在前面加入当前工作目录      */
-        sprintf(pathbuf, "%s%s", process_file_info[current->pid].cwd, path);
-        kern_mutex_unlock(&process_file_info[current->pid].cwd_lock);
+        kern_mutex_lock(&process_file_info[getpid()].cwd_lock, 0);  /*  在前面加入当前工作目录      */
+        sprintf(pathbuf, "%s%s", process_file_info[getpid()].cwd, path);
+        kern_mutex_unlock(&process_file_info[getpid()].cwd_lock);
     }
 
     if (vfs_path_normalization(pathbuf, FALSE) < 0) {
@@ -313,7 +313,7 @@ static mount_point_t *vfs_mount_point_lookup2(char pathbuf[PATH_MAX + 1], char *
         if (fd < 0 || fd >= OPEN_MAX) {                                 /*  文件描述符合法性判断        */\
             return -1;                                                                                    \
         }                                                                                                 \
-        file = process_file_info[current->pid].files + fd;              /*  获得文件结构                */\
+        file = process_file_info[getpid()].files + fd;                  /*  获得文件结构                */\
         kern_mutex_lock(&file->lock, 0);                                /*  锁住文件                    */
 
 #define vfs_file_api_begin                                                                                \
@@ -344,7 +344,7 @@ int vfs_open(const char *path, int oflag, mode_t mode)
         return -1;
     }
                                                                         /*  查找一个空闲的文件结构      */
-    for (fd = 0, file = process_file_info[current->pid].files; fd < OPEN_MAX; fd++, file++) {
+    for (fd = 0, file = process_file_info[getpid()].files; fd < OPEN_MAX; fd++, file++) {
         kern_mutex_lock(&file->lock, 0);
         if (!file->flag) {
             break;
@@ -837,7 +837,7 @@ int vfs_sync(const char *path)
         if (fd < 1 || fd >= OPEN_MAX) {                                 /*  文件描述符合法性判断        */\
             return -1;                                                                                    \
         }                                                                                                 \
-        file = process_file_info[current->pid].files + fd;              /*  获得文件结构                */\
+        file = process_file_info[getpid()].files + fd;              /*  获得文件结构                */\
         kern_mutex_lock(&file->lock, 0);                                /*  锁住文件                    */
 
 #define vfs_dir_api_begin                                                                                 \
@@ -868,7 +868,7 @@ DIR *vfs_opendir(const char *path)
         return (DIR *)0;
     }
                                                                         /*  查找一个空闲的文件结构      */
-    for (fd = 1 /* 不使用 0 */, file = process_file_info[current->pid].files + 1; fd < OPEN_MAX; fd++, file++) {
+    for (fd = 1 /* 不使用 0 */, file = process_file_info[getpid()].files + 1; fd < OPEN_MAX; fd++, file++) {
         kern_mutex_lock(&file->lock, 0);
         if (!file->flag) {
             break;
@@ -1019,20 +1019,20 @@ int vfs_chdir(const char *path)
         return -1;
     }
 
-    kern_mutex_lock(&process_file_info[current->pid].cwd_lock, 0);
+    kern_mutex_lock(&process_file_info[getpid()].cwd_lock, 0);
 
     if (path[0] == '/') {                                               /*  如果是绝对路径              */
         strcpy(pathbuf, path);
     } else {                                                            /*  如果是相对路径              */
-        sprintf(pathbuf, "%s%s", process_file_info[current->pid].cwd, path);
+        sprintf(pathbuf, "%s%s", process_file_info[getpid()].cwd, path);
     }
 
     ret = vfs_path_normalization(pathbuf, TRUE);
     if (ret == 0) {
-        strcpy(process_file_info[current->pid].cwd, pathbuf);
+        strcpy(process_file_info[getpid()].cwd, pathbuf);
     }
 
-    kern_mutex_unlock(&process_file_info[current->pid].cwd_lock);
+    kern_mutex_unlock(&process_file_info[getpid()].cwd_lock);
 
     return ret;
 }
@@ -1043,12 +1043,12 @@ int vfs_chdir(const char *path)
 char *vfs_getcwd(char *buf, size_t size)
 {
     if (buf != NULL) {
-        kern_mutex_lock(&process_file_info[current->pid].cwd_lock, 0);
-        strcpy(buf, process_file_info[current->pid].cwd);
-        kern_mutex_unlock(&process_file_info[current->pid].cwd_lock);
+        kern_mutex_lock(&process_file_info[getpid()].cwd_lock, 0);
+        strcpy(buf, process_file_info[getpid()].cwd);
+        kern_mutex_unlock(&process_file_info[getpid()].cwd_lock);
         return buf;
     } else {
-        return process_file_info[current->pid].cwd;
+        return process_file_info[getpid()].cwd;
     }
 }
 

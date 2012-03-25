@@ -50,7 +50,10 @@
 #include "kern/kern.h"
 
 #define getpid()          current->tid
-#define debug_output      printk
+/*
+ * printk 会使用内存分配, 不使用 printk
+ */
+#define debug_output      kcomplain
 
 /*
  * 内核内存堆
@@ -104,7 +107,7 @@ void *kcalloc(uint32_t nelem, uint32_t elsize)
 }
 
 /*
- * 打印内存堆信息
+ * 打印内核内存堆信息
  */
 void kern_heap_show(void)
 {
@@ -209,10 +212,25 @@ struct mem_block {
 };
 
 /*
- * 初始化内存堆
+ * 创建内存堆
  */
 int heap_init(heap_t *heap, uint8_t *base, uint32_t size)
 {
+    if (heap == NULL) {
+        debug_output("%s: process %d heap=NULL!\n", __func__, getpid());
+        return -1;
+    }
+
+    if (base == NULL) {
+        debug_output("%s: process %d base=NULL!\n", __func__, getpid());
+        return -1;
+    }
+
+    if (size < 1 * KB) {
+        debug_output("%s: process %d size=%d too small!\n", __func__, getpid(), size);
+        return -1;
+    }
+
     heap->base = MEM_ALIGN(base);                                       /*  对齐基址                    */
 
     heap->size = MEM_ALIGN_SIZE_LESS(size - (heap->base - base));       /*  对齐大小                    */
@@ -243,6 +261,11 @@ void *heap_alloc(heap_t *heap, uint32_t size)
 {
     mem_block_t *blk;
     mem_block_t *new_blk;
+
+    if (heap == NULL) {
+        debug_output("%s: process %d heap=NULL!\n", __func__, getpid());
+        return NULL;
+    }
 
     if (heap->free_list != NULL) {                                      /*  有空闲内存块                */
 
@@ -320,6 +343,11 @@ void *heap_free(heap_t *heap, void *ptr)
     mem_block_t *blk;
     mem_block_t *prev;
     mem_block_t *next;
+
+    if (heap == NULL) {
+        debug_output("%s: process %d heap=NULL!\n", __func__, getpid());
+        return NULL;
+    }
 
     if (ptr == NULL) {
         debug_output("%s: process %d memptr=NULL!\n", __func__, getpid());
@@ -418,19 +446,26 @@ void *heap_free(heap_t *heap, void *ptr)
  */
 void heap_show(heap_t *heap)
 {
+    heap_t tmp;
+
+    /*
+     * 为了避免信息波动, 先拷贝到局部变量
+     */
+    memcpy(&tmp, heap, sizeof(heap_t));
+
     debug_output("\n********** heap info **********\n");
-    debug_output("heap block count = %d\n", heap->block_cnt);
-    debug_output("heap alloc count = %d\n", heap->alloc_cnt);
-    debug_output("heap free  count = %d\n", heap->free_cnt);
-    debug_output("heap leak  count = %d\n", heap->alloc_cnt - heap->free_cnt);
+    debug_output("heap block count = %d\n", tmp.block_cnt);
+    debug_output("heap alloc count = %d\n", tmp.alloc_cnt);
+    debug_output("heap free  count = %d\n", tmp.free_cnt);
+    debug_output("heap leak  count = %d\n", tmp.alloc_cnt - tmp.free_cnt);
     debug_output("heap used  size  = %dMB.%dKB.%dB\n",
-            heap->used_size / MB,
-            heap->used_size % MB / KB,
-            heap->used_size % KB);
+            tmp.used_size / MB,
+            tmp.used_size % MB / KB,
+            tmp.used_size % KB);
     debug_output("heap free  size  = %dMB.%dKB.%dB\n",
-            (heap->size-heap->used_size) / MB,
-            (heap->size-heap->used_size) % MB / KB,
-            (heap->size-heap->used_size) % KB);
+            (tmp.size-tmp.used_size) / MB,
+            (tmp.size-tmp.used_size) % MB / KB,
+            (tmp.size-tmp.used_size) % KB);
     debug_output("************* end *************\n\n");
 }
 /*********************************************************************************************************

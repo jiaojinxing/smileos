@@ -108,7 +108,7 @@ typedef struct task {
 /*
  * 系统调用处理
  */
-typedef uint32_t sys_do_t;
+typedef int (*sys_do_t)();
 /*********************************************************************************************************
   内核变量
 *********************************************************************************************************/
@@ -150,8 +150,15 @@ int32_t kthread_create(const char *name, void (*func)(void *), void *arg, uint32
 
 /*
  * printk
+ * 因为里面用了 kmalloc, 所以不能用在 kmalloc 失败之后, 终止内核前的报警也不能使用
  */
 void printk(const char *fmt, ...);
+
+/*
+ * 内核抱怨
+ * 供异常处理程序使用
+ */
+void kcomplain(const char *fmt, ...);
 
 /*
  * kputc
@@ -213,6 +220,10 @@ uint64_t get_tick(void);
  */
 int in_interrupt(void);
 
+/*
+ * 判断是否在内核模式
+ */
+int in_kernel(void);
 #endif
 
 #endif                                                                  /*  KERN_H_                     */
