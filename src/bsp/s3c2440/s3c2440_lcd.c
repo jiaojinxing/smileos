@@ -164,7 +164,7 @@ void lcd_init(void)
  */
 int fb_open(void *ctx, file_t *file, int oflag, mode_t mode)
 {
-    LCDCON1   = (LCDCON1 & ~(1)) | ENVID;                               /*  开启视频输出                */
+    LCDCON1 = (LCDCON1 & ~(1)) | ENVID;                                 /*  开启视频输出                */
     return 0;
 }
 

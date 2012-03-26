@@ -34,7 +34,7 @@
 ** Modified by:             JiaoJinXing
 ** Modified date:           2012-3-26
 ** Version:                 1.1.0
-** Descriptions:            修复内存释放的一处 BUG, 增加安全检查
+** Descriptions:            修复内存释放和内存统计的一处 BUG, 增加堆指针类型安全检查
 **
 *********************************************************************************************************/
 #include "kern/config.h"
@@ -251,7 +251,7 @@ int heap_init(heap_t *heap, uint8_t *base, uint32_t size)
     heap->alloc_cnt             = 0;
     heap->free_cnt              = 0;
 
-    heap->magic0                = MEM_BLOCK_MAGIC0;
+    heap->magic0                = MEM_BLOCK_MAGIC0;                     /*  加入魔数                    */
 
     return 0;
 }
@@ -287,14 +287,13 @@ void *heap_alloc(heap_t *heap, uint32_t size)
         }
 
         if (blk == NULL) {                                              /*  没找到                      */
-            heap_show(heap);
             goto error0;
         }
 
         if (blk->size <= MEM_ALIGN_SIZE(sizeof(mem_block_t)) + size) {  /*  如果内存块切割后, 剩余的大小*/
                                                                         /*  不足或只够建立一个内存块节点*/
                                                                         /*  则整块分配出去              */
-            if (blk == heap->free_list) {                               /*  处理空闲内存块链表链头      */
+            if (heap->free_list == blk) {                               /*  处理空闲内存块链表链头      */
                 heap->free_list = blk->next_free;
             }
 
@@ -393,6 +392,9 @@ void *heap_free(heap_t *heap, void *ptr)
         return ptr;
     }
 
+    heap->free_cnt++;
+    heap->used_size -= blk->size + MEM_ALIGN_SIZE(sizeof(mem_block_t));
+
     if (prev != NULL && prev->status == MEM_BLOCK_STATE_FREE) {         /*  前一个内存块空闲, 合并之    */
         prev->size += MEM_ALIGN_SIZE(sizeof(mem_block_t)) + blk->size;  /*  前一个内存块变大            */
 
@@ -426,7 +428,7 @@ void *heap_free(heap_t *heap, void *ptr)
 
         blk->prev_free = next->prev_free;                               /*  把内存块加入空闲内存块链表  */
         blk->next_free = next->next_free;
-        if (next == heap->free_list) {
+        if (heap->free_list == next) {
             heap->free_list = blk;
         }
 
@@ -446,9 +448,6 @@ void *heap_free(heap_t *heap, void *ptr)
         heap->free_list = blk;
         blk->status = MEM_BLOCK_STATE_FREE;                             /*  改变内存块状态为空闲        */
     }
-
-    heap->free_cnt++;
-    heap->used_size -= blk->size + MEM_ALIGN_SIZE(sizeof(mem_block_t));
 
     return NULL;
 }

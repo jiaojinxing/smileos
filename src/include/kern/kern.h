@@ -103,7 +103,7 @@ typedef struct task {
     struct task            *next;                                       /*  后趋                        */
     struct task           **wait_list;                                  /*  等待链表                    */
     struct vmm_frame       *frame_list;                                 /*  页框链表                    */
-    int                     dabt_nr;                                    /*  数据终止次数                */
+    int                     dabt_cnt;                                   /*  数据终止次数                */
 } task_t;
 
 /*
@@ -157,7 +157,7 @@ void printk(const char *fmt, ...);
 
 /*
  * 内核抱怨
- * 供异常处理程序使用
+ * 供不能用 printk 时使用
  */
 void kcomplain(const char *fmt, ...);
 

@@ -49,18 +49,7 @@
  */
 static void do_exit(int error_code)
 {
-    if (current->type == TASK_TYPE_PROCESS) {                           /*  如果当前任务是进程          */
-        printk("process %s pid=%d exit!\n", current->name, current->pid);
-        vmm_free_process_space(current);                                /*  释放进程的虚拟地址空间      */
-
-    } else {                                                            /*  如果当前任务是线程          */
-        printk("kthread %s tid=%d exit!\n", current->name, current->tid);
-        kfree((void *)current->stack);                                  /*  释放线程的堆栈空间          */
-    }
-
-    current->state = TASK_UNALLOCATE;                                   /*  释放当前任务的任务控制块    */
-
-    schedule();                                                         /*  任务调度                    */
+    task_kill(current->tid);                                            /*  杀死当前任务                */
 }
 
 /*

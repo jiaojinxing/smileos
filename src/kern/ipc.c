@@ -34,7 +34,8 @@
 ** Modified by:             JiaoJinXing
 ** Modified date:           2012-3-25
 ** Version:                 1.1.0
-** Descriptions:            增强类型检查
+** Descriptions:            增强 IPC 对象类型安全检查, 修复代码中存在的一处 BUG,
+**                          修改恢复任务时不主动释放 CPU
 **
 *********************************************************************************************************/
 #include "kern/config.h"
@@ -113,7 +114,7 @@
                     }
 
 /*
- * IPC 类型放在 IPC 对象的首位, 有效性放在次位, 保证 IPC 对象关键成员兼容
+ * IPC 对象类型放在 IPC 对象的首位, 有效性放在次位, 保证 IPC 对象关键成员变量兼容
  */
 typedef enum {
     IPC_TYPE_MUTEX      = 0xABCD1A1A,                                   /*  互斥量                      */

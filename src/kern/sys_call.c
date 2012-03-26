@@ -36,6 +36,12 @@
 ** Version:                 1.1.0
 ** Descriptions:            修改没有保存 R7 的错误
 **
+**--------------------------------------------------------------------------------------------------------
+** Modified by:             JiaoJinXing
+** Modified date:           2012-3-25
+** Version:                 1.2.0
+** Descriptions:            加入是否处于内核模式的判断, 以适合内核模式时的系统调用
+**
 *********************************************************************************************************/
 #include "kern/config.h"
 #include "kern/types.h"
@@ -181,12 +187,12 @@ int write(int fd, const char *data, unsigned int size)
 int printf(const char *fmt, ...)
 {
     va_list va;
-    char    buf[LINE_SIZE];
+    char    buf[LINE_MAX];
     int     len;
 
     va_start(va, fmt);
 
-    len = vsnprintf(buf, LINE_SIZE, fmt, va);
+    len = vsnprintf(buf, LINE_MAX, fmt, va);
 
     write(0, buf, len);
 

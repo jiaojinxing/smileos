@@ -31,10 +31,12 @@
 ** Descriptions:            创建文件
 **
 **--------------------------------------------------------------------------------------------------------
-** Modified by:
-** Modified date:
-** Version:
-** Descriptions:
+** Modified by:             JiaoJinXing
+** Modified date:           2012-3-25
+** Version:                 1.1.0
+** Descriptions:            加入内核模式和内核日志线程及 interrupt_exit_no_schedule 函数
+**                          strcpy 改用更安全的 strlcpy
+**                          拷贝代码到进程的虚拟地址空间时开中断以提高实时性
 **
 *********************************************************************************************************/
 #include "kern/config.h"
@@ -52,7 +54,7 @@ task_t             *current;                                            /*  指向
 static uint64_t     tick;                                               /*  TICK                        */
 static uint8_t      interrupt_nest;                                     /*  中断嵌套层次                */
 static uint8_t      running;                                            /*  内核是否正在运行            */
-uint8_t             kernel_mode;
+uint8_t             kernel_mode;                                        /*  当前是否处于内核模式        */
 
 static void idle_process_create(void);
 /*********************************************************************************************************
@@ -94,7 +96,7 @@ static void kern_vars_init(void)
         task->stack        = 0;
         task->thread       = NULL;
         task->arg          = NULL;
-        task->dabt_nr      = 0;
+        task->dabt_cnt     = 0;
         memset(task->name, 0, sizeof(task->name));
     }
 }
@@ -371,7 +373,7 @@ static void idle_process_create(void)
     task->stack        = 0;
     task->thread       = NULL;
     task->arg          = NULL;
-    task->dabt_nr      = 0;
+    task->dabt_cnt     = 0;
 
     /*
      * 初始化进程上下文
@@ -456,7 +458,7 @@ int32_t process_create(const char *name, uint8_t *code, uint32_t size, uint32_t 
     task->stack        = 0;
     task->thread       = NULL;
     task->arg          = NULL;
-    task->dabt_nr      = 0;
+    task->dabt_cnt     = 0;
 
     /*
      * 初始化任务上下文
@@ -502,12 +504,12 @@ int32_t process_create(const char *name, uint8_t *code, uint32_t size, uint32_t 
     /*
      * 为进程栈空间映射一个页面
      */
-//    if (vmm_map_process_page(task, (task->pid + 1) * PROCESS_SPACE_SIZE - PAGE_SIZE) < 0) {
-//        vmm_free_process_space(task);
-//        task->state = TASK_UNALLOCATE;
-//        interrupt_resume(reg);
-//        return -1;
-//    }
+    if (vmm_map_process_page(task, (task->pid + 1) * PROCESS_SPACE_SIZE - PAGE_SIZE) < 0) {
+        vmm_free_process_space(task);
+        task->state = TASK_UNALLOCATE;
+        interrupt_resume(reg);
+        return -1;
+    }
 
     interrupt_resume(reg);
 
@@ -594,7 +596,7 @@ int32_t kthread_create(const char *name, void (*func)(void *), void *arg, uint32
     task->frame_nr     = 0;
     task->thread       = func;
     task->arg          = arg;
-    task->dabt_nr      = 0;
+    task->dabt_cnt     = 0;
 
     task->content[0]   = (uint32_t)&task->kstack[KERN_STACK_SIZE];      /*  svc 模式堆栈指针(满堆栈递减)*/
     task->content[1]   = ARM_SYS_MODE | ARM_FIQ_NO | ARM_IRQ_EN;        /*  cpsr, sys 模式, 开 IRQ      */
@@ -634,9 +636,9 @@ void task_kill(int32_t tid)
 {
     task_t *task;
 
-    if (tid > 0 && tid < TASK_NR) {
+    if (tid > 0 && tid < TASK_NR) {                                     /*  任务 ID 合法性判断          */
 
-        task = &tasks[tid];
+        task = &tasks[tid];                                             /*  获得任务控制块              */
 
         if (task->type == TASK_TYPE_PROCESS) {                          /*  如果任务是进程              */
             printk("kill process %s pid=%d!\n", task->name, task->pid);
@@ -649,8 +651,8 @@ void task_kill(int32_t tid)
 
         task->state = TASK_UNALLOCATE;                                  /*  释放任务的任务控制块        */
 
-        if (tid == current->tid) {
-            schedule();
+        if (tid == current->tid) {                                      /*  如果要杀死的是当前的任务    */
+            schedule();                                                 /*  任务调度                    */
         }
     }
 }
