@@ -81,7 +81,7 @@ void *heap_free(heap_t *heap, void *ptr);
 /*
  * 打印内存堆信息
  */
-void heap_show(heap_t *heap);
+int heap_show(heap_t *heap);
 
 #endif                                                                  /*  HEAP_H_                     */
 /*********************************************************************************************************

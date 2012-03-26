@@ -31,10 +31,10 @@
 ** Descriptions:            创建文件
 **
 **--------------------------------------------------------------------------------------------------------
-** Modified by:
-** Modified date:
-** Version:
-** Descriptions:
+** Modified by:             JiaoJinXing
+** Modified date:           2012-3-26
+** Version:                 1.1.0
+** Descriptions:            修复内存释放的一处 BUG, 增加安全检查
 **
 *********************************************************************************************************/
 #include "kern/config.h"
@@ -270,7 +270,7 @@ void *heap_alloc(heap_t *heap, uint32_t size)
     }
 
     if (heap->magic0 != MEM_BLOCK_MAGIC0) {
-        debug_output("%s: process %d heap magic != %d!\n", __func__, getpid(), MEM_BLOCK_MAGIC0);
+        debug_output("%s: process %d heap magic %d != %d!\n", __func__, getpid(), heap->magic0, MEM_BLOCK_MAGIC0);
         return NULL;
     }
 
@@ -354,6 +354,11 @@ void *heap_free(heap_t *heap, void *ptr)
 
     if (heap == NULL) {
         debug_output("%s: process %d heap=NULL!\n", __func__, getpid());
+        return NULL;
+    }
+
+    if (heap->magic0 != MEM_BLOCK_MAGIC0) {
+        debug_output("%s: process %d heap magic %d != %d!\n", __func__, getpid(), heap->magic0, MEM_BLOCK_MAGIC0);
         return NULL;
     }
 
@@ -451,9 +456,19 @@ void *heap_free(heap_t *heap, void *ptr)
 /*
  * 打印内存堆信息
  */
-void heap_show(heap_t *heap)
+int heap_show(heap_t *heap)
 {
     heap_t tmp;
+
+    if (heap == NULL) {
+        debug_output("%s: process %d heap=NULL!\n", __func__, getpid());
+        return -1;
+    }
+
+    if (heap->magic0 != MEM_BLOCK_MAGIC0) {
+        debug_output("%s: process %d heap magic %d != %d!\n", __func__, getpid(), heap->magic0, MEM_BLOCK_MAGIC0);
+        return -1;
+    }
 
     /*
      * 为了避免信息波动, 先拷贝到局部变量
@@ -474,6 +489,8 @@ void heap_show(heap_t *heap)
             (tmp.size-tmp.used_size) % MB / KB,
             (tmp.size-tmp.used_size) % KB);
     debug_output("************* end *************\n\n");
+
+    return 0;
 }
 /*********************************************************************************************************
   END FILE
