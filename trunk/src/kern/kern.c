@@ -695,7 +695,7 @@ int in_kernel(void)
 
     reg = interrupt_disable();
 
-    ret = kernel_mode > 0 ? TRUE : FALSE;
+    ret = kernel_mode;
 
     interrupt_resume(reg);
 
