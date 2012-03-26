@@ -109,7 +109,7 @@ static int do_ts(int argc, char **argv, int fd, char buf[LINE_MAX])
     uint32_t reg;
     task_t *task;
 
-    len = sprintf(buf, "type\t name\t\t pid\t state\t count\t timer\t\t prio\t cpu\t frame_nr\t dabt_cnt\r\n");
+    len = sprintf(buf, "type\t name\t\t pid\t state\t count\t timer\t\t prio\t cpu\t page\t dabt\r\n");
     send(fd, buf, len, 0);
 
     for (i = 0, task = tasks; i < TASK_NR; i++, task++) {
