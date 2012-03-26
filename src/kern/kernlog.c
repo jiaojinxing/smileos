@@ -83,7 +83,7 @@ void kernlog_thread_create(void)
 {
     kern_mbox_new(&kernlog_mbox, 100);
 
-    kthread_create("kernlog", kernlog_thread, NULL, 16 * KB, 10);
+    kthread_create("kernlog", kernlog_thread, NULL, 4 * KB, 10);
 }
 
 /*

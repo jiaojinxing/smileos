@@ -62,6 +62,8 @@ static uint8_t      interrupt_nest;                                     /*  中断
 static uint8_t      running;                                            /*  内核是否正在运行            */
 uint8_t             kernel_mode;                                        /*  当前是否处于内核模式        */
 
+#define THREAD_STACK_MAGIC0         0xAA                                /*  线程栈魔数                  */
+
 static void idle_process_create(void);
 /*********************************************************************************************************
   内核函数
@@ -97,9 +99,11 @@ static void kern_vars_init(void)
         task->wait_list    = NULL;
         task->frame_list   = NULL;
         task->tick         = 0;
-        task->utilization  = 0;
+        task->cpu_rate     = 0;
         task->frame_nr     = 0;
-        task->stack        = 0;
+        task->stack_base   = 0;
+        task->stack_size   = 0;
+        task->stack_rate   = 0;
         task->thread       = NULL;
         task->arg          = NULL;
         task->dabt_cnt     = 0;
@@ -247,8 +251,33 @@ void do_timer(void)
              * TODO: 这样统计任务的 CPU 占用率不是很准确
              */
             if (flag) {
-                task->utilization = task->tick;                         /*  任务的 CPU 占用率           */
+                task->cpu_rate    = task->tick;                         /*  任务的 CPU 占用率           */
                 task->tick        = 0;                                  /*  重置该任务被定时器中断的次数*/
+
+                if (task->type == TASK_TYPE_THREAD) {                   /*  如果任务是线程              */
+                    /*
+                     * 统计该任务的堆栈使用率
+                     *
+                     * 注意: 编译器加了参数 -fsigned-char, char 是有符号的!
+                     *
+                     * THREAD_STACK_MAGIC0 = 0xAA, 必须要用 uint8_t 类型, 否则...
+                     */
+                    uint8_t *p   = (uint8_t *)task->stack_base;
+                    uint8_t *end = (uint8_t *)(task->stack_base + task->stack_size);
+
+                    while (*p == THREAD_STACK_MAGIC0 && p < end) {
+                        p++;
+                    }
+
+                    if (p < end) {
+                        task->stack_rate = 100 * ((uint32_t)(end - p)) / task->stack_size;
+                    } else {
+                        task->stack_rate = 100;
+                        printk("kthread %s tid=%d stack overflow!\n", task->name, task->tid);
+                        task_kill(task->tid);
+                        continue;
+                    }
+                }
             }
 
             if (task->state == TASK_SLEEPING) {                         /*  如果任务正在休睡            */
@@ -385,9 +414,11 @@ static void idle_process_create(void)
     task->wait_list    = NULL;
     task->frame_list   = NULL;
     task->tick         = 0;
-    task->utilization  = 0;
+    task->cpu_rate     = 0;
     task->frame_nr     = 0;
-    task->stack        = 0;
+    task->stack_base   = 0;
+    task->stack_size   = 0;
+    task->stack_rate   = 0;
     task->thread       = NULL;
     task->arg          = NULL;
     task->dabt_cnt     = 0;
@@ -424,6 +455,7 @@ static void idle_process_create(void)
 int32_t process_create(const char *name, uint8_t *code, uint32_t size, uint32_t priority)
 {
     int      i;
+    int32_t  pid;
     task_t  *task;
     uint32_t reg;
 
@@ -440,16 +472,16 @@ int32_t process_create(const char *name, uint8_t *code, uint32_t size, uint32_t 
     /*
      * 分配进程控制块
      */
-    for (i = 1, task = tasks + 1; i < PROCESS_NR; i++, task++) {        /*  遍历所有的进程控制块        */
+    for (pid = 1, task = tasks + 1; pid < PROCESS_NR; pid++, task++) {  /*  遍历所有的进程控制块        */
         if (task->state == TASK_UNALLOCATE) {                           /*  如果进程控制块无效          */
                                                                         /*  如果进程的虚拟地址空间可用  */
-            if (virtual_space_usable(i * PROCESS_SPACE_SIZE, PROCESS_SPACE_SIZE)) {
+            if (virtual_space_usable(pid * PROCESS_SPACE_SIZE, PROCESS_SPACE_SIZE)) {
                 break;
             }
         }
     }
 
-    if (i == PROCESS_NR) {                                              /*  没有空闲的进程控制块        */
+    if (pid == PROCESS_NR) {                                            /*  没有空闲的进程控制块        */
         interrupt_resume(reg);
         return -1;
     }
@@ -457,8 +489,8 @@ int32_t process_create(const char *name, uint8_t *code, uint32_t size, uint32_t 
     /*
      * 初始化进程控制块
      */
-    task->pid          = i;
-    task->tid          = i;
+    task->pid          = pid;
+    task->tid          = pid;
     task->state        = TASK_SUSPEND;                                  /*  等拷贝完代码后再就绪        */
     task->counter      = priority;
     task->timer        = 0;
@@ -470,9 +502,11 @@ int32_t process_create(const char *name, uint8_t *code, uint32_t size, uint32_t 
     task->wait_list    = NULL;
     task->frame_list   = NULL;
     task->tick         = 0;
-    task->utilization  = 0;
+    task->cpu_rate     = 0;
     task->frame_nr     = 0;
-    task->stack        = 0;
+    task->stack_base   = 0;
+    task->stack_size   = 0;
+    task->stack_rate   = 0;
     task->thread       = NULL;
     task->arg          = NULL;
     task->dabt_cnt     = 0;
@@ -541,7 +575,7 @@ int32_t process_create(const char *name, uint8_t *code, uint32_t size, uint32_t 
 
     interrupt_resume(reg);
 
-    return i;
+    return pid;
 }
 
 /*
@@ -558,9 +592,9 @@ static void kthread_shell(task_t *task)
 /*
  * 创建内核线程
  */
-int32_t kthread_create(const char *name, void (*func)(void *), void *arg, uint32_t stk_size, uint32_t priority)
+int32_t kthread_create(const char *name, void (*func)(void *), void *arg, uint32_t stack_size, uint32_t priority)
 {
-    int      i;
+    int32_t  tid;
     task_t  *task;
     uint32_t reg;
 
@@ -572,32 +606,34 @@ int32_t kthread_create(const char *name, void (*func)(void *), void *arg, uint32
         priority = 5;
     }
 
-    if (stk_size < 8 * KB) {                                            /*  堆栈空间最小为 8 KB         */
-        stk_size = 8 * KB;
+    if (stack_size < 1 * KB) {                                          /*  栈空间最小为 1 KB           */
+        stack_size = 1 * KB;
     }
-    stk_size = MEM_ALIGN_SIZE(stk_size);                                /*  对齐堆栈空间大小            */
+    stack_size = MEM_ALIGN_SIZE(stack_size);                            /*  对齐栈空间大小              */
 
     reg = interrupt_disable();
                                                                         /*  遍历所有的线程控制块        */
-    for (i = PROCESS_NR, task = tasks + PROCESS_NR; i < TASK_NR; i++, task++) {
+    for (tid = PROCESS_NR, task = tasks + PROCESS_NR; tid < TASK_NR; tid++, task++) {
         if (task->state == TASK_UNALLOCATE) {                           /*  如果线程控制块无效          */
             break;
         }
     }
 
-    if (i == TASK_NR) {                                                 /*  没有空闲的线程控制块        */
+    if (tid == TASK_NR) {                                               /*  没有空闲的线程控制块        */
         interrupt_resume(reg);
         return -1;
     }
 
-    task->stack = (uint32_t)kmalloc(stk_size);                          /*  分配堆栈空间                */
-    if (task->stack == 0) {
+    task->stack_base = (uint32_t)kmalloc(stack_size);                   /*  分配栈空间                  */
+    if (task->stack_base == 0) {
         interrupt_resume(reg);
         return -1;
     }
+
+    memset((char *)task->stack_base, THREAD_STACK_MAGIC0, stack_size);  /*  初始化栈空间                */
 
     task->pid          = current->pid;                                  /*  进程 ID 为当前任务的进程 ID */
-    task->tid          = i;
+    task->tid          = tid;
     task->state        = TASK_RUNNING;
     task->counter      = priority;
     task->timer        = 0;
@@ -609,15 +645,17 @@ int32_t kthread_create(const char *name, void (*func)(void *), void *arg, uint32
     task->wait_list    = NULL;
     task->frame_list   = NULL;
     task->tick         = 0;
-    task->utilization  = 0;
+    task->cpu_rate     = 0;
     task->frame_nr     = 0;
+    task->stack_size   = stack_size;
+    task->stack_rate   = 0;
     task->thread       = func;
     task->arg          = arg;
     task->dabt_cnt     = 0;
 
     task->content[0]   = (uint32_t)&task->kstack[KERN_STACK_SIZE];      /*  svc 模式堆栈指针(满堆栈递减)*/
     task->content[1]   = ARM_SYS_MODE | ARM_FIQ_NO | ARM_IRQ_EN;        /*  cpsr, sys 模式, 开 IRQ      */
-    task->content[2]   = task->stack + stk_size;                        /*  sys 模式的 sp               */
+    task->content[2]   = task->stack_base + stack_size;                 /*  sys 模式的 sp               */
     task->content[3]   = ARM_SVC_MODE;                                  /*  spsr, svc 模式              */
     task->content[4]   = (uint32_t)kthread_shell;                       /*  lr                          */
     task->content[5]   = (uint32_t)task;                                /*  r0 ~ r12                    */
@@ -643,7 +681,7 @@ int32_t kthread_create(const char *name, void (*func)(void *), void *arg, uint32
 
     interrupt_resume(reg);
 
-    return i;
+    return tid;
 }
 
 /*
@@ -663,7 +701,7 @@ void task_kill(int32_t tid)
 
         } else {                                                        /*  如果任务是线程              */
             printk("kill kthread %s tid=%d!\n", task->name, task->tid);
-            kfree((void *)task->stack);                                 /*  释放线程的堆栈空间          */
+            kfree((void *)task->stack_base);                            /*  释放线程的堆栈空间          */
         }
 
         task->state = TASK_UNALLOCATE;                                  /*  释放任务的任务控制块        */

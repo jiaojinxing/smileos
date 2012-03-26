@@ -213,7 +213,7 @@ void ftpd(void *arg)
         if (client_fd > 0) {
             sprintf(name, "%s%d", __func__, client_fd);
 
-            kthread_create(name, ftpd_thread, (void *)client_fd, 16 * KB, 10);
+            kthread_create(name, ftpd_thread, (void *)client_fd, 4 * KB, 10);
         } else {
             printf("%s: failed to accept connect\n", __func__);
         }

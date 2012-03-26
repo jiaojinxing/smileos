@@ -92,11 +92,13 @@ typedef struct task {
 /********************************************************************************************************/
     void                  (*thread)(void *arg);                         /*  线程函数                    */
     void                   *arg;                                        /*  线程参数                    */
-    uint32_t                stack;                                      /*  线程栈基址                  */
+    uint32_t                stack_base;                                 /*  线程栈基址                  */
+    uint32_t                stack_size;                                 /*  线程栈大小                  */
+    uint32_t                stack_rate;                                 /*  线程栈占用率                */
     uint32_t                type;                                       /*  任务类型                    */
     uint32_t                resume_type;                                /*  恢复类型                    */
     uint32_t                frame_nr;                                   /*  页框数                      */
-    uint32_t                utilization;                                /*  CPU 占用率                  */
+    uint32_t                cpu_rate;                                   /*  CPU 占用率                  */
     uint32_t                tick;                                       /*  任务被定时器中断的次数      */
     int                     errno;                                      /*  错误号                      */
     char                    name[32];                                   /*  名字                        */
@@ -148,7 +150,7 @@ int32_t process_create(const char *name, uint8_t *code, uint32_t size, uint32_t 
 /*
  * 创建内核线程
  */
-int32_t kthread_create(const char *name, void (*func)(void *), void *arg, uint32_t stk_size, uint32_t priority);
+int32_t kthread_create(const char *name, void (*func)(void *), void *arg, uint32_t stack_size, uint32_t priority);
 
 /*
  * printk

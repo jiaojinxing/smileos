@@ -41,13 +41,14 @@
 #include "kern/types.h"
 #include "kern/kern.h"
 #include "kern/vmm.h"
+#include <sys/types.h>
 /*********************************************************************************************************
   系统调用处理
 *********************************************************************************************************/
 /*
  * 进程退出
  */
-static void do_exit(int error_code)
+static void do_exit(int status)
 {
     task_kill(current->tid);                                            /*  杀死当前任务                */
 }
@@ -55,9 +56,9 @@ static void do_exit(int error_code)
 /*
  * 进程休眠
  */
-static int do_sleep(uint32_t time)
+static int do_sleep(unsigned int tick)
 {
-    current->timer = time != 0 ? time : 1;                              /*  休睡 TICK 数                */
+    current->timer = tick != 0 ? tick : 1;                              /*  休睡 TICK 数                */
 
     current->state = TASK_SLEEPING;                                     /*  当前任务进入休睡态          */
 
@@ -69,9 +70,9 @@ static int do_sleep(uint32_t time)
 /*
  * 写
  */
-static int do_write(int fd, void *data, uint32_t len)
+static int do_write(int fd, const void *data, size_t len)
 {
-    printk((char *)data);
+    printk((const char *)data);
 
     return (int)len;
 }

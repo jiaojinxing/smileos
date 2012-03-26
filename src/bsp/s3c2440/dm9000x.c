@@ -83,7 +83,7 @@ struct ethernetif {
 /*
  * ÏµÍ³¼¶
  */
-extern void usleep(unsigned int us);
+extern void usleep(useconds_t us);
 #define udelay                  usleep
 
 /*
