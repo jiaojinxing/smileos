@@ -49,6 +49,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/types.h>
 #include <sys/time.h>
 #ifdef SMILEOS_KERNEL
 #include "kern/kern.h"
@@ -90,13 +91,13 @@ int syscall_template(void)
 /*
  * exit
  */
-void exit(int error) __attribute__ ((noreturn));
-void exit(int error)
+void exit(int status) __attribute__ ((noreturn));
+void exit(int status)
 {
     if (in_kernel()) {
-        (sys_do_table[SYS_CALL_EXIT])(error);
+        (sys_do_table[SYS_CALL_EXIT])(status);
     } else {
-        __asm__ __volatile__("mov    r0,  %0": :"r"(error));
+        __asm__ __volatile__("mov    r0,  %0": :"r"(status));
         __asm__ __volatile__("mov    r7,  %0": :"M"(SYS_CALL_EXIT));
         __asm__ __volatile__("swi    0");
         __asm__ __volatile__("b      .");
@@ -106,6 +107,7 @@ void exit(int error)
 /*
  * abort
  */
+void abort(void) __attribute__ ((noreturn));
 void abort(void)
 {
     exit(0);
@@ -153,7 +155,7 @@ void sleep(unsigned int s)
 /*
  * usleep
  */
-void usleep(unsigned int us)
+void usleep(useconds_t us)
 {
     sleep_tick(TICK_PER_SECOND * us / 1000000);
 }
@@ -161,16 +163,16 @@ void usleep(unsigned int us)
 /*
  * write
  */
-int write(int fd, const char *data, unsigned int size)
+int write(int fd, const void *data, size_t len)
 {
     int ret;
 
     if (in_kernel()) {
-        ret = (sys_do_table[SYS_CALL_WRITE])(fd, data, size);
+        ret = (sys_do_table[SYS_CALL_WRITE])(fd, data, len);
     } else {
         __asm__ __volatile__("mov    r0,  %0": :"r"(fd));
         __asm__ __volatile__("mov    r1,  %0": :"r"(data));
-        __asm__ __volatile__("mov    r2,  %0": :"r"(size));
+        __asm__ __volatile__("mov    r2,  %0": :"r"(len));
         __asm__ __volatile__("stmdb  sp!, {r7, lr}");
         __asm__ __volatile__("mov    r7,  %0": :"M"(SYS_CALL_WRITE));
         __asm__ __volatile__("swi    0");

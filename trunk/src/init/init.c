@@ -81,10 +81,10 @@ static void tcpip_init_done(void *arg)
     netif_set_up(&ethernetif);
 
     extern void telnetd(void *arg);
-    kthread_create("telnetd", telnetd, NULL, 16 * KB, 10);
+    kthread_create("telnetd", telnetd, NULL, 4 * KB, 10);
 
     extern void ftpd(void *arg);
-    kthread_create("ftpd", ftpd, NULL, 16 * KB, 10);
+    kthread_create("ftpd", ftpd, NULL, 4 * KB, 10);
 }
 
 /*
@@ -112,7 +112,7 @@ int main(void)
 {
     kernel_init();
 
-    kthread_create("init", init, NULL, 16 * KB, 10);
+    kthread_create("init", init, NULL, 4 * KB, 10);
 
     kernel_start();
 

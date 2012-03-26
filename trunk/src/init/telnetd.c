@@ -76,7 +76,7 @@ static int get_task_info(task_t *task, char *buf)
     }
 
     if (strlen(task->name) < 7) {
-        return sprintf(buf, "%s\t %s\t\t %4u\t %s\t %4u\t %10u\t %4u\t %4u%%\t %4u\t %4u\r\n",
+        return sprintf(buf, "%s\t %s\t\t %4u\t %s\t %4u\t %10u\t %4u\t %4u%%\t %4u%%\t %4u\t %4u\r\n",
                         task->type == TASK_TYPE_PROCESS ? "process" : "kthread",
                         task->name,
                         task->tid,
@@ -84,11 +84,12 @@ static int get_task_info(task_t *task, char *buf)
                         task->counter,
                         task->timer,
                         task->priority,
-                        task->utilization,
+                        task->cpu_rate,
+                        task->stack_rate,
                         task->frame_nr,
                         task->dabt_cnt);
     } else {
-        return sprintf(buf, "%s\t %s\t %4u\t %s\t %4u\t %10u\t %4u\t %4u%%\t %4u\t %4u\r\n",
+        return sprintf(buf, "%s\t %s\t %4u\t %s\t %4u\t %10u\t %4u\t %4u%%\t %4u%%\t %4u\t %4u\r\n",
                         task->type == TASK_TYPE_PROCESS ? "process" : "kthread",
                         task->name,
                         task->tid,
@@ -96,7 +97,8 @@ static int get_task_info(task_t *task, char *buf)
                         task->counter,
                         task->timer,
                         task->priority,
-                        task->utilization,
+                        task->cpu_rate,
+                        task->stack_rate,
                         task->frame_nr,
                         task->dabt_cnt);
     }
@@ -109,7 +111,7 @@ static int do_ts(int argc, char **argv, int fd, char buf[LINE_MAX])
     uint32_t reg;
     task_t *task;
 
-    len = sprintf(buf, "type\t name\t\t pid\t state\t count\t timer\t\t prio\t cpu\t page\t dabt\r\n");
+    len = sprintf(buf, "type\t name\t\t pid\t state\t count\t timer\t\t prio\t cpu\t stack\t page\t dabt\r\n");
     send(fd, buf, len, 0);
 
     for (i = 0, task = tasks; i < TASK_NR; i++, task++) {
@@ -326,7 +328,7 @@ void telnetd(void *arg)
         if (client_fd > 0) {
             sprintf(name, "%s%d", __func__, client_fd);
 
-            kthread_create(name, telnetd_thread, (void *)client_fd, 16 * KB, 10);
+            kthread_create(name, telnetd_thread, (void *)client_fd, 4 * KB, 10);
         } else {
             printf("%s: failed to accept connect\n", __func__);
         }

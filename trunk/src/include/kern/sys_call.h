@@ -78,12 +78,12 @@ void sleep(unsigned int s);
 /*
  * usleep
  */
-void usleep(unsigned int us);
+void usleep(useconds_t us);
 
 /*
  * write
  */
-int write(int fd, const char *data, unsigned int size);
+int write(int fd, const void *data, size_t len);
 
 /*
  * printf
