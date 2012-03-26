@@ -38,6 +38,12 @@
 **                          strcpy 改用更安全的 strlcpy
 **                          拷贝代码到进程的虚拟地址空间时开中断以提高实时性
 **
+**--------------------------------------------------------------------------------------------------------
+** Modified by:             JiaoJinXing
+** Modified date:           2012-3-26
+** Version:                 1.2.0
+** Descriptions:            加入进程虚拟地址空间的保护
+**
 *********************************************************************************************************/
 #include "kern/config.h"
 #include "kern/types.h"
@@ -199,6 +205,17 @@ void schedule(void)
 
     if ((current->content[3] & ARM_MODE_MASK) == ARM_SVC_MODE) {        /*  重新设置新任务的内核栈指针  */
         current->content[0] = (uint32_t)&current->kstack[KERN_STACK_SIZE];
+    }
+
+    if (task->pid != current->pid) {                                    /*  如果需要切换进程            */
+        for (i = 0; i < PROCESS_SPACE_SIZE / SECTION_SIZE; i++) {       /*  保护旧进程的虚拟地址空间    */
+            mmu_map_section_by_param(task->pid * PROCESS_SPACE_SIZE / SECTION_SIZE + i, 0);
+        }
+
+        for (i = 0; i < PROCESS_SPACE_SIZE / SECTION_SIZE; i++) {       /*  恢复新进程的一级段表        */
+            mmu_map_section_by_param(current->pid * PROCESS_SPACE_SIZE / SECTION_SIZE + i,
+                    current->mmu_backup[i]);
+        }
     }
 
     extern void __switch_to(register task_t *from, register task_t *to);

@@ -36,6 +36,12 @@
 ** Version:                 1.1.0
 ** Descriptions:            把已用页表链表改为已用页表红黑树, 提升查找性能
 **
+**--------------------------------------------------------------------------------------------------------
+** Modified by:             JiaoJinXing
+** Modified date:           2012-3-26
+** Version:                 1.2.0
+** Descriptions:            加入进程的一级段表记录, 以实现进程虚拟地址空间的保护
+**
 *********************************************************************************************************/
 #include "kern/config.h"
 #include "kern/types.h"
@@ -218,7 +224,8 @@ int vmm_map_process_page(task_t *task, uint32_t va)
         if (tbl == 0) {                                                 /*  没找到                      */
             tbl = vmm_page_table_alloc(section_nr);                     /*  分配一个空闲的页表          */
             if (tbl != NULL) {
-                mmu_map_section_as_page(section_nr, tbl);               /*  映射该段                    */
+                task->mmu_backup[section_nr % (PROCESS_SPACE_SIZE / SECTION_SIZE)] =
+                        mmu_map_section_as_page(section_nr, tbl);       /*  映射该段                    */
                 flag = TRUE;
             } else {
                 kcomplain("failed to alloc page table, mem map failed, va=0x%x, pid=%d\n", va, task->pid);
@@ -237,6 +244,7 @@ int vmm_map_process_page(task_t *task, uint32_t va)
              */
             if (flag) {
                 mmu_unmap_section(section_nr);
+                task->mmu_backup[section_nr % (PROCESS_SPACE_SIZE / SECTION_SIZE)] = 0;
                 vmm_page_table_free(tbl);
             }
             kcomplain("failed to alloc page, mem map failed, va=0x%x, pid=%d\n", va, task->pid);
@@ -270,6 +278,7 @@ void vmm_free_process_space(task_t *task)
             vmm_page_table_free(tbl);                                   /*  释放页表                    */
         }                                                               /*  取消映射段                  */
         mmu_unmap_section(task->pid * PROCESS_SPACE_SIZE / SECTION_SIZE + i);
+        task->mmu_backup[i] = 0;
     }
 }
 
