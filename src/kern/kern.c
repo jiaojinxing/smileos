@@ -42,7 +42,7 @@
 ** Modified by:             JiaoJinXing
 ** Modified date:           2012-3-26
 ** Version:                 1.2.0
-** Descriptions:            加入进程虚拟地址空间的保护
+** Descriptions:            加入进程虚拟地址空间的保护和线程栈溢出检查
 **
 *********************************************************************************************************/
 #include "kern/config.h"
@@ -256,7 +256,7 @@ void do_timer(void)
 
                 if (task->type == TASK_TYPE_THREAD) {                   /*  如果任务是线程              */
                     /*
-                     * 统计该任务的堆栈使用率
+                     * 统计任务的栈使用率, 栈溢出检查
                      *
                      * 注意: 编译器加了参数 -fsigned-char, char 是有符号的!
                      *
