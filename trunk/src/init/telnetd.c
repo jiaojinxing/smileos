@@ -248,7 +248,7 @@ static void telnetd_thread(void *arg)
     len = sprintf(buf, "******************* SmileOS Shell *******************\r\n");
     send(fd, buf, len, 0);
 
-    len = sprintf(buf, "[%s]:", vfs_getcwd(NULL, 0));
+    len = sprintf(buf, "%s]#", vfs_getcwd(NULL, 0));
     send(fd, buf, len, 0);
 
     pos = 0;
@@ -267,7 +267,7 @@ static void telnetd_thread(void *arg)
                         len = sprintf(buf, " \b \b");
                         send(fd, buf, len, 0);
                     } else {
-                        len = sprintf(buf, ":");
+                        len = sprintf(buf, "#");
                         send(fd, buf, len, 0);
                     }
                 } else if (ch == '\n') {
@@ -277,7 +277,7 @@ static void telnetd_thread(void *arg)
                         exec_cmd(cmd, fd, buf);
                     }
 
-                    len = sprintf(buf, "[%s]:", vfs_getcwd(NULL, 0));
+                    len = sprintf(buf, "%s]#", vfs_getcwd(NULL, 0));
                     send(fd, buf, len, 0);
                 }
             } else if (isprint(ch)){
