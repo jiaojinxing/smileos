@@ -104,6 +104,7 @@ typedef struct task {
     struct task           **wait_list;                                  /*  等待链表                    */
     struct vmm_frame       *frame_list;                                 /*  页框链表                    */
     int                     dabt_cnt;                                   /*  数据终止次数                */
+    uint32_t                mmu_backup[PROCESS_SPACE_SIZE / SECTION_SIZE];  /*  一级段表备份            */
 } task_t;
 
 /*

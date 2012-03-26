@@ -31,10 +31,11 @@
 ** Descriptions:            创建文件
 **
 **--------------------------------------------------------------------------------------------------------
-** Modified by:
-** Modified date:
-** Version:
-** Descriptions:
+** Modified by:             JiaoJinXing
+** Modified date:           2012-3-26
+** Version:                 1.2.0
+** Descriptions:            修改 mmu_map_section_as_page 和加入 mmu_map_section_by_param 函数,
+**                          以实现进程虚拟地址空间的保护
 **
 *********************************************************************************************************/
 #include "kern/config.h"
@@ -435,7 +436,7 @@ uint32_t mmu_get_fault_address(void)
  */
 void mmu_unmap_section(register uint32_t section_nr)
 {
-    uint32_t *entry = (uint32_t *)MMU_TBL_BASE + section_nr;
+    register uint32_t *entry = (uint32_t *)MMU_TBL_BASE + section_nr;
 
     *entry = 0;
 }
@@ -448,8 +449,8 @@ void mmu_map_sections(register uint32_t virtual_base,
                       register uint32_t size,
                       register uint32_t attr)
 {
-    uint32_t *entry;
-    int       i;
+    register uint32_t *entry;
+    register int       i;
 
     entry  = (uint32_t *)MMU_TBL_BASE + (virtual_base >> SECTION_OFFSET);
 
@@ -463,15 +464,31 @@ void mmu_map_sections(register uint32_t virtual_base,
 /*
  * 映射段, 使用二级页表
  */
-void mmu_map_section_as_page(register uint32_t section_nr,
-                             register uint32_t page_tbl_base)
+uint32_t mmu_map_section_as_page(register uint32_t section_nr,
+                                 register uint32_t page_tbl_base)
 {
-    uint32_t *entry = (uint32_t *)MMU_TBL_BASE + section_nr;
+    register uint32_t *entry = (uint32_t *)MMU_TBL_BASE + section_nr;
+    register uint32_t  value;
 
-    *entry = (page_tbl_base & (~(PAGE_TBL_SIZE - 1))) |
+    value = (page_tbl_base & (~(PAGE_TBL_SIZE - 1))) |
             (DOMAIN_CHECK << 5) |
             (1 << 4) |
             (1 << 0);
+
+    *entry = value;
+
+    return value;
+}
+
+/*
+ * 映射段, 通过参数
+ */
+void mmu_map_section_by_param(register uint32_t section_nr,
+                              register uint32_t value)
+{
+    register uint32_t *entry = (uint32_t *)MMU_TBL_BASE + section_nr;
+
+    *entry = value;
 }
 
 /*
@@ -481,7 +498,7 @@ void mmu_map_page(register uint32_t page_tbl_base,
                   register uint32_t page_nr,
                   register uint32_t frame_base)
 {
-    uint32_t *entry = (uint32_t *)page_tbl_base + page_nr;
+    register uint32_t *entry = (uint32_t *)page_tbl_base + page_nr;
 
     *entry = (frame_base & (~(VMM_FRAME_SIZE - 1))) |
             (AP_USER_RW << 10) |
@@ -498,7 +515,7 @@ void mmu_map_page(register uint32_t page_tbl_base,
  */
 void mmu_init(void)
 {
-    int i, j;
+    register int i, j;
 
     /*
      * 将 D-Cache 和 I-Cache 禁能

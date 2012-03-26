@@ -242,8 +242,14 @@ void mmu_map_sections(register uint32_t virtual_base,
 /*
  * 映射段, 使用二级页表
  */
-void mmu_map_section_as_page(register uint32_t section_nr,
-                             register uint32_t page_tbl_base);
+uint32_t mmu_map_section_as_page(register uint32_t section_nr,
+                                 register uint32_t page_tbl_base);
+
+/*
+ * 映射段, 通过参数
+ */
+void mmu_map_section_by_param(register uint32_t section_nr,
+                              register uint32_t value);
 
 /*
  * 映射 4K 小页面
