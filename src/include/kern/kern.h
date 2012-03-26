@@ -103,6 +103,7 @@ typedef struct task {
     struct task            *next;                                       /*  后趋                        */
     struct task           **wait_list;                                  /*  等待链表                    */
     struct vmm_frame       *frame_list;                                 /*  页框链表                    */
+    int                     dabt_nr;                                    /*  数据终止次数                */
 } task_t;
 
 /*

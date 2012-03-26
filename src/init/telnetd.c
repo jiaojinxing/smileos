@@ -80,7 +80,7 @@ static int get_task_info(task_t *task, char *buf)
     }
 
     if (strlen(task->name) < 7) {
-        return sprintf(buf, "%s\t %s\t\t %4u\t %s\t %4u\t %10u\t %4u\t %4u%%\t %4u\r\n",
+        return sprintf(buf, "%s\t %s\t\t %4u\t %s\t %4u\t %10u\t %4u\t %4u%%\t %4u\t %4u\r\n",
                         task->type == TASK_TYPE_PROCESS ? "process" : "kthread",
                         task->name,
                         task->tid,
@@ -89,9 +89,10 @@ static int get_task_info(task_t *task, char *buf)
                         task->timer,
                         task->priority,
                         task->utilization,
-                        task->frame_nr);
+                        task->frame_nr,
+                        task->dabt_nr);
     } else {
-        return sprintf(buf, "%s\t %s\t %4u\t %s\t %4u\t %10u\t %4u\t %4u%%\t %4u\r\n",
+        return sprintf(buf, "%s\t %s\t %4u\t %s\t %4u\t %10u\t %4u\t %4u%%\t %4u\t %4u\r\n",
                         task->type == TASK_TYPE_PROCESS ? "process" : "kthread",
                         task->name,
                         task->tid,
@@ -100,7 +101,8 @@ static int get_task_info(task_t *task, char *buf)
                         task->timer,
                         task->priority,
                         task->utilization,
-                        task->frame_nr);
+                        task->frame_nr,
+                        task->dabt_nr);
     }
 }
 
@@ -111,7 +113,7 @@ static int do_ts(int argc, char **argv, int fd, char buf[LINE_MAX])
     uint32_t reg;
     task_t *task;
 
-    len = sprintf(buf, "type\t name\t\t pid\t state\t count\t timer\t\t prio\t cpu\t frame_nr\r\n");
+    len = sprintf(buf, "type\t name\t\t pid\t state\t count\t timer\t\t prio\t cpu\t frame_nr\t dabt_nr\r\n");
     send(fd, buf, len, 0);
 
     for (i = 0, task = tasks; i < TASK_NR; i++, task++) {

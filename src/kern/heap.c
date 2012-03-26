@@ -251,6 +251,8 @@ int heap_init(heap_t *heap, uint8_t *base, uint32_t size)
     heap->alloc_cnt             = 0;
     heap->free_cnt              = 0;
 
+    heap->magic0                = MEM_BLOCK_MAGIC0;
+
     return 0;
 }
 
@@ -267,6 +269,11 @@ void *heap_alloc(heap_t *heap, uint32_t size)
         return NULL;
     }
 
+    if (heap->magic0 != MEM_BLOCK_MAGIC0) {
+        debug_output("%s: process %d heap magic != %d!\n", __func__, getpid(), MEM_BLOCK_MAGIC0);
+        return NULL;
+    }
+
     if (heap->free_list != NULL) {                                      /*  有空闲内存块                */
 
         size = MEM_ALIGN_SIZE(size);                                    /*  对齐大小                    */
@@ -280,6 +287,7 @@ void *heap_alloc(heap_t *heap, uint32_t size)
         }
 
         if (blk == NULL) {                                              /*  没找到                      */
+            heap_show(heap);
             goto error0;
         }
 
@@ -429,9 +437,8 @@ void *heap_free(heap_t *heap, void *ptr)
         blk->next_free = heap->free_list;
         if (heap->free_list != NULL) {
             heap->free_list->prev_free = blk;
-        } else {
-            heap->free_list = blk;
         }
+        heap->free_list = blk;
         blk->status = MEM_BLOCK_STATE_FREE;                             /*  改变内存块状态为空闲        */
     }
 

@@ -52,6 +52,7 @@ typedef struct mem_block mem_block_t;
  * 内存堆
  */
 typedef struct {
+    uint32_t        magic0;                                             /*  魔数                        */
     mem_block_t    *free_list;                                          /*  空闲内存块链表              */
     mem_block_t    *block_list;                                         /*  内存块链表                  */
     uint8_t        *base;                                               /*  基址                        */

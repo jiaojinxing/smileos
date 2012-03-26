@@ -94,6 +94,7 @@ static void kern_vars_init(void)
         task->stack        = 0;
         task->thread       = NULL;
         task->arg          = NULL;
+        task->dabt_nr      = 0;
         memset(task->name, 0, sizeof(task->name));
     }
 }
@@ -370,6 +371,7 @@ static void idle_process_create(void)
     task->stack        = 0;
     task->thread       = NULL;
     task->arg          = NULL;
+    task->dabt_nr      = 0;
 
     /*
      * 初始化进程上下文
@@ -454,6 +456,7 @@ int32_t process_create(const char *name, uint8_t *code, uint32_t size, uint32_t 
     task->stack        = 0;
     task->thread       = NULL;
     task->arg          = NULL;
+    task->dabt_nr      = 0;
 
     /*
      * 初始化任务上下文
@@ -499,12 +502,12 @@ int32_t process_create(const char *name, uint8_t *code, uint32_t size, uint32_t 
     /*
      * 为进程栈空间映射一个页面
      */
-    if (vmm_map_process_page(task, (task->pid + 1) * PROCESS_SPACE_SIZE - PAGE_SIZE) < 0) {
-        vmm_free_process_space(task);
-        task->state = TASK_UNALLOCATE;
-        interrupt_resume(reg);
-        return -1;
-    }
+//    if (vmm_map_process_page(task, (task->pid + 1) * PROCESS_SPACE_SIZE - PAGE_SIZE) < 0) {
+//        vmm_free_process_space(task);
+//        task->state = TASK_UNALLOCATE;
+//        interrupt_resume(reg);
+//        return -1;
+//    }
 
     interrupt_resume(reg);
 
@@ -591,6 +594,7 @@ int32_t kthread_create(const char *name, void (*func)(void *), void *arg, uint32
     task->frame_nr     = 0;
     task->thread       = func;
     task->arg          = arg;
+    task->dabt_nr      = 0;
 
     task->content[0]   = (uint32_t)&task->kstack[KERN_STACK_SIZE];      /*  svc 模式堆栈指针(满堆栈递减)*/
     task->content[1]   = ARM_SYS_MODE | ARM_FIQ_NO | ARM_IRQ_EN;        /*  cpsr, sys 模式, 开 IRQ      */
