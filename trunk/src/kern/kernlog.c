@@ -55,7 +55,7 @@ static kern_mbox_t  kernlog_mbox;
  */
 typedef struct {
     int         len;
-    char        buf[LINE_SIZE];
+    char        buf[LINE_MAX];
 } kernlog_msg_t;
 
 /*
@@ -102,7 +102,7 @@ void printk(const char *fmt, ...)
 
     va_start(va, fmt);
 
-    msg->len = vsnprintf(msg->buf, LINE_SIZE, fmt, va);
+    msg->len = vsnprintf(msg->buf, LINE_MAX, fmt, va);
 
     kern_mbox_post(&kernlog_mbox, msg, 0);
 
@@ -111,17 +111,17 @@ void printk(const char *fmt, ...)
 
 /*
  * 内核抱怨
- * 供异常处理程序使用
+ * 供不能用 printk 时使用
  */
 void kcomplain(const char *fmt, ...)
 {
     va_list va;
-    char    buf[LINE_SIZE];
+    char    buf[LINE_MAX];
     int     i;
 
     va_start(va, fmt);
 
-    vsnprintf(buf, LINE_SIZE, fmt, va);
+    vsnprintf(buf, LINE_MAX, fmt, va);
 
     for (i = 0; buf[i] != '\0'; i++) {
         kputc(buf[i]);

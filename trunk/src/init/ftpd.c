@@ -47,10 +47,6 @@
 #include <ctype.h>
 #include <limits.h>
 
-#ifndef LINE_MAX
-#define LINE_MAX    512
-#endif
-
 #include "lwip/init.h"
 #include "lwip/tcpip.h"
 #include "lwip/api.h"

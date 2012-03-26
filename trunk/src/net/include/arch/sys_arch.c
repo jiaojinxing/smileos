@@ -116,17 +116,21 @@ void sys_sem_signal(sys_sem_t *sem)
  *         or SYS_ARCH_TIMEOUT on timeout */
 u32_t sys_arch_sem_wait(sys_sem_t *sem, u32_t timeout)
 {
+    u32_t start;
+
     if (timeout != 0) {
         timeout = timeout * TICK_PER_SECOND / 1000;
     }
+
+    start = sys_now();
 
     if (kern_sem_wait(sem, timeout) < 0) {
         return SYS_ARCH_TIMEOUT;
     } else {
         /*
-         * TODO: return time (in milliseconds) waited for the semaphore
+         * return time (in milliseconds) waited for the semaphore
          */
-        return 0;
+        return sys_now() - start;
     }
 }
 
@@ -198,17 +202,21 @@ err_t sys_mbox_trypost(sys_mbox_t *mbox, void *msg)
  *         The returned time has to be accurate to prevent timer jitter! */
 u32_t sys_arch_mbox_fetch(sys_mbox_t *mbox, void **msg, u32_t timeout)
 {
+    u32_t start;
+
     if (timeout != 0) {
         timeout = timeout * TICK_PER_SECOND / 1000;
     }
+
+    start = sys_now();
 
     if (kern_mbox_fetch(mbox, msg, timeout) < 0) {
         return SYS_ARCH_TIMEOUT;
     } else {
         /*
-         * TODO: return time (in milliseconds) waited for a message
+         * return time (in milliseconds) waited for a message
          */
-        return 0;
+        return sys_now() - start;
     }
 }
 

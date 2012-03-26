@@ -50,10 +50,6 @@
 #include <ctype.h>
 #include <limits.h>
 
-#ifndef LINE_MAX
-#define LINE_MAX    512
-#endif
-
 /*
  * 获得任务信息
  */
@@ -90,7 +86,7 @@ static int get_task_info(task_t *task, char *buf)
                         task->priority,
                         task->utilization,
                         task->frame_nr,
-                        task->dabt_nr);
+                        task->dabt_cnt);
     } else {
         return sprintf(buf, "%s\t %s\t %4u\t %s\t %4u\t %10u\t %4u\t %4u%%\t %4u\t %4u\r\n",
                         task->type == TASK_TYPE_PROCESS ? "process" : "kthread",
@@ -102,7 +98,7 @@ static int get_task_info(task_t *task, char *buf)
                         task->priority,
                         task->utilization,
                         task->frame_nr,
-                        task->dabt_nr);
+                        task->dabt_cnt);
     }
 }
 
@@ -113,7 +109,7 @@ static int do_ts(int argc, char **argv, int fd, char buf[LINE_MAX])
     uint32_t reg;
     task_t *task;
 
-    len = sprintf(buf, "type\t name\t\t pid\t state\t count\t timer\t\t prio\t cpu\t frame_nr\t dabt_nr\r\n");
+    len = sprintf(buf, "type\t name\t\t pid\t state\t count\t timer\t\t prio\t cpu\t frame_nr\t dabt_cnt\r\n");
     send(fd, buf, len, 0);
 
     for (i = 0, task = tasks; i < TASK_NR; i++, task++) {

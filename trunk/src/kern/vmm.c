@@ -230,7 +230,6 @@ int vmm_map_process_page(task_t *task, uint32_t va)
         if (frame != NULL) {                                            /*  计算虚拟地址在页表里的页号  */
             uint32_t page_nr = (va & (SECTION_SIZE - 1)) >> PAGE_OFFSET;
             mmu_map_page(tbl, page_nr, vmm_get_frame_addr(frame));      /*  页面映射                    */
-            memset((char *)vmm_get_frame_addr(frame), 0, VMM_FRAME_SIZE);
             return 0;
         } else {
             /*
