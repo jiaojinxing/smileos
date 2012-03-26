@@ -127,9 +127,9 @@ int mount(const char *point_name, const char *dev_name, const char *fs_name)
             point = kmalloc(sizeof(mount_point_t));                     /*  分配挂载点                  */
             if (point != NULL) {
                 if (point_name[0] == '/') {                             /*  保证挂载点以 / 号开始       */
-                    strcpy(point->name, point_name);
+                    strlcpy(point->name, point_name, sizeof(point->name));
                 } else {
-                    sprintf(point->name, "/%s", point_name);
+                    snprintf(point->name, sizeof(point->name), "/%s", point_name);
                 }
 
                 if (point->name[1] != '\0') {                           /*  如果不是根文件系统          */
