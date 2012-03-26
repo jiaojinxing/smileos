@@ -124,7 +124,7 @@ int device_create(const char *dev_name, const char *drv_name, void *ctx)
     if (drv != NULL) {
         dev = kmalloc(sizeof(device_t));
         if (dev != NULL) {
-            strcpy(dev->name, dev_name);
+            strlcpy(dev->name, dev_name, sizeof(dev->name));
             dev->drv = drv;
             dev->ctx = ctx;
             device_install(dev);
