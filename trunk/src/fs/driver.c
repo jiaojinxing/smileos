@@ -31,10 +31,10 @@
 ** Descriptions:            创建文件
 **
 **--------------------------------------------------------------------------------------------------------
-** Modified by:
-** Modified date:
-** Version:
-** Descriptions:
+** Modified by:             JiaoJinXing
+** Modified date:           2012-3-27
+** Version:                 1.1.0
+** Descriptions:            查找到安装期间必须上锁
 **
 *********************************************************************************************************/
 #include "kern/ipc.h"
@@ -64,16 +64,13 @@ driver_t *driver_lookup(const char *name)
     }
 
     kern_mutex_lock(&drvmgr_lock, 0);
-
     drv = drv_list;
-
     while (drv != NULL) {
         if (strcmp(drv->name, name) == 0) {
             break;
         }
         drv = drv->next;
     }
-
     kern_mutex_unlock(&drvmgr_lock);
 
     return drv;
@@ -88,15 +85,13 @@ int driver_install(driver_t *drv)
         return -1;
     }
 
+    kern_mutex_lock(&drvmgr_lock, 0);
     if (driver_lookup(drv->name) != NULL) {
+        kern_mutex_unlock(&drvmgr_lock);
         return -1;
     }
-
-    kern_mutex_lock(&drvmgr_lock, 0);
-
     drv->next = drv_list;
     drv_list  = drv;
-
     kern_mutex_unlock(&drvmgr_lock);
 
     return 0;

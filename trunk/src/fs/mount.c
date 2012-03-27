@@ -31,10 +31,10 @@
 ** Descriptions:            创建文件
 **
 **--------------------------------------------------------------------------------------------------------
-** Modified by:
-** Modified date:
-** Version:
-** Descriptions:
+** Modified by:             JiaoJinXing
+** Modified date:           2012-3-27
+** Version:                 1.1.0
+** Descriptions:            查找到安装期间必须上锁
 **
 *********************************************************************************************************/
 #include "kern/kern.h"
@@ -67,10 +67,8 @@ kern_mutex_t pointmgr_lock;
 static int mount_point_install(mount_point_t *point)
 {
     kern_mutex_lock(&pointmgr_lock, 0);
-
     point->next = point_list;
     point_list  = point;
-
     kern_mutex_unlock(&pointmgr_lock);
 
     return 0;
@@ -88,16 +86,13 @@ mount_point_t *mount_point_lookup(const char *name)
     }
 
     kern_mutex_lock(&pointmgr_lock, 0);
-
     point = point_list;
-
     while (point != NULL) {
         if (strcmp(point->name, name) == 0) {
             break;
         }
         point = point->next;
     }
-
     kern_mutex_unlock(&pointmgr_lock);
 
     return point;
@@ -118,6 +113,8 @@ int mount(const char *point_name, const char *dev_name, const char *fs_name)
         return -1;
     }
 
+    kern_mutex_lock(&pointmgr_lock, 0);
+
     point = mount_point_lookup(point_name);                             /*  查找挂载点                  */
     if (point == NULL) {                                                /*  没找到                      */
         fs = file_system_lookup(fs_name);                               /*  查找文件系统                */
@@ -135,9 +132,15 @@ int mount(const char *point_name, const char *dev_name, const char *fs_name)
                 if (point->name[1] != '\0') {                           /*  如果不是根文件系统          */
                     if (strchr(point->name + 1, '/') != NULL) {         /*  保证挂载点不能再出现 / 号   */
                         kfree(point);                                   /*  因为我不知道 / 号还有几个   */
+                        kern_mutex_unlock(&pointmgr_lock);
                         return -1;                                      /*  所以当作出错来处理          */
                     }
                 } else {
+                    if (rootfs_point != NULL) {                         /*  不能再次挂载根文件系统      */
+                        kfree(point);
+                        kern_mutex_unlock(&pointmgr_lock);
+                        return -1;
+                    }
                     rootfs_point = point;
                 }
 
@@ -150,15 +153,18 @@ int mount(const char *point_name, const char *dev_name, const char *fs_name)
                 ret = fs->mount(point, dev, dev_name);                  /*  挂载                        */
                 if (ret < 0) {
                     kfree(point);
+                    kern_mutex_unlock(&pointmgr_lock);
                     return -1;
                 } else {
                     mount_point_install(point);                         /*  安装挂载点                  */
+                    kern_mutex_unlock(&pointmgr_lock);
                     return 0;
                 }
             }
         }
     }
 
+    kern_mutex_unlock(&pointmgr_lock);
     return -1;
 }
 

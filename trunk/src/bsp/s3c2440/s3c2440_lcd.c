@@ -204,8 +204,6 @@ int fb_close(void *ctx, file_t *file)
 driver_t fb_drv = {
         .name  = "fb",
         .open  = fb_open,
-        .read  = NULL,
-        .write = NULL,
         .ioctl = fb_ioctl,
         .close = fb_close,
 };

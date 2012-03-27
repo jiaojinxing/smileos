@@ -31,10 +31,10 @@
 ** Descriptions:            创建文件
 **
 **--------------------------------------------------------------------------------------------------------
-** Modified by:
-** Modified date:
-** Version:
-** Descriptions:
+** Modified by:             JiaoJinXing
+** Modified date:           2012-3-27
+** Version:                 1.1.0
+** Descriptions:            查找到安装期间必须上锁
 **
 *********************************************************************************************************/
 #include "kern/kern.h"
@@ -60,10 +60,8 @@ kern_mutex_t devmgr_lock;
 static int device_install(device_t *dev)
 {
     kern_mutex_lock(&devmgr_lock, 0);
-
     dev->next = dev_list;
     dev_list  = dev;
-
     kern_mutex_unlock(&devmgr_lock);
 
     return 0;
@@ -81,16 +79,13 @@ device_t *device_lookup(const char *name)
     }
 
     kern_mutex_lock(&devmgr_lock, 0);
-
     dev = dev_list;
-
     while (dev != NULL) {
         if (strcmp(dev->name, name) == 0) {
             break;
         }
         dev = dev->next;
     }
-
     kern_mutex_unlock(&devmgr_lock);
 
     return dev;
@@ -116,7 +111,9 @@ int device_create(const char *dev_name, const char *drv_name, void *ctx)
         return -1;
     }
 
+    kern_mutex_lock(&devmgr_lock, 0);
     if (device_lookup(dev_name) != NULL) {
+        kern_mutex_unlock(&devmgr_lock);
         return -1;
     }
 
@@ -128,9 +125,11 @@ int device_create(const char *dev_name, const char *drv_name, void *ctx)
             dev->drv = drv;
             dev->ctx = ctx;
             device_install(dev);
+            kern_mutex_unlock(&devmgr_lock);
             return 0;
         }
     }
+    kern_mutex_unlock(&devmgr_lock);
     return -1;
 }
 

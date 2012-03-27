@@ -50,6 +50,7 @@
 #include <dirent.h>
 #include <string.h>
 #include <stdio.h>
+#include <fcntl.h>
 
 /*
  * 进程文件信息
@@ -224,9 +225,10 @@ static mount_point_t *vfs_mount_point_lookup(char pathbuf[PATH_MAX + 1], char **
         /*
          * cwd 要以 / 号开头和结尾
          */
-        kern_mutex_lock(&process_file_info[getpid()].cwd_lock, 0);  /*  在前面加入当前工作目录      */
-        sprintf(pathbuf, "%s%s", process_file_info[getpid()].cwd, path);
-        kern_mutex_unlock(&process_file_info[getpid()].cwd_lock);
+        pid_t pid = getpid();
+        kern_mutex_lock(&process_file_info[pid].cwd_lock, 0);           /*  在前面加入当前工作目录      */
+        sprintf(pathbuf, "%s%s", process_file_info[pid].cwd, path);
+        kern_mutex_unlock(&process_file_info[pid].cwd_lock);
     }
 
     if (vfs_path_normalization(pathbuf, FALSE) < 0) {
@@ -268,9 +270,10 @@ static mount_point_t *vfs_mount_point_lookup2(char pathbuf[PATH_MAX + 1], char *
         /*
          * cwd 要以 / 号开头和结尾
          */
-        kern_mutex_lock(&process_file_info[getpid()].cwd_lock, 0);  /*  在前面加入当前工作目录      */
-        sprintf(pathbuf, "%s%s", process_file_info[getpid()].cwd, path);
-        kern_mutex_unlock(&process_file_info[getpid()].cwd_lock);
+        pid_t pid = getpid();
+        kern_mutex_lock(&process_file_info[pid].cwd_lock, 0);           /*  在前面加入当前工作目录      */
+        sprintf(pathbuf, "%s%s", process_file_info[pid].cwd, path);
+        kern_mutex_unlock(&process_file_info[pid].cwd_lock);
     }
 
     if (vfs_path_normalization(pathbuf, FALSE) < 0) {
@@ -299,9 +302,34 @@ static mount_point_t *vfs_mount_point_lookup2(char pathbuf[PATH_MAX + 1], char *
 /*
  * 文件类型
  */
-#define VFS_FILE_TYPE_FILE      (1 << 1)
-#define VFS_FILE_TYPE_DIR       (1 << 2)
 #define VFS_FILE_TYPE_FREE      (0)
+
+#if 0
+#define _FOPEN      (-1)    /* from sys/file.h, kernel use only */
+#define _FREAD      0x0001  /* read enabled */
+#define _FWRITE     0x0002  /* write enabled */
+#define _FAPPEND    0x0008  /* append (writes guaranteed at the end) */
+#define _FMARK      0x0010  /* internal; mark during gc() */
+#define _FDEFER     0x0020  /* internal; defer for next gc pass */
+#define _FASYNC     0x0040  /* signal pgrp when data ready */
+#define _FSHLOCK    0x0080  /* BSD flock() shared lock present */
+#define _FEXLOCK    0x0100  /* BSD flock() exclusive lock present */
+#define _FCREAT     0x0200  /* open with file create */
+#define _FTRUNC     0x0400  /* open with truncation */
+#define _FEXCL      0x0800  /* error on open if file exists */
+#define _FNBIO      0x1000  /* non blocking I/O (sys5 style) */
+#define _FSYNC      0x2000  /* do all writes synchronously */
+#define _FNONBLOCK  0x4000  /* non blocking I/O (POSIX style) */
+#define _FNDELAY    _FNONBLOCK  /* non blocking I/O (4.2 style) */
+#define _FNOCTTY    0x8000  /* don't assign a ctty on this open */
+
+#define O_RDONLY    0       /* +1 == FREAD */
+#define O_WRONLY    1       /* +1 == FWRITE */
+#define O_RDWR      2       /* +1 == FREAD|FWRITE */
+#endif
+
+#define VFS_FILE_TYPE_FILE      (1 << 16)
+#define VFS_FILE_TYPE_DIR       (1 << 17)
 
 /*********************************************************************************************************
  *                                          文件操作接口
@@ -368,7 +396,9 @@ int vfs_open(const char *path, int oflag, mode_t mode)
         kern_mutex_unlock(&file->lock);
         return -1;
     }
-    file->flag = VFS_FILE_TYPE_FILE;                                    /*  占用文件结构, 类型文件      */
+    file->flag  = VFS_FILE_TYPE_FILE;                                   /*  占用文件结构, 类型文件      */
+
+    file->flag |= (oflag & O_ACCMODE) + 1;                              /*  记录访问模式                */
 
     kern_mutex_unlock(&file->lock);
 
@@ -445,7 +475,7 @@ int vfs_isatty(int fd)
     vfs_file_api_begin
     if (point->fs->isatty == NULL) {
         vfs_file_api_end
-        return -1;
+        return 0;
     }
     ret = point->fs->isatty(point, file);
     vfs_file_api_end
@@ -460,9 +490,13 @@ int vfs_fsync(int fd)
     int ret;
 
     vfs_file_api_begin
+    if (!(file->flag & FWRITE)) {
+        vfs_file_api_end
+        return 0;
+    }
     if (point->fs->fsync == NULL) {
         vfs_file_api_end
-        return -1;
+        return 0;
     }
     ret = point->fs->fsync(point, file);
     vfs_file_api_end
@@ -477,9 +511,13 @@ int vfs_fdatasync(int fd)
     int ret;
 
     vfs_file_api_begin
+    if (!(file->flag & FWRITE)) {
+        vfs_file_api_end
+        return 0;
+    }
     if (point->fs->fdatasync == NULL) {
         vfs_file_api_end
-        return -1;
+        return 0;
     }
     ret = point->fs->fdatasync(point, file);
     vfs_file_api_end
@@ -494,6 +532,10 @@ int vfs_ftruncate(int fd, off_t len)
     int ret;
 
     vfs_file_api_begin
+    if (!(file->flag & FWRITE)) {
+        vfs_file_api_end
+        return -1;
+    }
     if (point->fs->ftruncate == NULL) {
         vfs_file_api_end
         return -1;
@@ -520,6 +562,10 @@ ssize_t vfs_read(int fd, void *buf, size_t len)
 
     {
         vfs_file_api_begin
+        if (!(file->flag & FREAD)) {
+            vfs_file_api_end
+            return -1;
+        }
         if (point->fs->read == NULL) {
             vfs_file_api_end
             return -1;
@@ -547,6 +593,10 @@ ssize_t vfs_write(int fd, const void *buf, size_t len)
 
     {
         vfs_file_api_begin
+        if (!(file->flag & FWRITE)) {
+            vfs_file_api_end
+            return -1;
+        }
         if (point->fs->write == NULL) {
             vfs_file_api_end
             return -1;
@@ -676,7 +726,7 @@ int vfs_stat(const char *path, struct stat *buf)
         return -1;
     }
 
-    point = vfs_mount_point_lookup(pathbuf, &filepath, path);           /*  查找挂载点                  */
+    point = vfs_mount_point_lookup2(pathbuf, &filepath, path);          /*  查找挂载点                  */
     if (point == NULL) {
         return -1;
     }
@@ -761,14 +811,14 @@ int vfs_rmdir(const char *path)
 /*
  * 判断是否可访问
  */
-int vfs_access(const char *path, mode_t mode)
+int vfs_access(const char *path, int amode)
 {
     mount_point_t *point;
     char pathbuf[PATH_MAX + 1];
     char *filepath;
     int ret;
 
-    point = vfs_mount_point_lookup(pathbuf, &filepath, path);           /*  查找挂载点                  */
+    point = vfs_mount_point_lookup2(pathbuf, &filepath, path);          /*  查找挂载点                  */
     if (point == NULL) {
         return -1;
     }
@@ -777,7 +827,7 @@ int vfs_access(const char *path, mode_t mode)
         return -1;
     }
 
-    ret = point->fs->access(point, filepath, mode);
+    ret = point->fs->access(point, filepath, amode);
     return ret;
 }
 
@@ -820,7 +870,7 @@ int vfs_sync(const char *path)
     }
 
     if (point->fs->sync == NULL) {
-        return -1;
+        return 0;
     }
 
     ret = point->fs->sync(point);
@@ -1015,25 +1065,28 @@ int vfs_chdir(const char *path)
 {
     char pathbuf[PATH_MAX + 1];
     int ret;
+    pid_t pid;
 
     if (path == NULL) {
         return -1;
     }
 
-    kern_mutex_lock(&process_file_info[getpid()].cwd_lock, 0);
+    pid = getpid();
+
+    kern_mutex_lock(&process_file_info[pid].cwd_lock, 0);
 
     if (path[0] == '/') {                                               /*  如果是绝对路径              */
         strcpy(pathbuf, path);
     } else {                                                            /*  如果是相对路径              */
-        sprintf(pathbuf, "%s%s", process_file_info[getpid()].cwd, path);
+        sprintf(pathbuf, "%s%s", process_file_info[pid].cwd, path);
     }
 
     ret = vfs_path_normalization(pathbuf, TRUE);
     if (ret == 0) {
-        strcpy(process_file_info[getpid()].cwd, pathbuf);
+        strcpy(process_file_info[pid].cwd, pathbuf);
     }
 
-    kern_mutex_unlock(&process_file_info[getpid()].cwd_lock);
+    kern_mutex_unlock(&process_file_info[pid].cwd_lock);
 
     return ret;
 }
@@ -1043,13 +1096,15 @@ int vfs_chdir(const char *path)
  */
 char *vfs_getcwd(char *buf, size_t size)
 {
+    pid_t pid = getpid();
+
     if (buf != NULL) {
-        kern_mutex_lock(&process_file_info[getpid()].cwd_lock, 0);
-        strcpy(buf, process_file_info[getpid()].cwd);
-        kern_mutex_unlock(&process_file_info[getpid()].cwd_lock);
+        kern_mutex_lock(&process_file_info[pid].cwd_lock, 0);
+        strcpy(buf, process_file_info[pid].cwd);
+        kern_mutex_unlock(&process_file_info[pid].cwd_lock);
         return buf;
     } else {
-        return process_file_info[getpid()].cwd;
+        return process_file_info[pid].cwd;
     }
 }
 

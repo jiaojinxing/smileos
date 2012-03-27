@@ -107,6 +107,7 @@ static void kern_vars_init(void)
         task->thread       = NULL;
         task->arg          = NULL;
         task->dabt_cnt     = 0;
+        memset(task->mmu_backup, 0, sizeof(task->mmu_backup));
         memset(task->name, 0, sizeof(task->name));
     }
 }
@@ -422,6 +423,7 @@ static void idle_process_create(void)
     task->thread       = NULL;
     task->arg          = NULL;
     task->dabt_cnt     = 0;
+    memset(task->mmu_backup, 0, sizeof(task->mmu_backup));
 
     /*
      * 初始化进程上下文
@@ -510,6 +512,7 @@ int32_t process_create(const char *name, uint8_t *code, uint32_t size, uint32_t 
     task->thread       = NULL;
     task->arg          = NULL;
     task->dabt_cnt     = 0;
+    memset(task->mmu_backup, 0, sizeof(task->mmu_backup));
 
     /*
      * 初始化任务上下文
@@ -652,6 +655,7 @@ int32_t kthread_create(const char *name, void (*func)(void *), void *arg, uint32
     task->thread       = func;
     task->arg          = arg;
     task->dabt_cnt     = 0;
+    memset(task->mmu_backup, 0, sizeof(task->mmu_backup));
 
     task->content[0]   = (uint32_t)&task->kstack[KERN_STACK_SIZE];      /*  svc 模式堆栈指针(满堆栈递减)*/
     task->content[1]   = ARM_SYS_MODE | ARM_FIQ_NO | ARM_IRQ_EN;        /*  cpsr, sys 模式, 开 IRQ      */
