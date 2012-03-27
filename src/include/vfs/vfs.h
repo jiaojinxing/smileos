@@ -143,7 +143,7 @@ int vfs_rmdir(const char *path);
 /*
  * 判断是否可访问
  */
-int vfs_access(const char *path, mode_t mode);
+int vfs_access(const char *path, int amode);
 
 /*
  * 修改文件长度

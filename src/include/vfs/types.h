@@ -79,6 +79,7 @@ struct driver {
     int     (*fstat)(void *ctx, file_t *file, struct stat *buf);
     int     (*isatty)(void *ctx, file_t *file);
     int     (*fsync)(void *ctx, file_t *file);
+    int     (*fdatasync)(void *ctx, file_t *file);
     int     (*ftruncate)(void *ctx, file_t *file, off_t len);
     int     (*lseek)(void *ctx, file_t *file, off_t offset, int whence);
 };
@@ -107,15 +108,19 @@ struct file_system {
      * 文件系统接口
      */
     int     (*mount)(mount_point_t *point, device_t *dev, const char *dev_name);
+    int     (*unmount)(mount_point_t *point);
+    int     (*mkfs)(mount_point_t *point, const char *param);
+
     int     (*link)(mount_point_t *point, const char *path1, const char *path2);
     int     (*unlink)(mount_point_t *point, const char *path);
     int     (*mkdir)(mount_point_t *point, const char *path, mode_t mode);
     int     (*rmdir)(mount_point_t *point, const char *path);
     int     (*rename)(mount_point_t *point, const char *old, const char *new);
-    int     (*stat)(mount_point_t *point, const char *path, struct stat *buf);
-    int     (*access)(mount_point_t *point, const char *path, mode_t mode);
     int     (*sync)(mount_point_t *point);
     int     (*truncate)(mount_point_t *point, const char *path, off_t len);
+
+    int     (*stat)(mount_point_t *point, const char *path, struct stat *buf);
+    int     (*access)(mount_point_t *point, const char *path, int amode);
 
     /*
      * 文件接口

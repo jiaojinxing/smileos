@@ -41,8 +41,12 @@
 #include "kern/ipc.h"
 #include "vfs/config.h"
 #include "vfs/types.h"
+#include "vfs/vfs.h"
 #include <dirent.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <fcntl.h>
 
 /*
  * 设备链表
@@ -70,27 +74,204 @@ static int devfs_mount(mount_point_t *point, device_t *dev, const char *dev_name
 
 static int devfs_open(mount_point_t *point, file_t *file, const char *path, int oflag, mode_t mode)
 {
-    return point->dev->drv->open(point->dev->ctx, file, oflag, mode);
+    device_t *dev = device_lookup(path - 4);
+    if (dev == NULL) {
+        return -1;
+    }
+    if (dev->drv->open == NULL) {
+        return -1;
+    }
+    file->ctx = dev;
+    return dev->drv->open(dev->ctx, file, oflag, mode);
 }
 
 static ssize_t devfs_read(mount_point_t *point, file_t *file, void *buf, size_t len)
 {
-    return point->dev->drv->read(point->dev->ctx, file, buf, len);
+    device_t *dev = file->ctx;
+
+    if (dev->drv->read == NULL) {
+        return -1;
+    }
+    return dev->drv->read(dev->ctx, file, buf, len);
 }
 
 static ssize_t devfs_write(mount_point_t *point, file_t *file, const void *buf, size_t len)
 {
-    return point->dev->drv->write(point->dev->ctx, file, buf, len);
+    device_t *dev = file->ctx;
+
+    if (dev->drv->write == NULL) {
+        return -1;
+    }
+    return dev->drv->write(dev->ctx, file, buf, len);
 }
 
 static int devfs_ioctl(mount_point_t *point, file_t *file, int cmd, void *arg)
 {
-    return point->dev->drv->ioctl(point->dev->ctx, file, cmd, arg);
+    device_t *dev = file->ctx;
+
+    if (dev->drv->ioctl == NULL) {
+        return -1;
+    }
+    return dev->drv->ioctl(dev->ctx, file, cmd, arg);
 }
 
 static int devfs_close(mount_point_t *point, file_t *file)
 {
-    return point->dev->drv->close(point->dev->ctx, file);
+    device_t *dev = file->ctx;
+
+    if (dev->drv->close == NULL) {
+        return -1;
+    }
+    return dev->drv->close(dev->ctx, file);
+}
+
+static int devfs_fcntl(mount_point_t *point, file_t *file, int cmd, void *arg)
+{
+    device_t *dev = file->ctx;
+
+    if (dev->drv->fcntl == NULL) {
+        return -1;
+    }
+    return dev->drv->fcntl(dev->ctx, file, cmd, arg);
+}
+
+static int devfs_fstat(mount_point_t *point, file_t *file, struct stat *buf)
+{
+    device_t *dev = file->ctx;
+
+    buf->st_dev     = (dev_t)dev;
+    buf->st_ino     = 0;
+    buf->st_mode    = 0666;
+    buf->st_nlink   = 0;
+    buf->st_uid     = 0;
+    buf->st_gid     = 0;
+    buf->st_rdev    = (dev_t)dev;
+    buf->st_size    = 0;
+    buf->st_atime   = 0;
+    buf->st_spare1  = 0;
+    buf->st_mtime   = 0;
+    buf->st_spare2  = 0;
+    buf->st_ctime   = 0;
+    buf->st_spare3  = 0;
+    buf->st_blksize = 0;
+    buf->st_blocks  = 0;
+    buf->st_spare4[0] = 0;
+    buf->st_spare4[1] = 0;
+
+    if (dev->drv->fstat == NULL) {
+        return 0;
+    }
+    return dev->drv->fstat(dev->ctx, file, buf);
+}
+
+static int devfs_isatty(mount_point_t *point, file_t *file)
+{
+    device_t *dev = file->ctx;
+
+    if (dev->drv->isatty == NULL) {
+        return 0;
+    }
+    return dev->drv->isatty(dev->ctx, file);
+}
+
+static int devfs_fsync(mount_point_t *point, file_t *file)
+{
+    device_t *dev = file->ctx;
+
+    if (dev->drv->fsync == NULL) {
+        return 0;
+    }
+    return dev->drv->fsync(dev->ctx, file);
+}
+
+static int devfs_fdatasync(mount_point_t *point, file_t *file)
+{
+    device_t *dev = file->ctx;
+
+    if (dev->drv->fdatasync == NULL) {
+        return 0;
+    }
+    return dev->drv->fdatasync(dev->ctx, file);
+}
+
+static int devfs_ftruncate(mount_point_t *point, file_t *file, off_t len)
+{
+    device_t *dev = file->ctx;
+
+    if (dev->drv->ftruncate == NULL) {
+        return -1;
+    }
+    return dev->drv->ftruncate(dev->ctx, file, len);
+}
+
+static int devfs_lseek(mount_point_t *point, file_t *file, off_t offset, int whence)
+{
+    device_t *dev = file->ctx;
+
+    if (dev->drv->lseek == NULL) {
+        return -1;
+    }
+    return dev->drv->lseek(dev->ctx, file, offset, whence);
+}
+
+static int devfs_stat(mount_point_t *point, const char *path, struct stat *buf)
+{
+    if (path[0] == '/' && path[1] == '\0') {
+        buf->st_dev     = (dev_t)0;
+        buf->st_ino     = 0;
+        buf->st_mode    = 0666;
+        buf->st_nlink   = 0;
+        buf->st_uid     = 0;
+        buf->st_gid     = 0;
+        buf->st_rdev    = (dev_t)0;
+        buf->st_size    = 0;
+        buf->st_atime   = 0;
+        buf->st_spare1  = 0;
+        buf->st_mtime   = 0;
+        buf->st_spare2  = 0;
+        buf->st_ctime   = 0;
+        buf->st_spare3  = 0;
+        buf->st_blksize = 0;
+        buf->st_blocks  = 0;
+        buf->st_spare4[0] = 0;
+        buf->st_spare4[1] = 0;
+        return 0;
+    } else {
+        device_t *dev = device_lookup(path - 4);
+        if (dev == NULL) {
+            return -1;
+        } else {
+            int fd = vfs_open(path - 4, O_RDONLY, 0666);
+            if (fd >= 0) {
+                int ret = vfs_fstat(fd, buf);
+                vfs_close(fd);
+                return ret;
+            } else {
+                return -1;
+            }
+        }
+    }
+}
+
+static int devfs_access(mount_point_t *point, const char *path, int amode)
+{
+    if (path[0] == '/' && path[1] == '\0') {
+        return 0;
+    } else {
+        device_t *dev = device_lookup(path - 4);
+        if (dev == NULL) {
+            return -1;
+        } else {
+            mode_t mode = amode * 8 * 8 + amode * 8 + amode;
+            int fd = vfs_open(path - 4, O_RDONLY, mode);
+            if (fd >= 0) {
+                vfs_close(fd);
+                return 0;
+            } else {
+                return -1;
+            }
+        }
+    }
 }
 
 static int devfs_opendir(mount_point_t *point, file_t *file, const char *path)
@@ -100,6 +281,9 @@ static int devfs_opendir(mount_point_t *point, file_t *file, const char *path)
     file->ctx = priv;
 
     if (priv != NULL) {
+        /*
+         * 虽然上级有目录锁, 但仍须锁设备管理
+         */
         kern_mutex_lock(&devmgr_lock, 0);
         priv->current = dev_list;
         kern_mutex_unlock(&devmgr_lock);
@@ -189,11 +373,22 @@ static int devfs_closedir(mount_point_t *point, file_t *file)
 file_system_t devfs = {
         .name       = "devfs",
         .mount      = devfs_mount,
+        .stat       = devfs_stat,
+        .access     = devfs_access,
+
         .open       = devfs_open,
         .read       = devfs_read,
         .write      = devfs_write,
         .ioctl      = devfs_ioctl,
         .close      = devfs_close,
+        .fcntl      = devfs_fcntl,
+        .fstat      = devfs_fstat,
+        .isatty     = devfs_isatty,
+        .fsync      = devfs_fsync,
+        .fdatasync  = devfs_fdatasync,
+        .ftruncate  = devfs_ftruncate,
+        .lseek      = devfs_lseek,
+
         .opendir    = devfs_opendir,
         .readdir    = devfs_readdir,
         .rewinddir  = devfs_rewinddir,
