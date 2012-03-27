@@ -476,24 +476,6 @@ int _unlink_r(struct _reent *ptr, const char *path)
 }
 
 /*
- * select
- */
-int select(int maxfdp1, fd_set *readset, fd_set *writeset, fd_set *exceptset, struct timeval *timeout)
-{
-#ifdef SMILEOS_KERNEL
-    printk("can't call %s()!, kill kthread %s tid=%d abort\n", __func__, current->name, current->tid);
-
-    abort();
-#else
-    printf("can't call %s()!, kill process %d\n", __func__, getpid());
-
-    abort();
-#endif
-
-    return -1;
-}
-
-/*
  * _sbrk
  */
 void *_sbrk_r(struct _reent *ptr, ptrdiff_t incr)
@@ -573,6 +555,114 @@ int _kill_r(struct _reent *ptr, int pid, int sig)
     abort();
 #endif
 }
+//
+//#include <sockets.h>
+//
+//int
+//socket(int domain, int type, int protocol)
+//{
+//
+//}
+//
+//int
+//bind(int s, const struct sockaddr *name, socklen_t namelen)
+//{
+//
+//}
+//
+//int
+//ioctlsocket(int s, long cmd, void *argp)
+//{
+//
+//}
+//
+//int
+//accept(int s, struct sockaddr *addr, socklen_t *addrlen)
+//{
+//
+//}
+//
+//
+//int
+//shutdown(int s, int how)
+//{
+//
+//}
+//
+//int
+//closesocket(int s)
+//{
+//
+//}
+//
+//int
+//connect(int s, const struct sockaddr *name, socklen_t namelen)
+//{
+//
+//}
+//
+//int
+//listen(int s, int backlog)
+//{
+//
+//}
+//
+//int
+//recv(int s, void *mem, size_t len, int flags)
+//{
+//
+//}
+//
+//int
+//send(int s, const void *data, size_t size, int flags)
+//{
+//
+//}
+
+//int
+//recvfrom(int s, void *mem, size_t len, int flags,
+//        struct sockaddr *from, socklen_t *fromlen)
+//{
+//
+//}
+//
+//
+//int
+//sendto(int s, const void *data, size_t size, int flags,
+//       const struct sockaddr *to, socklen_t tolen)
+//{
+//
+//}
+//
+//int
+//select(int maxfdp1, fd_set *readset, fd_set *writeset, fd_set *exceptset, struct timeval *timeout)
+//{
+//
+//}
+//
+//int
+//getsockname(int s, struct sockaddr *name, socklen_t *namelen)
+//{
+//
+//}
+//
+//int
+//getpeername(int s, struct sockaddr *name, socklen_t *namelen)
+//{
+//
+//}
+//
+//int
+//setsockopt(int s, int level, int optname, const void *optval, socklen_t optlen)
+//{
+//
+//}
+//
+//int
+//getsockopt(int s, int level, int optname, void *optval, socklen_t *optlen)
+//{
+//
+//}
 /*********************************************************************************************************
   END FILE
 *********************************************************************************************************/
