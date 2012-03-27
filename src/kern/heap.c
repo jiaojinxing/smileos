@@ -131,6 +131,7 @@ void kern_heap_create(void)
 #else
 
 #include "kern/sys_call.h"
+#include <reent.h>
 
 #define debug_output      printf
 
@@ -139,7 +140,7 @@ static heap_t process_heap;
 /*
  * malloc
  */
-void *malloc(uint32_t size)
+void *_malloc_r(struct _reent *reent, size_t size)
 {
     void *ptr;
     /*
@@ -153,24 +154,43 @@ void *malloc(uint32_t size)
 /*
  * free
  */
-void free(void *ptr)
+void _free_r(struct _reent *reent, void *ptr)
 {
     heap_free(&process_heap, ptr);
 }
 
 /*
+ * realloc
+ */
+void *_realloc_r(struct _reent *reent, void *ptr, size_t newsize)
+{
+    void *newptr;
+
+    newptr = _malloc_r(reent, newsize);
+    if (newptr != NULL) {
+        if (ptr != NULL) {
+            memcpy(newptr, ptr, newsize);
+            _free_r(reent, ptr);
+        }
+    }
+    return newptr;
+}
+
+/*
  * calloc
  */
-void *calloc(uint32_t nelem, uint32_t elsize)
+void *_calloc_r(struct _reent *reent, size_t nelem, size_t elsize)
 {
     void *ptr;
 
-    ptr = malloc(nelem * MEM_ALIGN_SIZE(elsize));
+    ptr = _malloc_r(reent, nelem * MEM_ALIGN_SIZE(elsize));
     if (ptr != NULL) {
         memset(ptr, 0, nelem * MEM_ALIGN_SIZE(elsize));
     }
     return ptr;
 }
+
+#include <fcntl.h>
 
 /*
  * 初始化 C 库
@@ -183,6 +203,12 @@ void libc_init(void)
      * 在 __bss_end 后, 进程栈空间前, 建立内存堆
      */
     heap_init(&process_heap, &__bss_end, PROCESS_SPACE_SIZE - (uint32_t)&__bss_end - PROCESS_STACK_SIZE);
+
+    open("/dev/tty0", O_RDONLY, 0666);
+
+    open("/dev/tty1", O_WRONLY, 0666);
+
+    open("/dev/tty2", O_WRONLY, 0666);
 }
 
 #endif

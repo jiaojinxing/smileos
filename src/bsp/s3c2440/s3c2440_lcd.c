@@ -179,9 +179,6 @@ int fb_ioctl(void *ctx, file_t *file, int cmd, void *arg)
     case 0:
         break;
 
-    case 1:
-        break;
-
     default:
         ret = -1;
         break;

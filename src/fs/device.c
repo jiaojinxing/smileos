@@ -68,7 +68,7 @@ static int device_install(device_t *dev)
 }
 
 /*
- * 查找驱动
+ * 查找设备
  */
 device_t *device_lookup(const char *name)
 {

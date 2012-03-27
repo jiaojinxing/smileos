@@ -19,14 +19,14 @@
 ** Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 **
 **--------------------------------------------------------------------------------------------------------
-** File name:               init.c
-** Last modified Date:      2012-2-2
+** File name:               tty.c
+** Last modified Date:      2012-3-27
 ** Last Version:            1.0.0
-** Descriptions:            初始化
+** Descriptions:            TTY 驱动和设备
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing
-** Created date:            2012-2-2
+** Created date:            2012-3-27
 ** Version:                 1.0.0
 ** Descriptions:            创建文件
 **
@@ -37,98 +37,98 @@
 ** Descriptions:
 **
 *********************************************************************************************************/
-#include "kern/config.h"
-#include "kern/types.h"
+#include "vfs/device.h"
+#include "vfs/driver.h"
 #include "kern/kern.h"
-#include "kern/heap.h"
-#include "vfs/vfs.h"
-
-#include "lwip/init.h"
-#include "lwip/tcpip.h"
-#include "lwip/api.h"
-#include "lwip/sys.h"
-#include "lwip/opt.h"
-#include "lwip/sys.h"
-#include "lwip/sockets.h"
-
-#include <fcntl.h>
 
 /*
- * LwIP 初始化完成处理函数
+ * 打开 tty
  */
-static void tcpip_init_done(void *arg)
+int tty_open(void *ctx, file_t *file, int oflag, mode_t mode)
 {
-    static struct netif ethernetif;
-    ip_addr_t           ip, submask, gateway;
-
-    /*
-     * 如果使用 qemu, 请把 #if 1 改为 #if 0
-     * 另外 kern/trap.c 文件也有一处要修改
-     */
-#if 1
-    IP4_ADDR(&ip,       192, 168,   2,  30);
-    IP4_ADDR(&submask,  255, 255, 255,   0);
-    IP4_ADDR(&gateway,  192, 168,   2,   1);
-#else
-    IP4_ADDR(&ip,       192, 168,   0,  30);
-    IP4_ADDR(&submask,  255, 255, 255,   0);
-    IP4_ADDR(&gateway,  192, 168,   0,   1);
-#endif
-
-    extern err_t ethernetif_init(struct netif *netif);
-    netif_add(&ethernetif, &ip, &submask, &gateway, NULL, ethernetif_init, tcpip_input);
-
-    netif_set_default(&ethernetif);
-
-    netif_set_up(&ethernetif);
-
-    extern void telnetd(void *arg);
-    kthread_create("telnetd", telnetd, NULL, 4 * KB, 10);
-
-    extern void ftpd(void *arg);
-    kthread_create("ftpd", ftpd, NULL, 4 * KB, 10);
+    return 0;
 }
 
 /*
- * 初始化线程
+ * 控制 tty
  */
-static void init(void *arg)
+int tty_ioctl(void *ctx, file_t *file, int cmd, void *arg)
 {
-    vfs_init();
+    int ret = 0;
 
-    extern int tty_init(void);
-    tty_init();
+    switch (cmd) {
+    case 0:
+        break;
 
-    open("/dev/tty0", O_RDONLY, 0666);
-
-    open("/dev/tty1", O_WRONLY, 0666);
-
-    open("/dev/tty2", O_WRONLY, 0666);
-
-    extern int drivers_install(void);
-    drivers_install();
-
-    extern int devices_create(void);
-    devices_create();
-
-    tcpip_init(tcpip_init_done, NULL);
-
-    kern_heap_show();
-}
-
-/*
- * 主函数
- */
-int main(void)
-{
-    kernel_init();
-
-    kthread_create("init", init, NULL, 4 * KB, 10);
-
-    kernel_start();
-
-    while (1) {
+    default:
+        ret = -1;
+        break;
     }
+    return ret;
+}
+
+/*
+ * 关闭 tty
+ */
+int tty_close(void *ctx, file_t *file)
+{
+    return 0;
+}
+
+/*
+ * tty
+ */
+int tty_isatty(void *ctx, file_t *file)
+{
+    return 1;
+}
+
+/*
+ * 读 tty
+ */
+ssize_t tty_read(void *ctx, file_t *file, void *buf, size_t len)
+{
+    return -1;
+}
+
+/*
+ * 写 tty
+ */
+ssize_t tty_write(void *ctx, file_t *file, const void *buf, size_t len)
+{
+    char *tmp = (char *)buf;
+    tmp[len] = 0;
+
+    printk(buf);
+
+    return len;
+}
+
+/*
+ * tty 驱动
+ */
+driver_t tty_drv = {
+        .name   = "tty",
+        .open   = tty_open,
+        .write  = tty_write,
+        .read   = tty_read,
+        .isatty = tty_isatty,
+        .ioctl  = tty_ioctl,
+        .close  = tty_close,
+};
+
+/*
+ * 初始化 tty
+ */
+int tty_init(void)
+{
+    driver_install(&tty_drv);
+
+    device_create("/dev/tty0", "tty", NULL);
+
+    device_create("/dev/tty1", "tty", NULL);
+
+    device_create("/dev/tty2", "tty", NULL);
 
     return 0;
 }

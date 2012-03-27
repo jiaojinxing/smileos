@@ -387,7 +387,17 @@ static struct dirent *fatfs_readdir(mount_point_t *point, file_t *file)
 
 static int fatfs_rewinddir(mount_point_t *point, file_t *file)
 {
-    return -1;
+    privinfo_t *priv = file->ctx;
+
+    if (priv != NULL) {
+        if (f_readdir(&priv->dir, NULL) == FR_OK) {
+            return 0;
+        } else {
+            return -1;
+        }
+    } else {
+        return -1;
+    }
 }
 
 static int fatfs_seekdir(mount_point_t *point, file_t *file, long loc)
