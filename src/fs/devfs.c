@@ -216,7 +216,7 @@ static int devfs_lseek(mount_point_t *point, file_t *file, off_t offset, int whe
 
 static int devfs_stat(mount_point_t *point, const char *path, struct stat *buf)
 {
-    if (path[0] == '/' && path[1] == '\0') {
+    if (PATH_IS_ROOT_DIR(path)) {
         buf->st_dev     = (dev_t)0;
         buf->st_ino     = 0;
         buf->st_mode    = 0666;
@@ -255,8 +255,12 @@ static int devfs_stat(mount_point_t *point, const char *path, struct stat *buf)
 
 static int devfs_access(mount_point_t *point, const char *path, int amode)
 {
-    if (path[0] == '/' && path[1] == '\0') {
-        return 0;
+    if (PATH_IS_ROOT_DIR(path)) {
+        if (F_OK == amode || R_OK == amode) {
+            return 0;
+        } else {
+            return -1;
+        }
     } else {
         device_t *dev = device_lookup(path - 4);
         if (dev == NULL) {
@@ -276,11 +280,15 @@ static int devfs_access(mount_point_t *point, const char *path, int amode)
 
 static int devfs_opendir(mount_point_t *point, file_t *file, const char *path)
 {
-    privinfo_t *priv = kmalloc(sizeof(privinfo_t));
+    privinfo_t *priv;
 
-    file->ctx = priv;
+    if (!PATH_IS_ROOT_DIR(path)) {
+        return -1;
+    }
 
+    priv = kmalloc(sizeof(privinfo_t));
     if (priv != NULL) {
+        file->ctx = priv;
         /*
          * 虽然上级有目录锁, 但仍须锁设备管理
          */
