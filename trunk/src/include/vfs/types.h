@@ -176,6 +176,8 @@ struct file {
     struct kern_mutex      *lock;
 };
 
+#define PATH_IS_ROOT_DIR(path)  (path[0] == '/' && path[1] == '\0')
+
 #endif                                                                  /*  VFS_TYPES_H_                */
 /*********************************************************************************************************
   END FILE

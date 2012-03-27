@@ -43,6 +43,9 @@
 #include "vfs/types.h"
 #include <dirent.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <fcntl.h>
 
 /*
  * 挂载点链表
@@ -73,13 +76,60 @@ static int rootfs_mount(mount_point_t *point, device_t *dev, const char *dev_nam
     return 0;
 }
 
+static int rootfs_stat(mount_point_t *point, const char *path, struct stat *buf)
+{
+    if (PATH_IS_ROOT_DIR(path)) {
+        buf->st_dev     = (dev_t)0;
+        buf->st_ino     = 0;
+        buf->st_mode    = 0666;
+        buf->st_nlink   = 0;
+        buf->st_uid     = 0;
+        buf->st_gid     = 0;
+        buf->st_rdev    = (dev_t)0;
+        buf->st_size    = 0;
+        buf->st_atime   = 0;
+        buf->st_spare1  = 0;
+        buf->st_mtime   = 0;
+        buf->st_spare2  = 0;
+        buf->st_ctime   = 0;
+        buf->st_spare3  = 0;
+        buf->st_blksize = 0;
+        buf->st_blocks  = 0;
+        buf->st_spare4[0] = 0;
+        buf->st_spare4[1] = 0;
+        return 0;
+    } else {
+        return -1;
+    }
+}
+
+static int rootfs_access(mount_point_t *point, const char *path, int amode)
+{
+    if (PATH_IS_ROOT_DIR(path)) {
+        if (F_OK == amode || R_OK == amode) {
+            return 0;
+        } else {
+            return -1;
+        }
+    } else {
+        return -1;
+    }
+}
+
 static int rootfs_opendir(mount_point_t *point, file_t *file, const char *path)
 {
-    privinfo_t *priv = kmalloc(sizeof(privinfo_t));
+    privinfo_t *priv;
 
-    file->ctx = priv;
+    if (!PATH_IS_ROOT_DIR(path)) {
+        return -1;
+    }
 
+    priv = kmalloc(sizeof(privinfo_t));
     if (priv != NULL) {
+        file->ctx = priv;
+        /*
+         * 虽然上级有目录锁, 但仍须锁挂载点管理
+         */
         kern_mutex_lock(&pointmgr_lock, 0);
         priv->current = point_list;
         kern_mutex_unlock(&pointmgr_lock);
@@ -169,6 +219,9 @@ static int rootfs_closedir(mount_point_t *point, file_t *file)
 file_system_t rootfs = {
         .name       = "rootfs",
         .mount      = rootfs_mount,
+        .stat       = rootfs_stat,
+        .access     = rootfs_access,
+
         .opendir    = rootfs_opendir,
         .readdir    = rootfs_readdir,
         .rewinddir  = rootfs_rewinddir,
