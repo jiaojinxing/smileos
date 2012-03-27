@@ -53,7 +53,9 @@ struct driver;
 struct device;
 struct file_system;
 struct mount_point;
+struct _DIR;
 
+typedef struct _DIR         DIR;
 typedef struct file         file_t;
 typedef struct driver       driver_t;
 typedef struct device       device_t;
@@ -82,6 +84,12 @@ struct driver {
     int     (*fdatasync)(void *ctx, file_t *file);
     int     (*ftruncate)(void *ctx, file_t *file, off_t len);
     int     (*lseek)(void *ctx, file_t *file, off_t offset, int whence);
+
+    /*
+     * ¶ÁÐ´¿é
+     */
+    int     (*readb )(void *ctx, file_t *file, size_t blk_nr, size_t blk_cnt, void *buf);
+    int     (*writeb)(void *ctx, file_t *file, size_t blk_nr, size_t blk_cnt, const void *buf);
 };
 
 /*
@@ -95,6 +103,7 @@ struct device {
      */
     void                   *ctx;
     struct device          *next;
+    dev_t                   devno;
 };
 
 /*

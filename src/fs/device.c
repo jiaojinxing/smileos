@@ -122,8 +122,9 @@ int device_create(const char *dev_name, const char *drv_name, void *ctx)
         dev = kmalloc(sizeof(device_t));
         if (dev != NULL) {
             strlcpy(dev->name, dev_name, sizeof(dev->name));
-            dev->drv = drv;
-            dev->ctx = ctx;
+            dev->drv    = drv;
+            dev->ctx    = ctx;
+            dev->devno  = 0;
             device_install(dev);
             kern_mutex_unlock(&devmgr_lock);
             return 0;

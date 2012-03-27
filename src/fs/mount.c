@@ -173,6 +173,7 @@ int mount(const char *point_name, const char *dev_name, const char *fs_name)
  */
 int mount_point_manager_init(void)
 {
+    rootfs_point = NULL;
     return kern_mutex_new(&pointmgr_lock);
 }
 /*********************************************************************************************************

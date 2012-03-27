@@ -44,8 +44,8 @@
 
 struct stat;
 struct dirent;
-struct _DIR;
-typedef struct _DIR         DIR;
+
+#include "vfs/types.h"
 
 /*
  * 打开文件
@@ -202,6 +202,11 @@ char *vfs_getcwd(char *buf, size_t size);
  * 初始化虚拟文件系统
  */
 int vfs_init(void);
+
+/*
+ * 在 PATH 前加入挂载点名
+ */
+const char *vfs_path_add_mount_point(const char *path);
 
 #endif                                                                  /*  VFS_H_                      */
 /*********************************************************************************************************
