@@ -127,9 +127,6 @@ u32_t sys_arch_sem_wait(sys_sem_t *sem, u32_t timeout)
     if (kern_sem_wait(sem, timeout) < 0) {
         return SYS_ARCH_TIMEOUT;
     } else {
-        /*
-         * return time (in milliseconds) waited for the semaphore
-         */
         return sys_now() - start;
     }
 }
@@ -213,9 +210,6 @@ u32_t sys_arch_mbox_fetch(sys_mbox_t *mbox, void **msg, u32_t timeout)
     if (kern_mbox_fetch(mbox, msg, timeout) < 0) {
         return SYS_ARCH_TIMEOUT;
     } else {
-        /*
-         * return time (in milliseconds) waited for a message
-         */
         return sys_now() - start;
     }
 }
@@ -264,12 +258,6 @@ void sys_mbox_set_invalid(sys_mbox_t *mbox)
  * @param prio priority of the new thread (may be ignored by ports) */
 sys_thread_t sys_thread_new(const char *name, lwip_thread_fn thread, void *arg, int stacksize, int prio)
 {
-    if (prio < 10) {                                                    /*  保证网络协议栈相关的任务    */
-        prio = 10;                                                      /*  的优先级在合理的范围        */
-    } else if (prio > 30) {                                             /*  以保证网络性能              */
-        prio = 30;
-    }
-
     return kthread_create(name, thread, arg, stacksize, prio);
 }
 

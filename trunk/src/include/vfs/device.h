@@ -43,7 +43,7 @@
 #include "vfs/types.h"
 
 /*
- * 查找驱动
+ * 查找设备
  */
 device_t *device_lookup(const char *name);
 

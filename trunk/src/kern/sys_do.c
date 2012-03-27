@@ -40,8 +40,9 @@
 #include "kern/config.h"
 #include "kern/types.h"
 #include "kern/kern.h"
-#include "kern/vmm.h"
+#include "vfs/vfs.h"
 #include <sys/types.h>
+#include <sys/time.h>
 /*********************************************************************************************************
   系统调用处理
 *********************************************************************************************************/
@@ -56,9 +57,9 @@ static void do_exit(int status)
 /*
  * 进程休眠
  */
-static int do_sleep(unsigned int tick)
+static int do_sleep(unsigned int ticks)
 {
-    current->timer = tick != 0 ? tick : 1;                              /*  休睡 TICK 数                */
+    current->timer = ticks != 0 ? ticks : 1;                            /*  休睡 TICK 数                */
 
     current->state = TASK_SLEEPING;                                     /*  当前任务进入休睡态          */
 
@@ -67,17 +68,6 @@ static int do_sleep(unsigned int tick)
     return 0;
 }
 
-/*
- * 写
- */
-static int do_write(int fd, const void *data, size_t len)
-{
-    printk((const char *)data);
-
-    return (int)len;
-}
-
-#include <sys/time.h>
 /*
  * 获得时间
  */
@@ -127,11 +117,23 @@ sys_do_t sys_do_table[] = {
          */
         (sys_do_t)do_exit,
         (sys_do_t)do_sleep,
-        (sys_do_t)do_write,
+        (sys_do_t)do_yeild,
         (sys_do_t)do_gettimeofday,
         (sys_do_t)do_getpid,
         (sys_do_t)do_errno,
-        (sys_do_t)do_yeild,
+        (sys_do_t)vfs_write,
+        (sys_do_t)vfs_mkdir,
+        (sys_do_t)vfs_open,
+        (sys_do_t)vfs_read,
+        (sys_do_t)vfs_rename,
+        (sys_do_t)vfs_fstat,
+        (sys_do_t)vfs_unlink,
+        (sys_do_t)vfs_close,
+        (sys_do_t)vfs_fcntl,
+        (sys_do_t)vfs_isatty,
+        (sys_do_t)vfs_link,
+        (sys_do_t)vfs_lseek,
+        (sys_do_t)vfs_stat,
 };
 /*********************************************************************************************************
   END FILE

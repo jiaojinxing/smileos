@@ -185,6 +185,9 @@ struct file {
     struct kern_mutex      *lock;
 };
 
+/*
+ * 判断路径是不是根目录
+ */
 #define PATH_IS_ROOT_DIR(path)  (path[0] == '/' && path[1] == '\0')
 
 #endif                                                                  /*  VFS_TYPES_H_                */

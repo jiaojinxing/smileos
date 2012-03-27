@@ -45,12 +45,24 @@
  */
 #define SYS_CALL_EXIT       0
 #define SYS_CALL_SLEEP      1
-#define SYS_CALL_WRITE      2
+#define SYS_CALL_YIELD      2
 #define SYS_CALL_GETTIME    3
 #define SYS_CALL_GETPID     4
 #define SYS_CALL_ERRNO      5
-#define SYS_CALL_YIELD      6
-#define SYS_CALL_NR         7                                           /*  系统调用数                  */
+#define SYS_CALL_WRITE      6
+#define SYS_CALL_MKDIR      7
+#define SYS_CALL_OPEN       8
+#define SYS_CALL_READ       9
+#define SYS_CALL_RENAME     10
+#define SYS_CALL_FSTAT      11
+#define SYS_CALL_UNLINK     12
+#define SYS_CALL_CLOSE      13
+#define SYS_CALL_FCNTL      14
+#define SYS_CALL_ISATTY     15
+#define SYS_CALL_LINK       16
+#define SYS_CALL_LSEEK      17
+#define SYS_CALL_STAT       18
+#define SYS_CALL_NR         19                                          /*  系统调用数                  */
 
 #ifndef __ASSEMBLER__
 #include <sys/types.h>

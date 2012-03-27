@@ -228,7 +228,7 @@ int vmm_map_process_page(task_t *task, uint32_t va)
                         mmu_map_section_as_page(section_nr, tbl);       /*  Ó³Éä¸Ã¶Î                    */
                 flag = TRUE;
             } else {
-                kcomplain("failed to alloc page table, mem map failed, va=0x%x, pid=%d\n", va, task->pid);
+                printk("failed to alloc page table, mem map failed, va=0x%x, pid=%d\n", va, task->pid);
                 return -1;
             }
         }
@@ -247,11 +247,11 @@ int vmm_map_process_page(task_t *task, uint32_t va)
                 task->mmu_backup[section_nr % (PROCESS_SPACE_SIZE / SECTION_SIZE)] = 0;
                 vmm_page_table_free(tbl);
             }
-            kcomplain("failed to alloc page, mem map failed, va=0x%x, pid=%d\n", va, task->pid);
+            printk("failed to alloc page, mem map failed, va=0x%x, pid=%d\n", va, task->pid);
             return -1;
         }
     } else {
-        kcomplain("invalid va=0x%x, mem map failed, pid=%d\n", va, task->pid);
+        printk("invalid va=0x%x, mem map failed, pid=%d\n", va, task->pid);
         return -1;
     }
 }
