@@ -63,7 +63,7 @@
 
 #define	_MAX_LFN	    255                                             /*  长文件名的最大长度          */
 
-#define	_LFN_UNICODE	1                                               /*  支持 unicode                */
+#define	_LFN_UNICODE	0                                               /*  支持 unicode                */
 
 #define _FS_RPATH		0                                               /*  移除相对路径相关函数        */
 
@@ -84,7 +84,7 @@
 struct kern_mutex;
 #define	_SYNC_t			struct kern_mutex *                             /*  同步对象类型                */
 
-#define	_FS_SHARE	    20                                              /*  能同时打开多少个文件        */
+#define	_FS_SHARE	    (OPEN_MAX - 3)                                  /*  能同时打开多少个文件        */
 
 #endif                                                                  /*  _FFCONFIG                   */
 /*********************************************************************************************************

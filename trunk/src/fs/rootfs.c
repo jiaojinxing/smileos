@@ -105,14 +105,18 @@ static int rootfs_stat(mount_point_t *point, const char *path, struct stat *buf)
 
 static int rootfs_access(mount_point_t *point, const char *path, int amode)
 {
-    if (PATH_IS_ROOT_DIR(path)) {
-        if (F_OK == amode || R_OK == amode) {
+    struct stat buf;
+    int ret;
+
+    ret = rootfs_stat(point, path, &buf);
+    if (ret == 0) {
+        if ((buf.st_mode & 0700) == (amode * 8 * 8)) {
             return 0;
         } else {
             return -1;
         }
     } else {
-        return -1;
+        return ret;
     }
 }
 
@@ -132,11 +136,12 @@ static int rootfs_opendir(mount_point_t *point, file_t *file, const char *path)
          */
         kern_mutex_lock(&pointmgr_lock, 0);
         priv->current = point_list;
-        kern_mutex_unlock(&pointmgr_lock);
         priv->loc     = 0;
+        kern_mutex_unlock(&pointmgr_lock);
+        return 0;
+    } else {
+        return -1;
     }
-
-    return priv != NULL ? 0 : -1;
 }
 
 static struct dirent *rootfs_readdir(mount_point_t *point, file_t *file)
@@ -144,29 +149,30 @@ static struct dirent *rootfs_readdir(mount_point_t *point, file_t *file)
     privinfo_t *priv = file->ctx;
 
     if (priv != NULL && priv->current != rootfs_point) {
-        strcpy(priv->entry.d_name, priv->current->name + 1);
+        strcpy(priv->entry.d_name, priv->current->name + 1);            /*  Ìø¹ý /                      */
         priv->entry.d_ino = priv->loc++;
         kern_mutex_lock(&pointmgr_lock, 0);
         priv->current = priv->current->next;
         kern_mutex_unlock(&pointmgr_lock);
         return &priv->entry;
+    } else {
+        return NULL;
     }
-    return NULL;
 }
 
 static int rootfs_rewinddir(mount_point_t *point, file_t *file)
 {
     privinfo_t *priv = file->ctx;
-    int ret = -1;
 
     if (priv != NULL) {
         kern_mutex_lock(&pointmgr_lock, 0);
         priv->current = point_list;
-        kern_mutex_unlock(&pointmgr_lock);
         priv->loc     = 0;
-        ret           = 0;
+        kern_mutex_unlock(&pointmgr_lock);
+        return 0;
+    } else {
+        return -1;
     }
-    return ret;
 }
 
 static int rootfs_seekdir(mount_point_t *point, file_t *file, long loc)
@@ -199,9 +205,9 @@ static long rootfs_telldir(mount_point_t *point, file_t *file)
 
     if (priv != NULL) {
         return priv->loc;
+    } else {
+        return -1;
     }
-
-    return -1;
 }
 
 static int rootfs_closedir(mount_point_t *point, file_t *file)
@@ -211,9 +217,9 @@ static int rootfs_closedir(mount_point_t *point, file_t *file)
     if (priv != NULL) {
         kfree(priv);
         return 0;
+    } else {
+        return -1;
     }
-
-    return -1;
 }
 
 file_system_t rootfs = {

@@ -139,7 +139,7 @@ typedef struct {
 
 /* Directory object structure (DIR) */
 
-typedef struct {
+struct _DIR {
 	FATFS*	fs;				/* Pointer to the owner file system object */
 	WORD	id;				/* Owner file system mount ID */
 	WORD	index;			/* Current read/write index number */
@@ -152,7 +152,7 @@ typedef struct {
 	WCHAR*	lfn;			/* Pointer to the LFN working buffer */
 	WORD	lfn_idx;		/* Last matched LFN index number (0xFFFF:No LFN) */
 #endif
-} DIR;
+};
 
 
 

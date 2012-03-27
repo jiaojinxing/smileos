@@ -92,6 +92,18 @@ static process_file_info_t process_file_info[PROCESS_NR];
  */
 
 /*
+ * 在 PATH 前加入挂载点名
+ */
+const char *vfs_path_add_mount_point(const char *path)
+{
+    path--;
+    while (*path != '/') {
+        path--;
+    }
+    return path;
+}
+
+/*
  * 正常化 PATH
  */
 static int vfs_path_normalization(char path[PATH_MAX + 1], int sprit_end)
@@ -399,6 +411,8 @@ int vfs_open(const char *path, int oflag, mode_t mode)
     file->flag  = VFS_FILE_TYPE_FILE;                                   /*  占用文件结构, 类型文件      */
 
     file->flag |= (oflag & O_ACCMODE) + 1;                              /*  记录访问模式                */
+
+    file->flag |= oflag & O_APPEND;                                     /*  记录追加模式                */
 
     kern_mutex_unlock(&file->lock);
 
@@ -888,7 +902,7 @@ int vfs_sync(const char *path)
         if (fd < 1 || fd >= OPEN_MAX) {                                 /*  文件描述符合法性判断        */\
             return -1;                                                                                    \
         }                                                                                                 \
-        file = process_file_info[getpid()].files + fd;              /*  获得文件结构                */\
+        file = process_file_info[getpid()].files + fd;                  /*  获得文件结构                */\
         kern_mutex_lock(&file->lock, 0);                                /*  锁住文件                    */
 
 #define vfs_dir_api_begin                                                                                 \
@@ -1083,7 +1097,11 @@ int vfs_chdir(const char *path)
 
     ret = vfs_path_normalization(pathbuf, TRUE);
     if (ret == 0) {
-        strcpy(process_file_info[pid].cwd, pathbuf);
+        DIR *dir = vfs_opendir(pathbuf);
+        if (dir != NULL) {
+            strcpy(process_file_info[pid].cwd, pathbuf);
+            vfs_closedir(dir);
+        }
     }
 
     kern_mutex_unlock(&process_file_info[pid].cwd_lock);
