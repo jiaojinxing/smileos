@@ -49,7 +49,7 @@
 void fiq_c_handler(void)
 {
     /*
-     * FIQ 快速中断处理程序并不是由当前任务引起的异常, 所以只能重启 SmileOS 了:-)
+     * FIQ 快速中断并不是由当前任务引起的异常, 所以只能重启 SmileOS 了:-)
      */
     kcomplain("%s, current tid = %d name=%s\n", __func__, current->tid, current->name);
     kcomplain("reboot SmileOS...\n");
