@@ -72,7 +72,7 @@ static int device_install(device_t *dev)
  */
 device_t *device_lookup(const char *name)
 {
-    device_t *dev;;
+    device_t *dev;
 
     if (name == NULL) {
         return NULL;
@@ -89,6 +89,40 @@ device_t *device_lookup(const char *name)
     kern_mutex_unlock(&devmgr_lock);
 
     return dev;
+}
+
+/*
+ * É¾³ýÉè±¸
+ */
+int device_remove(const char *name)
+{
+    device_t *dev, *prev;
+
+    if (name == NULL) {
+        return -1;
+    }
+
+    kern_mutex_lock(&devmgr_lock, 0);
+    prev = NULL;
+    dev  = dev_list;
+    while (dev != NULL) {
+        if (strcmp(dev->name, name) == 0) {
+            break;
+        }
+        prev = dev;
+        dev = dev->next;
+    }
+
+    if (dev != NULL) {
+        if (prev != NULL) {
+            prev->next = dev->next;
+        } else {
+            dev_list = dev->next;
+        }
+    }
+    kern_mutex_unlock(&devmgr_lock);
+
+    return 0;
 }
 
 /*

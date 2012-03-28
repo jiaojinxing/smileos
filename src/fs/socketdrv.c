@@ -19,14 +19,14 @@
 ** Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 **
 **--------------------------------------------------------------------------------------------------------
-** File name:               tty.c
-** Last modified Date:      2012-3-27
+** File name:               socketdrv.c
+** Last modified Date:      2012-3-28
 ** Last Version:            1.0.0
-** Descriptions:            TTY 驱动和设备
+** Descriptions:            socket 驱动和设备
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing
-** Created date:            2012-3-27
+** Created date:            2012-3-28
 ** Version:                 1.0.0
 ** Descriptions:            创建文件
 **
@@ -40,98 +40,116 @@
 #include "vfs/device.h"
 #include "vfs/driver.h"
 #include "kern/kern.h"
+#include <sys/socket.h>
+#include <fcntl.h>
+#include <stdio.h>
 
 /*
- * 打开 tty
+ * 打开 socket
  */
-static int tty_open(void *ctx, file_t *file, int oflag, mode_t mode)
+static int socket_open(void *ctx, file_t *file, int oflag, mode_t mode)
 {
     return 0;
 }
 
 /*
- * 控制 tty
+ * 控制 socket
  */
-static int tty_ioctl(void *ctx, file_t *file, int cmd, void *arg)
+static int socket_ioctl(void *ctx, file_t *file, int cmd, void *arg)
 {
-    int ret = 0;
-
-    switch (cmd) {
-    case 0:
-        break;
-
-    default:
-        ret = -1;
-        break;
-    }
-    return ret;
+    return lwip_ioctl((int)ctx, cmd, arg);
 }
 
 /*
- * 关闭 tty
+ * 控制 socket
  */
-static int tty_close(void *ctx, file_t *file)
+static int socket_fcntl(void *ctx, file_t *file, int cmd, void *arg)
+{
+    return lwip_fcntl((int)ctx, cmd, (int)arg);
+}
+
+/*
+ * 关闭 socket
+ */
+static int socket_close(void *ctx, file_t *file)
+{
+    char buf[32];
+
+    sprintf(buf, "/dev/socket%d", (int)ctx);
+
+    device_remove(buf);
+
+    lwip_close((int)ctx);
+
+    return 0;
+}
+
+/*
+ * isatty
+ */
+static int socket_isatty(void *ctx, file_t *file)
 {
     return 0;
 }
 
 /*
- * tty
+ * 读 socket
  */
-static int tty_isatty(void *ctx, file_t *file)
+static ssize_t socket_read(void *ctx, file_t *file, void *buf, size_t len)
 {
-    return 1;
+    return lwip_recv((int)ctx, buf, len, 0);
 }
 
 /*
- * 读 tty
+ * 写 socket
  */
-static ssize_t tty_read(void *ctx, file_t *file, void *buf, size_t len)
-{
-    return -1;
-}
-
-/*
- * 写 tty
- */
-static ssize_t tty_write(void *ctx, file_t *file, const void *buf, size_t len)
+static ssize_t socket_write(void *ctx, file_t *file, const void *buf, size_t len)
 {
     char *tmp = (char *)buf;
     tmp[len] = 0;
 
-    printk(buf);
-
-    return len;
+    return lwip_send((int)ctx, buf, len, 0);
 }
 
 /*
- * tty 驱动
+ * socket 驱动
  */
-static driver_t tty_drv = {
-        .name   = "tty",
-        .open   = tty_open,
-        .write  = tty_write,
-        .read   = tty_read,
-        .isatty = tty_isatty,
-        .ioctl  = tty_ioctl,
-        .close  = tty_close,
+driver_t socket_drv = {
+        .name   = "socket",
+        .open   = socket_open,
+        .write  = socket_write,
+        .read   = socket_read,
+        .isatty = socket_isatty,
+        .ioctl  = socket_ioctl,
+        .fcntl  = socket_fcntl,
+        .close  = socket_close,
 };
 
 /*
- * 初始化 tty
+ * 安装驱动
  */
-int tty_init(void)
+int socket_driver_install(void)
 {
-    driver_install(&tty_drv);
+    return driver_install(&socket_drv);
+}
 
-    device_create("/dev/tty0", "tty", NULL);
+/*
+ * 联结 socket
+ */
+int socket_attach(int sockfd)
+{
+    char buf[32];
+    int fd;
 
-    device_create("/dev/tty1", "tty", NULL);
+    sprintf(buf, "/dev/socket%d", sockfd);
 
-    device_create("/dev/tty2", "tty", NULL);
+    device_create(buf, "socket", (void *)sockfd);
 
-    return 0;
+    fd = open(buf, O_RDWR, 0666);
+
+    return fd;
 }
 /*********************************************************************************************************
   END FILE
 *********************************************************************************************************/
+

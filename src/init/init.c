@@ -99,6 +99,9 @@ static void init(void *arg)
     extern int tty_init(void);
     tty_init();
 
+    extern int socket_driver_install(void);
+    socket_driver_install();
+
     open("/dev/tty0", O_RDONLY, 0666);
 
     open("/dev/tty1", O_WRONLY, 0666);
