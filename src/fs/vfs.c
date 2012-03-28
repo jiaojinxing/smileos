@@ -232,14 +232,14 @@ static mount_point_t *vfs_mount_point_lookup(char pathbuf[PATH_MAX + 1], char **
         if (path[1] == '\0') {                                          /*  不能是根目录                */
             return NULL;
         }
-        strcpy(pathbuf, path);
+        strlcpy(pathbuf, path, PATH_MAX + 1);
     } else {                                                            /*  如果是相对路径              */
         /*
          * cwd 要以 / 号开头和结尾
          */
         pid_t pid = getpid();
         kern_mutex_lock(&process_file_info[pid].cwd_lock, 0);           /*  在前面加入当前工作目录      */
-        sprintf(pathbuf, "%s%s", process_file_info[pid].cwd, path);
+        snprintf(pathbuf, PATH_MAX + 1, "%s%s", process_file_info[pid].cwd, path);
         kern_mutex_unlock(&process_file_info[pid].cwd_lock);
     }
 
@@ -277,14 +277,14 @@ static mount_point_t *vfs_mount_point_lookup2(char pathbuf[PATH_MAX + 1], char *
     }
 
     if (path[0] == '/') {                                               /*  如果是绝对路径              */
-        strcpy(pathbuf, path);
+        strlcpy(pathbuf, path, PATH_MAX + 1);
     } else {                                                            /*  如果是相对路径              */
         /*
          * cwd 要以 / 号开头和结尾
          */
         pid_t pid = getpid();
         kern_mutex_lock(&process_file_info[pid].cwd_lock, 0);           /*  在前面加入当前工作目录      */
-        sprintf(pathbuf, "%s%s", process_file_info[pid].cwd, path);
+        snprintf(pathbuf, PATH_MAX + 1, "%s%s", process_file_info[pid].cwd, path);
         kern_mutex_unlock(&process_file_info[pid].cwd_lock);
     }
 
@@ -1090,16 +1090,16 @@ int vfs_chdir(const char *path)
     kern_mutex_lock(&process_file_info[pid].cwd_lock, 0);
 
     if (path[0] == '/') {                                               /*  如果是绝对路径              */
-        strcpy(pathbuf, path);
+        strlcpy(pathbuf, path, sizeof(pathbuf));
     } else {                                                            /*  如果是相对路径              */
-        sprintf(pathbuf, "%s%s", process_file_info[pid].cwd, path);
+        snprintf(pathbuf, sizeof(pathbuf), "%s%s", process_file_info[pid].cwd, path);
     }
 
     ret = vfs_path_normalization(pathbuf, TRUE);
     if (ret == 0) {
         DIR *dir = vfs_opendir(pathbuf);
         if (dir != NULL) {
-            strcpy(process_file_info[pid].cwd, pathbuf);
+            strlcpy(process_file_info[pid].cwd, pathbuf, sizeof(process_file_info[pid].cwd));
             vfs_closedir(dir);
         }
     }
@@ -1118,10 +1118,13 @@ char *vfs_getcwd(char *buf, size_t size)
 
     if (buf != NULL) {
         kern_mutex_lock(&process_file_info[pid].cwd_lock, 0);
-        strcpy(buf, process_file_info[pid].cwd);
+        strlcpy(buf, process_file_info[pid].cwd, size);
         kern_mutex_unlock(&process_file_info[pid].cwd_lock);
         return buf;
     } else {
+        /*
+         * TODO: 应用程序不能释放它
+         */
         return process_file_info[pid].cwd;
     }
 }
