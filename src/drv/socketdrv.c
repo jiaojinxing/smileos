@@ -124,10 +124,13 @@ static int socket_isatty(void *ctx, file_t *file)
 static ssize_t socket_read(void *ctx, file_t *file, void *buf, size_t len)
 {
     privinfo_t *priv = ctx;
+    ssize_t rlen;
 
     debug_output("%s %d\r\n", __func__, len);
 
-    return lwip_recv(priv->sockfd, buf, len, 0);
+    rlen = lwip_recv(priv->sockfd, buf, len, 0);
+
+    return rlen;
 }
 
 /*
