@@ -40,8 +40,8 @@
 #ifndef KERN_H_
 #define KERN_H_
 
-#include "config.h"
-#include "types.h"
+#include "kern/config.h"
+#include "kern/types.h"
 
 #ifdef SMILEOS_KERNEL
 /*********************************************************************************************************
@@ -105,7 +105,7 @@ typedef struct task {
     struct task            *next;                                       /*  后趋                        */
     struct task           **wait_list;                                  /*  等待链表                    */
     struct vmm_frame       *frame_list;                                 /*  页框链表                    */
-    int                     dabt_cnt;                                   /*  数据终止次数                */
+    int                     dabt_cnt;                                   /*  数据访问中止次数            */
     uint32_t                mmu_backup[PROCESS_SPACE_SIZE / SECTION_SIZE];  /*  一级段表备份            */
 } task_t;
 
@@ -192,7 +192,7 @@ void *kcalloc(uint32_t nelem, uint32_t elsize);
 /*
  * 打印内核内存堆信息
  */
-void kern_heap_show(void);
+void kern_heap_show(int fd);
 
 /*
  * 进入临界区域
@@ -226,11 +226,12 @@ uint64_t get_tick(void);
 
 /*
  * 杀死任务
+ * 只能在任务出错进入异常处理程序或任务主动退出通过软件中断进入内核时调用
  */
 void task_kill(int32_t tid);
 
 /*
- * 判断是否在中断处理中
+ * 判断是否在中断处理程序中
  */
 int in_interrupt(void);
 
@@ -238,6 +239,11 @@ int in_interrupt(void);
  * 判断是否在内核模式
  */
 int in_kernel(void);
+
+/*
+ *
+ */
+void yield(void);
 #endif
 
 #endif                                                                  /*  KERN_H_                     */

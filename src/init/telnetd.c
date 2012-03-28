@@ -40,10 +40,10 @@
 #include "kern/config.h"
 #include "kern/types.h"
 #include "kern/kern.h"
-#include "kern/sys_call.h"
 #include "kern/sbin.h"
 #include "vfs/vfs.h"
 #include <dirent.h>
+#include <unistd.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <stdio.h>
@@ -258,6 +258,7 @@ static void telnetd_thread(void *arg)
     while (1) {
         ret = recv(fd, &ch, 1, 0);
         if (ret <= 0) {
+            printf("%s: failed to read socket\r\n", __func__);
             break;
         }
 
@@ -304,8 +305,8 @@ void telnetd(void *arg)
 
     fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (fd < 0) {
-        printf("%s: failed to create socket\n", __func__);
-        exit(-1);
+        printf("%s: failed to create socket\r\n", __func__);
+        _exit(-1);
     }
 
     local_addr.sin_family       = AF_INET;
@@ -314,9 +315,9 @@ void telnetd(void *arg)
     local_addr.sin_port         = htons(23);
 
     if (bind(fd, (struct sockaddr *)&local_addr, sizeof(local_addr)) < 0) {
-        printf("%s: failed to bind port %d\n", __func__, ntohs(local_addr.sin_port));
+        printf("%s: failed to bind port %d\r\n", __func__, ntohs(local_addr.sin_port));
         closesocket(fd);
-        exit(-1);
+        _exit(-1);
     }
 
     listen(fd, 2);
@@ -330,7 +331,7 @@ void telnetd(void *arg)
 
             kthread_create(name, telnetd_thread, (void *)client_fd, 4 * KB, 10);
         } else {
-            printf("%s: failed to accept connect\n", __func__);
+            printf("%s: failed to accept connect\r\n", __func__);
         }
     }
 }

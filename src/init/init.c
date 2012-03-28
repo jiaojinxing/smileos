@@ -51,6 +51,7 @@
 #include "lwip/sys.h"
 #include "lwip/sockets.h"
 
+#include <unistd.h>
 #include <fcntl.h>
 
 /*
@@ -65,7 +66,7 @@ static void tcpip_init_done(void *arg)
      * 如果使用 qemu, 请把 #if 1 改为 #if 0
      * 另外 kern/trap.c 文件也有一处要修改
      */
-#if 1
+#if 0
     IP4_ADDR(&ip,       192, 168,   2,  30);
     IP4_ADDR(&submask,  255, 255, 255,   0);
     IP4_ADDR(&gateway,  192, 168,   2,   1);
@@ -99,8 +100,8 @@ static void init(void *arg)
     extern int tty_init(void);
     tty_init();
 
-    extern int socket_driver_install(void);
-    socket_driver_install();
+    extern int socket_init(void);
+    socket_init();
 
     open("/dev/tty0", O_RDONLY, 0666);
 
@@ -108,15 +109,15 @@ static void init(void *arg)
 
     open("/dev/tty2", O_WRONLY, 0666);
 
-    extern int drivers_install(void);
-    drivers_install();
+    extern int bsp_drivers_install(void);
+    bsp_drivers_install();
 
-    extern int devices_create(void);
-    devices_create();
+    extern int bsp_devices_create(void);
+    bsp_devices_create();
 
     tcpip_init(tcpip_init_done, NULL);
 
-    kern_heap_show();
+    kern_heap_show(STDOUT_FILENO);
 }
 
 /*

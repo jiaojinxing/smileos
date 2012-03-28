@@ -117,7 +117,7 @@ void dabt_c_handler(uint32_t lr, uint32_t spsr)
         /*
          * qemu-system-arm.exe 的 bug..., 真实硬件使用 #if 1, qemu 使用 #if 0
          */
-#if 1
+#if 0
         mva = mmu_get_fault_address();
 #warning "you can't use qemu-system-arm.exe"
 #else
@@ -128,7 +128,7 @@ void dabt_c_handler(uint32_t lr, uint32_t spsr)
         if (    mva >= PROCESS_SPACE_SIZE *  current->pid               /*  判断出错地址是否在当前进程  */
              && mva <  PROCESS_SPACE_SIZE * (current->pid + 1)) {       /*  的虚拟地址空间范围内        */
             if (vmm_map_process_page(current, mva) == 0) {              /*  页面映射                    */
-                current->dabt_cnt++;                                    /*  数据终止次数加一            */
+                current->dabt_cnt++;                                    /*  数据访问中止次数加一        */
                 interrupt_exit_no_schedule();                           /*  退出中断, 但不要调度        */
                 return;
             }

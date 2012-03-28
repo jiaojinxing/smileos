@@ -40,7 +40,7 @@
 #ifndef SBIN_H_
 #define SBIN_H_
 
-#include "types.h"
+#include "kern/types.h"
 
 /*
  * Вщев sbin

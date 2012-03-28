@@ -39,7 +39,6 @@
 *********************************************************************************************************/
 #include "kern/kern.h"
 #include "kern/ipc.h"
-#include "kern/sys_call.h"
 #include "vfs/config.h"
 #include "vfs/types.h"
 #include "vfs/device.h"
@@ -51,6 +50,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <fcntl.h>
+#include <unistd.h>
 
 /*
  * 进程文件信息
@@ -65,31 +65,6 @@ typedef struct {
 } process_file_info_t;
 
 static process_file_info_t process_file_info[PROCESS_NR];
-
-/*
- * newlib 需要如下的桩函数支持:
- *
-    extern int _close_r _PARAMS ((struct _reent *, int));
-    extern int _execve_r _PARAMS ((struct _reent *, const char *, char *const *, char *const *));
-    extern int _fcntl_r _PARAMS ((struct _reent *, int, int, int));
-    extern int _fork_r _PARAMS ((struct _reent *));
-    extern int _fstat_r _PARAMS ((struct _reent *, int, struct stat *));
-    extern int _getpid_r _PARAMS ((struct _reent *));
-    extern int _isatty_r _PARAMS ((struct _reent *, int));
-    extern int _kill_r _PARAMS ((struct _reent *, int, int));
-    extern int _link_r _PARAMS ((struct _reent *, const char *, const char *));
-    extern _off_t _lseek_r _PARAMS ((struct _reent *, int, _off_t, int));
-    extern int _mkdir_r _PARAMS ((struct _reent *, const char *, int));
-    extern int _open_r _PARAMS ((struct _reent *, const char *, int, int));
-    extern _ssize_t _read_r _PARAMS ((struct _reent *, int, void *, size_t));
-    extern int _rename_r _PARAMS ((struct _reent *, const char *, const char *));
-    extern void *_sbrk_r _PARAMS ((struct _reent *, ptrdiff_t));
-    extern int _stat_r _PARAMS ((struct _reent *, const char *, struct stat *));
-    extern _CLOCK_T_ _times_r _PARAMS ((struct _reent *, struct tms *));
-    extern int _unlink_r _PARAMS ((struct _reent *, const char *));
-    extern int _wait_r _PARAMS ((struct _reent *, int *));
-    extern _ssize_t _write_r _PARAMS ((struct _reent *, int, const void *, size_t));
- */
 
 /*
  * 在 PATH 前加入挂载点名
@@ -396,6 +371,7 @@ int vfs_open(const char *path, int oflag, mode_t mode)
         return -1;
     }
 
+    file->ctx   = NULL;
     file->point = point;                                                /*  记录挂载点                  */
 
     if (point->fs->open == NULL) {

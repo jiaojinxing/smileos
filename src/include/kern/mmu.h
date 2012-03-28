@@ -40,7 +40,7 @@
 #ifndef MMU_H_
 #define MMU_H_
 
-#include "types.h"
+#include "kern/types.h"
 
 /*
  * Domain

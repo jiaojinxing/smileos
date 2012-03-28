@@ -41,7 +41,6 @@
 #include "kern/config.h"
 #include "kern/types.h"
 #include "kern/kern.h"
-#include "kern/sys_call.h"
 #include "kern/ipc.h"
 /*********************************************************************************************************
   ²Ù×÷ºê

@@ -77,38 +77,17 @@ static void kern_vars_init(void)
     int     i;
 
     running        = FALSE;                                             /*  内核还没启动                */
+    kernel_mode    = FALSE;                                             /*  当前不在内核模式            */
     interrupt_nest = 0;                                                 /*  中断嵌套层次为 0            */
     tick           = 0;                                                 /*  TICK 为 0                   */
     current        = &tasks[0];                                         /*  当前任务为进程 0            */
-    kernel_mode    = FALSE;
 
     /*
      * 初始化所有的任务控制块
      */
     for (i = 0, task = tasks; i < TASK_NR; i++, task++) {
-        task->pid          = -1;
-        task->tid          = -1;
-        task->state        = TASK_UNALLOCATE;
-        task->counter      = 0;
-        task->timer        = 0;
-        task->priority     = 0;
-        task->type         = TASK_TYPE_PROCESS;
-        task->errno        = 0;
-        task->resume_type  = TASK_RESUME_UNKNOW;
-        task->next         = NULL;
-        task->wait_list    = NULL;
-        task->frame_list   = NULL;
-        task->tick         = 0;
-        task->cpu_rate     = 0;
-        task->frame_nr     = 0;
-        task->stack_base   = 0;
-        task->stack_size   = 0;
-        task->stack_rate   = 0;
-        task->thread       = NULL;
-        task->arg          = NULL;
-        task->dabt_cnt     = 0;
-        memset(task->mmu_backup, 0, sizeof(task->mmu_backup));
-        memset(task->name, 0, sizeof(task->name));
+        memset(task, 0, sizeof(task_t));
+        task->state = TASK_UNALLOCATE;
     }
 }
 
@@ -190,7 +169,7 @@ void schedule(void)
         if (max > 0) {                                                  /*  找到了一个有剩余时间片的进程*/
             break;
         } else if (flag) {                                              /*  如果没有一个任务就绪        */
-            next = 0;                                                   /*  运行空闲进程                */
+            next = 0;                                                   /*  则运行空闲进程              */
             break;
         }
 
@@ -233,9 +212,9 @@ void schedule(void)
 void do_timer(void)
 {
     int      i;
+    int      flag;
     task_t  *task;
     uint32_t reg;
-    int      flag = FALSE;
 
     reg = interrupt_disable();
 
@@ -244,6 +223,8 @@ void do_timer(void)
     tick++;                                                             /*  内核 TICK 加一              */
     if (tick % TICK_PER_SECOND == 0) {                                  /*  如果已经过去了一秒          */
         flag = TRUE;
+    } else {
+        flag = FALSE;
     }
 
     for (i = 0, task = tasks; i < TASK_NR; i++, task++) {               /*  遍历所有任务                */
@@ -252,8 +233,8 @@ void do_timer(void)
              * TODO: 这样统计任务的 CPU 占用率不是很准确
              */
             if (flag) {
-                task->cpu_rate    = task->tick;                         /*  任务的 CPU 占用率           */
-                task->tick        = 0;                                  /*  重置该任务被定时器中断的次数*/
+                task->cpu_rate = task->tick;                            /*  任务的 CPU 占用率           */
+                task->tick     = 0;                                     /*  重置该任务被定时器中断的次数*/
 
                 if (task->type == TASK_TYPE_THREAD) {                   /*  如果任务是线程              */
                     /*
@@ -273,7 +254,6 @@ void do_timer(void)
                     if (p < end) {
                         task->stack_rate = 100 * ((uint32_t)(end - p)) / task->stack_size;
                     } else {
-                        task->stack_rate = 100;
                         printk("kthread %s tid=%d stack overflow!\n", task->name, task->tid);
                         task_kill(task->tid);
                         continue;
@@ -364,7 +344,7 @@ static int virtual_space_usable(uint32_t base, uint32_t size)
 {
     uint32_t end = base + size;
     uint32_t high, low;
-    int i;
+    int      i;
 
     extern virtual_space_t sys_resv_space[];
     extern virtual_space_t bsp_resv_space[];
@@ -588,8 +568,8 @@ static void kthread_shell(task_t *task)
 {
     task->thread(task->arg);
 
-    extern void exit(int error);
-    exit(0);
+    extern void _exit(int status);
+    _exit(0);
 }
 
 /*
@@ -636,7 +616,7 @@ int32_t kthread_create(const char *name, void (*func)(void *), void *arg, uint32
     memset((char *)task->stack_base, THREAD_STACK_MAGIC0, stack_size);  /*  初始化栈空间                */
 
     task->pid          = current->pid;                                  /*  进程 ID 为当前任务的进程 ID */
-    task->tid          = tid;
+    task->tid          = tid;                                           /*  线程 ID                     */
     task->state        = TASK_RUNNING;
     task->counter      = priority;
     task->timer        = 0;
@@ -690,6 +670,7 @@ int32_t kthread_create(const char *name, void (*func)(void *), void *arg, uint32
 
 /*
  * 杀死任务
+ * 只能在任务出错进入异常处理程序或任务主动退出通过软件中断进入内核时调用
  */
 void task_kill(int32_t tid)
 {
@@ -700,12 +681,12 @@ void task_kill(int32_t tid)
         task = &tasks[tid];                                             /*  获得任务控制块              */
 
         if (task->type == TASK_TYPE_PROCESS) {                          /*  如果任务是进程              */
-            printk("kill process %s pid=%d!\n", task->name, task->pid);
+            printk("kill process %s pid=%d!\r\n", task->name, task->pid);
             vmm_free_process_space(task);                               /*  释放进程的虚拟地址空间      */
 
         } else {                                                        /*  如果任务是线程              */
-            printk("kill kthread %s tid=%d!\n", task->name, task->tid);
-            kfree((void *)task->stack_base);                            /*  释放线程的堆栈空间          */
+            printk("kill kthread %s tid=%d!\r\n", task->name, task->tid);
+            kfree((void *)task->stack_base);                            /*  释放线程的栈空间            */
         }
 
         task->state = TASK_UNALLOCATE;                                  /*  释放任务的任务控制块        */
@@ -734,7 +715,7 @@ uint64_t get_tick(void)
 }
 
 /*
- * 判断是否在中断处理中
+ * 判断是否在中断处理程序中
  */
 int in_interrupt(void)
 {

@@ -39,14 +39,15 @@
 *********************************************************************************************************/
 #include "kern/config.h"
 #include "kern/types.h"
+#include <unistd.h>
 
 #include "lwip/opt.h"
 #include "lwip/def.h"
 #include "lwip/mem.h"
 #include "lwip/pbuf.h"
 #include "lwip/sys.h"
-#include <lwip/stats.h>
-#include <lwip/snmp.h>
+#include "lwip/stats.h"
+#include "lwip/snmp.h"
 #include "netif/etharp.h"
 #include "netif/ppp_oe.h"
 
@@ -83,7 +84,6 @@ struct ethernetif {
 /*
  * ÏµÍ³¼¶
  */
-extern void usleep(useconds_t us);
 #define udelay                  usleep
 
 /*
