@@ -41,6 +41,8 @@
 #include "kern/types.h"
 #include "kern/heap.h"
 #include <string.h>
+#include <stdio.h>
+#include <unistd.h>
 
 /*
  * 进程代码项目应享有一份该文件, 用于实现用户态的 malloc 等
@@ -109,15 +111,9 @@ void *kcalloc(uint32_t nelem, uint32_t elsize)
 /*
  * 打印内核内存堆信息
  */
-void kern_heap_show(void)
+void kern_heap_show(int fd)
 {
-    uint32_t reg;
-
-    reg = interrupt_disable();
-
-    heap_show(&kern_heap);
-
-    interrupt_resume(reg);
+    heap_show(&kern_heap, fd);
 }
 
 /*
@@ -138,7 +134,7 @@ void kern_heap_create(void)
 static heap_t process_heap;
 
 /*
- * malloc
+ * _malloc_r
  */
 void *_malloc_r(struct _reent *reent, size_t size)
 {
@@ -152,7 +148,7 @@ void *_malloc_r(struct _reent *reent, size_t size)
 }
 
 /*
- * free
+ * _free_r
  */
 void _free_r(struct _reent *reent, void *ptr)
 {
@@ -160,7 +156,7 @@ void _free_r(struct _reent *reent, void *ptr)
 }
 
 /*
- * realloc
+ * _realloc_r
  */
 void *_realloc_r(struct _reent *reent, void *ptr, size_t newsize)
 {
@@ -177,7 +173,7 @@ void *_realloc_r(struct _reent *reent, void *ptr, size_t newsize)
 }
 
 /*
- * calloc
+ * _calloc_r
  */
 void *_calloc_r(struct _reent *reent, size_t nelem, size_t elsize)
 {
@@ -479,11 +475,18 @@ void *heap_free(heap_t *heap, void *ptr)
 }
 
 /*
- * 打印内存堆信息
+ * 打印内存堆信息到文件
  */
-int heap_show(heap_t *heap)
+int heap_show(heap_t *heap, int fd)
 {
     heap_t tmp;
+    char   buf[LINE_MAX];
+    int    len;
+
+    if (fd < 0) {
+        debug_output("%s: process %d fd=%d invalid!\n", __func__, getpid(), fd);
+        return -1;
+    }
 
     if (heap == NULL) {
         debug_output("%s: process %d heap=NULL!\n", __func__, getpid());
@@ -500,20 +503,35 @@ int heap_show(heap_t *heap)
      */
     memcpy(&tmp, heap, sizeof(heap_t));
 
-    debug_output("\n********** heap info **********\n");
-    debug_output("heap block count = %d\n", tmp.block_cnt);
-    debug_output("heap alloc count = %d\n", tmp.alloc_cnt);
-    debug_output("heap free  count = %d\n", tmp.free_cnt);
-    debug_output("heap leak  count = %d\n", tmp.alloc_cnt - tmp.free_cnt);
-    debug_output("heap used  size  = %dMB.%dKB.%dB\n",
+    len = sprintf(buf, "********** heap info **********\r\n");
+    write(fd, buf, len);
+
+    len = sprintf(buf, "heap block count = %d\r\n", tmp.block_cnt);
+    write(fd, buf, len);
+
+    len = sprintf(buf, "heap alloc count = %d\r\n", tmp.alloc_cnt);
+    write(fd, buf, len);
+
+    len = sprintf(buf, "heap free  count = %d\r\n", tmp.free_cnt);
+    write(fd, buf, len);
+
+    len = sprintf(buf, "heap leak  count = %d\r\n", tmp.alloc_cnt - tmp.free_cnt);
+    write(fd, buf, len);
+
+    len = sprintf(buf, "heap used  size  = %dMB.%dKB.%dB\r\n",
             tmp.used_size / MB,
             tmp.used_size % MB / KB,
             tmp.used_size % KB);
-    debug_output("heap free  size  = %dMB.%dKB.%dB\n",
-            (tmp.size-tmp.used_size) / MB,
-            (tmp.size-tmp.used_size) % MB / KB,
-            (tmp.size-tmp.used_size) % KB);
-    debug_output("************* end *************\n\n");
+    write(fd, buf, len);
+
+    len = sprintf(buf, "heap free  size  = %dMB.%dKB.%dB\r\n",
+            (tmp.size - tmp.used_size) / MB,
+            (tmp.size - tmp.used_size) % MB / KB,
+            (tmp.size - tmp.used_size) % KB);
+    write(fd, buf, len);
+
+    len = sprintf(buf, "************* end *************\r\n");
+    write(fd, buf, len);
 
     return 0;
 }

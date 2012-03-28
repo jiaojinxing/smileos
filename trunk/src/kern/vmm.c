@@ -135,7 +135,7 @@ static void vmm_page_table_free(uint32_t page_tbl_base)
 
     page_table_tree_RB_REMOVE(&used_page_table_tree, tbl);              /*  从已用页表红黑树中移除      */
 
-    tbl->node.rbe_right = free_page_table_list;                         /*  加入到空闲页表链表中        */
+    tbl->node.rbe_right  = free_page_table_list;                        /*  加入到空闲页表链表中        */
     free_page_table_list = tbl;
 }
 

@@ -45,13 +45,12 @@
 *********************************************************************************************************/
 #include "kern/config.h"
 #include "kern/types.h"
-#include "kern/sys_call.h"
-#include <stdarg.h>
-#include <stdio.h>
-#include <string.h>
 #include <sys/types.h>
 #include <sys/time.h>
+#include <stdlib.h>
+#include <string.h>
 #include <reent.h>
+
 #ifdef SMILEOS_KERNEL
 #include "kern/kern.h"
 extern sys_do_t sys_do_table[];
@@ -62,6 +61,55 @@ static sys_do_t sys_do_table[1];
 #define in_kernel()     0
 #define debug_output(...)
 #endif
+
+/*
+ * newlib 需要如下的桩函数支持:
+ *
+    extern int _close_r _PARAMS ((struct _reent *, int));
+    extern int _execve_r _PARAMS ((struct _reent *, const char *, char *const *, char *const *));
+    extern int _fcntl_r _PARAMS ((struct _reent *, int, int, int));
+    extern int _fork_r _PARAMS ((struct _reent *));
+    extern int _fstat_r _PARAMS ((struct _reent *, int, struct stat *));
+    extern int _getpid_r _PARAMS ((struct _reent *));
+    extern int _isatty_r _PARAMS ((struct _reent *, int));
+    extern int _kill_r _PARAMS ((struct _reent *, int, int));
+    extern int _link_r _PARAMS ((struct _reent *, const char *, const char *));
+    extern _off_t _lseek_r _PARAMS ((struct _reent *, int, _off_t, int));
+    extern int _mkdir_r _PARAMS ((struct _reent *, const char *, int));
+    extern int _open_r _PARAMS ((struct _reent *, const char *, int, int));
+    extern _ssize_t _read_r _PARAMS ((struct _reent *, int, void *, size_t));
+    extern int _rename_r _PARAMS ((struct _reent *, const char *, const char *));
+    extern void *_sbrk_r _PARAMS ((struct _reent *, ptrdiff_t));
+    extern int _stat_r _PARAMS ((struct _reent *, const char *, struct stat *));
+    extern _CLOCK_T_ _times_r _PARAMS ((struct _reent *, struct tms *));
+    extern int _unlink_r _PARAMS ((struct _reent *, const char *));
+    extern int _wait_r _PARAMS ((struct _reent *, int *));
+    extern _ssize_t _write_r _PARAMS ((struct _reent *, int, const void *, size_t));
+ */
+
+/*
+ * 系统调用号
+ */
+#define SYS_CALL_EXIT       0
+#define SYS_CALL_SLEEP      1
+#define SYS_CALL_YIELD      2
+#define SYS_CALL_GETTIME    3
+#define SYS_CALL_GETPID     4
+#define SYS_CALL_ERRNO      5
+#define SYS_CALL_WRITE      6
+#define SYS_CALL_MKDIR      7
+#define SYS_CALL_OPEN       8
+#define SYS_CALL_READ       9
+#define SYS_CALL_RENAME     10
+#define SYS_CALL_FSTAT      11
+#define SYS_CALL_UNLINK     12
+#define SYS_CALL_CLOSE      13
+#define SYS_CALL_FCNTL      14
+#define SYS_CALL_ISATTY     15
+#define SYS_CALL_LINK       16
+#define SYS_CALL_LSEEK      17
+#define SYS_CALL_STAT       18
+#define SYS_CALL_NR         19                                          /*  系统调用数                  */
 
 /*
  * 系统调用模板
@@ -89,6 +137,14 @@ int syscall_template(void)
     __asm__ __volatile__("mov    %0,  r0": "=r"(ret));                  /*  R0 传递返回值               */
 
     return ret;
+}
+
+/*
+ * C 库初始化完成时调用
+ */
+void _fini(void)
+{
+
 }
 
 /*
@@ -143,19 +199,21 @@ static void sleep_tick(unsigned int ticks)
 /*
  * sleep
  */
-void sleep(unsigned int seconds)
+unsigned sleep(unsigned int seconds)
 {
     debug_output("%s\n", __func__);
     sleep_tick(TICK_PER_SECOND * seconds);
+    return 0;
 }
 
 /*
  * usleep
  */
-void usleep(useconds_t useconds)
+int usleep(useconds_t useconds)
 {
     debug_output("%s\n", __func__);
     sleep_tick(TICK_PER_SECOND * useconds / 1000000);
+    return 0;
 }
 
 /*
@@ -555,114 +613,115 @@ int _kill_r(struct _reent *ptr, int pid, int sig)
     abort();
 #endif
 }
-//
-//#include <sockets.h>
-//
-//int
-//socket(int domain, int type, int protocol)
-//{
-//
-//}
-//
-//int
-//bind(int s, const struct sockaddr *name, socklen_t namelen)
-//{
-//
-//}
-//
-//int
-//ioctlsocket(int s, long cmd, void *argp)
-//{
-//
-//}
-//
-//int
-//accept(int s, struct sockaddr *addr, socklen_t *addrlen)
-//{
-//
-//}
-//
-//
-//int
-//shutdown(int s, int how)
-//{
-//
-//}
-//
-//int
-//closesocket(int s)
-//{
-//
-//}
-//
-//int
-//connect(int s, const struct sockaddr *name, socklen_t namelen)
-//{
-//
-//}
-//
-//int
-//listen(int s, int backlog)
-//{
-//
-//}
-//
-//int
-//recv(int s, void *mem, size_t len, int flags)
-//{
-//
-//}
-//
-//int
-//send(int s, const void *data, size_t size, int flags)
-//{
-//
-//}
 
-//int
-//recvfrom(int s, void *mem, size_t len, int flags,
-//        struct sockaddr *from, socklen_t *fromlen)
-//{
-//
-//}
-//
-//
-//int
-//sendto(int s, const void *data, size_t size, int flags,
-//       const struct sockaddr *to, socklen_t tolen)
-//{
-//
-//}
-//
-//int
-//select(int maxfdp1, fd_set *readset, fd_set *writeset, fd_set *exceptset, struct timeval *timeout)
-//{
-//
-//}
-//
-//int
-//getsockname(int s, struct sockaddr *name, socklen_t *namelen)
-//{
-//
-//}
-//
-//int
-//getpeername(int s, struct sockaddr *name, socklen_t *namelen)
-//{
-//
-//}
-//
-//int
-//setsockopt(int s, int level, int optname, const void *optval, socklen_t optlen)
-//{
-//
-//}
-//
-//int
-//getsockopt(int s, int level, int optname, void *optval, socklen_t *optlen)
-//{
-//
-//}
+#if 0
+
+#include <sys/socket.h>
+
+int
+socket(int domain, int type, int protocol)
+{
+
+}
+
+int
+bind(int s, const struct sockaddr *name, socklen_t namelen)
+{
+
+}
+
+int
+ioctlsocket(int s, long cmd, void *argp)
+{
+
+}
+
+int
+accept(int s, struct sockaddr *addr, socklen_t *addrlen)
+{
+
+}
+
+int
+shutdown(int s, int how)
+{
+
+}
+
+int
+closesocket(int s)
+{
+
+}
+
+int
+connect(int s, const struct sockaddr *name, socklen_t namelen)
+{
+
+}
+
+int
+listen(int s, int backlog)
+{
+
+}
+
+int
+recv(int s, void *mem, size_t len, int flags)
+{
+
+}
+
+int
+send(int s, const void *data, size_t size, int flags)
+{
+
+}
+
+int
+recvfrom(int s, void *mem, size_t len, int flags,
+        struct sockaddr *from, socklen_t *fromlen)
+{
+
+}
+
+int
+sendto(int s, const void *data, size_t size, int flags,
+       const struct sockaddr *to, socklen_t tolen)
+{
+
+}
+
+int
+select(int maxfdp1, fd_set *readset, fd_set *writeset, fd_set *exceptset, struct timeval *timeout)
+{
+
+}
+
+int
+getsockname(int s, struct sockaddr *name, socklen_t *namelen)
+{
+
+}
+
+int
+getpeername(int s, struct sockaddr *name, socklen_t *namelen)
+{
+
+}
+
+int
+setsockopt(int s, int level, int optname, const void *optval, socklen_t optlen)
+{
+
+}
+
+int
+getsockopt(int s, int level, int optname, void *optval, socklen_t *optlen)
+{
+
+}
+#endif
 /*********************************************************************************************************
   END FILE
 *********************************************************************************************************/

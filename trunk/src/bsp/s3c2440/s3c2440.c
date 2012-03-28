@@ -116,9 +116,9 @@ void bsp_init(void)
 #include "vfs/driver.h"
 
 /*
- * 安装驱动
+ * BSP 安装驱动
  */
-int drivers_install(void)
+int bsp_drivers_install(void)
 {
     extern driver_t fb_drv;
     driver_install(&fb_drv);
@@ -127,9 +127,9 @@ int drivers_install(void)
 }
 
 /*
- * 创建设备
+ * BSP 创建设备
  */
-int devices_create(void)
+int bsp_devices_create(void)
 {
     extern int fb_create(void);
     fb_create();

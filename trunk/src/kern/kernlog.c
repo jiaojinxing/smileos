@@ -41,7 +41,6 @@
 #include "kern/types.h"
 #include "kern/kern.h"
 #include "kern/ipc.h"
-
 #include <stdio.h>
 #include <stdarg.h>
 

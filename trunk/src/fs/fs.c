@@ -41,7 +41,6 @@
 #include "vfs/config.h"
 #include "vfs/types.h"
 #include <string.h>
-#include <stdio.h>
 
 /*
  * 文件系统链表

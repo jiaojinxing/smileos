@@ -40,8 +40,8 @@
 #include "kern/config.h"
 #include "kern/types.h"
 #include "kern/kern.h"
-#include "kern/sys_call.h"
 #include <string.h>
+#include <unistd.h>
 #include <sys/socket.h>
 #include <stdio.h>
 #include <ctype.h>
@@ -68,7 +68,7 @@ static void ftpd_list_thread(void *arg)
     fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (fd < 0) {
         printf("%s: failed to create socket\n", __func__);
-        exit(-1);
+        _exit(-1);
     }
 
     local_addr.sin_family       = AF_INET;
@@ -81,7 +81,7 @@ static void ftpd_list_thread(void *arg)
 
     if (bind(fd, (struct sockaddr *)&local_addr, sizeof(local_addr)) < 0) {
         closesocket(fd);
-        exit(-1);
+        _exit(-1);
     }
 
     listen(fd, 2);
@@ -190,7 +190,7 @@ void ftpd(void *arg)
     fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (fd < 0) {
         printf("%s: failed to create socket\n", __func__);
-        exit(-1);
+        _exit(-1);
     }
 
     local_addr.sin_family       = AF_INET;
@@ -201,7 +201,7 @@ void ftpd(void *arg)
     if (bind(fd, (struct sockaddr *)&local_addr, sizeof(local_addr)) < 0) {
         printf("%s: failed to bind port %d\n", __func__, ntohs(local_addr.sin_port));
         closesocket(fd);
-        exit(-1);
+        _exit(-1);
     }
 
     listen(fd, 2);

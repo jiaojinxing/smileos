@@ -40,7 +40,7 @@
 #ifndef HEAP_H_
 #define HEAP_H_
 
-#include "types.h"
+#include "kern/types.h"
 
 /*
  * 内存块
@@ -79,9 +79,9 @@ void *heap_alloc(heap_t *heap, uint32_t size);
 void *heap_free(heap_t *heap, void *ptr);
 
 /*
- * 打印内存堆信息
+ * 打印内存堆信息到文件
  */
-int heap_show(heap_t *heap);
+int heap_show(heap_t *heap, int fd);
 
 #endif                                                                  /*  HEAP_H_                     */
 /*********************************************************************************************************

@@ -41,8 +41,8 @@
 #include "kern/types.h"
 #include "kern/ipc.h"
 #include "kern/kern.h"
-#include "kern/sys_call.h"
 #include "lwip/sys.h"
+#include <unistd.h>
 
 /** Create a new mutex
  * @param mutex pointer to the mutex to create
