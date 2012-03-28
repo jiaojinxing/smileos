@@ -124,11 +124,11 @@ int tty_init(void)
 {
     driver_install(&tty_drv);
 
-    device_create("/dev/tty0", "tty", NULL);
+    device_create("/dev/stdin", "tty", NULL);
 
-    device_create("/dev/tty1", "tty", NULL);
+    device_create("/dev/stdout", "tty", NULL);
 
-    device_create("/dev/tty2", "tty", NULL);
+    device_create("/dev/stderr", "tty", NULL);
 
     return 0;
 }

@@ -66,7 +66,7 @@ static void tcpip_init_done(void *arg)
      * 如果使用 qemu, 请把 #if 1 改为 #if 0
      * 另外 kern/trap.c 文件也有一处要修改
      */
-#if 0
+#if 1
     IP4_ADDR(&ip,       192, 168,   2,  30);
     IP4_ADDR(&submask,  255, 255, 255,   0);
     IP4_ADDR(&gateway,  192, 168,   2,   1);
@@ -95,20 +95,6 @@ static void tcpip_init_done(void *arg)
  */
 static void init(void *arg)
 {
-    vfs_init();
-
-    extern int tty_init(void);
-    tty_init();
-
-    extern int socket_init(void);
-    socket_init();
-
-    open("/dev/tty0", O_RDONLY, 0666);
-
-    open("/dev/tty1", O_WRONLY, 0666);
-
-    open("/dev/tty2", O_WRONLY, 0666);
-
     extern int bsp_drivers_install(void);
     bsp_drivers_install();
 
@@ -127,9 +113,17 @@ int main(void)
 {
     kernel_init();
 
-    kthread_create("init", init, NULL, 4 * KB, 10);
-
     kernel_start();
+
+    vfs_init();
+
+    extern int tty_init(void);
+    tty_init();
+
+    extern int socket_init(void);
+    socket_init();
+
+    kthread_create("init", init, NULL, 4 * KB, 10);
 
     while (1) {
     }

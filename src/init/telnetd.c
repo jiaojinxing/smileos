@@ -42,6 +42,7 @@
 #include "kern/kern.h"
 #include "kern/sbin.h"
 #include "vfs/vfs.h"
+#include <fcntl.h>
 #include <dirent.h>
 #include <unistd.h>
 #include <string.h>
@@ -112,14 +113,14 @@ static int do_ts(int argc, char **argv, int fd, char buf[LINE_MAX])
     task_t *task;
 
     len = sprintf(buf, "type\t name\t\t pid\t state\t count\t timer\t\t prio\t cpu\t stack\t page\t dabt\r\n");
-    send(fd, buf, len, 0);
+    write(fd, buf, len);
 
     for (i = 0, task = tasks; i < TASK_NR; i++, task++) {
         reg = interrupt_disable();
         if (task->state != TASK_UNALLOCATE) {
             len = get_task_info(task, buf);
             interrupt_resume(reg);
-            send(fd, buf, len, 0);
+            write(fd, buf, len);
         } else {
             interrupt_resume(reg);
         }
@@ -144,11 +145,11 @@ static int do_ls(int argc, char **argv, int fd, char buf[LINE_MAX])
 
     while ((entry = vfs_readdir(dir)) != NULL) {
         len = sprintf(buf, "%s ", entry->d_name);
-        send(fd, buf, len, 0);
+        write(fd, buf, len);
     }
     vfs_closedir(dir);
     len = sprintf(buf, "\r\n");
-    send(fd, buf, len, 0);
+    write(fd, buf, len);
     return 0;
 }
 
@@ -175,7 +176,7 @@ static int do_exec_buildin(int argc, char **argv, int fd, char buf[LINE_MAX])
         return process_create(argv[0], code, size, 10);
     } else {
         len = sprintf(buf, "unknown cmd\r\n");
-        send(fd, buf, len, 0);
+        write(fd, buf, len);
         return -1;
     }
 }
@@ -227,12 +228,25 @@ static int exec_cmd(char *cmd, int fd, char buf[LINE_MAX])
         do_ls(argc, argv, fd, buf);
     } else if (strcmp(argv[0], "cd") == 0) {
         do_cd(argc, argv, fd, buf);
+    } else if (strcmp(argv[0], "mems") == 0) {
+        kern_heap_show(fd);
+    } else if (strcmp(argv[0], "exit") == 0) {
+        close(fd);
+        _exit(0);
     } else {
         do_exec_buildin(argc, argv, fd, buf);
     }
 
     return 0;
 }
+
+const char logo[] =
+        "_________________________________________________\r\n"
+        "      __                            __       __\r\n"
+        "    /    )          ,   /         /    )   /    )\r\n"
+        "----\\-------_--_-------/----__---/----/----\\-----\r\n"
+        "     \\     / /  ) /   /   /___) /    /      \\\r\n"
+        "_(____/___/_/__/_/___/___(___ _(____/___(____/___\r\n";
 
 /*
  * telnetd Ïß³Ì
@@ -247,16 +261,17 @@ static void telnetd_thread(void *arg)
     char cmd[LINE_MAX];
     char ch;
 
-    len = sprintf(buf, "******************* SmileOS Shell *******************\r\n");
-    send(fd, buf, len, 0);
+    fd = socket_attach(fd);
+
+    write(fd, logo, strlen(logo));
 
     len = sprintf(buf, "%s]#", vfs_getcwd(NULL, 0));
-    send(fd, buf, len, 0);
+    write(fd, buf, len);
 
     pos = 0;
 
     while (1) {
-        ret = recv(fd, &ch, 1, 0);
+        ret = vfs_read(fd, &ch, 1);
         if (ret <= 0) {
             printf("%s: failed to read socket\r\n", __func__);
             break;
@@ -268,10 +283,10 @@ static void telnetd_thread(void *arg)
                     if (pos > 0) {
                         pos--;
                         len = sprintf(buf, " \b \b");
-                        send(fd, buf, len, 0);
+                        write(fd, buf, len);
                     } else {
                         len = sprintf(buf, "#");
-                        send(fd, buf, len, 0);
+                        write(fd, buf, len);
                     }
                 } else if (ch == '\n') {
                     if (pos > 0) {
@@ -281,7 +296,7 @@ static void telnetd_thread(void *arg)
                     }
 
                     len = sprintf(buf, "%s]#", vfs_getcwd(NULL, 0));
-                    send(fd, buf, len, 0);
+                    write(fd, buf, len);
                 }
             } else if (isprint(ch)){
                 cmd[pos] = ch;
@@ -290,7 +305,7 @@ static void telnetd_thread(void *arg)
         }
     }
 
-    closesocket(fd);
+    close(fd);
 }
 
 /*

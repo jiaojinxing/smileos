@@ -54,12 +54,15 @@
 #ifdef SMILEOS_KERNEL
 #include "kern/kern.h"
 extern sys_do_t sys_do_table[];
-#define debug_output    kcomplain
+//#define debug_output        kcomplain
+#define debug_output(...)
 #else
 typedef int (*sys_do_t)();
 static sys_do_t sys_do_table[1];
 #define in_kernel()     0
 #define debug_output(...)
+#include <stdio.h>
+#include <unistd.h>
 #endif
 
 /*
@@ -95,21 +98,21 @@ static sys_do_t sys_do_table[1];
 #define SYS_CALL_YIELD      2
 #define SYS_CALL_GETTIME    3
 #define SYS_CALL_GETPID     4
-#define SYS_CALL_ERRNO      5
-#define SYS_CALL_WRITE      6
-#define SYS_CALL_MKDIR      7
-#define SYS_CALL_OPEN       8
-#define SYS_CALL_READ       9
-#define SYS_CALL_RENAME     10
-#define SYS_CALL_FSTAT      11
-#define SYS_CALL_UNLINK     12
-#define SYS_CALL_CLOSE      13
-#define SYS_CALL_FCNTL      14
-#define SYS_CALL_ISATTY     15
-#define SYS_CALL_LINK       16
-#define SYS_CALL_LSEEK      17
-#define SYS_CALL_STAT       18
-#define SYS_CALL_NR         19                                          /*  系统调用数                  */
+#define SYS_CALL_WRITE      5
+#define SYS_CALL_MKDIR      6
+#define SYS_CALL_OPEN       7
+#define SYS_CALL_READ       8
+#define SYS_CALL_RENAME     9
+#define SYS_CALL_FSTAT      10
+#define SYS_CALL_UNLINK     11
+#define SYS_CALL_CLOSE      12
+#define SYS_CALL_FCNTL      13
+#define SYS_CALL_ISATTY     14
+#define SYS_CALL_LINK       15
+#define SYS_CALL_LSEEK      16
+#define SYS_CALL_STAT       17
+#define SYS_CALL_GET_REENT  18
+#define SYS_CALL_NR         40                                          /*  系统调用数                  */
 
 /*
  * 系统调用模板
@@ -168,7 +171,7 @@ void _exit(int status)
  */
 void yield(void)
 {
-    debug_output("%s\r\n", __func__);
+    //debug_output("%s\r\n", __func__);
     if (in_kernel()) {
         (sys_do_table[SYS_CALL_YIELD])();
     } else {
@@ -184,7 +187,7 @@ void yield(void)
  */
 static void sleep_tick(unsigned int ticks)
 {
-    debug_output("%s\r\n", __func__);
+    //debug_output("%s\r\n", __func__);
     if (in_kernel()) {
         (sys_do_table[SYS_CALL_SLEEP])(ticks);
     } else {
@@ -201,7 +204,7 @@ static void sleep_tick(unsigned int ticks)
  */
 unsigned sleep(unsigned int seconds)
 {
-    debug_output("%s\r\n", __func__);
+    //debug_output("%s\r\n", __func__);
     sleep_tick(TICK_PER_SECOND * seconds);
     return 0;
 }
@@ -211,7 +214,7 @@ unsigned sleep(unsigned int seconds)
  */
 int usleep(useconds_t useconds)
 {
-    debug_output("%s\r\n", __func__);
+    //debug_output("%s\r\n", __func__);
     sleep_tick(TICK_PER_SECOND * useconds / 1000000);
     return 0;
 }
@@ -236,26 +239,7 @@ int _gettimeofday_r(struct _reent *ptr, struct timeval *tv, void *tzp)
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
 
-    return ret;
-}
-
-/*
- * 获得 errno 指针
- */
-int *__errno(void)
-{
-    int *ret;
-
-    debug_output("%s\r\n", __func__);
-    if (in_kernel()) {
-        ret = (int *)(sys_do_table[SYS_CALL_ERRNO])();
-    } else {
-        __asm__ __volatile__("stmdb  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    r7,  %0": :"M"(SYS_CALL_ERRNO));
-        __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmia  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
-    }
+    ptr->_errno = 0;
 
     return ret;
 }
@@ -275,6 +259,8 @@ int _close_r(struct _reent *ptr, int fd)
         __asm__ __volatile__("ldmia  sp!, {r7, lr}");
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
+
+    ptr->_errno = 0;
 
     return ret;
 }
@@ -298,6 +284,8 @@ int _fcntl_r(struct _reent *ptr, int fd, int cmd, int arg)
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
 
+    ptr->_errno = 0;
+
     return ret;
 }
 
@@ -318,6 +306,8 @@ int _fstat_r(struct _reent *ptr, int fd, struct stat *buf)
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
 
+    ptr->_errno = 0;
+
     return ret;
 }
 
@@ -335,6 +325,8 @@ int _getpid_r(struct _reent *ptr)
         __asm__ __volatile__("ldmia  sp!, {r7, lr}");
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
+
+    ptr->_errno = 0;
 
     return ret;
 }
@@ -354,6 +346,8 @@ int _isatty_r(struct _reent *ptr, int fd)
         __asm__ __volatile__("ldmia  sp!, {r7, lr}");
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
+
+    ptr->_errno = 0;
 
     return ret;
 }
@@ -375,6 +369,8 @@ int _link_r(struct _reent *ptr, const char *path1, const char *path2)
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
 
+    ptr->_errno = 0;
+
     return ret;
 }
 
@@ -382,6 +378,7 @@ _off_t _lseek_r(struct _reent *ptr, int fd, _off_t offset, int whence)
 {
     _off_t ret;
 
+    debug_output("%s\r\n", __func__);
     if (in_kernel()) {
         ret = (sys_do_table[SYS_CALL_LSEEK])(fd, offset, whence);
     } else {
@@ -395,6 +392,8 @@ _off_t _lseek_r(struct _reent *ptr, int fd, _off_t offset, int whence)
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
 
+    ptr->_errno = 0;
+
     return ret;
 }
 
@@ -402,6 +401,7 @@ int _mkdir_r(struct _reent *ptr, const char *path, int mode)
 {
     int ret;
 
+    debug_output("%s\r\n", __func__);
     if (in_kernel()) {
         ret = (sys_do_table[SYS_CALL_MKDIR])(path, mode);
     } else {
@@ -414,6 +414,8 @@ int _mkdir_r(struct _reent *ptr, const char *path, int mode)
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
 
+    ptr->_errno = 0;
+
     return ret;
 }
 
@@ -421,6 +423,7 @@ int _open_r(struct _reent *ptr, const char *path, int oflag, int mode)
 {
     int ret;
 
+    debug_output("%s\r\n", __func__);
     if (in_kernel()) {
         ret = (sys_do_table[SYS_CALL_OPEN])(path, oflag, mode);
     } else {
@@ -434,6 +437,8 @@ int _open_r(struct _reent *ptr, const char *path, int oflag, int mode)
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
 
+    ptr->_errno = 0;
+
     return ret;
 }
 
@@ -441,6 +446,7 @@ _ssize_t _read_r(struct _reent *ptr, int fd, void *buf, size_t nbytes)
 {
     _ssize_t ret;
 
+    debug_output("%s\r\n", __func__);
     if (in_kernel()) {
         ret = (sys_do_table[SYS_CALL_READ])(fd, buf, nbytes);
     } else {
@@ -454,6 +460,8 @@ _ssize_t _read_r(struct _reent *ptr, int fd, void *buf, size_t nbytes)
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
 
+    ptr->_errno = 0;
+
     return ret;
 }
 
@@ -461,6 +469,7 @@ _ssize_t _write_r(struct _reent *ptr, int fd, const void *buf, size_t nbytes)
 {
     _ssize_t ret;
 
+    debug_output("%s\r\n", __func__);
     if (in_kernel()) {
         ret = (sys_do_table[SYS_CALL_WRITE])(fd, buf, nbytes);
     } else {
@@ -474,6 +483,8 @@ _ssize_t _write_r(struct _reent *ptr, int fd, const void *buf, size_t nbytes)
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
 
+    ptr->_errno = 0;
+
     return ret;
 }
 
@@ -481,6 +492,7 @@ int _rename_r(struct _reent *ptr, const char *old, const char *new)
 {
     int ret;
 
+    debug_output("%s\r\n", __func__);
     if (in_kernel()) {
         ret = (sys_do_table[SYS_CALL_RENAME])(old, new);
     } else {
@@ -493,6 +505,8 @@ int _rename_r(struct _reent *ptr, const char *old, const char *new)
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
 
+    ptr->_errno = 0;
+
     return ret;
 }
 
@@ -500,6 +514,7 @@ int _stat_r(struct _reent *ptr, const char *path, struct stat *buf)
 {
     int ret;
 
+    debug_output("%s\r\n", __func__);
     if (in_kernel()) {
         ret = (sys_do_table[SYS_CALL_STAT])(path, buf);
     } else {
@@ -512,6 +527,8 @@ int _stat_r(struct _reent *ptr, const char *path, struct stat *buf)
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
 
+    ptr->_errno = 0;
+
     return ret;
 }
 
@@ -519,12 +536,36 @@ int _unlink_r(struct _reent *ptr, const char *path)
 {
     int ret;
 
+    debug_output("%s\r\n", __func__);
     if (in_kernel()) {
         ret = (sys_do_table[SYS_CALL_UNLINK])(path);
     } else {
         __asm__ __volatile__("mov    r0,  %0": :"r"(path));
         __asm__ __volatile__("stmdb  sp!, {r7, lr}");
         __asm__ __volatile__("mov    r7,  %0": :"M"(SYS_CALL_UNLINK));
+        __asm__ __volatile__("swi    0");
+        __asm__ __volatile__("ldmia  sp!, {r7, lr}");
+        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
+    }
+
+    ptr->_errno = 0;
+
+    return ret;
+}
+
+/*
+ * 获得 reent 结构指针
+ */
+struct _reent *get_reent(void)
+{
+    struct _reent *ret;
+
+    debug_output("%s\r\n", __func__);
+    if (in_kernel()) {
+        ret = (struct _reent *)(sys_do_table[SYS_CALL_GET_REENT])();
+    } else {
+        __asm__ __volatile__("stmdb  sp!, {r7, lr}");
+        __asm__ __volatile__("mov    r7,  %0": :"M"(SYS_CALL_GET_REENT));
         __asm__ __volatile__("swi    0");
         __asm__ __volatile__("ldmia  sp!, {r7, lr}");
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
@@ -602,6 +643,13 @@ int _execve_r(struct _reent *ptr, const char *path, char *const *argv, char *con
 }
 
 int _kill_r(struct _reent *ptr, int pid, int sig)
+{
+    debug_output("%s\r\n", __func__);
+    _exit(0);
+}
+
+int
+select(int maxfdp1, fd_set *readset, fd_set *writeset, fd_set *exceptset, struct timeval *timeout)
 {
 #ifdef SMILEOS_KERNEL
     printk("can't call %s()!, kill kthread %s tid=%d abort\n", __func__, current->name, current->tid);
@@ -688,12 +736,6 @@ recvfrom(int s, void *mem, size_t len, int flags,
 int
 sendto(int s, const void *data, size_t size, int flags,
        const struct sockaddr *to, socklen_t tolen)
-{
-
-}
-
-int
-select(int maxfdp1, fd_set *readset, fd_set *writeset, fd_set *exceptset, struct timeval *timeout)
 {
 
 }
