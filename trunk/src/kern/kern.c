@@ -405,6 +405,7 @@ static void idle_process_create(void)
     task->thread       = NULL;
     task->arg          = NULL;
     task->dabt_cnt     = 0;
+    _REENT_INIT_PTR(&task->reent);
     memset(task->mmu_backup, 0, sizeof(task->mmu_backup));
 
     /*
@@ -493,6 +494,7 @@ int32_t process_create(const char *name, uint8_t *code, uint32_t size, uint32_t 
     task->thread       = NULL;
     task->arg          = NULL;
     task->dabt_cnt     = 0;
+    _REENT_INIT_PTR(&task->reent);
     memset(task->mmu_backup, 0, sizeof(task->mmu_backup));
 
     /*
@@ -648,6 +650,7 @@ int32_t kthread_create(const char *name, void (*func)(void *), void *arg, uint32
     task->thread       = func;
     task->arg          = arg;
     task->dabt_cnt     = 0;
+    _REENT_INIT_PTR(&task->reent);
     memset(task->mmu_backup, 0, sizeof(task->mmu_backup));
 
     task->content[0]   = (uint32_t)&task->kstack[KERN_STACK_SIZE];      /*  svc Ä£Ê½¶ÑÕ»Ö¸Õë(Âú¶ÑÕ»µÝ¼õ)*/
