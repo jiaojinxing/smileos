@@ -686,7 +686,7 @@ int32_t kthread_create(const char *name, void (*func)(void *), void *arg, uint32
 
 /*
  * 杀死任务
- * 只能在任务出错进入异常处理程序或任务主动退出通过软件中断进入内核时调用
+ * 只能在任务出错导致进入异常处理程序或任务主动退出通过软件中断进入内核时才能调用
  */
 void task_kill(int32_t tid)
 {
