@@ -41,23 +41,33 @@
 #include "vfs/driver.h"
 #include "kern/kern.h"
 #include <sys/socket.h>
+#include <unistd.h>
 #include <fcntl.h>
 #include <stdio.h>
 
-#define debug_output    kcomplain
+/*
+ * 私有信息
+ */
+typedef struct {
+    int         sockfd;
+    uint8_t     opened;
+} privinfo_t;
+
+//#define debug_output        kcomplain
+#define debug_output(...)
 
 /*
  * 打开 socket
  */
 static int socket_open(void *ctx, file_t *file, int oflag, mode_t mode)
 {
-    debug_output("%s\r\n", __func__);
+    privinfo_t *priv = ctx;
 
-    if (file->ctx != NULL) {
-        return -1;
-    } else {
-        file->ctx = (void *)TRUE;
+    if (!priv->opened) {
+        priv->opened = TRUE;
         return 0;
+    } else {
+        return -1;
     }
 }
 
@@ -66,9 +76,9 @@ static int socket_open(void *ctx, file_t *file, int oflag, mode_t mode)
  */
 static int socket_ioctl(void *ctx, file_t *file, int cmd, void *arg)
 {
-    debug_output("%s\r\n", __func__);
+    privinfo_t *priv = ctx;
 
-    return lwip_ioctl((int)ctx, cmd, arg);
+    return lwip_ioctl(priv->sockfd, cmd, arg);
 }
 
 /*
@@ -76,9 +86,9 @@ static int socket_ioctl(void *ctx, file_t *file, int cmd, void *arg)
  */
 static int socket_fcntl(void *ctx, file_t *file, int cmd, void *arg)
 {
-    debug_output("%s\r\n", __func__);
+    privinfo_t *priv = ctx;
 
-    return lwip_fcntl((int)ctx, cmd, (int)arg);
+    return lwip_fcntl(priv->sockfd, cmd, (int)arg);
 }
 
 /*
@@ -86,15 +96,16 @@ static int socket_fcntl(void *ctx, file_t *file, int cmd, void *arg)
  */
 static int socket_close(void *ctx, file_t *file)
 {
+    privinfo_t *priv = ctx;
     char buf[32];
 
-    debug_output("%s\r\n", __func__);
-
-    sprintf(buf, "/dev/socket%d", (int)ctx);
+    sprintf(buf, "/dev/socket%d", priv->sockfd);
 
     device_remove(buf);
 
-    lwip_close((int)ctx);
+    lwip_close(priv->sockfd);
+
+    kfree(priv);
 
     return 0;
 }
@@ -104,9 +115,7 @@ static int socket_close(void *ctx, file_t *file)
  */
 static int socket_isatty(void *ctx, file_t *file)
 {
-    debug_output("%s\r\n", __func__);
-
-    return 1;
+    return 0;
 }
 
 /*
@@ -114,9 +123,11 @@ static int socket_isatty(void *ctx, file_t *file)
  */
 static ssize_t socket_read(void *ctx, file_t *file, void *buf, size_t len)
 {
-    debug_output("%s\r\n", __func__);
+    privinfo_t *priv = ctx;
 
-    return lwip_recv((int)ctx, buf, len, 0);
+    debug_output("%s %d\r\n", __func__, len);
+
+    return lwip_recv(priv->sockfd, buf, len, 0);
 }
 
 /*
@@ -124,12 +135,9 @@ static ssize_t socket_read(void *ctx, file_t *file, void *buf, size_t len)
  */
 static ssize_t socket_write(void *ctx, file_t *file, const void *buf, size_t len)
 {
-    char *tmp = (char *)buf;
-    tmp[len] = 0;
+    privinfo_t *priv = ctx;
 
-    debug_output("%s\r\n", __func__);
-
-    return lwip_send((int)ctx, buf, len, 0);
+    return lwip_send(priv->sockfd, buf, len, 0);
 }
 
 /*
@@ -161,14 +169,30 @@ int socket_attach(int sockfd)
 {
     char buf[32];
     int fd;
+    privinfo_t *priv;
 
-    sprintf(buf, "/dev/socket%d", sockfd);
+    priv = kmalloc(sizeof(privinfo_t));
+    if (priv != NULL) {
+        priv->opened = FALSE;
+        priv->sockfd = sockfd;
 
-    device_create(buf, "socket", (void *)sockfd);
+        sprintf(buf, "/dev/socket%d", sockfd);
 
-    fd = open(buf, O_RDWR, 0666);
+        if (device_create(buf, "socket", priv) < 0) {
+            kfree(priv);
+            return -1;
+        }
 
-    return fd;
+        fd = open(buf, O_RDWR, 0666);
+        if (fd < 0) {
+            device_remove(buf);
+            kfree(priv);
+            return -1;
+        }
+        return fd;
+    } else {
+        return -1;
+    }
 }
 /*********************************************************************************************************
   END FILE

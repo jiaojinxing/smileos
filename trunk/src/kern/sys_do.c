@@ -92,21 +92,19 @@ static int do_getpid(void)
 }
 
 /*
- * 获得 errno 指针
- *
- * 进程最好记录该指针, 以免频繁切换用户态->内核态->用户态
- */
-static int *do_errno(void)
-{
-    return &current->errno;
-}
-
-/*
  * 释放 CPU 使用权
  */
 static void do_yeild(void)
 {
     schedule();
+}
+
+/*
+ * 获得 reent 结构指针
+ */
+static struct reent *do_get_reent(void)
+{
+    return &current->reent;
 }
 /*********************************************************************************************************
   系统调用处理表
@@ -120,7 +118,6 @@ sys_do_t sys_do_table[] = {
         (sys_do_t)do_yeild,
         (sys_do_t)do_gettimeofday,
         (sys_do_t)do_getpid,
-        (sys_do_t)do_errno,
         (sys_do_t)vfs_write,
         (sys_do_t)vfs_mkdir,
         (sys_do_t)vfs_open,
@@ -134,6 +131,7 @@ sys_do_t sys_do_table[] = {
         (sys_do_t)vfs_link,
         (sys_do_t)vfs_lseek,
         (sys_do_t)vfs_stat,
+        (sys_do_t)do_get_reent,
 };
 /*********************************************************************************************************
   END FILE

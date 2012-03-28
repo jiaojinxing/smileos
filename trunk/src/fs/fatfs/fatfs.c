@@ -369,12 +369,7 @@ static struct dirent *fatfs_readdir(mount_point_t *point, file_t *file)
         FILINFO info;
 
         if (f_readdir(&priv->dir, &info) == FR_OK) {
-            if (info.lfname != NULL) {
-                strlcpy(priv->entry.d_name, info.lfname, sizeof(priv->entry.d_name));
-            } else {
-                strlcpy(priv->entry.d_name, info.fname, sizeof(priv->entry.d_name));
-            }
-
+            strlcpy(priv->entry.d_name, info.fname, sizeof(priv->entry.d_name));
             priv->entry.d_ino = 0;
             return &priv->entry;
         } else {

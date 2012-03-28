@@ -119,6 +119,7 @@ int device_remove(const char *name)
         } else {
             dev_list = dev->next;
         }
+        kfree(dev);
     }
     kern_mutex_unlock(&devmgr_lock);
 

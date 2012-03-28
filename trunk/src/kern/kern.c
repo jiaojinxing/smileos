@@ -81,6 +81,7 @@ static void kern_vars_init(void)
     interrupt_nest = 0;                                                 /*  中断嵌套层次为 0            */
     tick           = 0;                                                 /*  TICK 为 0                   */
     current        = &tasks[0];                                         /*  当前任务为进程 0            */
+    _impure_ptr    = &current->reent;
 
     /*
      * 初始化所有的任务控制块
@@ -201,6 +202,8 @@ void schedule(void)
                     current->mmu_backup[i]);
         }
     }
+
+    _impure_ptr = &current->reent;                                      /*  改写 _impure_ptr 指针       */
 
     extern void __switch_to(register task_t *from, register task_t *to);
     __switch_to(task, current);                                         /*  任务切换                    */
@@ -389,7 +392,6 @@ static void idle_process_create(void)
     task->timer        = 0;
     task->priority     = 20;
     task->type         = TASK_TYPE_PROCESS;                             /*  任务类型为进程              */
-    task->errno        = 0;
     task->resume_type  = TASK_RESUME_UNKNOW;
     task->next         = NULL;
     task->wait_list    = NULL;
@@ -478,7 +480,6 @@ int32_t process_create(const char *name, uint8_t *code, uint32_t size, uint32_t 
     task->timer        = 0;
     task->priority     = priority;
     task->type         = TASK_TYPE_PROCESS;                             /*  任务类型为进程              */
-    task->errno        = 0;
     task->resume_type  = TASK_RESUME_UNKNOW;
     task->next         = NULL;
     task->wait_list    = NULL;
@@ -523,6 +524,8 @@ int32_t process_create(const char *name, uint8_t *code, uint32_t size, uint32_t 
         strcpy(task->name, "???");
     }
 
+    vfs_task_file_info_init(task->tid);
+
     /*
      * 为拷贝代码到进程的虚拟地址空间, 预先映射好页面
      */
@@ -561,11 +564,22 @@ int32_t process_create(const char *name, uint8_t *code, uint32_t size, uint32_t 
     return pid;
 }
 
+#include "vfs/vfs.h"
+#include <fcntl.h>
+
 /*
  * 内核线程外壳
  */
 static void kthread_shell(task_t *task)
 {
+    vfs_task_file_info_init(task->tid);
+
+    open("/dev/stdin",  O_RDONLY, 0666);
+
+    open("/dev/stdout", O_WRONLY, 0666);
+
+    open("/dev/stderr", O_WRONLY, 0666);
+
     task->thread(task->arg);
 
     extern void _exit(int status);
@@ -622,7 +636,6 @@ int32_t kthread_create(const char *name, void (*func)(void *), void *arg, uint32
     task->timer        = 0;
     task->priority     = priority;
     task->type         = TASK_TYPE_THREAD;                              /*  任务类型为线程              */
-    task->errno        = 0;
     task->resume_type  = TASK_RESUME_UNKNOW;
     task->next         = NULL;
     task->wait_list    = NULL;
@@ -680,6 +693,8 @@ void task_kill(int32_t tid)
 
         task = &tasks[tid];                                             /*  获得任务控制块              */
 
+        vfs_task_file_info_cleanup(tid);                                /*  清理任务的文件信息          */
+
         if (task->type == TASK_TYPE_PROCESS) {                          /*  如果任务是进程              */
             printk("kill process %s pid=%d!\r\n", task->name, task->pid);
             vmm_free_process_space(task);                               /*  释放进程的虚拟地址空间      */
@@ -708,6 +723,23 @@ uint64_t get_tick(void)
     reg = interrupt_disable();
 
     ret = tick;
+
+    interrupt_resume(reg);
+
+    return ret;
+}
+
+/*
+ * 获得任务 ID
+ */
+int32_t gettid(void)
+{
+    int32_t  ret;
+    uint32_t reg;
+
+    reg = interrupt_disable();
+
+    ret = current->tid;
 
     interrupt_resume(reg);
 

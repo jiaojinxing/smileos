@@ -48,7 +48,7 @@
 
 #define _FS_MINIMIZE	0                                               /*  全功能                      */
 
-#define	_USE_STRFUNC	1                                               /*  使用字符串函数              */
+#define	_USE_STRFUNC	0                                               /*  不使用字符串函数            */
                                                                         /*  >= 2 时, 会跳过 '\r'        */
 
 #define	_USE_MKFS		1                                               /*  使用格式化函数              */
@@ -59,7 +59,7 @@
 
 #define _CODE_PAGE	    936                                             /*  936 代码页                  */
 
-#define	_USE_LFN	    3                                               /*  使用长文件名, 堆上存储      */
+#define	_USE_LFN	    0                                               /*  不使用长文件名              */
 
 #define	_MAX_LFN	    255                                             /*  长文件名的最大长度          */
 

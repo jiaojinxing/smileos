@@ -44,6 +44,7 @@
 #include "kern/types.h"
 
 #ifdef SMILEOS_KERNEL
+
 /*********************************************************************************************************
   内核数据类型
 *********************************************************************************************************/
@@ -73,6 +74,7 @@
 #define TASK_RESUME_INTERRUPT   (1 << 6)                                /*  等待被中断                  */
 
 struct vmm_frame;
+#include <reent.h>                                                      /*  for struct _reent           */
 /*
  * 任务控制块
  */
@@ -100,13 +102,13 @@ typedef struct task {
     uint32_t                frame_nr;                                   /*  页框数                      */
     uint32_t                cpu_rate;                                   /*  CPU 占用率                  */
     uint32_t                tick;                                       /*  任务被定时器中断的次数      */
-    int                     errno;                                      /*  错误号                      */
     char                    name[32];                                   /*  名字                        */
     struct task            *next;                                       /*  后趋                        */
     struct task           **wait_list;                                  /*  等待链表                    */
     struct vmm_frame       *frame_list;                                 /*  页框链表                    */
     int                     dabt_cnt;                                   /*  数据访问中止次数            */
     uint32_t                mmu_backup[PROCESS_SPACE_SIZE / SECTION_SIZE];  /*  一级段表备份            */
+    struct _reent           reent;                                      /*  可重入结构                  */
 } task_t;
 
 /*
@@ -225,6 +227,11 @@ void interrupt_exit_no_schedule(void);
 uint64_t get_tick(void);
 
 /*
+ * 获得任务 ID
+ */
+int32_t gettid(void);
+
+/*
  * 杀死任务
  * 只能在任务出错进入异常处理程序或任务主动退出通过软件中断进入内核时调用
  */
@@ -241,7 +248,7 @@ int in_interrupt(void);
 int in_kernel(void);
 
 /*
- *
+ * 释放 CPU 使用权
  */
 void yield(void);
 #endif

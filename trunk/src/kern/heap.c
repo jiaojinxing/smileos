@@ -109,6 +109,78 @@ void *kcalloc(uint32_t nelem, uint32_t elsize)
 }
 
 /*
+ * _malloc_r
+ */
+void *_malloc_r(struct _reent *reent, size_t size)
+{
+    void *ptr;
+    uint32_t reg;
+
+    reg = interrupt_disable();
+
+    ptr = heap_alloc(&kern_heap, size);
+
+    interrupt_resume(reg);
+
+    return ptr;
+}
+
+/*
+ * _free_r
+ */
+void _free_r(struct _reent *reent, void *ptr)
+{
+    uint32_t reg;
+
+    reg = interrupt_disable();
+
+    heap_free(&kern_heap, ptr);
+
+    interrupt_resume(reg);
+}
+
+/*
+ * _realloc_r
+ */
+void *_realloc_r(struct _reent *reent, void *ptr, size_t newsize)
+{
+    void *newptr;
+    uint32_t reg;
+
+    reg = interrupt_disable();
+
+    newptr = _malloc_r(reent, newsize);
+    if (newptr != NULL) {
+        if (ptr != NULL) {
+            memcpy(newptr, ptr, newsize);
+            _free_r(reent, ptr);
+        }
+    }
+    interrupt_resume(reg);
+
+    return newptr;
+}
+
+/*
+ * _calloc_r
+ */
+void *_calloc_r(struct _reent *reent, size_t nelem, size_t elsize)
+{
+    void *ptr;
+    uint32_t reg;
+
+    reg = interrupt_disable();
+
+    ptr = _malloc_r(reent, nelem * MEM_ALIGN_SIZE(elsize));
+    if (ptr != NULL) {
+        memset(ptr, 0, nelem * MEM_ALIGN_SIZE(elsize));
+    }
+    interrupt_resume(reg);
+
+    return ptr;
+}
+
+/*
  * 打印内核内存堆信息
  */
 void kern_heap_show(int fd)
@@ -126,7 +198,6 @@ void kern_heap_create(void)
 
 #else
 
-#include "kern/sys_call.h"
 #include <reent.h>
 
 #define debug_output      printf
@@ -200,11 +271,14 @@ void libc_init(void)
      */
     heap_init(&process_heap, &__bss_end, PROCESS_SPACE_SIZE - (uint32_t)&__bss_end - PROCESS_STACK_SIZE);
 
-    open("/dev/tty0", O_RDONLY, 0666);
+    extern struct _reent *get_reent(void);
+    _impure_ptr = get_reent();
 
-    open("/dev/tty1", O_WRONLY, 0666);
+    open("/dev/stdin",  O_RDONLY, 0666);
 
-    open("/dev/tty2", O_WRONLY, 0666);
+    open("/dev/stdout", O_WRONLY, 0666);
+
+    open("/dev/stderr", O_WRONLY, 0666);
 }
 
 #endif

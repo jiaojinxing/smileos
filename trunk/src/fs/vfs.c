@@ -53,7 +53,7 @@
 #include <unistd.h>
 
 /*
- * 进程文件信息
+ * 任务文件信息
  */
 typedef struct {
     /*
@@ -62,9 +62,9 @@ typedef struct {
     file_t              files[OPEN_MAX];                                /*  文件结构表                  */
     char                cwd[PATH_MAX + 1];                              /*  当前工作目录                */
     kern_mutex_t        cwd_lock;                                       /*  当前工作目录锁              */
-} process_file_info_t;
+} task_file_info_t;
 
-static process_file_info_t process_file_info[PROCESS_NR];
+static task_file_info_t task_file_info[TASK_NR];
 
 /*
  * 在 PATH 前加入挂载点名
@@ -212,10 +212,10 @@ static mount_point_t *vfs_mount_point_lookup(char pathbuf[PATH_MAX + 1], char **
         /*
          * cwd 要以 / 号开头和结尾
          */
-        pid_t pid = getpid();
-        kern_mutex_lock(&process_file_info[pid].cwd_lock, 0);           /*  在前面加入当前工作目录      */
-        snprintf(pathbuf, PATH_MAX + 1, "%s%s", process_file_info[pid].cwd, path);
-        kern_mutex_unlock(&process_file_info[pid].cwd_lock);
+        int32_t tid = gettid();
+        kern_mutex_lock(&task_file_info[tid].cwd_lock, 0);           /*  在前面加入当前工作目录      */
+        snprintf(pathbuf, PATH_MAX + 1, "%s%s", task_file_info[tid].cwd, path);
+        kern_mutex_unlock(&task_file_info[tid].cwd_lock);
     }
 
     if (vfs_path_normalization(pathbuf, FALSE) < 0) {
@@ -257,10 +257,10 @@ static mount_point_t *vfs_mount_point_lookup2(char pathbuf[PATH_MAX + 1], char *
         /*
          * cwd 要以 / 号开头和结尾
          */
-        pid_t pid = getpid();
-        kern_mutex_lock(&process_file_info[pid].cwd_lock, 0);           /*  在前面加入当前工作目录      */
-        snprintf(pathbuf, PATH_MAX + 1, "%s%s", process_file_info[pid].cwd, path);
-        kern_mutex_unlock(&process_file_info[pid].cwd_lock);
+        int32_t tid = gettid();
+        kern_mutex_lock(&task_file_info[tid].cwd_lock, 0);           /*  在前面加入当前工作目录      */
+        snprintf(pathbuf, PATH_MAX + 1, "%s%s", task_file_info[tid].cwd, path);
+        kern_mutex_unlock(&task_file_info[tid].cwd_lock);
     }
 
     if (vfs_path_normalization(pathbuf, FALSE) < 0) {
@@ -329,7 +329,7 @@ static mount_point_t *vfs_mount_point_lookup2(char pathbuf[PATH_MAX + 1], char *
         if (fd < 0 || fd >= OPEN_MAX) {                                 /*  文件描述符合法性判断        */\
             return -1;                                                                                    \
         }                                                                                                 \
-        file = process_file_info[getpid()].files + fd;                  /*  获得文件结构                */\
+        file = task_file_info[gettid()].files + fd;                  /*  获得文件结构                */\
         kern_mutex_lock(&file->lock, 0);                                /*  锁住文件                    */
 
 #define vfs_file_api_begin                                                                                \
@@ -360,7 +360,7 @@ int vfs_open(const char *path, int oflag, mode_t mode)
         return -1;
     }
                                                                         /*  查找一个空闲的文件结构      */
-    for (fd = 0, file = process_file_info[getpid()].files; fd < OPEN_MAX; fd++, file++) {
+    for (fd = 0, file = task_file_info[gettid()].files; fd < OPEN_MAX; fd++, file++) {
         kern_mutex_lock(&file->lock, 0);
         if (!file->flag) {
             break;
@@ -878,7 +878,7 @@ int vfs_sync(const char *path)
         if (fd < 1 || fd >= OPEN_MAX) {                                 /*  文件描述符合法性判断        */\
             return -1;                                                                                    \
         }                                                                                                 \
-        file = process_file_info[getpid()].files + fd;                  /*  获得文件结构                */\
+        file = task_file_info[gettid()].files + fd;                  /*  获得文件结构                */\
         kern_mutex_lock(&file->lock, 0);                                /*  锁住文件                    */
 
 #define vfs_dir_api_begin                                                                                 \
@@ -909,7 +909,7 @@ DIR *vfs_opendir(const char *path)
         return (DIR *)0;
     }
                                                                         /*  查找一个空闲的文件结构      */
-    for (fd = 1 /* 不使用 0 */, file = process_file_info[getpid()].files + 1; fd < OPEN_MAX; fd++, file++) {
+    for (fd = 1 /* 不使用 0 */, file = task_file_info[gettid()].files + 1; fd < OPEN_MAX; fd++, file++) {
         kern_mutex_lock(&file->lock, 0);
         if (!file->flag) {
             break;
@@ -1055,32 +1055,32 @@ int vfs_chdir(const char *path)
 {
     char pathbuf[PATH_MAX + 1];
     int ret;
-    pid_t pid;
+    int32_t tid;
 
     if (path == NULL) {
         return -1;
     }
 
-    pid = getpid();
+    tid = gettid();
 
-    kern_mutex_lock(&process_file_info[pid].cwd_lock, 0);
+    kern_mutex_lock(&task_file_info[tid].cwd_lock, 0);
 
     if (path[0] == '/') {                                               /*  如果是绝对路径              */
         strlcpy(pathbuf, path, sizeof(pathbuf));
     } else {                                                            /*  如果是相对路径              */
-        snprintf(pathbuf, sizeof(pathbuf), "%s%s", process_file_info[pid].cwd, path);
+        snprintf(pathbuf, sizeof(pathbuf), "%s%s", task_file_info[tid].cwd, path);
     }
 
     ret = vfs_path_normalization(pathbuf, TRUE);
     if (ret == 0) {
         DIR *dir = vfs_opendir(pathbuf);
         if (dir != NULL) {
-            strlcpy(process_file_info[pid].cwd, pathbuf, sizeof(process_file_info[pid].cwd));
+            strlcpy(task_file_info[tid].cwd, pathbuf, sizeof(task_file_info[tid].cwd));
             vfs_closedir(dir);
         }
     }
 
-    kern_mutex_unlock(&process_file_info[pid].cwd_lock);
+    kern_mutex_unlock(&task_file_info[tid].cwd_lock);
 
     return ret;
 }
@@ -1090,18 +1090,18 @@ int vfs_chdir(const char *path)
  */
 char *vfs_getcwd(char *buf, size_t size)
 {
-    pid_t pid = getpid();
+    int32_t tid = gettid();
 
     if (buf != NULL) {
-        kern_mutex_lock(&process_file_info[pid].cwd_lock, 0);
-        strlcpy(buf, process_file_info[pid].cwd, size);
-        kern_mutex_unlock(&process_file_info[pid].cwd_lock);
+        kern_mutex_lock(&task_file_info[tid].cwd_lock, 0);
+        strlcpy(buf, task_file_info[tid].cwd, size);
+        kern_mutex_unlock(&task_file_info[tid].cwd_lock);
         return buf;
     } else {
         /*
          * TODO: 应用程序不能释放它
          */
-        return process_file_info[pid].cwd;
+        return task_file_info[tid].cwd;
     }
 }
 
@@ -1110,7 +1110,7 @@ char *vfs_getcwd(char *buf, size_t size)
  */
 int vfs_init(void)
 {
-    process_file_info_t *info;
+    task_file_info_t *info;
     file_t *file;
     int i;
     int j;
@@ -1133,7 +1133,7 @@ int vfs_init(void)
 
     mount("/dev", NULL, "devfs");
 
-    for (i = 0, info = process_file_info; i < PROCESS_NR; i++, info++) {
+    for (i = 0, info = task_file_info; i < TASK_NR; i++, info++) {
         strcpy(info->cwd, "/");
         kern_mutex_new(&info->cwd_lock);
 
@@ -1146,6 +1146,63 @@ int vfs_init(void)
     }
 
     return 0;
+}
+
+/*
+ * 初始化任务的文件信息
+ */
+int vfs_task_file_info_init(int32_t tid)
+{
+    task_file_info_t *info;
+    file_t *file;
+    int i;
+
+    if (tid < TASK_NR) {
+        info = task_file_info + tid;
+
+        strcpy(info->cwd, "/");
+
+        for (i = 0, file = info->files; i < OPEN_MAX; i++, file++) {
+            file->ctx   = NULL;
+            file->point = NULL;
+            file->flag  = VFS_FILE_TYPE_FREE;
+        }
+
+        return 0;
+    } else {
+        return -1;
+    }
+}
+
+/*
+ * 清理任务的文件信息
+ */
+int vfs_task_file_info_cleanup(int32_t tid)
+{
+    task_file_info_t *info;
+    file_t *file;
+    int i;
+
+    if (tid < TASK_NR) {
+        info = task_file_info + tid;
+
+        strcpy(info->cwd, "/");
+
+        for (i = 0, file = info->files; i < OPEN_MAX; i++, file++) {
+            if (file->flag & VFS_FILE_TYPE_FILE) {
+                close(i);
+            } else if (file->flag & VFS_FILE_TYPE_DIR) {
+                vfs_closedir((DIR *)i);
+            }
+
+            file->ctx   = NULL;
+            file->point = NULL;
+            file->flag  = VFS_FILE_TYPE_FREE;
+        }
+        return 0;
+    } else {
+        return -1;
+    }
 }
 /*********************************************************************************************************
   END FILE
