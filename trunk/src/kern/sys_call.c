@@ -54,7 +54,7 @@
 #ifdef SMILEOS_KERNEL
 #include "kern/kern.h"
 extern sys_do_t sys_do_table[];
-#define debug_output(...)
+#define debug_output    kcomplain
 #else
 typedef int (*sys_do_t)();
 static sys_do_t sys_do_table[1];
@@ -152,7 +152,7 @@ void _fini(void)
  */
 void _exit(int status)
 {
-    debug_output("%s\n", __func__);
+    debug_output("%s\r\n", __func__);
     if (in_kernel()) {
         (sys_do_table[SYS_CALL_EXIT])(status);
     } else {
@@ -168,7 +168,7 @@ void _exit(int status)
  */
 void yield(void)
 {
-    debug_output("%s\n", __func__);
+    debug_output("%s\r\n", __func__);
     if (in_kernel()) {
         (sys_do_table[SYS_CALL_YIELD])();
     } else {
@@ -184,7 +184,7 @@ void yield(void)
  */
 static void sleep_tick(unsigned int ticks)
 {
-    debug_output("%s\n", __func__);
+    debug_output("%s\r\n", __func__);
     if (in_kernel()) {
         (sys_do_table[SYS_CALL_SLEEP])(ticks);
     } else {
@@ -201,7 +201,7 @@ static void sleep_tick(unsigned int ticks)
  */
 unsigned sleep(unsigned int seconds)
 {
-    debug_output("%s\n", __func__);
+    debug_output("%s\r\n", __func__);
     sleep_tick(TICK_PER_SECOND * seconds);
     return 0;
 }
@@ -211,7 +211,7 @@ unsigned sleep(unsigned int seconds)
  */
 int usleep(useconds_t useconds)
 {
-    debug_output("%s\n", __func__);
+    debug_output("%s\r\n", __func__);
     sleep_tick(TICK_PER_SECOND * useconds / 1000000);
     return 0;
 }
@@ -223,7 +223,7 @@ int _gettimeofday_r(struct _reent *ptr, struct timeval *tv, void *tzp)
 {
     int ret;
 
-    debug_output("%s\n", __func__);
+    debug_output("%s\r\n", __func__);
     if (in_kernel()) {
         ret = (sys_do_table[SYS_CALL_GETTIME])(tv, tzp);
     } else {
@@ -246,7 +246,7 @@ int *__errno(void)
 {
     int *ret;
 
-    debug_output("%s\n", __func__);
+    debug_output("%s\r\n", __func__);
     if (in_kernel()) {
         ret = (int *)(sys_do_table[SYS_CALL_ERRNO])();
     } else {
@@ -264,7 +264,7 @@ int _close_r(struct _reent *ptr, int fd)
 {
     int ret;
 
-    debug_output("%s\n", __func__);
+    debug_output("%s\r\n", __func__);
     if (in_kernel()) {
         ret = (sys_do_table[SYS_CALL_CLOSE])(fd);
     } else {
@@ -284,7 +284,7 @@ int _fcntl_r(struct _reent *ptr, int fd, int cmd, int arg)
 {
     int ret;
 
-    debug_output("%s\n", __func__);
+    debug_output("%s\r\n", __func__);
     if (in_kernel()) {
         ret = (sys_do_table[SYS_CALL_FCNTL])(fd, cmd, arg);
     } else {
@@ -305,7 +305,7 @@ int _fstat_r(struct _reent *ptr, int fd, struct stat *buf)
 {
     int ret;
 
-    debug_output("%s\n", __func__);
+    debug_output("%s\r\n", __func__);
     if (in_kernel()) {
         ret = (sys_do_table[SYS_CALL_FSTAT])(fd, buf);
     } else {
@@ -325,7 +325,7 @@ int _getpid_r(struct _reent *ptr)
 {
     int ret;
 
-    debug_output("%s\n", __func__);
+    debug_output("%s\r\n", __func__);
     if (in_kernel()) {
         ret = (sys_do_table[SYS_CALL_GETPID])();
     } else {
@@ -343,7 +343,7 @@ int _isatty_r(struct _reent *ptr, int fd)
 {
     int ret;
 
-    debug_output("%s\n", __func__);
+    debug_output("%s\r\n", __func__);
     if (in_kernel()) {
         ret = (sys_do_table[SYS_CALL_ISATTY])(fd);
     } else {
@@ -362,7 +362,7 @@ int _link_r(struct _reent *ptr, const char *path1, const char *path2)
 {
     int ret;
 
-    debug_output("%s\n", __func__);
+    debug_output("%s\r\n", __func__);
     if (in_kernel()) {
         ret = (sys_do_table[SYS_CALL_LINK])(path1, path2);
     } else {

@@ -44,11 +44,15 @@
 #include <fcntl.h>
 #include <stdio.h>
 
+#define debug_output    kcomplain
+
 /*
  * ´ò¿ª socket
  */
 static int socket_open(void *ctx, file_t *file, int oflag, mode_t mode)
 {
+    debug_output("%s\r\n", __func__);
+
     if (file->ctx != NULL) {
         return -1;
     } else {
@@ -62,6 +66,8 @@ static int socket_open(void *ctx, file_t *file, int oflag, mode_t mode)
  */
 static int socket_ioctl(void *ctx, file_t *file, int cmd, void *arg)
 {
+    debug_output("%s\r\n", __func__);
+
     return lwip_ioctl((int)ctx, cmd, arg);
 }
 
@@ -70,6 +76,8 @@ static int socket_ioctl(void *ctx, file_t *file, int cmd, void *arg)
  */
 static int socket_fcntl(void *ctx, file_t *file, int cmd, void *arg)
 {
+    debug_output("%s\r\n", __func__);
+
     return lwip_fcntl((int)ctx, cmd, (int)arg);
 }
 
@@ -79,6 +87,8 @@ static int socket_fcntl(void *ctx, file_t *file, int cmd, void *arg)
 static int socket_close(void *ctx, file_t *file)
 {
     char buf[32];
+
+    debug_output("%s\r\n", __func__);
 
     sprintf(buf, "/dev/socket%d", (int)ctx);
 
@@ -94,6 +104,8 @@ static int socket_close(void *ctx, file_t *file)
  */
 static int socket_isatty(void *ctx, file_t *file)
 {
+    debug_output("%s\r\n", __func__);
+
     return 1;
 }
 
@@ -102,7 +114,7 @@ static int socket_isatty(void *ctx, file_t *file)
  */
 static ssize_t socket_read(void *ctx, file_t *file, void *buf, size_t len)
 {
-    printf("%s try to read %d byte", __func__, len);
+    debug_output("%s\r\n", __func__);
 
     return lwip_recv((int)ctx, buf, len, 0);
 }
@@ -115,7 +127,7 @@ static ssize_t socket_write(void *ctx, file_t *file, const void *buf, size_t len
     char *tmp = (char *)buf;
     tmp[len] = 0;
 
-    printf("%s try to write %d byte to socket %d", __func__, len, (int)ctx);
+    debug_output("%s\r\n", __func__);
 
     return lwip_send((int)ctx, buf, len, 0);
 }
@@ -155,9 +167,6 @@ int socket_attach(int sockfd)
     device_create(buf, "socket", (void *)sockfd);
 
     fd = open(buf, O_RDWR, 0666);
-    if (fd < 0) {
-        printf("failed to open %s\r\n", buf);
-    }
 
     return fd;
 }
