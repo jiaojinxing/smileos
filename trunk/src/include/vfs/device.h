@@ -48,6 +48,11 @@
 device_t *device_lookup(const char *name);
 
 /*
+ * 删除设备
+ */
+int device_remove(const char *name);
+
+/*
  * 创建设备
  */
 int device_create(const char *dev_name, const char *drv_name, void *ctx);
