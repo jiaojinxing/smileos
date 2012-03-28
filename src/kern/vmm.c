@@ -64,7 +64,7 @@ static struct page_table *free_page_table_list;                         /*  空闲
 /*
  * 页表比较函数
  */
-static inline int page_table_compare(struct page_table *a, struct page_table *b)
+static inline int vmm_page_table_compare(struct page_table *a, struct page_table *b)
 {
 #if 0
     if (a->section_nr < b->section_nr) {
@@ -84,7 +84,7 @@ static RB_HEAD(page_table_tree, page_table) used_page_table_tree;       /*  已用
 /*
  * 产生页表红黑树代码
  */
-RB_GENERATE_INTERNAL(page_table_tree, page_table, node, page_table_compare, static);
+RB_GENERATE_INTERNAL(page_table_tree, page_table, node, vmm_page_table_compare, static);
 
 /*
  * 根据段号查找页表
