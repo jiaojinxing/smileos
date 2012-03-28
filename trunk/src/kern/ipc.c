@@ -226,8 +226,9 @@ int kern_mutex_lock(kern_mutex_t *mutex, uint32_t timeout)
                         goto error;
                     } else {
                         /*
-                         * TODO: 假如 timeout != 0, 到这里, 任务已经睡了 tick,
+                         * TODO: 假如 timeout != 0, 到这里, 任务已经睡眠了 tick,
                          *       假如任务竞争失败, 则还须睡眠, 应该睡眠 timeout - tick,
+                         *       如果 timeout - tick = 0, 则应返回 -1,
                          *       但现在还是睡眠 timeout, 这样不准确, 有待改正
                          */
                         goto again;
