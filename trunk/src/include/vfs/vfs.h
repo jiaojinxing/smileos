@@ -211,12 +211,12 @@ const char *vfs_path_add_mount_point(const char *path);
 /*
  * 初始化任务的文件信息
  */
-int vfs_task_file_info_init(int32_t tid);
+int vfs_task_file_info_init(pid_t tid);
 
 /*
  * 清理任务的文件信息
  */
-int vfs_task_file_info_cleanup(int32_t tid);
+int vfs_task_file_info_cleanup(pid_t tid);
 
 #endif                                                                  /*  VFS_H_                      */
 /*********************************************************************************************************

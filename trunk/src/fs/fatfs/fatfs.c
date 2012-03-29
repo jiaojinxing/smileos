@@ -179,7 +179,7 @@ static int fatfs_fstat(mount_point_t *point, file_t *file, struct stat *buf)
 
     buf->st_dev     = (dev_t)point->dev->devno;
     buf->st_ino     = 0;
-    buf->st_mode    = 0666;
+    buf->st_mode    = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH | S_IFREG;
     buf->st_nlink   = 0;
     buf->st_uid     = 0;
     buf->st_gid     = 0;
@@ -296,7 +296,7 @@ static int fatfs_stat(mount_point_t *point, const char *path, struct stat *buf)
     if (PATH_IS_ROOT_DIR(path)) {
         buf->st_dev     = (dev_t)point->dev->devno;
         buf->st_ino     = 0;
-        buf->st_mode    = 0666;
+        buf->st_mode    = S_IRWXU | S_IRWXG | S_IRWXO | S_IFDIR;
         buf->st_nlink   = 0;
         buf->st_uid     = 0;
         buf->st_gid     = 0;
@@ -314,11 +314,37 @@ static int fatfs_stat(mount_point_t *point, const char *path, struct stat *buf)
         buf->st_spare4[1] = 0;
         return 0;
     } else {
-        int fd = vfs_open(vfs_path_add_mount_point(path), O_RDONLY, 0666);
-        if (fd >= 0) {
-            int ret = vfs_fstat(fd, buf);
-            vfs_close(fd);
-            return ret;
+        FILINFO info;
+
+        if (f_stat(path, &info) == FR_OK) {
+            buf->st_dev     = (dev_t)point->dev->devno;
+            buf->st_ino     = 0;
+            if (info.fattrib & AM_DIR) {
+                buf->st_mode = S_IRWXU | S_IRWXG | S_IRWXO | S_IFDIR;
+            } else {
+                buf->st_mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH | S_IFREG;
+            }
+
+            if (info.fattrib & AM_RDO) {
+                buf->st_mode &= ~(S_IWUSR | S_IWGRP | S_IWOTH);
+            }
+
+            buf->st_nlink   = 0;
+            buf->st_uid     = 0;
+            buf->st_gid     = 0;
+            buf->st_rdev    = (dev_t)point->dev->devno;
+            buf->st_size    = info.fsize;
+            buf->st_atime   = 0;
+            buf->st_spare1  = 0;
+            buf->st_mtime   = 0;
+            buf->st_spare2  = 0;
+            buf->st_ctime   = 0;
+            buf->st_spare3  = 0;
+            buf->st_blksize = 0;
+            buf->st_blocks  = 0;
+            buf->st_spare4[0] = 0;
+            buf->st_spare4[1] = 0;
+            return 0;
         } else {
             return -1;
         }
