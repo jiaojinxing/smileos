@@ -57,6 +57,9 @@
 #include <string.h>
 #include <errno.h>
 
+struct stat;
+struct tms;
+
 #ifdef SMILEOS_KERNEL
 #include "kern/kern.h"
 extern sys_do_t sys_do_table[];
@@ -117,7 +120,7 @@ static sys_do_t sys_do_table[1];
 #define SYS_CALL_LINK       15
 #define SYS_CALL_LSEEK      16
 #define SYS_CALL_STAT       17
-#define SYS_CALL_GET_REENT  18
+#define SYS_CALL_GETREENT   18
 #define SYS_CALL_NR         40                                          /*  系统调用数                  */
 
 /*
@@ -228,7 +231,7 @@ int usleep(useconds_t useconds)
 /*
  * gettimeofday
  */
-int _gettimeofday_r(struct _reent *ptr, struct timeval *tv, void *tzp)
+int _gettimeofday_r(struct _reent *reent, struct timeval *tv, void *tzp)
 {
     int ret;
 
@@ -245,12 +248,12 @@ int _gettimeofday_r(struct _reent *ptr, struct timeval *tv, void *tzp)
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
 
-    ptr->_errno = 0;
+    reent->_errno = 0;
 
     return ret;
 }
 
-int _close_r(struct _reent *ptr, int fd)
+int _close_r(struct _reent *reent, int fd)
 {
     int ret;
 
@@ -266,13 +269,13 @@ int _close_r(struct _reent *ptr, int fd)
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
 
-    ptr->_errno = 0;
+    reent->_errno = 0;
 
     return ret;
 }
 
 
-int _fcntl_r(struct _reent *ptr, int fd, int cmd, int arg)
+int _fcntl_r(struct _reent *reent, int fd, int cmd, int arg)
 {
     int ret;
 
@@ -290,12 +293,12 @@ int _fcntl_r(struct _reent *ptr, int fd, int cmd, int arg)
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
 
-    ptr->_errno = 0;
+    reent->_errno = 0;
 
     return ret;
 }
 
-int _fstat_r(struct _reent *ptr, int fd, struct stat *buf)
+int _fstat_r(struct _reent *reent, int fd, struct stat *buf)
 {
     int ret;
 
@@ -312,12 +315,12 @@ int _fstat_r(struct _reent *ptr, int fd, struct stat *buf)
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
 
-    ptr->_errno = 0;
+    reent->_errno = 0;
 
     return ret;
 }
 
-int _getpid_r(struct _reent *ptr)
+int _getpid_r(struct _reent *reent)
 {
     int ret;
 
@@ -332,12 +335,12 @@ int _getpid_r(struct _reent *ptr)
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
 
-    ptr->_errno = 0;
+    reent->_errno = 0;
 
     return ret;
 }
 
-int _isatty_r(struct _reent *ptr, int fd)
+int _isatty_r(struct _reent *reent, int fd)
 {
     int ret;
 
@@ -353,12 +356,12 @@ int _isatty_r(struct _reent *ptr, int fd)
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
 
-    ptr->_errno = 0;
+    reent->_errno = 0;
 
     return ret;
 }
 
-int _link_r(struct _reent *ptr, const char *path1, const char *path2)
+int _link_r(struct _reent *reent, const char *path1, const char *path2)
 {
     int ret;
 
@@ -375,12 +378,12 @@ int _link_r(struct _reent *ptr, const char *path1, const char *path2)
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
 
-    ptr->_errno = 0;
+    reent->_errno = 0;
 
     return ret;
 }
 
-_off_t _lseek_r(struct _reent *ptr, int fd, _off_t offset, int whence)
+_off_t _lseek_r(struct _reent *reent, int fd, _off_t offset, int whence)
 {
     _off_t ret;
 
@@ -398,12 +401,12 @@ _off_t _lseek_r(struct _reent *ptr, int fd, _off_t offset, int whence)
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
 
-    ptr->_errno = 0;
+    reent->_errno = 0;
 
     return ret;
 }
 
-int _mkdir_r(struct _reent *ptr, const char *path, int mode)
+int _mkdir_r(struct _reent *reent, const char *path, int mode)
 {
     int ret;
 
@@ -420,12 +423,12 @@ int _mkdir_r(struct _reent *ptr, const char *path, int mode)
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
 
-    ptr->_errno = 0;
+    reent->_errno = 0;
 
     return ret;
 }
 
-int _open_r(struct _reent *ptr, const char *path, int oflag, int mode)
+int _open_r(struct _reent *reent, const char *path, int oflag, int mode)
 {
     int ret;
 
@@ -443,12 +446,12 @@ int _open_r(struct _reent *ptr, const char *path, int oflag, int mode)
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
 
-    ptr->_errno = 0;
+    reent->_errno = 0;
 
     return ret;
 }
 
-_ssize_t _read_r(struct _reent *ptr, int fd, void *buf, size_t nbytes)
+_ssize_t _read_r(struct _reent *reent, int fd, void *buf, size_t nbytes)
 {
     _ssize_t ret;
 
@@ -466,12 +469,12 @@ _ssize_t _read_r(struct _reent *ptr, int fd, void *buf, size_t nbytes)
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
 
-    ptr->_errno = 0;
+    reent->_errno = 0;
 
     return ret;
 }
 
-_ssize_t _write_r(struct _reent *ptr, int fd, const void *buf, size_t nbytes)
+_ssize_t _write_r(struct _reent *reent, int fd, const void *buf, size_t nbytes)
 {
     _ssize_t ret;
 
@@ -489,12 +492,12 @@ _ssize_t _write_r(struct _reent *ptr, int fd, const void *buf, size_t nbytes)
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
 
-    ptr->_errno = 0;
+    reent->_errno = 0;
 
     return ret;
 }
 
-int _rename_r(struct _reent *ptr, const char *old, const char *new)
+int _rename_r(struct _reent *reent, const char *old, const char *new)
 {
     int ret;
 
@@ -511,12 +514,12 @@ int _rename_r(struct _reent *ptr, const char *old, const char *new)
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
 
-    ptr->_errno = 0;
+    reent->_errno = 0;
 
     return ret;
 }
 
-int _stat_r(struct _reent *ptr, const char *path, struct stat *buf)
+int _stat_r(struct _reent *reent, const char *path, struct stat *buf)
 {
     int ret;
 
@@ -533,12 +536,12 @@ int _stat_r(struct _reent *ptr, const char *path, struct stat *buf)
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
 
-    ptr->_errno = 0;
+    reent->_errno = 0;
 
     return ret;
 }
 
-int _unlink_r(struct _reent *ptr, const char *path)
+int _unlink_r(struct _reent *reent, const char *path)
 {
     int ret;
 
@@ -554,7 +557,7 @@ int _unlink_r(struct _reent *ptr, const char *path)
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
 
-    ptr->_errno = 0;
+    reent->_errno = 0;
 
     return ret;
 }
@@ -562,16 +565,16 @@ int _unlink_r(struct _reent *ptr, const char *path)
 /*
  * 获得 reent 结构指针
  */
-struct _reent *get_reent(void)
+struct _reent *getreent(void)
 {
     struct _reent *ret;
 
     debug_output("%s\r\n", __func__);
     if (in_kernel()) {
-        ret = (struct _reent *)(sys_do_table[SYS_CALL_GET_REENT])();
+        ret = (struct _reent *)(sys_do_table[SYS_CALL_GETREENT])();
     } else {
         __asm__ __volatile__("stmdb  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    r7,  %0": :"M"(SYS_CALL_GET_REENT));
+        __asm__ __volatile__("mov    r7,  %0": :"M"(SYS_CALL_GETREENT));
         __asm__ __volatile__("swi    0");
         __asm__ __volatile__("ldmia  sp!, {r7, lr}");
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
@@ -583,7 +586,7 @@ struct _reent *get_reent(void)
 /*
  * _sbrk
  */
-void *_sbrk_r(struct _reent *ptr, ptrdiff_t incr)
+void *_sbrk_r(struct _reent *reent, ptrdiff_t incr)
 {
 #ifdef SMILEOS_KERNEL
     printk("can't call %s()!, kill kthread %s tid=%d abort\n", __func__, current->name, current->tid);
@@ -596,7 +599,7 @@ void *_sbrk_r(struct _reent *ptr, ptrdiff_t incr)
 #endif
 }
 
-int _fork_r(struct _reent *ptr)
+int _fork_r(struct _reent *reent)
 {
 #ifdef SMILEOS_KERNEL
     printk("can't call %s()!, kill kthread %s tid=%d abort\n", __func__, current->name, current->tid);
@@ -609,7 +612,7 @@ int _fork_r(struct _reent *ptr)
 #endif
 }
 
-_CLOCK_T_ _times_r(struct _reent *ptr, struct tms *buf)
+_CLOCK_T_ _times_r(struct _reent *reent, struct tms *buf)
 {
 #ifdef SMILEOS_KERNEL
     printk("can't call %s()!, kill kthread %s tid=%d abort\n", __func__, current->name, current->tid);
@@ -622,7 +625,7 @@ _CLOCK_T_ _times_r(struct _reent *ptr, struct tms *buf)
 #endif
 }
 
-int _wait_r(struct _reent *ptr, int *status)
+int _wait_r(struct _reent *reent, int *status)
 {
 #ifdef SMILEOS_KERNEL
     printk("can't call %s()!, kill kthread %s tid=%d abort\n", __func__, current->name, current->tid);
@@ -635,7 +638,7 @@ int _wait_r(struct _reent *ptr, int *status)
 #endif
 }
 
-int _execve_r(struct _reent *ptr, const char *path, char *const *argv, char *const *env)
+int _execve_r(struct _reent *reent, const char *path, char *const *argv, char *const *env)
 {
 #ifdef SMILEOS_KERNEL
     printk("can't call %s()!, kill kthread %s tid=%d abort\n", __func__, current->name, current->tid);
@@ -648,7 +651,7 @@ int _execve_r(struct _reent *ptr, const char *path, char *const *argv, char *con
 #endif
 }
 
-int _kill_r(struct _reent *ptr, int pid, int sig)
+int _kill_r(struct _reent *reent, int pid, int sig)
 {
     debug_output("%s\r\n", __func__);
     _exit(0);
