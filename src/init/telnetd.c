@@ -128,30 +128,30 @@ static int do_ts(int argc, char **argv, int fd, char buf[LINE_MAX])
     return 0;
 }
 
-static int do_ls(int argc, char **argv, int fd, char buf[LINE_MAX])
-{
-    int len;
-    DIR *dir;
-    struct dirent *entry;
-
-    if (argc < 2) {
-        dir = vfs_opendir(".");
-    } else {
-        dir = vfs_opendir(argv[1]);
-    }
-    if (dir == NULL) {
-        return -1;
-    }
-
-    while ((entry = vfs_readdir(dir)) != NULL) {
-        len = sprintf(buf, "%s ", entry->d_name);
-        write(fd, buf, len);
-    }
-    vfs_closedir(dir);
-    len = sprintf(buf, "\r\n");
-    write(fd, buf, len);
-    return 0;
-}
+//static int do_ls(int argc, char **argv, int fd, char buf[LINE_MAX])
+//{
+//    int len;
+//    DIR *dir;
+//    struct dirent *entry;
+//
+//    if (argc < 2) {
+//        dir = vfs_opendir(".");
+//    } else {
+//        dir = vfs_opendir(argv[1]);
+//    }
+//    if (dir == NULL) {
+//        return -1;
+//    }
+//
+//    while ((entry = vfs_readdir(dir)) != NULL) {
+//        len = sprintf(buf, "%s ", entry->d_name);
+//        write(fd, buf, len);
+//    }
+//    vfs_closedir(dir);
+//    len = sprintf(buf, "\r\n");
+//    write(fd, buf, len);
+//    return 0;
+//}
 
 static int do_cd(int argc, char **argv, int fd, char buf[LINE_MAX])
 {
@@ -225,7 +225,8 @@ static int exec_cmd(char *cmd, int fd, char buf[LINE_MAX])
     if (strcmp(argv[0], "ts") == 0) {
         do_ts(argc, argv, fd, buf);
     } else if (strcmp(argv[0], "ls") == 0) {
-        do_ls(argc, argv, fd, buf);
+        extern int ls_main(int argc, char *argv[]);
+        ls_main(argc, argv);
     } else if (strcmp(argv[0], "cd") == 0) {
         do_cd(argc, argv, fd, buf);
     } else if (strcmp(argv[0], "mems") == 0) {
@@ -261,6 +262,8 @@ static void telnetd_thread(void *arg)
     char cmd[LINE_MAX];
     char ch;
 
+    close(STDOUT_FILENO);
+
     fd = socket_attach(fd);
 
     write(fd, logo, strlen(logo));
@@ -273,7 +276,7 @@ static void telnetd_thread(void *arg)
     while (1) {
         ret = vfs_read(fd, &ch, 1);
         if (ret <= 0) {
-            printf("%s: failed to read socket\r\n", __func__);
+            fprintf(stderr, "%s: failed to read socket\r\n", __func__);
             break;
         }
 

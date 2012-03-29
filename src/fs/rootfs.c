@@ -79,7 +79,7 @@ static int rootfs_stat(mount_point_t *point, const char *path, struct stat *buf)
     if (PATH_IS_ROOT_DIR(path)) {
         buf->st_dev     = (dev_t)0;
         buf->st_ino     = 0;
-        buf->st_mode    = 0666;
+        buf->st_mode    = S_IRWXU | S_IRWXG | S_IRWXO | S_IFDIR;
         buf->st_nlink   = 0;
         buf->st_uid     = 0;
         buf->st_gid     = 0;

@@ -142,7 +142,7 @@ static int devfs_fstat(mount_point_t *point, file_t *file, struct stat *buf)
 
     buf->st_dev     = (dev_t)dev->devno;
     buf->st_ino     = 0;
-    buf->st_mode    = 0666;
+    buf->st_mode    = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH | S_IFCHR;
     buf->st_nlink   = 0;
     buf->st_uid     = 0;
     buf->st_gid     = 0;
@@ -232,7 +232,7 @@ static int devfs_stat(mount_point_t *point, const char *path, struct stat *buf)
     if (PATH_IS_ROOT_DIR(path)) {
         buf->st_dev     = (dev_t)0;
         buf->st_ino     = 0;
-        buf->st_mode    = 0666;
+        buf->st_mode    = S_IRWXU | S_IRWXG | S_IRWXO | S_IFDIR;
         buf->st_nlink   = 0;
         buf->st_uid     = 0;
         buf->st_gid     = 0;
