@@ -49,7 +49,7 @@
  */
 static int timer4_isr(uint32_t interrupt, void *arg)
 {
-    do_timer();
+    kern_timer_handler();
 
     return 0;
 }

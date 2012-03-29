@@ -43,7 +43,7 @@
 #include "vfs/vfs.h"
 #include <sys/types.h>
 #include <sys/time.h>
-#include <reent.h>
+#include <sys/reent.h>
 /*********************************************************************************************************
   系统调用处理
 *********************************************************************************************************/
@@ -76,7 +76,7 @@ static int do_gettimeofday(struct timeval *tv, void *tzp)
 {
     uint64_t tick;
 
-    tick = get_tick();
+    tick = gettick();
 
     tv->tv_sec  = (tick / TICK_PER_SECOND);
     tv->tv_usec = (tick % TICK_PER_SECOND) * 1000000 / TICK_PER_SECOND;
@@ -103,7 +103,7 @@ static void do_yeild(void)
 /*
  * 获得 reent 结构指针
  */
-static struct _reent *do_get_reent(void)
+static struct _reent *do_getreent(void)
 {
     return _impure_ptr;
 }
@@ -132,7 +132,7 @@ sys_do_t sys_do_table[] = {
         (sys_do_t)vfs_link,
         (sys_do_t)vfs_lseek,
         (sys_do_t)vfs_stat,
-        (sys_do_t)do_get_reent,
+        (sys_do_t)do_getreent,
 };
 /*********************************************************************************************************
   END FILE

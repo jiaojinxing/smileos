@@ -74,7 +74,7 @@
 #define TASK_RESUME_INTERRUPT   (1 << 6)                                /*  等待被中断                  */
 
 struct vmm_frame;
-#include <reent.h>                                                      /*  for struct _reent           */
+#include <sys/reent.h>                                                  /*  for struct _reent           */
 /*
  * 任务控制块
  */
@@ -142,7 +142,7 @@ void schedule(void);
 /*
  * 内核定时器处理函数
  */
-void do_timer(void);
+void kern_timer_handler(void);
 
 /*
  * 创建进程
@@ -162,7 +162,7 @@ void printk(const char *fmt, ...);
 
 /*
  * 内核抱怨
- * 供不能用 printk 时使用
+ * 供不能使用 printk 时使用
  */
 void kcomplain(const char *fmt, ...);
 
@@ -224,7 +224,7 @@ void interrupt_exit_no_schedule(void);
 /*
  * 获得 TICK
  */
-uint64_t get_tick(void);
+uint64_t gettick(void);
 
 /*
  * 获得任务 ID

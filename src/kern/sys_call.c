@@ -42,6 +42,12 @@
 ** Version:                 1.2.0
 ** Descriptions:            加入是否处于内核模式的判断, 以适合内核模式时的系统调用
 **
+**--------------------------------------------------------------------------------------------------------
+** Modified by:             JiaoJinXing
+** Modified date:           2012-3-28
+** Version:                 1.3.0
+** Descriptions:            按 newlib 需求, 重写了部分系统调用
+**
 *********************************************************************************************************/
 #include "kern/config.h"
 #include "kern/types.h"
@@ -49,7 +55,7 @@
 #include <sys/time.h>
 #include <stdlib.h>
 #include <string.h>
-#include <reent.h>
+#include <errno.h>
 
 #ifdef SMILEOS_KERNEL
 #include "kern/kern.h"

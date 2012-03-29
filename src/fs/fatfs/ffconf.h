@@ -61,7 +61,7 @@
 
 #define	_USE_LFN	    0                                               /*  不使用长文件名              */
 
-#define	_MAX_LFN	    255                                             /*  长文件名的最大长度          */
+#define	_MAX_LFN	    PATH_MAX                                        /*  长文件名的最大长度          */
 
 #define	_LFN_UNICODE	0                                               /*  支持 unicode                */
 
