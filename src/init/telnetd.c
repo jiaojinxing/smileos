@@ -128,31 +128,6 @@ static int do_ts(int argc, char **argv, int fd, char buf[LINE_MAX])
     return 0;
 }
 
-//static int do_ls(int argc, char **argv, int fd, char buf[LINE_MAX])
-//{
-//    int len;
-//    DIR *dir;
-//    struct dirent *entry;
-//
-//    if (argc < 2) {
-//        dir = vfs_opendir(".");
-//    } else {
-//        dir = vfs_opendir(argv[1]);
-//    }
-//    if (dir == NULL) {
-//        return -1;
-//    }
-//
-//    while ((entry = vfs_readdir(dir)) != NULL) {
-//        len = sprintf(buf, "%s ", entry->d_name);
-//        write(fd, buf, len);
-//    }
-//    vfs_closedir(dir);
-//    len = sprintf(buf, "\r\n");
-//    write(fd, buf, len);
-//    return 0;
-//}
-
 static int do_cd(int argc, char **argv, int fd, char buf[LINE_MAX])
 {
     if (argc == 2) {
