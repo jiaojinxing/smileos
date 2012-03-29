@@ -50,7 +50,7 @@
  */
 typedef struct {
     int         sockfd;
-    uint8_t     opened;
+    int         ref;
 } privinfo_t;
 
 //#define debug_output        kcomplain
@@ -63,12 +63,9 @@ static int socket_open(void *ctx, file_t *file, int oflag, mode_t mode)
 {
     privinfo_t *priv = ctx;
 
-    if (!priv->opened) {
-        priv->opened = TRUE;
-        return 0;
-    } else {
-        return -1;
-    }
+    priv->ref++;
+
+    return 0;
 }
 
 /*
@@ -99,13 +96,15 @@ static int socket_close(void *ctx, file_t *file)
     privinfo_t *priv = ctx;
     char buf[32];
 
-    sprintf(buf, "/dev/socket%d", priv->sockfd);
+    if (--priv->ref == 0) {
+        sprintf(buf, "/dev/socket%d", priv->sockfd);
 
-    device_remove(buf);
+        device_remove(buf);
 
-    lwip_close(priv->sockfd);
+        lwip_close(priv->sockfd);
 
-    kfree(priv);
+        kfree(priv);
+    }
 
     return 0;
 }
@@ -184,8 +183,8 @@ int socket_attach(int sockfd)
 
     priv = kmalloc(sizeof(privinfo_t));
     if (priv != NULL) {
-        priv->opened = FALSE;
         priv->sockfd = sockfd;
+        priv->ref    = 0;
 
         sprintf(buf, "/dev/socket%d", sockfd);
 
