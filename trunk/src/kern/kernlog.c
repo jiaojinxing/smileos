@@ -110,7 +110,7 @@ void printk(const char *fmt, ...)
 
 /*
  * 内核抱怨
- * 供不能用 printk 时使用
+ * 供不能使用 printk 时使用
  */
 void kcomplain(const char *fmt, ...)
 {

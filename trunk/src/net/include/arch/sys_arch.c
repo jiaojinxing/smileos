@@ -270,7 +270,7 @@ void sys_init(void)
 /** Ticks/jiffies since power up. */
 u32_t sys_jiffies(void)
 {
-    return get_tick();
+    return gettick();
 }
 
 /** Returns the current time in milliseconds,

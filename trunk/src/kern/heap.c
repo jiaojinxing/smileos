@@ -36,6 +36,13 @@
 ** Version:                 1.1.0
 ** Descriptions:            修复内存释放和内存统计的一处 BUG, 增加堆指针类型安全检查
 **
+**--------------------------------------------------------------------------------------------------------
+** Modified by:             JiaoJinXing
+** Modified date:           2012-3-28
+** Version:                 1.2.0
+** Descriptions:            增加 newlib 需要的可重入版本 _malloc_r 等函数,
+**                          修改 heap_show 允许打印内存堆信息到文件
+**
 *********************************************************************************************************/
 #include "kern/config.h"
 #include "kern/types.h"
@@ -43,6 +50,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <errno.h>
 
 /*
  * 进程代码项目应享有一份该文件, 用于实现用户态的 malloc 等
@@ -52,6 +60,7 @@
 #include "kern/kern.h"
 
 #define getpid()          current->tid
+
 /*
  * printk 会使用内存分配, 不使用 printk
  */
@@ -113,13 +122,15 @@ void *kcalloc(uint32_t nelem, uint32_t elsize)
  */
 void *_malloc_r(struct _reent *reent, size_t size)
 {
-    void *ptr;
+    void    *ptr;
     uint32_t reg;
 
     reg = interrupt_disable();
 
     ptr = heap_alloc(&kern_heap, size);
-
+    if (ptr == NULL) {
+        reent->_errno = ENOMEM;
+    }
     interrupt_resume(reg);
 
     return ptr;
@@ -144,7 +155,7 @@ void _free_r(struct _reent *reent, void *ptr)
  */
 void *_realloc_r(struct _reent *reent, void *ptr, size_t newsize)
 {
-    void *newptr;
+    void    *newptr;
     uint32_t reg;
 
     reg = interrupt_disable();
@@ -155,6 +166,8 @@ void *_realloc_r(struct _reent *reent, void *ptr, size_t newsize)
             memcpy(newptr, ptr, newsize);
             _free_r(reent, ptr);
         }
+    } else {
+        reent->_errno = ENOMEM;
     }
     interrupt_resume(reg);
 
@@ -166,7 +179,7 @@ void *_realloc_r(struct _reent *reent, void *ptr, size_t newsize)
  */
 void *_calloc_r(struct _reent *reent, size_t nelem, size_t elsize)
 {
-    void *ptr;
+    void    *ptr;
     uint32_t reg;
 
     reg = interrupt_disable();
@@ -174,6 +187,8 @@ void *_calloc_r(struct _reent *reent, size_t nelem, size_t elsize)
     ptr = _malloc_r(reent, nelem * MEM_ALIGN_SIZE(elsize));
     if (ptr != NULL) {
         memset(ptr, 0, nelem * MEM_ALIGN_SIZE(elsize));
+    } else {
+        reent->_errno = ENOMEM;
     }
     interrupt_resume(reg);
 
@@ -198,8 +213,6 @@ void kern_heap_create(void)
 
 #else
 
-#include <reent.h>
-
 #define debug_output      printf
 
 static heap_t process_heap;
@@ -214,6 +227,9 @@ void *_malloc_r(struct _reent *reent, size_t size)
      * 因进程里使用非抢占的 pthread, 免锁免关中断
      */
     ptr = heap_alloc(&process_heap, size);
+    if (ptr == NULL) {
+        reent->_errno = ENOMEM;
+    }
 
     return ptr;
 }
@@ -239,6 +255,8 @@ void *_realloc_r(struct _reent *reent, void *ptr, size_t newsize)
             memcpy(newptr, ptr, newsize);
             _free_r(reent, ptr);
         }
+    } else {
+        reent->_errno = ENOMEM;
     }
     return newptr;
 }
@@ -253,6 +271,8 @@ void *_calloc_r(struct _reent *reent, size_t nelem, size_t elsize)
     ptr = _malloc_r(reent, nelem * MEM_ALIGN_SIZE(elsize));
     if (ptr != NULL) {
         memset(ptr, 0, nelem * MEM_ALIGN_SIZE(elsize));
+    } else {
+        reent->_errno = ENOMEM;
     }
     return ptr;
 }
@@ -271,8 +291,8 @@ void libc_init(void)
      */
     heap_init(&process_heap, &__bss_end, PROCESS_SPACE_SIZE - (uint32_t)&__bss_end - PROCESS_STACK_SIZE);
 
-    extern struct _reent *get_reent(void);
-    _impure_ptr = get_reent();
+    extern struct _reent *getreent(void);
+    _impure_ptr = getreent();
 
     open("/dev/stdin",  O_RDONLY, 0666);
 

@@ -42,7 +42,14 @@
 ** Modified by:             JiaoJinXing
 ** Modified date:           2012-3-26
 ** Version:                 1.2.0
-** Descriptions:            加入进程虚拟地址空间的保护和线程栈溢出检查
+** Descriptions:            加入进程虚拟地址空间的保护和内核线程栈溢出检查
+**
+**--------------------------------------------------------------------------------------------------------
+** Modified by:             JiaoJinXing
+** Modified date:           2012-3-28
+** Version:                 1.3.0
+** Descriptions:            按 newlib 需求, 任务控制块增加 struct _reent 成员,
+**                          任务切换时也切换 _impure_ptr 指针
 **
 *********************************************************************************************************/
 #include "kern/config.h"
@@ -51,7 +58,9 @@
 #include "kern/arm.h"
 #include "kern/vmm.h"
 #include "kern/mmu.h"
+#include "vfs/vfs.h"
 #include <string.h>
+#include <fcntl.h>
 /*********************************************************************************************************
   内核变量
 *********************************************************************************************************/
@@ -62,7 +71,7 @@ static uint8_t      interrupt_nest;                                     /*  中断
 static uint8_t      running;                                            /*  内核是否正在运行            */
 uint8_t             kernel_mode;                                        /*  当前是否处于内核模式        */
 
-#define THREAD_STACK_MAGIC0         0xAA                                /*  线程栈魔数                  */
+#define THREAD_STACK_MAGIC0         0xAA                                /*  内核线程栈魔数              */
 
 static void idle_process_create(void);
 /*********************************************************************************************************
@@ -147,7 +156,7 @@ void schedule(void)
 
     while (1) {
         /*
-         * 先做线程调度, 再做进程调度
+         * 先做内核线程调度, 再做进程调度
          */
         for (i = PROCESS_NR, task = tasks + PROCESS_NR; i < TASK_NR; i++, task++) {
             if ((task->state == TASK_RUNNING) && (max < (int32_t)task->counter)) {
@@ -185,8 +194,9 @@ void schedule(void)
         return;                                                         /*  直接返回                    */
     }
 
-    task    = current;                                                  /*  暂存 current 指针           */
-    current = &tasks[next];                                             /*  改写 current 指针           */
+    task        = current;                                              /*  暂存 current 指针           */
+    current     = &tasks[next];                                         /*  改写 current 指针           */
+    _impure_ptr = &current->reent;                                      /*  改写 _impure_ptr 指针       */
 
     if ((current->content[3] & ARM_MODE_MASK) == ARM_SVC_MODE) {        /*  重新设置新任务的内核栈指针  */
         current->content[0] = (uint32_t)&current->kstack[KERN_STACK_SIZE];
@@ -203,8 +213,6 @@ void schedule(void)
         }
     }
 
-    _impure_ptr = &current->reent;                                      /*  改写 _impure_ptr 指针       */
-
     extern void __switch_to(register task_t *from, register task_t *to);
     __switch_to(task, current);                                         /*  任务切换                    */
 }
@@ -212,7 +220,7 @@ void schedule(void)
 /*
  * 内核定时器处理函数
  */
-void do_timer(void)
+void kern_timer_handler(void)
 {
     int      i;
     int      flag;
@@ -239,9 +247,9 @@ void do_timer(void)
                 task->cpu_rate = task->tick;                            /*  任务的 CPU 占用率           */
                 task->tick     = 0;                                     /*  重置该任务被定时器中断的次数*/
 
-                if (task->type == TASK_TYPE_THREAD) {                   /*  如果任务是线程              */
+                if (task->type == TASK_TYPE_THREAD) {                   /*  如果任务是内核线程          */
                     /*
-                     * 统计任务的栈使用率, 栈溢出检查
+                     * 统计内核线程的栈使用率, 栈溢出检查
                      *
                      * 注意: 编译器加了参数 -fsigned-char, char 是有符号的!
                      *
@@ -526,7 +534,7 @@ int32_t process_create(const char *name, uint8_t *code, uint32_t size, uint32_t 
         strcpy(task->name, "???");
     }
 
-    vfs_task_file_info_init(task->tid);
+    vfs_task_file_info_init(task->tid);                                 /*  初始化任务的文件信息        */
 
     /*
      * 为拷贝代码到进程的虚拟地址空间, 预先映射好页面
@@ -566,26 +574,23 @@ int32_t process_create(const char *name, uint8_t *code, uint32_t size, uint32_t 
     return pid;
 }
 
-#include "vfs/vfs.h"
-#include <fcntl.h>
-
 /*
  * 内核线程外壳
  */
 static void kthread_shell(task_t *task)
 {
-    vfs_task_file_info_init(task->tid);
+    vfs_task_file_info_init(task->tid);                                 /*  初始化任务的文件信息        */
 
-    open("/dev/stdin",  O_RDONLY, 0666);
+    open("/dev/stdin",  O_RDONLY, 0666);                                /*  打开三个标准文件            */
 
     open("/dev/stdout", O_WRONLY, 0666);
 
     open("/dev/stderr", O_WRONLY, 0666);
 
-    task->thread(task->arg);
+    task->thread(task->arg);                                            /*  进入真正的内核线程函数      */
 
     extern void _exit(int status);
-    _exit(0);
+    _exit(0);                                                           /*  退出内核线程                */
 }
 
 /*
@@ -611,14 +616,14 @@ int32_t kthread_create(const char *name, void (*func)(void *), void *arg, uint32
     stack_size = MEM_ALIGN_SIZE(stack_size);                            /*  对齐栈空间大小              */
 
     reg = interrupt_disable();
-                                                                        /*  遍历所有的线程控制块        */
+                                                                        /*  遍历所有的内核线程控制块    */
     for (tid = PROCESS_NR, task = tasks + PROCESS_NR; tid < TASK_NR; tid++, task++) {
-        if (task->state == TASK_UNALLOCATE) {                           /*  如果线程控制块无效          */
+        if (task->state == TASK_UNALLOCATE) {                           /*  如果内核线程控制块无效      */
             break;
         }
     }
 
-    if (tid == TASK_NR) {                                               /*  没有空闲的线程控制块        */
+    if (tid == TASK_NR) {                                               /*  没有空闲的内核线程控制块    */
         interrupt_resume(reg);
         return -1;
     }
@@ -632,12 +637,12 @@ int32_t kthread_create(const char *name, void (*func)(void *), void *arg, uint32
     memset((char *)task->stack_base, THREAD_STACK_MAGIC0, stack_size);  /*  初始化栈空间                */
 
     task->pid          = current->pid;                                  /*  进程 ID 为当前任务的进程 ID */
-    task->tid          = tid;                                           /*  线程 ID                     */
+    task->tid          = tid;                                           /*  任务 ID                     */
     task->state        = TASK_RUNNING;
     task->counter      = priority;
     task->timer        = 0;
     task->priority     = priority;
-    task->type         = TASK_TYPE_THREAD;                              /*  任务类型为线程              */
+    task->type         = TASK_TYPE_THREAD;                              /*  任务类型为内核线程          */
     task->resume_type  = TASK_RESUME_UNKNOW;
     task->next         = NULL;
     task->wait_list    = NULL;
@@ -702,14 +707,14 @@ void task_kill(int32_t tid)
             printk("kill process %s pid=%d!\r\n", task->name, task->pid);
             vmm_free_process_space(task);                               /*  释放进程的虚拟地址空间      */
 
-        } else {                                                        /*  如果任务是线程              */
+        } else {                                                        /*  如果任务是内核线程          */
             printk("kill kthread %s tid=%d!\r\n", task->name, task->tid);
-            kfree((void *)task->stack_base);                            /*  释放线程的栈空间            */
+            kfree((void *)task->stack_base);                            /*  释放内核线程的栈空间        */
         }
 
         task->state = TASK_UNALLOCATE;                                  /*  释放任务的任务控制块        */
 
-        if (tid == current->tid) {                                      /*  如果要杀死的是当前的任务    */
+        if (tid == current->tid) {                                      /*  如果杀死的是当前运行的任务  */
             schedule();                                                 /*  任务调度                    */
         }
     }
@@ -718,7 +723,7 @@ void task_kill(int32_t tid)
 /*
  * 获得 TICK
  */
-uint64_t get_tick(void)
+uint64_t gettick(void)
 {
     uint64_t ret;
     uint32_t reg;
