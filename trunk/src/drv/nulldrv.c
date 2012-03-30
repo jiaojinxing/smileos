@@ -19,10 +19,10 @@
 ** Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 **
 **--------------------------------------------------------------------------------------------------------
-** File name:               ttydrv.c
+** File name:               nulldrv.c
 ** Last modified Date:      2012-3-27
 ** Last Version:            1.0.0
-** Descriptions:            TTY 驱动和设备
+** Descriptions:            NULL 驱动和设备
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing
@@ -42,93 +42,74 @@
 #include "kern/kern.h"
 
 /*
- * 打开 tty
+ * 打开 null
  */
-static int tty_open(void *ctx, file_t *file, int oflag, mode_t mode)
+static int null_open(void *ctx, file_t *file, int oflag, mode_t mode)
 {
     return 0;
 }
 
 /*
- * 控制 tty
+ * 控制 null
  */
-static int tty_ioctl(void *ctx, file_t *file, int cmd, void *arg)
-{
-    int ret = 0;
-
-    switch (cmd) {
-    case 0:
-        break;
-
-    default:
-        ret = -1;
-        break;
-    }
-    return ret;
-}
-
-/*
- * 关闭 tty
- */
-static int tty_close(void *ctx, file_t *file)
+static int null_ioctl(void *ctx, file_t *file, int cmd, void *arg)
 {
     return 0;
 }
 
 /*
- * tty
+ * 关闭 null
  */
-static int tty_isatty(void *ctx, file_t *file)
+static int null_close(void *ctx, file_t *file)
+{
+    return 0;
+}
+
+/*
+ * null
+ */
+static int null_isatty(void *ctx, file_t *file)
 {
     return 1;
 }
 
 /*
- * 读 tty
+ * 读 null
  */
-static ssize_t tty_read(void *ctx, file_t *file, void *buf, size_t len)
+static ssize_t null_read(void *ctx, file_t *file, void *buf, size_t len)
 {
-    return -1;
+    return 0;
 }
 
 /*
- * 写 tty
+ * 写 null
  */
-static ssize_t tty_write(void *ctx, file_t *file, const void *buf, size_t len)
+static ssize_t null_write(void *ctx, file_t *file, const void *buf, size_t len)
 {
-    char *tmp = (char *)buf;
-    tmp[len] = 0;
-
-    printk(tmp);
-
     return len;
 }
 
 /*
- * tty 驱动
+ * null 驱动
  */
-static driver_t tty_drv = {
-        .name   = "tty",
-        .open   = tty_open,
-        .write  = tty_write,
-        .read   = tty_read,
-        .isatty = tty_isatty,
-        .ioctl  = tty_ioctl,
-        .close  = tty_close,
+static driver_t null_drv = {
+        .name   = "null",
+        .open   = null_open,
+        .write  = null_write,
+        .read   = null_read,
+        .isatty = null_isatty,
+        .ioctl  = null_ioctl,
+        .close  = null_close,
 };
 
 /*
- * 初始化 tty
+ * 初始化 null
  */
-int tty_init(void)
+int null_init(void)
 {
-    driver_install(&tty_drv);
+    driver_install(&null_drv);
 
-    device_create("/dev/stdin",  "tty", NULL);
-
-    device_create("/dev/stdout", "tty", NULL);
-
-    device_create("/dev/stderr", "tty", NULL);
+    device_create("/dev/null",  "null", NULL);
 
     return 0;
 }

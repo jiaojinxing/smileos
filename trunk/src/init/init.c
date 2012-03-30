@@ -117,8 +117,8 @@ int main(void)
 
     vfs_init();
 
-    extern int tty_init(void);
-    tty_init();
+    extern int null_init(void);
+    null_init();
 
     extern int socket_init(void);
     socket_init();
