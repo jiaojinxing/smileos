@@ -118,7 +118,7 @@
 typedef enum {
     IPC_TYPE_MUTEX      = 0xABCD1A1A,                                   /*  互斥量                      */
     IPC_TYPE_SEM        = 0xABCD2B2B,                                   /*  信号量                      */
-    IPC_TYPE_mqueue     = 0xABCD3C3C,                                   /*  邮箱                        */
+    IPC_TYPE_mqueue     = 0xABCD3C3C,                                   /*  消息队列                    */
     IPC_TYPE_DESTROY    = 0xABCD4D4D,                                   /*  已经销毁                    */
 } ipc_type_t;
 /*********************************************************************************************************
@@ -604,22 +604,22 @@ int sem_set_valid(sem_t *sem, int valid)
     return -1;
 }
 /*********************************************************************************************************
-  邮箱
+  消息队列
 *********************************************************************************************************/
 struct mqueue {
     ipc_type_t   type;                                                  /*  IPC 类型                    */
     uint8_t      valid;                                                 /*  有效性                      */
-    task_t      *r_wait_list;                                           /*  读邮箱等待链表              */
-    task_t      *w_wait_list;                                           /*  写邮箱等待链表              */
-    uint32_t     size;                                                  /*  邮箱可容纳多少封邮件        */
-    uint32_t     cnt;                                                   /*  邮箱里的未读邮件数          */
+    task_t      *r_wait_list;                                           /*  读消息队列等待链表          */
+    task_t      *w_wait_list;                                           /*  写消息队列等待链表          */
+    uint32_t     size;                                                  /*  消息队列可容纳多少封消息    */
+    uint32_t     cnt;                                                   /*  消息队列里的未读消息数      */
     uint32_t     in;                                                    /*  入队点                      */
     uint32_t     out;                                                   /*  出队点                      */
-    void        *msg[1];                                                /*  邮件队列                    */
+    void        *msg[1];                                                /*  消息队列                    */
 };
 
 /*
- * 创建一个新的邮箱
+ * 创建一个新的消息队列
  */
 int mqueue_new(mqueue_t *mqueue, uint32_t size)
 {
@@ -649,7 +649,7 @@ int mqueue_new(mqueue_t *mqueue, uint32_t size)
 }
 
 /*
- * 尝试投递邮件到邮箱
+ * 尝试投递消息到消息队列
  */
 int mqueue_trypost(mqueue_t *mqueue, void *msg)
 {
@@ -682,7 +682,7 @@ int mqueue_trypost(mqueue_t *mqueue, void *msg)
 }
 
 /*
- * 投递邮件到邮箱
+ * 投递消息到消息队列
  */
 int mqueue_post(mqueue_t *mqueue, void *msg, uint32_t timeout)
 {
@@ -734,7 +734,7 @@ int mqueue_post(mqueue_t *mqueue, void *msg, uint32_t timeout)
 }
 
 /*
- * 尝试从邮箱里取出邮件
+ * 尝试从消息队列里取出消息
  */
 int mqueue_tryfetch(mqueue_t *mqueue, void **msg)
 {
@@ -767,7 +767,7 @@ int mqueue_tryfetch(mqueue_t *mqueue, void **msg)
 }
 
 /*
- * 从邮箱里取出邮件
+ * 从消息队列里取出消息
  */
 int mqueue_fetch(mqueue_t *mqueue, void **msg, uint32_t timeout)
 {
@@ -819,7 +819,7 @@ int mqueue_fetch(mqueue_t *mqueue, void **msg, uint32_t timeout)
 }
 
 /*
- * 清空邮箱
+ * 清空消息队列
  */
 int mqueue_flush(mqueue_t *mqueue)
 {
@@ -850,7 +850,7 @@ int mqueue_flush(mqueue_t *mqueue)
 }
 
 /*
- * 终止等待读取邮件
+ * 终止等待读取消息
  */
 int mqueue_abort_fetch(mqueue_t *mqueue)
 {
@@ -877,7 +877,7 @@ int mqueue_abort_fetch(mqueue_t *mqueue)
 }
 
 /*
- * 终止等待投递邮件
+ * 终止等待投递消息
  */
 int mqueue_abort_post(mqueue_t *mqueue)
 {
@@ -904,7 +904,7 @@ int mqueue_abort_post(mqueue_t *mqueue)
 }
 
 /*
- * 终止等待邮箱
+ * 终止等待消息队列
  */
 int mqueue_abort(mqueue_t *mqueue)
 {
@@ -935,7 +935,7 @@ int mqueue_abort(mqueue_t *mqueue)
 }
 
 /*
- * 删除邮箱
+ * 删除消息队列
  */
 int mqueue_free(mqueue_t *mqueue)
 {
@@ -963,7 +963,7 @@ int mqueue_free(mqueue_t *mqueue)
 }
 
 /*
- * 判断邮箱是否有效
+ * 判断消息队列是否有效
  */
 int mqueue_valid(mqueue_t *mqueue)
 {
@@ -983,7 +983,7 @@ int mqueue_valid(mqueue_t *mqueue)
 }
 
 /*
- * 设置邮箱的有效性
+ * 设置消息队列的有效性
  */
 int mqueue_set_valid(mqueue_t *mqueue, int valid)
 {

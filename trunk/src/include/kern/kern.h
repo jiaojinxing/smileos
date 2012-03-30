@@ -217,9 +217,9 @@ void interrupt_enter(void);
 void interrupt_exit(void);
 
 /*
- * 退出中断, 但不要调度
+ * 退出中断, 但不要进行任务调度
  */
-void interrupt_exit_no_schedule(void);
+void interrupt_exit_no_sched(void);
 
 /*
  * 获得 TICK

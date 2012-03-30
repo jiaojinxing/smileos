@@ -46,9 +46,9 @@ struct mutex;
 struct sem;
 struct mqueue;
 
-typedef struct mutex *          mutex_t;
-typedef struct sem   *          sem_t;
-typedef struct mqueue  *          mqueue_t;
+typedef struct mutex  *     mutex_t;
+typedef struct sem    *     sem_t;
+typedef struct mqueue *     mqueue_t;
 /*********************************************************************************************************
   互斥量
 *********************************************************************************************************/
@@ -134,65 +134,65 @@ int sem_valid(sem_t *sem);
  */
 int sem_set_valid(sem_t *sem, int valid);
 /*********************************************************************************************************
-  邮箱
+  消息队列
 *********************************************************************************************************/
 /*
- * 创建一个新的邮箱
+ * 创建一个新的消息队列
  */
 int mqueue_new(mqueue_t *mqueue, uint32_t size);
 
 /*
- * 尝试投递邮件到邮箱
+ * 尝试投递消息到消息队列
  */
 int mqueue_trypost(mqueue_t *mqueue, void *msg);
 
 /*
- * 投递邮件到邮箱
+ * 投递消息到消息队列
  */
 int mqueue_post(mqueue_t *mqueue, void *msg, uint32_t timeout);
 
 /*
- * 尝试从邮箱里取出邮件
+ * 尝试从消息队列里取出消息
  */
 int mqueue_tryfetch(mqueue_t *mqueue, void **msg);
 
 /*
- * 从邮箱里取出邮件
+ * 从消息队列里取出消息
  */
 int mqueue_fetch(mqueue_t *mqueue, void **msg, uint32_t timeout);
 
 /*
- * 清空邮箱
+ * 清空消息队列
  */
 int mqueue_flush(mqueue_t *mqueue);
 
 /*
- * 终止等待读取邮件
+ * 终止等待读取消息
  */
 int mqueue_abort_fetch(mqueue_t *mqueue);
 
 /*
- * 终止等待投递邮件
+ * 终止等待投递消息
  */
 int mqueue_abort_post(mqueue_t *mqueue);
 
 /*
- * 终止等待邮箱
+ * 终止等待消息队列
  */
 int mqueue_abort(mqueue_t *mqueue);
 
 /*
- * 删除邮箱
+ * 删除消息队列
  */
 int mqueue_free(mqueue_t *mqueue);
 
 /*
- * 判断邮箱是否有效
+ * 判断消息队列是否有效
  */
 int mqueue_valid(mqueue_t *mqueue);
 
 /*
- * 设置邮箱的有效性
+ * 设置消息队列的有效性
  */
 int mqueue_set_valid(mqueue_t *mqueue, int valid);
 

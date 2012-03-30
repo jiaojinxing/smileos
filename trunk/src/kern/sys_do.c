@@ -48,7 +48,7 @@
   系统调用处理
 *********************************************************************************************************/
 /*
- * 进程退出
+ * 任务退出
  */
 static void do_exit(int status)
 {
@@ -56,7 +56,7 @@ static void do_exit(int status)
 }
 
 /*
- * 进程休眠
+ * 任务休眠
  */
 static int do_sleep(unsigned int ticks)
 {
@@ -113,7 +113,7 @@ static struct _reent *do_getreent(void)
 sys_do_t sys_do_table[] = {
         /*
          * do_xxx 的位置必须要和 SYS_CALL_XXX 的值一致
-         */                                /*  系统调用数                  */
+         */
         (sys_do_t)do_exit,
         (sys_do_t)do_sleep,
         (sys_do_t)do_yeild,

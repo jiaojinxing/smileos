@@ -45,7 +45,7 @@
 
 struct dirent {
     ino_t  d_ino;
-    char   d_name[NAME_MAX + 1];
+    char   d_name[NAME_MAX];
 };
 
 #endif                                                                  /*  DIRENT_H_                   */

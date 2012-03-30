@@ -49,7 +49,7 @@
  * @return a new mutex */
 err_t sys_mutex_new(sys_mutex_t *mutex)
 {
-    if (kern_mutex_new(mutex) < 0) {
+    if (mutex_new(mutex) < 0) {
         return ERR_MEM;
     } else {
         return ERR_OK;
@@ -60,33 +60,33 @@ err_t sys_mutex_new(sys_mutex_t *mutex)
  * @param mutex the mutex to lock */
 void sys_mutex_lock(sys_mutex_t *mutex)
 {
-    kern_mutex_lock(mutex, 0);
+    mutex_lock(mutex, 0);
 }
 
 /** Unlock a mutex
  * @param mutex the mutex to unlock */
 void sys_mutex_unlock(sys_mutex_t *mutex)
 {
-    kern_mutex_unlock(mutex);
+    mutex_unlock(mutex);
 }
 
 /** Delete a semaphore
  * @param mutex the mutex to delete */
 void sys_mutex_free(sys_mutex_t *mutex)
 {
-    kern_mutex_free(mutex);
+    mutex_free(mutex);
 }
 
 /** Check if a mutex is valid/allocated: return 1 for valid, 0 for invalid */
 int sys_mutex_valid(sys_mutex_t *mutex)
 {
-    return kern_mutex_valid(mutex);
+    return mutex_valid(mutex);
 }
 
 /** Set a mutex invalid so that sys_mutex_valid returns 0 */
 void sys_mutex_set_invalid(sys_mutex_t *mutex)
 {
-    kern_mutex_set_valid(mutex, FALSE);
+    mutex_set_valid(mutex, FALSE);
 }
 
 /** Create a new semaphore
@@ -95,7 +95,7 @@ void sys_mutex_set_invalid(sys_mutex_t *mutex)
  * @return ERR_OK if successful, another err_t otherwise */
 err_t sys_sem_new(sys_sem_t *sem, u8_t count)
 {
-    if (kern_sem_new(sem, count) < 0) {
+    if (sem_new(sem, count) < 0) {
         return ERR_MEM;
     } else {
         return ERR_OK;
@@ -106,7 +106,7 @@ err_t sys_sem_new(sys_sem_t *sem, u8_t count)
  * @param sem the semaphore to signal */
 void sys_sem_signal(sys_sem_t *sem)
 {
-    kern_sem_signal(sem);
+    sem_signal(sem);
 }
 
 /** Wait for a semaphore for the specified timeout
@@ -124,7 +124,7 @@ u32_t sys_arch_sem_wait(sys_sem_t *sem, u32_t timeout)
 
     start = sys_now();
 
-    if (kern_sem_wait(sem, timeout) < 0) {
+    if (sem_wait(sem, timeout) < 0) {
         return SYS_ARCH_TIMEOUT;
     } else {
         return sys_now() - start;
@@ -135,19 +135,19 @@ u32_t sys_arch_sem_wait(sys_sem_t *sem, u32_t timeout)
  * @param sem semaphore to delete */
 void sys_sem_free(sys_sem_t *sem)
 {
-    kern_sem_free(sem);
+    sem_free(sem);
 }
 
 /** Check if a sempahore is valid/allocated: return 1 for valid, 0 for invalid */
 int sys_sem_valid(sys_sem_t *sem)
 {
-    return kern_sem_valid(sem);
+    return sem_valid(sem);
 }
 
 /** Set a semaphore invalid so that sys_sem_valid returns 0 */
 void sys_sem_set_invalid(sys_sem_t *sem)
 {
-    kern_sem_set_valid(sem, FALSE);
+    sem_set_valid(sem, FALSE);
 }
 
 /** Time functions. */
@@ -162,7 +162,7 @@ void sys_msleep(u32_t ms) /* only has a (close to) 1 jiffy resolution. */
  * @return ERR_OK if successful, another err_t otherwise */
 err_t sys_mbox_new(sys_mbox_t *mbox, int size)
 {
-    if (kern_mbox_new(mbox, size) < 0) {
+    if (mqueue_new(mbox, size) < 0) {
         return ERR_MEM;
     } else {
         return ERR_OK;
@@ -175,7 +175,7 @@ err_t sys_mbox_new(sys_mbox_t *mbox, int size)
  * @param msg message to post (ATTENTION: can be NULL) */
 void sys_mbox_post(sys_mbox_t *mbox, void *msg)
 {
-    kern_mbox_post(mbox, msg, 0);
+    mqueue_post(mbox, msg, 0);
 }
 
 /** Try to post a message to an mbox - may fail if full or ISR
@@ -183,7 +183,7 @@ void sys_mbox_post(sys_mbox_t *mbox, void *msg)
  * @param msg message to post (ATTENTION: can be NULL) */
 err_t sys_mbox_trypost(sys_mbox_t *mbox, void *msg)
 {
-    if (kern_mbox_trypost(mbox, msg) < 0) {
+    if (mqueue_trypost(mbox, msg) < 0) {
         return ERR_BUF;
     } else {
         return ERR_OK;
@@ -207,7 +207,7 @@ u32_t sys_arch_mbox_fetch(sys_mbox_t *mbox, void **msg, u32_t timeout)
 
     start = sys_now();
 
-    if (kern_mbox_fetch(mbox, msg, timeout) < 0) {
+    if (mqueue_fetch(mbox, msg, timeout) < 0) {
         return SYS_ARCH_TIMEOUT;
     } else {
         return sys_now() - start;
@@ -223,7 +223,7 @@ u32_t sys_arch_mbox_fetch(sys_mbox_t *mbox, void **msg, u32_t timeout)
  *         or SYS_MBOX_EMPTY if the mailbox is empty */
 u32_t sys_arch_mbox_tryfetch(sys_mbox_t *mbox, void **msg)
 {
-    if (kern_mbox_tryfetch(mbox, msg) < 0) {
+    if (mqueue_tryfetch(mbox, msg) < 0) {
         return SYS_MBOX_EMPTY;
     } else {
         return 0;
@@ -234,19 +234,19 @@ u32_t sys_arch_mbox_tryfetch(sys_mbox_t *mbox, void **msg)
  * @param mbox mbox to delete */
 void sys_mbox_free(sys_mbox_t *mbox)
 {
-    kern_mbox_free(mbox);
+    mqueue_free(mbox);
 }
 
 /** Check if an mbox is valid/allocated: return 1 for valid, 0 for invalid */
 int sys_mbox_valid(sys_mbox_t *mbox)
 {
-    return kern_mbox_valid(mbox);
+    return mqueue_valid(mbox);
 }
 
 /** Set an mbox invalid so that sys_mbox_valid returns 0 */
 void sys_mbox_set_invalid(sys_mbox_t *mbox)
 {
-    kern_mbox_set_valid(mbox, FALSE);
+    mqueue_set_valid(mbox, FALSE);
 }
 
 /** The only thread function:

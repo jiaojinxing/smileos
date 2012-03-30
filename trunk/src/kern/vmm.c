@@ -202,7 +202,7 @@ static void vmm_frame_free(vmm_frame_t *frame)
 /*
  * 获得页框的物理地址
  */
-static uint32_t vmm_get_frame_addr(vmm_frame_t *frame)
+static inline uint32_t vmm_frame_addr(vmm_frame_t *frame)
 {
     return (frame - vmm_frames) * VMM_FRAME_SIZE + VMM_MEM_BASE;
 }
@@ -210,7 +210,7 @@ static uint32_t vmm_get_frame_addr(vmm_frame_t *frame)
 /*
  * 通过一个虚拟地址映射进程虚拟地址空间中的一个页面
  */
-int vmm_map_process_page(task_t *task, uint32_t va)
+int vmm_page_map(task_t *task, uint32_t va)
 {
     vmm_frame_t *frame;
     int          flag = FALSE;
@@ -236,7 +236,7 @@ int vmm_map_process_page(task_t *task, uint32_t va)
         frame = vmm_frame_alloc(task);                                  /*  分配一个空闲的页框          */
         if (frame != NULL) {                                            /*  计算虚拟地址在页表里的页号  */
             uint32_t page_nr = (va & (SECTION_SIZE - 1)) >> PAGE_OFFSET;
-            mmu_map_page(tbl, page_nr, vmm_get_frame_addr(frame));      /*  页面映射                    */
+            mmu_map_page(tbl, page_nr, vmm_frame_addr(frame));          /*  页面映射                    */
             return 0;
         } else {
             /*
@@ -257,9 +257,37 @@ int vmm_map_process_page(task_t *task, uint32_t va)
 }
 
 /*
- * 释放进程的虚拟地址空间
+ * 初始化进程的虚拟内存信息
  */
-void vmm_process_cleanup(task_t *task)
+int vmm_process_init(task_t *task, uint32_t file_size)
+{
+    int i;
+
+    /*
+     * 为拷贝代码到进程的虚拟地址空间, 预先映射好页面
+     */
+    for (i = 0; i < (file_size + PAGE_SIZE - 1) / PAGE_SIZE; i++) {
+        if (vmm_page_map(task, task->pid * PROCESS_SPACE_SIZE + i * PAGE_SIZE) < 0) {
+            vmm_process_cleanup(task);
+            return -1;
+        }
+    }
+
+    /*
+     * 为进程栈空间映射一个页面
+     */
+    if (vmm_page_map(task, (task->pid + 1) * PROCESS_SPACE_SIZE - PAGE_SIZE) < 0) {
+        vmm_process_cleanup(task);
+        return -1;
+    }
+
+    return 0;
+}
+
+/*
+ * 清理进程的虚拟内存信息
+ */
+int vmm_process_cleanup(task_t *task)
 {
     int          i;
     vmm_frame_t *next;
@@ -279,29 +307,6 @@ void vmm_process_cleanup(task_t *task)
         }                                                               /*  取消映射段                  */
         mmu_unmap_section(task->pid * PROCESS_SPACE_SIZE / SECTION_SIZE + i);
         task->mmu_backup[i] = 0;
-    }
-}
-
-int vmm_process_init(task_t *task, uint32_t size)
-{
-    int i;
-
-    /*
-     * 为拷贝代码到进程的虚拟地址空间, 预先映射好页面
-     */
-    for (i = 0; i < (size + PAGE_SIZE - 1) / PAGE_SIZE; i++) {
-        if (vmm_map_process_page(task, task->pid * PROCESS_SPACE_SIZE + i * PAGE_SIZE) < 0) {
-            vmm_process_cleanup(task);
-            return -1;
-        }
-    }
-
-    /*
-     * 为进程栈空间映射一个页面
-     */
-    if (vmm_map_process_page(task, (task->pid + 1) * PROCESS_SPACE_SIZE - PAGE_SIZE) < 0) {
-        vmm_process_cleanup(task);
-        return -1;
     }
 
     return 0;

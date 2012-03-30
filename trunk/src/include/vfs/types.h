@@ -96,7 +96,7 @@ struct driver {
  * 设备
  */
 struct device {
-    char                    name[NAME_MAX + 1];
+    char                    name[NAME_MAX];
     driver_t               *drv;
     /*
      * 一个驱动可以被多个设备使用, ctx 用于维护设备信息
@@ -162,7 +162,7 @@ struct file_system {
  * 挂载点
  */
 struct mount_point {
-    char                    name[NAME_MAX + 1];
+    char                    name[NAME_MAX];
     file_system_t          *fs;
     device_t               *dev;
     /*

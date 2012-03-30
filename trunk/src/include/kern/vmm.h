@@ -45,7 +45,12 @@
 /*
  * 通过一个虚拟地址映射进程虚拟地址空间中的一个页面
  */
-int vmm_map_process_page(task_t *task, uint32_t va);
+int vmm_page_map(task_t *task, uint32_t va);
+
+/*
+ * 初始化进程的虚拟内存信息
+ */
+int vmm_process_init(task_t *task, uint32_t file_size);
 
 /*
  * 释放进程的虚拟地址空间

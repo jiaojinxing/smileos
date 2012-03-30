@@ -67,18 +67,18 @@ void bsp_mem_map(void)
     /*
      * ÌØÊâ¹¦ÄÜ¼Ä´æÆ÷
      */
-    mmu_map_sections(0x48000000,
-                     0x48000000,
-                     0x60000000 - 0x48000000,
-                     SECTION_ATTR(AP_USER_RW, DOMAIN_CHECK, CACHE_NO, BUFFER_NO));
+    mmu_map_region(0x48000000,
+                   0x48000000,
+                   0x60000000 - 0x48000000,
+                   SECTION_ATTR(AP_USER_RW, DOMAIN_CHECK, CACHE_NO, BUFFER_NO));
 
     /*
      * DM9000
      */
-    mmu_map_sections(0x20000000,
-                     0x20000000,
-                     1 * MB,
-                     SECTION_ATTR(AP_USER_RW, DOMAIN_CHECK, CACHE_NO, BUFFER_NO));
+    mmu_map_region(0x20000000,
+                   0x20000000,
+                   1 * MB,
+                   SECTION_ATTR(AP_USER_RW, DOMAIN_CHECK, CACHE_NO, BUFFER_NO));
 }
 
 /*

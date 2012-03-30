@@ -45,16 +45,16 @@
 #include <stdarg.h>
 
 /*
- * 内核日志邮箱
+ * 内核日志消息队列
  */
-static mqueue_t  klog_mqueue;
+static mqueue_t  mqueue;
 
 /*
- * 内核日志邮件
+ * 内核日志消息
  */
 typedef struct {
-    int         len;
-    char        buf[LINE_MAX];
+    int     len;
+    char    buf[LINE_MAX];
 } msg_t;
 
 /*
@@ -66,7 +66,7 @@ static void klogd(void *arg)
     int    i;
 
     while (1) {
-        if (mqueue_fetch(&klog_mqueue, (void **)&msg, 0) == 0) {
+        if (mqueue_fetch(&mqueue, (void **)&msg, 0) == 0) {
             for (i = 0; i < msg->len && msg->buf[i] != '\0'; i++) {
                 kputc(msg->buf[i]);
             }
@@ -80,7 +80,7 @@ static void klogd(void *arg)
  */
 void klogd_create(void)
 {
-    mqueue_new(&klog_mqueue, 100);
+    mqueue_new(&mqueue, 100);
 
     kthread_create("klogd", klogd, NULL, 4 * KB, 10);
 }
@@ -91,8 +91,8 @@ void klogd_create(void)
  */
 void printk(const char *fmt, ...)
 {
-    va_list        va;
-    msg_t *msg;
+    va_list va;
+    msg_t  *msg;
 
     msg = kmalloc(sizeof(msg_t));
     if (msg == NULL) {
@@ -103,7 +103,7 @@ void printk(const char *fmt, ...)
 
     msg->len = vsnprintf(msg->buf, LINE_MAX, fmt, va);
 
-    mqueue_post(&klog_mqueue, msg, 0);
+    mqueue_post(&mqueue, msg, 0);
 
     va_end(va);
 }
