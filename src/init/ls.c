@@ -245,6 +245,7 @@ printentry(char *name, struct stat *st)
             putchar('*');
         }
     }
+
     printf("\033[0m");
 
     if (ls_flags & LSF_LONG || ls_flags & LSF_SINGLE) {

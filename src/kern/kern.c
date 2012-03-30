@@ -581,11 +581,11 @@ static void kthread_shell(task_t *task)
 {
     vfs_task_file_info_init(task->tid);                                 /*  初始化任务的文件信息        */
 
-    open("/dev/stdin",  O_RDONLY, 0666);                                /*  打开三个标准文件            */
+    open("/dev/null", O_RDONLY, 0666);                                  /*  打开三个标准文件            */
 
-    open("/dev/stdout", O_WRONLY, 0666);
+    open("/dev/null", O_WRONLY, 0666);
 
-    open("/dev/stderr", O_WRONLY, 0666);
+    open("/dev/null", O_WRONLY, 0666);
 
     task->thread(task->arg);                                            /*  进入真正的内核线程函数      */
 
