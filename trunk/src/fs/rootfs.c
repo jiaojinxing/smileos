@@ -58,7 +58,7 @@ extern mount_point_t *rootfs_point;
 /*
  * 挂载点管理锁
  */
-extern kern_mutex_t pointmgr_lock;
+extern mutex_t pointmgr_lock;
 
 /*
  * 私有信息
@@ -132,10 +132,10 @@ static int rootfs_opendir(mount_point_t *point, file_t *file, const char *path)
         /*
          * 虽然上级有目录锁, 但仍须锁挂载点管理
          */
-        kern_mutex_lock(&pointmgr_lock, 0);
+        mutex_lock(&pointmgr_lock, 0);
         priv->current = point_list;
         priv->loc     = 0;
-        kern_mutex_unlock(&pointmgr_lock);
+        mutex_unlock(&pointmgr_lock);
         return 0;
     } else {
         return -1;
@@ -149,9 +149,9 @@ static struct dirent *rootfs_readdir(mount_point_t *point, file_t *file)
     if (priv != NULL && priv->current != rootfs_point) {
         strcpy(priv->entry.d_name, priv->current->name + 1);            /*  跳过 /                      */
         priv->entry.d_ino = priv->loc++;
-        kern_mutex_lock(&pointmgr_lock, 0);
+        mutex_lock(&pointmgr_lock, 0);
         priv->current = priv->current->next;
-        kern_mutex_unlock(&pointmgr_lock);
+        mutex_unlock(&pointmgr_lock);
         return &priv->entry;
     } else {
         return NULL;
@@ -163,10 +163,10 @@ static int rootfs_rewinddir(mount_point_t *point, file_t *file)
     privinfo_t *priv = file->ctx;
 
     if (priv != NULL) {
-        kern_mutex_lock(&pointmgr_lock, 0);
+        mutex_lock(&pointmgr_lock, 0);
         priv->current = point_list;
         priv->loc     = 0;
-        kern_mutex_unlock(&pointmgr_lock);
+        mutex_unlock(&pointmgr_lock);
         return 0;
     } else {
         return -1;
@@ -178,7 +178,7 @@ static int rootfs_seekdir(mount_point_t *point, file_t *file, long loc)
     privinfo_t *priv = file->ctx;
     int ret = -1;
 
-    kern_mutex_lock(&pointmgr_lock, 0);
+    mutex_lock(&pointmgr_lock, 0);
     if (priv != NULL) {
         mount_point_t *point = point_list;
         int i;
@@ -193,7 +193,7 @@ static int rootfs_seekdir(mount_point_t *point, file_t *file, long loc)
             ret           = 0;
         }
     }
-    kern_mutex_unlock(&pointmgr_lock);
+    mutex_unlock(&pointmgr_lock);
     return ret;
 }
 

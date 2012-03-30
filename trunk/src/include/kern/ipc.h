@@ -42,159 +42,159 @@
 
 #include "kern/types.h"
 
-struct kern_mutex;
-struct kern_sem;
-struct kern_mbox;
+struct mutex;
+struct sem;
+struct mqueue;
 
-typedef struct kern_mutex *          kern_mutex_t;
-typedef struct kern_sem   *          kern_sem_t;
-typedef struct kern_mbox  *          kern_mbox_t;
+typedef struct mutex *          mutex_t;
+typedef struct sem   *          sem_t;
+typedef struct mqueue  *          mqueue_t;
 /*********************************************************************************************************
   互斥量
 *********************************************************************************************************/
 /*
  * 创建一个新的互斥量
  */
-int kern_mutex_new(kern_mutex_t *mutex);
+int mutex_new(mutex_t *mutex);
 
 /*
  * 尝试对互斥量进行加锁
  */
-int kern_mutex_trylock(kern_mutex_t *mutex);
+int mutex_trylock(mutex_t *mutex);
 
 /*
  * 对互斥量进行加锁
  */
-int kern_mutex_lock(kern_mutex_t *mutex, uint32_t timeout);
+int mutex_lock(mutex_t *mutex, uint32_t timeout);
 
 /*
  * 对互斥量进行解锁
  */
-int kern_mutex_unlock(kern_mutex_t *mutex);
+int mutex_unlock(mutex_t *mutex);
 
 /*
  * 终止等待互斥量
  */
-int kern_mutex_abort(kern_mutex_t *mutex);
+int mutex_abort(mutex_t *mutex);
 
 /*
  * 删除互斥量
  */
-int kern_mutex_free(kern_mutex_t *mutex);
+int mutex_free(mutex_t *mutex);
 
 /*
  * 判断互斥量是否有效
  */
-int kern_mutex_valid(kern_mutex_t *mutex);
+int mutex_valid(mutex_t *mutex);
 
 /*
  * 设置互斥量的有效性
  */
-int kern_mutex_set_valid(kern_mutex_t *mutex, int valid);
+int mutex_set_valid(mutex_t *mutex, int valid);
 /*********************************************************************************************************
   信号量
 *********************************************************************************************************/
 /*
  * 创建一个新的信号量
  */
-int kern_sem_new(kern_sem_t *sem, uint32_t count);
+int sem_new(sem_t *sem, uint32_t count);
 
 /*
  * 尝试获得信号量
  */
-int kern_sem_trywait(kern_sem_t *sem);
+int sem_trywait(sem_t *sem);
 
 /*
  * 获得信号量
  */
-int kern_sem_wait(kern_sem_t *sem, uint32_t timeout);
+int sem_wait(sem_t *sem, uint32_t timeout);
 
 /*
  * 发送一个信号量
  */
-int kern_sem_signal(kern_sem_t *sem);
+int sem_signal(sem_t *sem);
 
 /*
  * 终止等待信号量
  */
-int kern_sem_abort(kern_sem_t *sem);
+int sem_abort(sem_t *sem);
 
 /*
  * 删除信号量
  */
-int kern_sem_free(kern_sem_t *sem);
+int sem_free(sem_t *sem);
 
 /*
  * 判断信号量是否有效
  */
-int kern_sem_valid(kern_sem_t *sem);
+int sem_valid(sem_t *sem);
 
 /*
  * 设置信号量的有效性
  */
-int kern_sem_set_valid(kern_sem_t *sem, int valid);
+int sem_set_valid(sem_t *sem, int valid);
 /*********************************************************************************************************
   邮箱
 *********************************************************************************************************/
 /*
  * 创建一个新的邮箱
  */
-int kern_mbox_new(kern_mbox_t *mbox, uint32_t size);
+int mqueue_new(mqueue_t *mqueue, uint32_t size);
 
 /*
  * 尝试投递邮件到邮箱
  */
-int kern_mbox_trypost(kern_mbox_t *mbox, void *msg);
+int mqueue_trypost(mqueue_t *mqueue, void *msg);
 
 /*
  * 投递邮件到邮箱
  */
-int kern_mbox_post(kern_mbox_t *mbox, void *msg, uint32_t timeout);
+int mqueue_post(mqueue_t *mqueue, void *msg, uint32_t timeout);
 
 /*
  * 尝试从邮箱里取出邮件
  */
-int kern_mbox_tryfetch(kern_mbox_t *mbox, void **msg);
+int mqueue_tryfetch(mqueue_t *mqueue, void **msg);
 
 /*
  * 从邮箱里取出邮件
  */
-int kern_mbox_fetch(kern_mbox_t *mbox, void **msg, uint32_t timeout);
+int mqueue_fetch(mqueue_t *mqueue, void **msg, uint32_t timeout);
 
 /*
  * 清空邮箱
  */
-int kern_mbox_flush(kern_mbox_t *mbox);
+int mqueue_flush(mqueue_t *mqueue);
 
 /*
  * 终止等待读取邮件
  */
-int kern_mbox_abort_fetch(kern_mbox_t *mbox);
+int mqueue_abort_fetch(mqueue_t *mqueue);
 
 /*
  * 终止等待投递邮件
  */
-int kern_mbox_abort_post(kern_mbox_t *mbox);
+int mqueue_abort_post(mqueue_t *mqueue);
 
 /*
  * 终止等待邮箱
  */
-int kern_mbox_abort(kern_mbox_t *mbox);
+int mqueue_abort(mqueue_t *mqueue);
 
 /*
  * 删除邮箱
  */
-int kern_mbox_free(kern_mbox_t *mbox);
+int mqueue_free(mqueue_t *mqueue);
 
 /*
  * 判断邮箱是否有效
  */
-int kern_mbox_valid(kern_mbox_t *mbox);
+int mqueue_valid(mqueue_t *mqueue);
 
 /*
  * 设置邮箱的有效性
  */
-int kern_mbox_set_valid(kern_mbox_t *mbox, int valid);
+int mqueue_set_valid(mqueue_t *mqueue, int valid);
 
 #endif                                                                  /*  IPC_H_                      */
 /*********************************************************************************************************

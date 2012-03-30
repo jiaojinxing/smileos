@@ -142,7 +142,7 @@ void schedule(void);
 /*
  * 内核定时器处理函数
  */
-void kern_timer_handler(void);
+void kernel_timer(void);
 
 /*
  * 创建进程
@@ -194,7 +194,7 @@ void *kcalloc(uint32_t nelem, uint32_t elsize);
 /*
  * 打印内核内存堆信息
  */
-void kern_heap_show(int fd);
+void kheap_show(int fd);
 
 /*
  * 进入临界区域

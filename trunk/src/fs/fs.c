@@ -50,7 +50,7 @@ static file_system_t *fs_list;
 /*
  * 文件系统管理锁
  */
-static kern_mutex_t fsmgr_lock;
+static mutex_t fsmgr_lock;
 
 /*
  * 查找文件系统
@@ -63,7 +63,7 @@ file_system_t *file_system_lookup(const char *name)
         return NULL;
     }
 
-    kern_mutex_lock(&fsmgr_lock, 0);
+    mutex_lock(&fsmgr_lock, 0);
     fs = fs_list;
     while (fs != NULL) {
         if (strcmp(fs->name, name) == 0) {
@@ -71,7 +71,7 @@ file_system_t *file_system_lookup(const char *name)
         }
         fs = fs->next;
     }
-    kern_mutex_unlock(&fsmgr_lock);
+    mutex_unlock(&fsmgr_lock);
 
     return fs;
 }
@@ -85,15 +85,15 @@ int file_system_install(file_system_t *fs)
         return -1;
     }
 
-    kern_mutex_lock(&fsmgr_lock, 0);
+    mutex_lock(&fsmgr_lock, 0);
     if (file_system_lookup(fs->name) != NULL) {
-        kern_mutex_unlock(&fsmgr_lock);
+        mutex_unlock(&fsmgr_lock);
         return -1;
     }
 
     fs->next = fs_list;
     fs_list  = fs;
-    kern_mutex_unlock(&fsmgr_lock);
+    mutex_unlock(&fsmgr_lock);
 
     return 0;
 }
@@ -103,7 +103,7 @@ int file_system_install(file_system_t *fs)
  */
 int file_system_manager_init(void)
 {
-    return kern_mutex_new(&fsmgr_lock);
+    return mutex_new(&fsmgr_lock);
 }
 /*********************************************************************************************************
   END FILE

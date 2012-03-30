@@ -63,13 +63,13 @@ struct tms;
 #ifdef SMILEOS_KERNEL
 #include "kern/kern.h"
 extern sys_do_t sys_do_table[];
-//#define debug_output        kcomplain
-#define debug_output(...)
+//#define debug        kcomplain
+#define debug(...)
 #else
 typedef int (*sys_do_t)();
 static sys_do_t sys_do_table[1];
 #define in_kernel()     0
-#define debug_output(...)
+#define debug(...)
 #include <stdio.h>
 #include <unistd.h>
 #endif
@@ -164,7 +164,7 @@ void _fini(void)
  */
 void _exit(int status)
 {
-    debug_output("%s\r\n", __func__);
+    debug("%s\r\n", __func__);
     if (in_kernel()) {
         (sys_do_table[SYS_CALL_EXIT])(status);
     } else {
@@ -180,7 +180,7 @@ void _exit(int status)
  */
 void yield(void)
 {
-    //debug_output("%s\r\n", __func__);
+    //debug("%s\r\n", __func__);
     if (in_kernel()) {
         (sys_do_table[SYS_CALL_YIELD])();
     } else {
@@ -196,7 +196,7 @@ void yield(void)
  */
 static void sleep_tick(unsigned int ticks)
 {
-    //debug_output("%s\r\n", __func__);
+    //debug("%s\r\n", __func__);
     if (in_kernel()) {
         (sys_do_table[SYS_CALL_SLEEP])(ticks);
     } else {
@@ -213,7 +213,7 @@ static void sleep_tick(unsigned int ticks)
  */
 unsigned sleep(unsigned int seconds)
 {
-    //debug_output("%s\r\n", __func__);
+    //debug("%s\r\n", __func__);
     sleep_tick(TICK_PER_SECOND * seconds);
     return 0;
 }
@@ -223,7 +223,7 @@ unsigned sleep(unsigned int seconds)
  */
 int usleep(useconds_t useconds)
 {
-    //debug_output("%s\r\n", __func__);
+    //debug("%s\r\n", __func__);
     sleep_tick(TICK_PER_SECOND * useconds / 1000000);
     return 0;
 }
@@ -235,7 +235,7 @@ int _gettimeofday_r(struct _reent *reent, struct timeval *tv, void *tzp)
 {
     int ret;
 
-    debug_output("%s\r\n", __func__);
+    debug("%s\r\n", __func__);
     if (in_kernel()) {
         ret = (sys_do_table[SYS_CALL_GETTIME])(tv, tzp);
     } else {
@@ -257,7 +257,7 @@ int _close_r(struct _reent *reent, int fd)
 {
     int ret;
 
-    debug_output("%s\r\n", __func__);
+    debug("%s\r\n", __func__);
     if (in_kernel()) {
         ret = (sys_do_table[SYS_CALL_CLOSE])(fd);
     } else {
@@ -279,7 +279,7 @@ int _fcntl_r(struct _reent *reent, int fd, int cmd, int arg)
 {
     int ret;
 
-    debug_output("%s\r\n", __func__);
+    debug("%s\r\n", __func__);
     if (in_kernel()) {
         ret = (sys_do_table[SYS_CALL_FCNTL])(fd, cmd, arg);
     } else {
@@ -302,7 +302,7 @@ int _fstat_r(struct _reent *reent, int fd, struct stat *buf)
 {
     int ret;
 
-    debug_output("%s\r\n", __func__);
+    debug("%s\r\n", __func__);
     if (in_kernel()) {
         ret = (sys_do_table[SYS_CALL_FSTAT])(fd, buf);
     } else {
@@ -324,7 +324,7 @@ int _getpid_r(struct _reent *reent)
 {
     int ret;
 
-    debug_output("%s\r\n", __func__);
+    debug("%s\r\n", __func__);
     if (in_kernel()) {
         ret = (sys_do_table[SYS_CALL_GETPID])();
     } else {
@@ -344,7 +344,7 @@ int _isatty_r(struct _reent *reent, int fd)
 {
     int ret;
 
-    debug_output("%s\r\n", __func__);
+    debug("%s\r\n", __func__);
     if (in_kernel()) {
         ret = (sys_do_table[SYS_CALL_ISATTY])(fd);
     } else {
@@ -365,7 +365,7 @@ int _link_r(struct _reent *reent, const char *path1, const char *path2)
 {
     int ret;
 
-    debug_output("%s\r\n", __func__);
+    debug("%s\r\n", __func__);
     if (in_kernel()) {
         ret = (sys_do_table[SYS_CALL_LINK])(path1, path2);
     } else {
@@ -387,7 +387,7 @@ _off_t _lseek_r(struct _reent *reent, int fd, _off_t offset, int whence)
 {
     _off_t ret;
 
-    debug_output("%s\r\n", __func__);
+    debug("%s\r\n", __func__);
     if (in_kernel()) {
         ret = (sys_do_table[SYS_CALL_LSEEK])(fd, offset, whence);
     } else {
@@ -410,7 +410,7 @@ int _mkdir_r(struct _reent *reent, const char *path, int mode)
 {
     int ret;
 
-    debug_output("%s\r\n", __func__);
+    debug("%s\r\n", __func__);
     if (in_kernel()) {
         ret = (sys_do_table[SYS_CALL_MKDIR])(path, mode);
     } else {
@@ -432,7 +432,7 @@ int _open_r(struct _reent *reent, const char *path, int oflag, int mode)
 {
     int ret;
 
-    debug_output("%s\r\n", __func__);
+    debug("%s\r\n", __func__);
     if (in_kernel()) {
         ret = (sys_do_table[SYS_CALL_OPEN])(path, oflag, mode);
     } else {
@@ -455,7 +455,7 @@ _ssize_t _read_r(struct _reent *reent, int fd, void *buf, size_t nbytes)
 {
     _ssize_t ret;
 
-    debug_output("%s\r\n", __func__);
+    debug("%s\r\n", __func__);
     if (in_kernel()) {
         ret = (sys_do_table[SYS_CALL_READ])(fd, buf, nbytes);
     } else {
@@ -478,7 +478,7 @@ _ssize_t _write_r(struct _reent *reent, int fd, const void *buf, size_t nbytes)
 {
     _ssize_t ret;
 
-    debug_output("%s\r\n", __func__);
+    debug("%s\r\n", __func__);
     if (in_kernel()) {
         ret = (sys_do_table[SYS_CALL_WRITE])(fd, buf, nbytes);
     } else {
@@ -501,7 +501,7 @@ int _rename_r(struct _reent *reent, const char *old, const char *new)
 {
     int ret;
 
-    debug_output("%s\r\n", __func__);
+    debug("%s\r\n", __func__);
     if (in_kernel()) {
         ret = (sys_do_table[SYS_CALL_RENAME])(old, new);
     } else {
@@ -523,7 +523,7 @@ int _stat_r(struct _reent *reent, const char *path, struct stat *buf)
 {
     int ret;
 
-    debug_output("%s\r\n", __func__);
+    debug("%s\r\n", __func__);
     if (in_kernel()) {
         ret = (sys_do_table[SYS_CALL_STAT])(path, buf);
     } else {
@@ -545,7 +545,7 @@ int _unlink_r(struct _reent *reent, const char *path)
 {
     int ret;
 
-    debug_output("%s\r\n", __func__);
+    debug("%s\r\n", __func__);
     if (in_kernel()) {
         ret = (sys_do_table[SYS_CALL_UNLINK])(path);
     } else {
@@ -569,7 +569,7 @@ struct _reent *getreent(void)
 {
     struct _reent *ret;
 
-    debug_output("%s\r\n", __func__);
+    debug("%s\r\n", __func__);
     if (in_kernel()) {
         ret = (struct _reent *)(sys_do_table[SYS_CALL_GETREENT])();
     } else {
@@ -653,7 +653,7 @@ int _execve_r(struct _reent *reent, const char *path, char *const *argv, char *c
 
 int _kill_r(struct _reent *reent, int pid, int sig)
 {
-    debug_output("%s\r\n", __func__);
+    debug("%s\r\n", __func__);
     _exit(0);
 }
 

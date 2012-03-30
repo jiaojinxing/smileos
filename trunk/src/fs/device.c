@@ -52,17 +52,17 @@ device_t *dev_list;
 /*
  * 设备管理锁
  */
-kern_mutex_t devmgr_lock;
+mutex_t devmgr_lock;
 
 /*
  * 安装设备
  */
 static int device_install(device_t *dev)
 {
-    kern_mutex_lock(&devmgr_lock, 0);
+    mutex_lock(&devmgr_lock, 0);
     dev->next = dev_list;
     dev_list  = dev;
-    kern_mutex_unlock(&devmgr_lock);
+    mutex_unlock(&devmgr_lock);
 
     return 0;
 }
@@ -78,7 +78,7 @@ device_t *device_lookup(const char *name)
         return NULL;
     }
 
-    kern_mutex_lock(&devmgr_lock, 0);
+    mutex_lock(&devmgr_lock, 0);
     dev = dev_list;
     while (dev != NULL) {
         if (strcmp(dev->name, name) == 0) {
@@ -86,7 +86,7 @@ device_t *device_lookup(const char *name)
         }
         dev = dev->next;
     }
-    kern_mutex_unlock(&devmgr_lock);
+    mutex_unlock(&devmgr_lock);
 
     return dev;
 }
@@ -102,7 +102,7 @@ int device_remove(const char *name)
         return -1;
     }
 
-    kern_mutex_lock(&devmgr_lock, 0);
+    mutex_lock(&devmgr_lock, 0);
     prev = NULL;
     dev  = dev_list;
     while (dev != NULL) {
@@ -121,7 +121,7 @@ int device_remove(const char *name)
         }
         kfree(dev);
     }
-    kern_mutex_unlock(&devmgr_lock);
+    mutex_unlock(&devmgr_lock);
 
     return 0;
 }
@@ -146,9 +146,9 @@ int device_create(const char *dev_name, const char *drv_name, void *ctx)
         return -1;
     }
 
-    kern_mutex_lock(&devmgr_lock, 0);
+    mutex_lock(&devmgr_lock, 0);
     if (device_lookup(dev_name) != NULL) {
-        kern_mutex_unlock(&devmgr_lock);
+        mutex_unlock(&devmgr_lock);
         return -1;
     }
 
@@ -161,11 +161,11 @@ int device_create(const char *dev_name, const char *drv_name, void *ctx)
             dev->ctx    = ctx;
             dev->devno  = 0;
             device_install(dev);
-            kern_mutex_unlock(&devmgr_lock);
+            mutex_unlock(&devmgr_lock);
             return 0;
         }
     }
-    kern_mutex_unlock(&devmgr_lock);
+    mutex_unlock(&devmgr_lock);
     return -1;
 }
 
@@ -174,7 +174,7 @@ int device_create(const char *dev_name, const char *drv_name, void *ctx)
  */
 int device_manager_init(void)
 {
-    return kern_mutex_new(&devmgr_lock);
+    return mutex_new(&devmgr_lock);
 }
 /*********************************************************************************************************
   END FILE

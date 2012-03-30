@@ -84,7 +84,7 @@ void bsp_mem_map(void)
 /*
  * BSP 保留空间
  */
-virtual_space_t bsp_resv_space[] = {
+space_t bsp_resv_space[] = {
         {
             0x48000000,                                                 /*  特殊功能寄存器              */
             0x60000000 - 0x48000000

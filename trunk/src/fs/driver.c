@@ -50,7 +50,7 @@ static driver_t *drv_list;
 /*
  * 驱动管理锁
  */
-static kern_mutex_t drvmgr_lock;
+static mutex_t drvmgr_lock;
 
 /*
  * 查找驱动
@@ -63,7 +63,7 @@ driver_t *driver_lookup(const char *name)
         return NULL;
     }
 
-    kern_mutex_lock(&drvmgr_lock, 0);
+    mutex_lock(&drvmgr_lock, 0);
     drv = drv_list;
     while (drv != NULL) {
         if (strcmp(drv->name, name) == 0) {
@@ -71,7 +71,7 @@ driver_t *driver_lookup(const char *name)
         }
         drv = drv->next;
     }
-    kern_mutex_unlock(&drvmgr_lock);
+    mutex_unlock(&drvmgr_lock);
 
     return drv;
 }
@@ -85,14 +85,14 @@ int driver_install(driver_t *drv)
         return -1;
     }
 
-    kern_mutex_lock(&drvmgr_lock, 0);
+    mutex_lock(&drvmgr_lock, 0);
     if (driver_lookup(drv->name) != NULL) {
-        kern_mutex_unlock(&drvmgr_lock);
+        mutex_unlock(&drvmgr_lock);
         return -1;
     }
     drv->next = drv_list;
     drv_list  = drv;
-    kern_mutex_unlock(&drvmgr_lock);
+    mutex_unlock(&drvmgr_lock);
 
     return 0;
 }
@@ -102,7 +102,7 @@ int driver_install(driver_t *drv)
  */
 int driver_manager_init(void)
 {
-    return kern_mutex_new(&drvmgr_lock);
+    return mutex_new(&drvmgr_lock);
 }
 /*********************************************************************************************************
   END FILE

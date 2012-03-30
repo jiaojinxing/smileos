@@ -637,7 +637,7 @@ void mmu_init(void)
 /*
  * 系统保留虚拟地址空间
  */
-virtual_space_t sys_resv_space[] = {
+space_t sys_resv_space[] = {
         {
                 PHY_MEM_BASE,
                 PHY_MEM_SIZE

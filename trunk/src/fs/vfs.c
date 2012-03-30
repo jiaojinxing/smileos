@@ -61,7 +61,7 @@ typedef struct {
      */
     file_t              files[OPEN_MAX];                                /*  文件结构表                  */
     char                cwd[PATH_MAX + 1];                              /*  当前工作目录                */
-    kern_mutex_t        cwd_lock;                                       /*  当前工作目录锁              */
+    mutex_t        cwd_lock;                                       /*  当前工作目录锁              */
 } task_file_info_t;
 
 static task_file_info_t task_file_info[TASK_NR];
@@ -213,9 +213,9 @@ static mount_point_t *vfs_mount_point_lookup(char pathbuf[PATH_MAX + 1], char **
          * cwd 要以 / 号开头和结尾
          */
         int32_t tid = gettid();
-        kern_mutex_lock(&task_file_info[tid].cwd_lock, 0);           /*  在前面加入当前工作目录      */
+        mutex_lock(&task_file_info[tid].cwd_lock, 0);           /*  在前面加入当前工作目录      */
         snprintf(pathbuf, PATH_MAX + 1, "%s%s", task_file_info[tid].cwd, path);
-        kern_mutex_unlock(&task_file_info[tid].cwd_lock);
+        mutex_unlock(&task_file_info[tid].cwd_lock);
     }
 
     if (vfs_path_normalization(pathbuf, FALSE) < 0) {
@@ -258,9 +258,9 @@ static mount_point_t *vfs_mount_point_lookup2(char pathbuf[PATH_MAX + 1], char *
          * cwd 要以 / 号开头和结尾
          */
         int32_t tid = gettid();
-        kern_mutex_lock(&task_file_info[tid].cwd_lock, 0);           /*  在前面加入当前工作目录      */
+        mutex_lock(&task_file_info[tid].cwd_lock, 0);           /*  在前面加入当前工作目录      */
         snprintf(pathbuf, PATH_MAX + 1, "%s%s", task_file_info[tid].cwd, path);
-        kern_mutex_unlock(&task_file_info[tid].cwd_lock);
+        mutex_unlock(&task_file_info[tid].cwd_lock);
     }
 
     if (vfs_path_normalization(pathbuf, FALSE) < 0) {
@@ -330,18 +330,18 @@ static mount_point_t *vfs_mount_point_lookup2(char pathbuf[PATH_MAX + 1], char *
             return -1;                                                                                    \
         }                                                                                                 \
         file = task_file_info[gettid()].files + fd;                  /*  获得文件结构                */\
-        kern_mutex_lock(&file->lock, 0);                                /*  锁住文件                    */
+        mutex_lock(&file->lock, 0);                                /*  锁住文件                    */
 
 #define vfs_file_api_begin                                                                                \
         vfs_file_api_begin0                                                                               \
         if (!(file->flag & VFS_FILE_TYPE_FILE)) {                       /*  如果文件未打开或不是文件    */\
-            kern_mutex_unlock(&file->lock);                                                               \
+            mutex_unlock(&file->lock);                                                               \
             return -1;                                                                                    \
         }                                                                                                 \
         point = file->point;                                            /*  获得挂载点                  */
 
 #define vfs_file_api_end                                                                                  \
-        kern_mutex_unlock(&file->lock);                                 /*  解锁文件                    */
+        mutex_unlock(&file->lock);                                 /*  解锁文件                    */
 
 /*
  * 打开文件
@@ -361,11 +361,11 @@ int vfs_open(const char *path, int oflag, mode_t mode)
     }
                                                                         /*  查找一个空闲的文件结构      */
     for (fd = 0, file = task_file_info[gettid()].files; fd < OPEN_MAX; fd++, file++) {
-        kern_mutex_lock(&file->lock, 0);
+        mutex_lock(&file->lock, 0);
         if (!file->flag) {
             break;
         }
-        kern_mutex_unlock(&file->lock);
+        mutex_unlock(&file->lock);
     }
     if (fd == OPEN_MAX) {                                               /*  没找到                      */
         return -1;
@@ -375,13 +375,13 @@ int vfs_open(const char *path, int oflag, mode_t mode)
     file->point = point;                                                /*  记录挂载点                  */
 
     if (point->fs->open == NULL) {
-        kern_mutex_unlock(&file->lock);
+        mutex_unlock(&file->lock);
         return -1;
     }
 
     ret = point->fs->open(point, file, filepath, oflag, mode);          /*  打开文件                    */
     if (ret < 0) {
-        kern_mutex_unlock(&file->lock);
+        mutex_unlock(&file->lock);
         return -1;
     }
     file->flag  = VFS_FILE_TYPE_FILE;                                   /*  占用文件结构, 类型文件      */
@@ -390,7 +390,7 @@ int vfs_open(const char *path, int oflag, mode_t mode)
 
     file->flag |= oflag & O_APPEND;                                     /*  记录追加模式                */
 
-    kern_mutex_unlock(&file->lock);
+    mutex_unlock(&file->lock);
 
     return fd;                                                          /*  返回文件描述符              */
 }
@@ -879,18 +879,18 @@ int vfs_sync(const char *path)
             return -1;                                                                                    \
         }                                                                                                 \
         file = task_file_info[gettid()].files + fd;                  /*  获得文件结构                */\
-        kern_mutex_lock(&file->lock, 0);                                /*  锁住文件                    */
+        mutex_lock(&file->lock, 0);                                /*  锁住文件                    */
 
 #define vfs_dir_api_begin                                                                                 \
         vfs_dir_api_begin0                                                                                \
         if (!(file->flag & VFS_FILE_TYPE_DIR)) {                        /*  如果文件未打开或不是目录    */\
-            kern_mutex_unlock(&file->lock);                                                               \
+            mutex_unlock(&file->lock);                                                               \
             return -1;                                                                                    \
         }                                                                                                 \
         point = file->point;                                            /*  获得挂载点                  */
 
 #define vfs_dir_api_end                                                                                   \
-        kern_mutex_unlock(&file->lock);                                 /*  解锁文件                    */
+        mutex_unlock(&file->lock);                                 /*  解锁文件                    */
 
 /*
  * 打开目录
@@ -910,11 +910,11 @@ DIR *vfs_opendir(const char *path)
     }
                                                                         /*  查找一个空闲的文件结构      */
     for (fd = 1 /* 不使用 0 */, file = task_file_info[gettid()].files + 1; fd < OPEN_MAX; fd++, file++) {
-        kern_mutex_lock(&file->lock, 0);
+        mutex_lock(&file->lock, 0);
         if (!file->flag) {
             break;
         }
-        kern_mutex_unlock(&file->lock);
+        mutex_unlock(&file->lock);
     }
     if (fd == OPEN_MAX) {                                               /*  没找到                      */
         return (DIR *)0;
@@ -923,18 +923,18 @@ DIR *vfs_opendir(const char *path)
     file->point = point;                                                /*  记录挂载点                  */
 
     if (point->fs->opendir == NULL) {
-        kern_mutex_unlock(&file->lock);
+        mutex_unlock(&file->lock);
         return (DIR *)0;
     }
 
     ret = point->fs->opendir(point, file, filepath);                    /*  打开目录                    */
     if (ret < 0) {
-        kern_mutex_unlock(&file->lock);
+        mutex_unlock(&file->lock);
         return (DIR *)0;
     }
     file->flag = VFS_FILE_TYPE_DIR;                                     /*  占用文件结构, 类型: 目录    */
 
-    kern_mutex_unlock(&file->lock);
+    mutex_unlock(&file->lock);
 
     return (DIR *)fd;                                                   /*  返回文件描述符              */
 }
@@ -1063,7 +1063,7 @@ int vfs_chdir(const char *path)
 
     tid = gettid();
 
-    kern_mutex_lock(&task_file_info[tid].cwd_lock, 0);
+    mutex_lock(&task_file_info[tid].cwd_lock, 0);
 
     if (path[0] == '/') {                                               /*  如果是绝对路径              */
         strlcpy(pathbuf, path, sizeof(pathbuf));
@@ -1080,7 +1080,7 @@ int vfs_chdir(const char *path)
         }
     }
 
-    kern_mutex_unlock(&task_file_info[tid].cwd_lock);
+    mutex_unlock(&task_file_info[tid].cwd_lock);
 
     return ret;
 }
@@ -1093,9 +1093,9 @@ char *vfs_getcwd(char *buf, size_t size)
     int32_t tid = gettid();
 
     if (buf != NULL) {
-        kern_mutex_lock(&task_file_info[tid].cwd_lock, 0);
+        mutex_lock(&task_file_info[tid].cwd_lock, 0);
         strlcpy(buf, task_file_info[tid].cwd, size);
-        kern_mutex_unlock(&task_file_info[tid].cwd_lock);
+        mutex_unlock(&task_file_info[tid].cwd_lock);
         return buf;
     } else {
         /*
@@ -1135,10 +1135,10 @@ int vfs_init(void)
 
     for (i = 0, info = task_file_info; i < TASK_NR; i++, info++) {
         strcpy(info->cwd, "/");
-        kern_mutex_new(&info->cwd_lock);
+        mutex_new(&info->cwd_lock);
 
         for (j = 0, file = info->files; j < OPEN_MAX; j++, file++) {
-            kern_mutex_new(&file->lock);
+            mutex_new(&file->lock);
             file->ctx   = NULL;
             file->point = NULL;
             file->flag  = VFS_FILE_TYPE_FREE;
@@ -1151,7 +1151,7 @@ int vfs_init(void)
 /*
  * 初始化任务的文件信息
  */
-int vfs_task_file_info_init(int32_t tid)
+int vfs_task_init(int32_t tid)
 {
     task_file_info_t *info;
     file_t *file;
@@ -1177,7 +1177,7 @@ int vfs_task_file_info_init(int32_t tid)
 /*
  * 清理任务的文件信息
  */
-int vfs_task_file_info_cleanup(int32_t tid)
+int vfs_task_cleanup(int32_t tid)
 {
     task_file_info_t *info;
     file_t *file;

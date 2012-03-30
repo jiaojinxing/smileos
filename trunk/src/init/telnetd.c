@@ -205,7 +205,7 @@ static int exec_cmd(char *cmd, int fd, char buf[LINE_MAX])
     } else if (strcmp(argv[0], "cd") == 0) {
         do_cd(argc, argv, fd, buf);
     } else if (strcmp(argv[0], "mems") == 0) {
-        kern_heap_show(fd);
+        kheap_show(fd);
     } else if (strcmp(argv[0], "exit") == 0) {
         close(fd);
         _exit(0);

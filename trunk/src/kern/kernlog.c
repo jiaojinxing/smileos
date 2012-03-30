@@ -47,7 +47,7 @@
 /*
  * 内核日志邮箱
  */
-static kern_mbox_t  kernlog_mbox;
+static mqueue_t  klog_mqueue;
 
 /*
  * 内核日志邮件
@@ -55,18 +55,18 @@ static kern_mbox_t  kernlog_mbox;
 typedef struct {
     int         len;
     char        buf[LINE_MAX];
-} kernlog_msg_t;
+} msg_t;
 
 /*
  * 内核日志线程
  */
-static void kernlog_thread(void *arg)
+static void klogd(void *arg)
 {
-    kernlog_msg_t *msg;
-    int            i;
+    msg_t *msg;
+    int    i;
 
     while (1) {
-        if (kern_mbox_fetch(&kernlog_mbox, (void **)&msg, 0) == 0) {
+        if (mqueue_fetch(&klog_mqueue, (void **)&msg, 0) == 0) {
             for (i = 0; i < msg->len && msg->buf[i] != '\0'; i++) {
                 kputc(msg->buf[i]);
             }
@@ -78,11 +78,11 @@ static void kernlog_thread(void *arg)
 /*
  * 创建内核日志线程
  */
-void kernlog_thread_create(void)
+void klogd_create(void)
 {
-    kern_mbox_new(&kernlog_mbox, 100);
+    mqueue_new(&klog_mqueue, 100);
 
-    kthread_create("kernlog", kernlog_thread, NULL, 4 * KB, 10);
+    kthread_create("klogd", klogd, NULL, 4 * KB, 10);
 }
 
 /*
@@ -92,9 +92,9 @@ void kernlog_thread_create(void)
 void printk(const char *fmt, ...)
 {
     va_list        va;
-    kernlog_msg_t *msg;
+    msg_t *msg;
 
-    msg = kmalloc(sizeof(kernlog_msg_t));
+    msg = kmalloc(sizeof(msg_t));
     if (msg == NULL) {
         return;
     }
@@ -103,7 +103,7 @@ void printk(const char *fmt, ...)
 
     msg->len = vsnprintf(msg->buf, LINE_MAX, fmt, va);
 
-    kern_mbox_post(&kernlog_mbox, msg, 0);
+    mqueue_post(&klog_mqueue, msg, 0);
 
     va_end(va);
 }

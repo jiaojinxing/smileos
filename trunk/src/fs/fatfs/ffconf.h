@@ -81,8 +81,8 @@
 
 #define _FS_TIMEOUT		1000                                            /*  超时 TICK 数                */
 
-struct kern_mutex;
-#define	_SYNC_t			struct kern_mutex *                             /*  同步对象类型                */
+struct mutex;
+#define	_SYNC_t			struct mutex *                             /*  同步对象类型                */
 
 #define	_FS_SHARE	    (OPEN_MAX - 3)                                  /*  能同时打开多少个文件        */
 
