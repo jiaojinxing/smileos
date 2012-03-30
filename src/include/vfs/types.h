@@ -46,7 +46,7 @@
 struct stat;
 struct dirent;
 
-struct kern_mutex;
+struct mutex;
 
 struct file;
 struct driver;
@@ -182,7 +182,7 @@ struct file {
     void                   *ctx;
     mount_point_t          *point;
     unsigned int            flag;
-    struct kern_mutex      *lock;
+    struct mutex      *lock;
 };
 
 /*

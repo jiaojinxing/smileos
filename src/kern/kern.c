@@ -73,14 +73,14 @@ uint8_t             kernel_mode;                                        /*  当前
 
 #define THREAD_STACK_MAGIC0         0xAA                                /*  内核线程栈魔数              */
 
-static void idle_process_create(void);
+static void idle_create(void);
 /*********************************************************************************************************
   内核函数
 *********************************************************************************************************/
 /*
  * 初始化内核变量
  */
-static void kern_vars_init(void)
+static void kvars_init(void)
 {
     task_t *task;
     int     i;
@@ -108,15 +108,15 @@ void kernel_init(void)
 {
     mmu_init();                                                         /*  初始化 MMU                  */
 
-    kern_vars_init();                                                   /*  初始化内核变量              */
+    kvars_init();                                                       /*  初始化内核变量              */
 
-    extern void kern_heap_create(void);
-    kern_heap_create();                                                 /*  创建内核内存堆              */
+    extern void kheap_create(void);
+    kheap_create();                                                     /*  创建内核内存堆              */
 
-    idle_process_create();                                              /*  创建空闲进程                */
+    idle_create();                                                      /*  创建空闲进程                */
 
-    extern void kernlog_thread_create(void);
-    kernlog_thread_create();                                            /*  创建内核日志线程            */
+    extern void klogd_create(void);
+    klogd_create();                                                     /*  创建内核日志线程            */
 
     vmm_init();                                                         /*  初始化虚拟内存管理          */
 }
@@ -220,7 +220,7 @@ void schedule(void)
 /*
  * 内核定时器处理函数
  */
-void kern_timer_handler(void)
+void kernel_timer(void)
 {
     int      i;
     int      flag;
@@ -351,14 +351,14 @@ void interrupt_exit_no_schedule(void)
 /*
  * 判断虚拟地址空间是否可用
  */
-static int virtual_space_usable(uint32_t base, uint32_t size)
+static int vspace_usable(uint32_t base, uint32_t size)
 {
     uint32_t end = base + size;
     uint32_t high, low;
     int      i;
 
-    extern virtual_space_t sys_resv_space[];
-    extern virtual_space_t bsp_resv_space[];
+    extern space_t sys_resv_space[];
+    extern space_t bsp_resv_space[];
 
 #define max(a, b)   (a) > (b) ? (a) : (b)
 #define min(a, b)   (a) < (b) ? (a) : (b)
@@ -385,7 +385,7 @@ static int virtual_space_usable(uint32_t base, uint32_t size)
 /*
  * 创建空闲进程
  */
-static void idle_process_create(void)
+static void idle_create(void)
 {
     task_t *task;
 
@@ -468,7 +468,7 @@ int32_t process_create(const char *name, uint8_t *code, uint32_t size, uint32_t 
     for (pid = 1, task = tasks + 1; pid < PROCESS_NR; pid++, task++) {  /*  遍历所有的进程控制块        */
         if (task->state == TASK_UNALLOCATE) {                           /*  如果进程控制块无效          */
                                                                         /*  如果进程的虚拟地址空间可用  */
-            if (virtual_space_usable(pid * PROCESS_SPACE_SIZE, PROCESS_SPACE_SIZE)) {
+            if (vspace_usable(pid * PROCESS_SPACE_SIZE, PROCESS_SPACE_SIZE)) {
                 break;
             }
         }
@@ -534,25 +534,9 @@ int32_t process_create(const char *name, uint8_t *code, uint32_t size, uint32_t 
         strcpy(task->name, "???");
     }
 
-    vfs_task_file_info_init(task->tid);                                 /*  初始化任务的文件信息        */
+    vfs_task_init(task->tid);                                           /*  初始化任务的文件信息        */
 
-    /*
-     * 为拷贝代码到进程的虚拟地址空间, 预先映射好页面
-     */
-    for (i = 0; i < (size + PAGE_SIZE - 1) / PAGE_SIZE; i++) {
-        if (vmm_map_process_page(task, task->pid * PROCESS_SPACE_SIZE + i * PAGE_SIZE) < 0) {
-            vmm_free_process_space(task);
-            task->state = TASK_UNALLOCATE;
-            interrupt_resume(reg);
-            return -1;
-        }
-    }
-
-    /*
-     * 为进程栈空间映射一个页面
-     */
-    if (vmm_map_process_page(task, (task->pid + 1) * PROCESS_SPACE_SIZE - PAGE_SIZE) < 0) {
-        vmm_free_process_space(task);
+    if (vmm_process_init(task, size)) {
         task->state = TASK_UNALLOCATE;
         interrupt_resume(reg);
         return -1;
@@ -579,7 +563,7 @@ int32_t process_create(const char *name, uint8_t *code, uint32_t size, uint32_t 
  */
 static void kthread_shell(task_t *task)
 {
-    vfs_task_file_info_init(task->tid);                                 /*  初始化任务的文件信息        */
+    vfs_task_init(task->tid);                                 /*  初始化任务的文件信息        */
 
     open("/dev/null", O_RDONLY, 0666);                                  /*  打开三个标准文件            */
 
@@ -701,11 +685,11 @@ void task_kill(int32_t tid)
 
         task = &tasks[tid];                                             /*  获得任务控制块              */
 
-        vfs_task_file_info_cleanup(tid);                                /*  清理任务的文件信息          */
+        vfs_task_cleanup(tid);                                          /*  清理任务的文件信息          */
 
         if (task->type == TASK_TYPE_PROCESS) {                          /*  如果任务是进程              */
             printk("kill process %s pid=%d!\r\n", task->name, task->pid);
-            vmm_free_process_space(task);                               /*  释放进程的虚拟地址空间      */
+            vmm_process_cleanup(task);                               /*  释放进程的虚拟地址空间      */
 
         } else {                                                        /*  如果任务是内核线程          */
             printk("kill kthread %s tid=%d!\r\n", task->name, task->tid);

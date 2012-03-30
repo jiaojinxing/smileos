@@ -53,8 +53,8 @@ typedef struct {
     int         ref;
 } privinfo_t;
 
-//#define debug_output        kcomplain
-#define debug_output(...)
+//#define debug        kcomplain
+#define debug(...)
 
 /*
  * ´ò¿ª socket
@@ -124,7 +124,7 @@ static ssize_t socket_read(void *ctx, file_t *file, void *buf, size_t len)
 {
     privinfo_t *priv = ctx;
 
-    debug_output("%s %d\r\n", __func__, len);
+    debug("%s %d\r\n", __func__, len);
 
     return lwip_recv(priv->sockfd, buf, len, 0);;
 }

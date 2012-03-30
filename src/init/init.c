@@ -103,7 +103,7 @@ static void init(void *arg)
 
     tcpip_init(tcpip_init_done, NULL);
 
-    kern_heap_show(STDOUT_FILENO);
+    kheap_show(STDOUT_FILENO);
 }
 
 /*

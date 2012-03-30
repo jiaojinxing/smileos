@@ -55,7 +55,7 @@ int ff_cre_syncobj (    /* TRUE:Function succeeded, FALSE:Could not create due t
     _SYNC_t* sobj       /* Pointer to return the created sync object */
 )
 {
-    return !kern_mutex_new(sobj);
+    return !mutex_new(sobj);
 }
 
 /*------------------------------------------------------------------------*/
@@ -69,7 +69,7 @@ int ff_del_syncobj (    /* TRUE:Function succeeded, FALSE:Could not delete due t
     _SYNC_t sobj        /* Sync object tied to the logical drive to be deleted */
 )
 {
-    return !kern_mutex_free(&sobj);
+    return !mutex_free(&sobj);
 }
 
 /*------------------------------------------------------------------------*/
@@ -82,7 +82,7 @@ int ff_req_grant (      /* TRUE:Got a grant to access the volume, FALSE:Could no
     _SYNC_t sobj        /* Sync object to wait */
 )
 {
-    return !kern_mutex_lock(&sobj, _FS_TIMEOUT);
+    return !mutex_lock(&sobj, _FS_TIMEOUT);
 }
 
 /*------------------------------------------------------------------------*/
@@ -94,7 +94,7 @@ void ff_rel_grant (
     _SYNC_t sobj        /* Sync object to be signaled */
 )
 {
-    kern_mutex_unlock(&sobj);
+    mutex_unlock(&sobj);
 }
 
 /*------------------------------------------------------------------------*/

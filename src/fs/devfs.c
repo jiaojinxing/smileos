@@ -57,7 +57,7 @@ extern device_t *dev_list;
 /*
  * 设备管理锁
  */
-extern kern_mutex_t devmgr_lock;
+extern mutex_t devmgr_lock;
 
 static int devfs_mount(mount_point_t *point, device_t *dev, const char *dev_name)
 {
@@ -306,10 +306,10 @@ static int devfs_opendir(mount_point_t *point, file_t *file, const char *path)
         /*
          * 虽然上级有目录锁, 但仍须锁设备管理
          */
-        kern_mutex_lock(&devmgr_lock, 0);
+        mutex_lock(&devmgr_lock, 0);
         priv->current = dev_list;
         priv->loc     = 0;
-        kern_mutex_unlock(&devmgr_lock);
+        mutex_unlock(&devmgr_lock);
         return 0;
     } else {
         return -1;
@@ -323,9 +323,9 @@ static struct dirent *devfs_readdir(mount_point_t *point, file_t *file)
     if (priv != NULL && priv->current != NULL) {
         strcpy(priv->entry.d_name, priv->current->name + 5);            /*  跳过 /dev/                  */
         priv->entry.d_ino = priv->loc++;
-        kern_mutex_lock(&devmgr_lock, 0);
+        mutex_lock(&devmgr_lock, 0);
         priv->current = priv->current->next;
-        kern_mutex_unlock(&devmgr_lock);
+        mutex_unlock(&devmgr_lock);
         return &priv->entry;
     } else {
         return NULL;
@@ -337,10 +337,10 @@ static int devfs_rewinddir(mount_point_t *point, file_t *file)
     privinfo_t *priv = file->ctx;
 
     if (priv != NULL) {
-        kern_mutex_lock(&devmgr_lock, 0);
+        mutex_lock(&devmgr_lock, 0);
         priv->current = dev_list;
         priv->loc     = 0;
-        kern_mutex_unlock(&devmgr_lock);
+        mutex_unlock(&devmgr_lock);
         return 0;
     } else {
         return -1;
@@ -352,7 +352,7 @@ static int devfs_seekdir(mount_point_t *point, file_t *file, long loc)
     privinfo_t *priv = file->ctx;
     int ret = -1;
 
-    kern_mutex_lock(&devmgr_lock, 0);
+    mutex_lock(&devmgr_lock, 0);
     if (priv != NULL) {
         device_t *dev = dev_list;
         int i;
@@ -367,7 +367,7 @@ static int devfs_seekdir(mount_point_t *point, file_t *file, long loc)
             ret           = 0;
         }
     }
-    kern_mutex_unlock(&devmgr_lock);
+    mutex_unlock(&devmgr_lock);
     return ret;
 }
 

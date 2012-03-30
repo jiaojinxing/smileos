@@ -118,13 +118,13 @@
 typedef enum {
     IPC_TYPE_MUTEX      = 0xABCD1A1A,                                   /*  互斥量                      */
     IPC_TYPE_SEM        = 0xABCD2B2B,                                   /*  信号量                      */
-    IPC_TYPE_MBOX       = 0xABCD3C3C,                                   /*  邮箱                        */
+    IPC_TYPE_mqueue     = 0xABCD3C3C,                                   /*  邮箱                        */
     IPC_TYPE_DESTROY    = 0xABCD4D4D,                                   /*  已经销毁                    */
 } ipc_type_t;
 /*********************************************************************************************************
   互斥量
 *********************************************************************************************************/
-struct kern_mutex {
+struct mutex {
     ipc_type_t   type;                                                  /*  IPC 类型                    */
     uint8_t      valid;                                                 /*  有效性                      */
     task_t      *wait_list;                                             /*  等待链表                    */
@@ -135,11 +135,11 @@ struct kern_mutex {
 /*
  * 创建一个新的互斥量
  */
-int kern_mutex_new(kern_mutex_t *mutex)
+int mutex_new(mutex_t *mutex)
 {
-    struct kern_mutex *m;
+    struct mutex *m;
 
-    m = kmalloc(sizeof(struct kern_mutex));
+    m = kmalloc(sizeof(struct mutex));
     if (m) {
         m->type      = IPC_TYPE_MUTEX;
         m->owner     = NULL;
@@ -158,9 +158,9 @@ int kern_mutex_new(kern_mutex_t *mutex)
 /*
  * 尝试对互斥量进行加锁
  */
-int kern_mutex_trylock(kern_mutex_t *mutex)
+int mutex_trylock(mutex_t *mutex)
 {
-    struct kern_mutex *m;
+    struct mutex *m;
     uint32_t reg;
 
     if (in_interrupt()) {
@@ -194,9 +194,9 @@ int kern_mutex_trylock(kern_mutex_t *mutex)
 /*
  * 对互斥量进行加锁
  */
-int kern_mutex_lock(kern_mutex_t *mutex, uint32_t timeout)
+int mutex_lock(mutex_t *mutex, uint32_t timeout)
 {
-    struct kern_mutex *m;
+    struct mutex *m;
     uint32_t reg;
     uint32_t resume_type;
 
@@ -247,9 +247,9 @@ int kern_mutex_lock(kern_mutex_t *mutex, uint32_t timeout)
 /*
  * 对互斥量进行解锁
  */
-int kern_mutex_unlock(kern_mutex_t *mutex)
+int mutex_unlock(mutex_t *mutex)
 {
-    struct kern_mutex *m;
+    struct mutex *m;
     task_t *task;
     uint32_t reg;
 
@@ -285,9 +285,9 @@ int kern_mutex_unlock(kern_mutex_t *mutex)
 /*
  * 终止等待互斥量
  */
-int kern_mutex_abort(kern_mutex_t *mutex)
+int mutex_abort(mutex_t *mutex)
 {
-    struct kern_mutex *m;
+    struct mutex *m;
     task_t *task;
     uint32_t reg;
 
@@ -311,9 +311,9 @@ int kern_mutex_abort(kern_mutex_t *mutex)
 /*
  * 删除互斥量
  */
-int kern_mutex_free(kern_mutex_t *mutex)
+int mutex_free(mutex_t *mutex)
 {
-    struct kern_mutex *m;
+    struct mutex *m;
     uint32_t reg;
 
     reg = interrupt_disable();
@@ -339,9 +339,9 @@ int kern_mutex_free(kern_mutex_t *mutex)
 /*
  * 判断互斥量是否有效
  */
-int kern_mutex_valid(kern_mutex_t *mutex)
+int mutex_valid(mutex_t *mutex)
 {
-    struct kern_mutex *m;
+    struct mutex *m;
     uint32_t reg;
     int valid = FALSE;
 
@@ -359,9 +359,9 @@ int kern_mutex_valid(kern_mutex_t *mutex)
 /*
  * 设置互斥量的有效性
  */
-int kern_mutex_set_valid(kern_mutex_t *mutex, int valid)
+int mutex_set_valid(mutex_t *mutex, int valid)
 {
-    struct kern_mutex *m;
+    struct mutex *m;
     uint32_t reg;
 
     reg = interrupt_disable();
@@ -379,7 +379,7 @@ int kern_mutex_set_valid(kern_mutex_t *mutex, int valid)
 /*********************************************************************************************************
   信号量
 *********************************************************************************************************/
-struct kern_sem {
+struct sem {
     ipc_type_t   type;                                                  /*  IPC 类型                    */
     uint8_t      valid;                                                 /*  有效性                      */
     task_t      *wait_list;                                             /*  等待链表                    */
@@ -389,11 +389,11 @@ struct kern_sem {
 /*
  * 创建一个新的信号量
  */
-int kern_sem_new(kern_sem_t *sem, uint32_t count)
+int sem_new(sem_t *sem, uint32_t count)
 {
-    struct kern_sem *s;
+    struct sem *s;
 
-    s = kmalloc(sizeof(struct kern_sem));
+    s = kmalloc(sizeof(struct sem));
     if (s) {
         s->type      = IPC_TYPE_SEM;
         s->wait_list = NULL;
@@ -411,9 +411,9 @@ int kern_sem_new(kern_sem_t *sem, uint32_t count)
 /*
  * 尝试获得信号量
  */
-int kern_sem_trywait(kern_sem_t *sem)
+int sem_trywait(sem_t *sem)
 {
-    struct kern_sem *s;
+    struct sem *s;
     uint32_t reg;
 
     reg = interrupt_disable();
@@ -440,14 +440,14 @@ int kern_sem_trywait(kern_sem_t *sem)
 /*
  * 获得信号量
  */
-int kern_sem_wait(kern_sem_t *sem, uint32_t timeout)
+int sem_wait(sem_t *sem, uint32_t timeout)
 {
-    struct kern_sem *s;
+    struct sem *s;
     uint32_t reg;
     uint32_t resume_type;
 
     if (in_interrupt()) {
-        return kern_sem_trywait(sem);
+        return sem_trywait(sem);
     }
 
     reg = interrupt_disable();
@@ -484,9 +484,9 @@ int kern_sem_wait(kern_sem_t *sem, uint32_t timeout)
 /*
  * 发送一个信号量
  */
-int kern_sem_signal(kern_sem_t *sem)
+int sem_signal(sem_t *sem)
 {
-    struct kern_sem *s;
+    struct sem *s;
     task_t *task;
     uint32_t reg;
 
@@ -512,9 +512,9 @@ int kern_sem_signal(kern_sem_t *sem)
 /*
  * 终止等待信号量
  */
-int kern_sem_abort(kern_sem_t *sem)
+int sem_abort(sem_t *sem)
 {
-    struct kern_sem *s;
+    struct sem *s;
     task_t *task;
     uint32_t reg;
 
@@ -538,9 +538,9 @@ int kern_sem_abort(kern_sem_t *sem)
 /*
  * 删除信号量
  */
-int kern_sem_free(kern_sem_t *sem)
+int sem_free(sem_t *sem)
 {
-    struct kern_sem *s;
+    struct sem *s;
     uint32_t reg;
 
     reg = interrupt_disable();
@@ -566,9 +566,9 @@ int kern_sem_free(kern_sem_t *sem)
 /*
  * 判断信号量是否有效
  */
-int kern_sem_valid(kern_sem_t *sem)
+int sem_valid(sem_t *sem)
 {
-    struct kern_sem *s;
+    struct sem *s;
     uint32_t reg;
     int valid = FALSE;
 
@@ -586,9 +586,9 @@ int kern_sem_valid(kern_sem_t *sem)
 /*
  * 设置信号量的有效性
  */
-int kern_sem_set_valid(kern_sem_t *sem, int valid)
+int sem_set_valid(sem_t *sem, int valid)
 {
-    struct kern_sem *s;
+    struct sem *s;
     uint32_t reg;
 
     reg = interrupt_disable();
@@ -606,7 +606,7 @@ int kern_sem_set_valid(kern_sem_t *sem, int valid)
 /*********************************************************************************************************
   邮箱
 *********************************************************************************************************/
-struct kern_mbox {
+struct mqueue {
     ipc_type_t   type;                                                  /*  IPC 类型                    */
     uint8_t      valid;                                                 /*  有效性                      */
     task_t      *r_wait_list;                                           /*  读邮箱等待链表              */
@@ -621,17 +621,17 @@ struct kern_mbox {
 /*
  * 创建一个新的邮箱
  */
-int kern_mbox_new(kern_mbox_t *mbox, uint32_t size)
+int mqueue_new(mqueue_t *mqueue, uint32_t size)
 {
-    struct kern_mbox *q;
+    struct mqueue *q;
 
     if (size < 10) {
         size = 10;
     }
 
-    q = kmalloc(sizeof(struct kern_mbox) + (size - 1) * sizeof(void *));
+    q = kmalloc(sizeof(struct mqueue) + (size - 1) * sizeof(void *));
     if (q) {
-        q->type        = IPC_TYPE_MBOX;
+        q->type        = IPC_TYPE_mqueue;
         q->r_wait_list = NULL;
         q->w_wait_list = NULL;
         q->size        = size;
@@ -640,27 +640,27 @@ int kern_mbox_new(kern_mbox_t *mbox, uint32_t size)
         q->out         = 0;
         q->valid       = TRUE;
 
-        *mbox          = q;
+        *mqueue          = q;
         return 0;
     }
 
-    *mbox = NULL;
+    *mqueue = NULL;
     return -1;
 }
 
 /*
  * 尝试投递邮件到邮箱
  */
-int kern_mbox_trypost(kern_mbox_t *mbox, void *msg)
+int mqueue_trypost(mqueue_t *mqueue, void *msg)
 {
-    struct kern_mbox *q;
+    struct mqueue *q;
     task_t *task;
     uint32_t reg;
 
     reg = interrupt_disable();
-    if (mbox) {
-        q = *mbox;
-        if (q && q->type == IPC_TYPE_MBOX) {
+    if (mqueue) {
+        q = *mqueue;
+        if (q && q->type == IPC_TYPE_mqueue) {
             if (q->valid) {
                 if (q->cnt < q->size) {
                     q->msg[q->in] = msg;
@@ -684,22 +684,22 @@ int kern_mbox_trypost(kern_mbox_t *mbox, void *msg)
 /*
  * 投递邮件到邮箱
  */
-int kern_mbox_post(kern_mbox_t *mbox, void *msg, uint32_t timeout)
+int mqueue_post(mqueue_t *mqueue, void *msg, uint32_t timeout)
 {
-    struct kern_mbox *q;
+    struct mqueue *q;
     task_t *task;
     uint32_t reg;
     uint32_t resume_type;
 
     if (in_interrupt()) {
-        return kern_mbox_trypost(mbox, msg);
+        return mqueue_trypost(mqueue, msg);
     }
 
     reg = interrupt_disable();
-    if (mbox) {
+    if (mqueue) {
         again:
-        q = *mbox;
-        if (q && q->type == IPC_TYPE_MBOX) {
+        q = *mqueue;
+        if (q && q->type == IPC_TYPE_mqueue) {
             if (q->valid) {
                 if (q->cnt < q->size) {
                     q->msg[q->in] = msg;
@@ -736,16 +736,16 @@ int kern_mbox_post(kern_mbox_t *mbox, void *msg, uint32_t timeout)
 /*
  * 尝试从邮箱里取出邮件
  */
-int kern_mbox_tryfetch(kern_mbox_t *mbox, void **msg)
+int mqueue_tryfetch(mqueue_t *mqueue, void **msg)
 {
-    struct kern_mbox *q;
+    struct mqueue *q;
     task_t *task;
     uint32_t reg;
 
     reg = interrupt_disable();
-    if (mbox) {
-        q = *mbox;
-        if (q && q->type == IPC_TYPE_MBOX) {
+    if (mqueue) {
+        q = *mqueue;
+        if (q && q->type == IPC_TYPE_mqueue) {
             if (q->valid) {
                 if (q->cnt) {
                     *msg = q->msg[q->out];
@@ -769,22 +769,22 @@ int kern_mbox_tryfetch(kern_mbox_t *mbox, void **msg)
 /*
  * 从邮箱里取出邮件
  */
-int kern_mbox_fetch(kern_mbox_t *mbox, void **msg, uint32_t timeout)
+int mqueue_fetch(mqueue_t *mqueue, void **msg, uint32_t timeout)
 {
-    struct kern_mbox *q;
+    struct mqueue *q;
     task_t *task;
     uint32_t reg;
     uint32_t resume_type;
 
     if (in_interrupt()) {
-        return kern_mbox_tryfetch(mbox, msg);
+        return mqueue_tryfetch(mqueue, msg);
     }
 
     reg = interrupt_disable();
-    if (mbox) {
+    if (mqueue) {
         again:
-        q = *mbox;
-        if (q && q->type == IPC_TYPE_MBOX) {
+        q = *mqueue;
+        if (q && q->type == IPC_TYPE_mqueue) {
             if (q->valid) {
                 if (q->cnt) {
                     *msg = q->msg[q->out];
@@ -821,17 +821,17 @@ int kern_mbox_fetch(kern_mbox_t *mbox, void **msg, uint32_t timeout)
 /*
  * 清空邮箱
  */
-int kern_mbox_flush(kern_mbox_t *mbox)
+int mqueue_flush(mqueue_t *mqueue)
 {
-    struct kern_mbox *q;
+    struct mqueue *q;
     task_t *task;
     uint32_t reg;
     int i;
 
     reg = interrupt_disable();
-    if (mbox) {
-        q = *mbox;
-        if (q && q->type == IPC_TYPE_MBOX) {
+    if (mqueue) {
+        q = *mqueue;
+        if (q && q->type == IPC_TYPE_mqueue) {
             if (q->valid) {
                 q->cnt  = 0;
                 q->in   = 0;
@@ -852,16 +852,16 @@ int kern_mbox_flush(kern_mbox_t *mbox)
 /*
  * 终止等待读取邮件
  */
-int kern_mbox_abort_fetch(kern_mbox_t *mbox)
+int mqueue_abort_fetch(mqueue_t *mqueue)
 {
-    struct kern_mbox *q;
+    struct mqueue *q;
     task_t *task;
     uint32_t reg;
 
     reg = interrupt_disable();
-    if (mbox) {
-        q = *mbox;
-        if (q && q->type == IPC_TYPE_MBOX) {
+    if (mqueue) {
+        q = *mqueue;
+        if (q && q->type == IPC_TYPE_mqueue) {
             if (q->valid) {
                 while ((task = q->r_wait_list) != NULL) {
                     resume_task(task, q->r_wait_list, TASK_RESUME_INTERRUPT);
@@ -879,16 +879,16 @@ int kern_mbox_abort_fetch(kern_mbox_t *mbox)
 /*
  * 终止等待投递邮件
  */
-int kern_mbox_abort_post(kern_mbox_t *mbox)
+int mqueue_abort_post(mqueue_t *mqueue)
 {
-    struct kern_mbox *q;
+    struct mqueue *q;
     task_t *task;
     uint32_t reg;
 
     reg = interrupt_disable();
-    if (mbox) {
-        q = *mbox;
-        if (q && q->type == IPC_TYPE_MBOX) {
+    if (mqueue) {
+        q = *mqueue;
+        if (q && q->type == IPC_TYPE_mqueue) {
             if (q->valid) {
                 while ((task = q->w_wait_list) != NULL) {
                     resume_task(task, q->w_wait_list, TASK_RESUME_INTERRUPT);
@@ -906,16 +906,16 @@ int kern_mbox_abort_post(kern_mbox_t *mbox)
 /*
  * 终止等待邮箱
  */
-int kern_mbox_abort(kern_mbox_t *mbox)
+int mqueue_abort(mqueue_t *mqueue)
 {
-    struct kern_mbox *q;
+    struct mqueue *q;
     task_t *task;
     uint32_t reg;
 
     reg = interrupt_disable();
-    if (mbox) {
-        q = *mbox;
-        if (q && q->type == IPC_TYPE_MBOX) {
+    if (mqueue) {
+        q = *mqueue;
+        if (q && q->type == IPC_TYPE_mqueue) {
             if (q->valid) {
                 while ((task = q->w_wait_list) != NULL) {
                     resume_task(task, q->w_wait_list, TASK_RESUME_INTERRUPT);
@@ -937,21 +937,21 @@ int kern_mbox_abort(kern_mbox_t *mbox)
 /*
  * 删除邮箱
  */
-int kern_mbox_free(kern_mbox_t *mbox)
+int mqueue_free(mqueue_t *mqueue)
 {
-    struct kern_mbox *q;
+    struct mqueue *q;
     uint32_t reg;
 
     reg = interrupt_disable();
-    if (mbox) {
-        q = *mbox;
-        if (q && q->type == IPC_TYPE_MBOX) {
+    if (mqueue) {
+        q = *mqueue;
+        if (q && q->type == IPC_TYPE_mqueue) {
             if (q->valid) {
                 if (!q->r_wait_list && !q->w_wait_list) {
                     q->valid = FALSE;
                     q->type = IPC_TYPE_DESTROY;
                     kfree(q);
-                    *mbox = NULL;
+                    *mqueue = NULL;
                     interrupt_resume(reg);
                     return 0;
                 }
@@ -965,16 +965,16 @@ int kern_mbox_free(kern_mbox_t *mbox)
 /*
  * 判断邮箱是否有效
  */
-int kern_mbox_valid(kern_mbox_t *mbox)
+int mqueue_valid(mqueue_t *mqueue)
 {
-    struct kern_mbox *q;
+    struct mqueue *q;
     uint32_t reg;
     int valid = FALSE;
 
     reg = interrupt_disable();
-    if (mbox) {
-        q = *mbox;
-        if (q && q->type == IPC_TYPE_MBOX) {
+    if (mqueue) {
+        q = *mqueue;
+        if (q && q->type == IPC_TYPE_mqueue) {
             valid = q->valid;
         }
     }
@@ -985,15 +985,15 @@ int kern_mbox_valid(kern_mbox_t *mbox)
 /*
  * 设置邮箱的有效性
  */
-int kern_mbox_set_valid(kern_mbox_t *mbox, int valid)
+int mqueue_set_valid(mqueue_t *mqueue, int valid)
 {
-    struct kern_mbox *q;
+    struct mqueue *q;
     uint32_t reg;
 
     reg = interrupt_disable();
-    if (mbox) {
-        q = *mbox;
-        if (q && q->type == IPC_TYPE_MBOX) {
+    if (mqueue) {
+        q = *mqueue;
+        if (q && q->type == IPC_TYPE_mqueue) {
             q->valid = valid > 0 ? TRUE : FALSE;
             interrupt_resume(reg);
             return 0;

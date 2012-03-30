@@ -50,7 +50,7 @@ int vmm_map_process_page(task_t *task, uint32_t va);
 /*
  * 释放进程的虚拟地址空间
  */
-void vmm_free_process_space(task_t *task);
+void vmm_process_cleanup(task_t *task);
 
 /*
  * 初始化虚拟内存管理
