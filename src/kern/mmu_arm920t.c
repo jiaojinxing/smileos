@@ -34,7 +34,7 @@
 ** Modified by:             JiaoJinXing
 ** Modified date:           2012-3-26
 ** Version:                 1.2.0
-** Descriptions:            修改 mmu_map_section_as_page 和加入 mmu_map_section_by_param 函数,
+** Descriptions:            修改 mmu_map_section_as_page 和加入 mmu_map_section 函数,
 **                          以实现进程虚拟地址空间的保护
 **
 *********************************************************************************************************/
@@ -432,6 +432,17 @@ uint32_t mmu_get_fault_address(void)
 }
 
 /*
+ * 映射段, 通过参数
+ */
+void mmu_map_section(register uint32_t section_nr,
+                     register uint32_t value)
+{
+    register uint32_t *entry = (uint32_t *)MMU_TBL_BASE + section_nr;
+
+    *entry = value;
+}
+
+/*
  * 取消映射段
  */
 void mmu_unmap_section(register uint32_t section_nr)
@@ -439,26 +450,6 @@ void mmu_unmap_section(register uint32_t section_nr)
     register uint32_t *entry = (uint32_t *)MMU_TBL_BASE + section_nr;
 
     *entry = 0;
-}
-
-/*
- * 映射段
- */
-void mmu_map_sections(register uint32_t virtual_base,
-                      register uint32_t physical_base,
-                      register uint32_t size,
-                      register uint32_t attr)
-{
-    register uint32_t *entry;
-    register int       i;
-
-    entry  = (uint32_t *)MMU_TBL_BASE + (virtual_base >> SECTION_OFFSET);
-
-    size   = (size + SECTION_SIZE - 1) / SECTION_SIZE;
-
-    for (i = 0; i < size; i++) {
-        *entry++ = attr | (((physical_base >> SECTION_OFFSET) + i) << SECTION_OFFSET);
-    }
 }
 
 /*
@@ -481,17 +472,6 @@ uint32_t mmu_map_section_as_page(register uint32_t section_nr,
 }
 
 /*
- * 映射段, 通过参数
- */
-void mmu_map_section_by_param(register uint32_t section_nr,
-                              register uint32_t value)
-{
-    register uint32_t *entry = (uint32_t *)MMU_TBL_BASE + section_nr;
-
-    *entry = value;
-}
-
-/*
  * 映射 4K 小页面
  */
 void mmu_map_page(register uint32_t page_tbl_base,
@@ -508,6 +488,26 @@ void mmu_map_page(register uint32_t page_tbl_base,
             (CACHE_EN   << 3) |
             (BUFFER_EN  << 2) |
             (1          << 1);
+}
+
+/*
+ * 映射区域
+ */
+void mmu_map_region(register uint32_t virtual_base,
+                    register uint32_t physical_base,
+                    register uint32_t size,
+                    register uint32_t attr)
+{
+    register uint32_t *entry;
+    register int       i;
+
+    entry  = (uint32_t *)MMU_TBL_BASE + (virtual_base >> SECTION_OFFSET);
+
+    size   = (size + SECTION_SIZE - 1) / SECTION_SIZE;
+
+    for (i = 0; i < size; i++) {
+        *entry++ = attr | (((physical_base >> SECTION_OFFSET) + i) << SECTION_OFFSET);
+    }
 }
 
 /*
@@ -583,20 +583,20 @@ void mmu_init(void)
     /*
      * 将物理内存映射到相同的地址, kernel, process 0 运行在 PHYSICAL_MEM_BASE 以上空间
      */
-    mmu_map_sections(PHY_MEM_BASE,
-                     PHY_MEM_BASE,
-                     PHY_MEM_SIZE,
-                     SECTION_ATTR(AP_USER_RW, DOMAIN_CHECK, CACHE_EN, BUFFER_EN));
+    mmu_map_region(PHY_MEM_BASE,
+                   PHY_MEM_BASE,
+                   PHY_MEM_SIZE,
+                   SECTION_ATTR(AP_USER_RW, DOMAIN_CHECK, CACHE_EN, BUFFER_EN));
 
     /*
      * 因为异常向量地址为 0xFFFF0000,
      * 将 0xFFF00000 映射到 INT_MEM_BASE,
      * 所以应该在 INT_MEM_BASE + 0xF0000 处(或 0xFFFF0000 处)放置异常向量跳转表
      */
-    mmu_map_sections(0xFFF00000,
-                     INT_MEM_BASE,
-                     1 * MB,
-                     SECTION_ATTR(AP_USER_RW, DOMAIN_CHECK, CACHE_EN, BUFFER_EN));
+    mmu_map_region(0xFFF00000,
+                   INT_MEM_BASE,
+                   1 * MB,
+                   SECTION_ATTR(AP_USER_RW, DOMAIN_CHECK, CACHE_EN, BUFFER_EN));
     /*
      * BSP 内存映射
      */

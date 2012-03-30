@@ -98,7 +98,6 @@ static int socket_close(void *ctx, file_t *file)
 
     if (--priv->ref == 0) {
         sprintf(buf, "/dev/socket%d", priv->sockfd);
-
         device_remove(buf);
 
         lwip_close(priv->sockfd);
@@ -187,7 +186,6 @@ int socket_attach(int sockfd)
         priv->ref    = 0;
 
         sprintf(buf, "/dev/socket%d", sockfd);
-
         if (device_create(buf, "socket", priv) < 0) {
             kfree(priv);
             return -1;

@@ -34,7 +34,7 @@
 ** Modified by:             JiaoJinXing
 ** Modified date:           2012-3-25
 ** Version:                 1.1.0
-** Descriptions:            加入内核模式和内核日志线程及 interrupt_exit_no_schedule 函数
+** Descriptions:            加入内核模式和内核日志线程及 interrupt_exit_no_sched 函数
 **                          strcpy 改用更安全的 strlcpy
 **                          拷贝代码到进程的虚拟地址空间时开中断以提高实时性
 **
@@ -204,12 +204,11 @@ void schedule(void)
 
     if (task->pid != current->pid) {                                    /*  如果需要切换进程            */
         for (i = 0; i < PROCESS_SPACE_SIZE / SECTION_SIZE; i++) {       /*  保护旧进程的虚拟地址空间    */
-            mmu_map_section_by_param(task->pid * PROCESS_SPACE_SIZE / SECTION_SIZE + i, 0);
+            mmu_map_section(task->pid * PROCESS_SPACE_SIZE / SECTION_SIZE + i, 0);
         }
 
         for (i = 0; i < PROCESS_SPACE_SIZE / SECTION_SIZE; i++) {       /*  恢复新进程的一级段表        */
-            mmu_map_section_by_param(current->pid * PROCESS_SPACE_SIZE / SECTION_SIZE + i,
-                    current->mmu_backup[i]);
+            mmu_map_section(current->pid * PROCESS_SPACE_SIZE / SECTION_SIZE + i, current->mmu_backup[i]);
         }
     }
 
@@ -335,9 +334,9 @@ void interrupt_exit(void)
 }
 
 /*
- * 退出中断, 但不要调度
+ * 退出中断, 但不要进行任务调度
  */
-void interrupt_exit_no_schedule(void)
+void interrupt_exit_no_sched(void)
 {
     uint32_t reg;
 
@@ -447,7 +446,6 @@ static void idle_create(void)
  */
 int32_t process_create(const char *name, uint8_t *code, uint32_t size, uint32_t priority)
 {
-    int      i;
     int32_t  pid;
     task_t  *task;
     uint32_t reg;
@@ -534,9 +532,14 @@ int32_t process_create(const char *name, uint8_t *code, uint32_t size, uint32_t 
         strcpy(task->name, "???");
     }
 
-    vfs_task_init(task->tid);                                           /*  初始化任务的文件信息        */
+    if (vfs_task_init(task->tid)) {                                     /*  初始化进程的文件信息        */
+        task->state = TASK_UNALLOCATE;
+        interrupt_resume(reg);
+        return -1;
+    }
 
-    if (vmm_process_init(task, size)) {
+    if (vmm_process_init(task, size)) {                                 /*  初始化进程的虚拟内存信息    */
+        vfs_task_cleanup(task->tid);
         task->state = TASK_UNALLOCATE;
         interrupt_resume(reg);
         return -1;
@@ -563,7 +566,7 @@ int32_t process_create(const char *name, uint8_t *code, uint32_t size, uint32_t 
  */
 static void kthread_shell(task_t *task)
 {
-    vfs_task_init(task->tid);                                 /*  初始化任务的文件信息        */
+    vfs_task_init(task->tid);                                           /*  初始化任务的文件信息        */
 
     open("/dev/null", O_RDONLY, 0666);                                  /*  打开三个标准文件            */
 
@@ -689,7 +692,7 @@ void task_kill(int32_t tid)
 
         if (task->type == TASK_TYPE_PROCESS) {                          /*  如果任务是进程              */
             printk("kill process %s pid=%d!\r\n", task->name, task->pid);
-            vmm_process_cleanup(task);                               /*  释放进程的虚拟地址空间      */
+            vmm_process_cleanup(task);                                  /*  清理进程的虚拟内存信息      */
 
         } else {                                                        /*  如果任务是内核线程          */
             printk("kill kthread %s tid=%d!\r\n", task->name, task->tid);

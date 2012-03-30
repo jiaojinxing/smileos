@@ -291,14 +291,20 @@ void libc_init(void)
      */
     heap_init(&uheap, &__bss_end, PROCESS_SPACE_SIZE - (uint32_t)&__bss_end - PROCESS_STACK_SIZE);
 
+    /*
+     * 获得进程的 reent 结构, 赋于 _impure_ptr
+     */
     extern struct _reent *getreent(void);
     _impure_ptr = getreent();
 
-    open("/dev/null",  O_RDONLY, 0666);
+    /*
+     * 打开三个标准文件
+     */
+    open("/dev/null", O_RDONLY, 0666);
 
-    open("/dev/stdout", O_WRONLY, 0666);
+    open("/dev/null", O_WRONLY, 0666);
 
-    open("/dev/stderr", O_WRONLY, 0666);
+    open("/dev/null", O_WRONLY, 0666);
 }
 
 #endif

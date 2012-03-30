@@ -60,8 +60,8 @@ typedef struct {
      * TODO: 一个 fd 对应一个 file_t 这样的设计很难实现 dup, dup2
      */
     file_t              files[OPEN_MAX];                                /*  文件结构表                  */
-    char                cwd[PATH_MAX + 1];                              /*  当前工作目录                */
-    mutex_t        cwd_lock;                                       /*  当前工作目录锁              */
+    char                cwd[PATH_MAX];                                  /*  当前工作目录                */
+    mutex_t             cwd_lock;                                       /*  当前工作目录锁              */
 } task_file_info_t;
 
 static task_file_info_t task_file_info[TASK_NR];
@@ -81,7 +81,7 @@ const char *vfs_path_add_mount_point(const char *path)
 /*
  * 正常化 PATH
  */
-static int vfs_path_normalization(char path[PATH_MAX + 1], int sprit_end)
+static int vfs_path_normalization(char path[PATH_MAX], int sprit_end)
 {
     /*
      * 文本状态机! 向李先静老师致敬!
@@ -194,7 +194,7 @@ static int vfs_path_normalization(char path[PATH_MAX + 1], int sprit_end)
 /*
  * 查找挂载点, PATH 不能是挂载点
  */
-static mount_point_t *vfs_mount_point_lookup(char pathbuf[PATH_MAX + 1], char **ppath, const char *path)
+static mount_point_t *vfs_mount_point_lookup(char pathbuf[PATH_MAX], char **ppath, const char *path)
 {
     mount_point_t *point;
     char *tmp;
@@ -207,14 +207,14 @@ static mount_point_t *vfs_mount_point_lookup(char pathbuf[PATH_MAX + 1], char **
         if (path[1] == '\0') {                                          /*  不能是根目录                */
             return NULL;
         }
-        strlcpy(pathbuf, path, PATH_MAX + 1);
+        strlcpy(pathbuf, path, PATH_MAX);
     } else {                                                            /*  如果是相对路径              */
         /*
          * cwd 要以 / 号开头和结尾
          */
         int32_t tid = gettid();
-        mutex_lock(&task_file_info[tid].cwd_lock, 0);           /*  在前面加入当前工作目录      */
-        snprintf(pathbuf, PATH_MAX + 1, "%s%s", task_file_info[tid].cwd, path);
+        mutex_lock(&task_file_info[tid].cwd_lock, 0);                   /*  在前面加入当前工作目录      */
+        snprintf(pathbuf, PATH_MAX, "%s%s", task_file_info[tid].cwd, path);
         mutex_unlock(&task_file_info[tid].cwd_lock);
     }
 
@@ -241,7 +241,7 @@ static mount_point_t *vfs_mount_point_lookup(char pathbuf[PATH_MAX + 1], char **
 /*
  * 查找挂载点, PATH 可以是挂载点
  */
-static mount_point_t *vfs_mount_point_lookup2(char pathbuf[PATH_MAX + 1], char **ppath, const char *path)
+static mount_point_t *vfs_mount_point_lookup2(char pathbuf[PATH_MAX], char **ppath, const char *path)
 {
     mount_point_t *point;
     char *tmp;
@@ -252,14 +252,14 @@ static mount_point_t *vfs_mount_point_lookup2(char pathbuf[PATH_MAX + 1], char *
     }
 
     if (path[0] == '/') {                                               /*  如果是绝对路径              */
-        strlcpy(pathbuf, path, PATH_MAX + 1);
+        strlcpy(pathbuf, path, PATH_MAX);
     } else {                                                            /*  如果是相对路径              */
         /*
          * cwd 要以 / 号开头和结尾
          */
         int32_t tid = gettid();
-        mutex_lock(&task_file_info[tid].cwd_lock, 0);           /*  在前面加入当前工作目录      */
-        snprintf(pathbuf, PATH_MAX + 1, "%s%s", task_file_info[tid].cwd, path);
+        mutex_lock(&task_file_info[tid].cwd_lock, 0);                   /*  在前面加入当前工作目录      */
+        snprintf(pathbuf, PATH_MAX, "%s%s", task_file_info[tid].cwd, path);
         mutex_unlock(&task_file_info[tid].cwd_lock);
     }
 
@@ -329,19 +329,19 @@ static mount_point_t *vfs_mount_point_lookup2(char pathbuf[PATH_MAX + 1], char *
         if (fd < 0 || fd >= OPEN_MAX) {                                 /*  文件描述符合法性判断        */\
             return -1;                                                                                    \
         }                                                                                                 \
-        file = task_file_info[gettid()].files + fd;                  /*  获得文件结构                */\
-        mutex_lock(&file->lock, 0);                                /*  锁住文件                    */
+        file = task_file_info[gettid()].files + fd;                     /*  获得文件结构                */\
+        mutex_lock(&file->lock, 0);                                     /*  锁住文件                    */
 
 #define vfs_file_api_begin                                                                                \
         vfs_file_api_begin0                                                                               \
         if (!(file->flag & VFS_FILE_TYPE_FILE)) {                       /*  如果文件未打开或不是文件    */\
-            mutex_unlock(&file->lock);                                                               \
+            mutex_unlock(&file->lock);                                                                    \
             return -1;                                                                                    \
         }                                                                                                 \
         point = file->point;                                            /*  获得挂载点                  */
 
 #define vfs_file_api_end                                                                                  \
-        mutex_unlock(&file->lock);                                 /*  解锁文件                    */
+        mutex_unlock(&file->lock);                                      /*  解锁文件                    */
 
 /*
  * 打开文件
@@ -350,7 +350,7 @@ int vfs_open(const char *path, int oflag, mode_t mode)
 {
     mount_point_t *point;
     file_t *file;
-    char pathbuf[PATH_MAX + 1];
+    char pathbuf[PATH_MAX];
     char *filepath;
     int fd;
     int ret;
@@ -638,10 +638,10 @@ off_t vfs_lseek(int fd, off_t offset, int whence)
 int vfs_link(const char *path1, const char *path2)
 {
     mount_point_t *point1;
-    char pathbuf1[PATH_MAX + 1];
+    char pathbuf1[PATH_MAX];
     char *filepath1;
     mount_point_t *point2;
-    char pathbuf2[PATH_MAX + 1];
+    char pathbuf2[PATH_MAX];
     char *filepath2;
     int ret;
 
@@ -673,10 +673,10 @@ int vfs_link(const char *path1, const char *path2)
 int vfs_rename(const char *old, const char *new)
 {
     mount_point_t *point1;
-    char pathbuf1[PATH_MAX + 1];
+    char pathbuf1[PATH_MAX];
     char *filepath1;
     mount_point_t *point2;
-    char pathbuf2[PATH_MAX + 1];
+    char pathbuf2[PATH_MAX];
     char *filepath2;
     int ret;
 
@@ -708,7 +708,7 @@ int vfs_rename(const char *old, const char *new)
 int vfs_stat(const char *path, struct stat *buf)
 {
     mount_point_t *point;
-    char pathbuf[PATH_MAX + 1];
+    char pathbuf[PATH_MAX];
     char *filepath;
     int ret;
 
@@ -735,7 +735,7 @@ int vfs_stat(const char *path, struct stat *buf)
 int vfs_unlink(const char *path)
 {
     mount_point_t *point;
-    char pathbuf[PATH_MAX + 1];
+    char pathbuf[PATH_MAX];
     char *filepath;
     int ret;
 
@@ -758,7 +758,7 @@ int vfs_unlink(const char *path)
 int vfs_mkdir(const char *path, mode_t mode)
 {
     mount_point_t *point;
-    char pathbuf[PATH_MAX + 1];
+    char pathbuf[PATH_MAX];
     char *filepath;
     int ret;
 
@@ -781,7 +781,7 @@ int vfs_mkdir(const char *path, mode_t mode)
 int vfs_rmdir(const char *path)
 {
     mount_point_t *point;
-    char pathbuf[PATH_MAX + 1];
+    char pathbuf[PATH_MAX];
     char *filepath;
     int ret;
 
@@ -804,7 +804,7 @@ int vfs_rmdir(const char *path)
 int vfs_access(const char *path, int amode)
 {
     mount_point_t *point;
-    char pathbuf[PATH_MAX + 1];
+    char pathbuf[PATH_MAX];
     char *filepath;
     int ret;
 
@@ -827,7 +827,7 @@ int vfs_access(const char *path, int amode)
 int vfs_truncate(const char *path, off_t len)
 {
     mount_point_t *point;
-    char pathbuf[PATH_MAX + 1];
+    char pathbuf[PATH_MAX];
     char *filepath;
     int ret;
 
@@ -850,7 +850,7 @@ int vfs_truncate(const char *path, off_t len)
 int vfs_sync(const char *path)
 {
     mount_point_t *point;
-    char pathbuf[PATH_MAX + 1];
+    char pathbuf[PATH_MAX];
     char *filepath;
     int ret;
 
@@ -878,19 +878,19 @@ int vfs_sync(const char *path)
         if (fd < 1 || fd >= OPEN_MAX) {                                 /*  文件描述符合法性判断        */\
             return -1;                                                                                    \
         }                                                                                                 \
-        file = task_file_info[gettid()].files + fd;                  /*  获得文件结构                */\
-        mutex_lock(&file->lock, 0);                                /*  锁住文件                    */
+        file = task_file_info[gettid()].files + fd;                     /*  获得文件结构                */\
+        mutex_lock(&file->lock, 0);                                     /*  锁住文件                    */
 
 #define vfs_dir_api_begin                                                                                 \
         vfs_dir_api_begin0                                                                                \
         if (!(file->flag & VFS_FILE_TYPE_DIR)) {                        /*  如果文件未打开或不是目录    */\
-            mutex_unlock(&file->lock);                                                               \
+            mutex_unlock(&file->lock);                                                                    \
             return -1;                                                                                    \
         }                                                                                                 \
         point = file->point;                                            /*  获得挂载点                  */
 
 #define vfs_dir_api_end                                                                                   \
-        mutex_unlock(&file->lock);                                 /*  解锁文件                    */
+        mutex_unlock(&file->lock);                                      /*  解锁文件                    */
 
 /*
  * 打开目录
@@ -899,7 +899,7 @@ DIR *vfs_opendir(const char *path)
 {
     mount_point_t *point;
     file_t *file;
-    char pathbuf[PATH_MAX + 1];
+    char pathbuf[PATH_MAX];
     char *filepath;
     int fd;
     int ret;
@@ -1053,7 +1053,7 @@ long vfs_telldir(DIR *dir)
  */
 int vfs_chdir(const char *path)
 {
-    char pathbuf[PATH_MAX + 1];
+    char pathbuf[PATH_MAX];
     int ret;
     int32_t tid;
 

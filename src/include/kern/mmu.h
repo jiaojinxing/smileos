@@ -232,24 +232,24 @@ uint32_t mmu_get_fault_address(void);
 void mmu_unmap_section(register uint32_t section_nr);
 
 /*
- * 映射段
+ * 映射段, 通过参数
  */
-void mmu_map_sections(register uint32_t virtual_base,
-                      register uint32_t physical_base,
-                      register uint32_t size,
-                      register uint32_t attr);
+void mmu_map_section(register uint32_t section_nr,
+                     register uint32_t value);
+
+/*
+ * 映射区域
+ */
+void mmu_map_region(register uint32_t virtual_base,
+                    register uint32_t physical_base,
+                    register uint32_t size,
+                    register uint32_t attr);
 
 /*
  * 映射段, 使用二级页表
  */
 uint32_t mmu_map_section_as_page(register uint32_t section_nr,
                                  register uint32_t page_tbl_base);
-
-/*
- * 映射段, 通过参数
- */
-void mmu_map_section_by_param(register uint32_t section_nr,
-                              register uint32_t value);
 
 /*
  * 映射 4K 小页面
