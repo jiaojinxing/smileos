@@ -432,7 +432,7 @@ int _open_r(struct _reent *reent, const char *path, int oflag, int mode)
 {
     int ret;
 
-    debug("%s\r\n", __func__);
+    debug("%s %s by %d\r\n", __func__, path, gettid());
     if (in_kernel()) {
         ret = (sys_do_table[SYS_CALL_OPEN])(path, oflag, mode);
     } else {

@@ -113,7 +113,7 @@ static int socket_close(void *ctx, file_t *file)
  */
 static int socket_isatty(void *ctx, file_t *file)
 {
-    return 0;
+    return 1;
 }
 
 /*
@@ -125,7 +125,7 @@ static ssize_t socket_read(void *ctx, file_t *file, void *buf, size_t len)
 
     debug("%s %d\r\n", __func__, len);
 
-    return lwip_recv(priv->sockfd, buf, len, 0);;
+    return lwip_recv(priv->sockfd, buf, len, 0);
 }
 
 /*
@@ -143,7 +143,8 @@ static ssize_t socket_write(void *ctx, file_t *file, const void *buf, size_t len
  */
 static int socket_fstat(void *ctx, file_t *file, struct stat *buf)
 {
-    buf->st_mode = (buf->st_mode & (~S_IFMT)) | S_IFSOCK;
+    buf->st_mode    = (buf->st_mode & (~S_IFMT)) | S_IFSOCK;
+    buf->st_blksize = 1;
 
     return 0;
 }
