@@ -55,8 +55,9 @@
 ** Modified by:             JiaoJinXing
 ** Modified date:           2012-3-31
 ** Version:                 1.4.0
-** Descriptions:            修改任务调度算法的一处错误: 重置所有就绪任务的剩余时间片而不是所有任务
-**                          任务调度算法有待改进!
+** Descriptions:            修改任务调度算法的一处错误: 重置所有就绪任务的剩余时间片而不是所有任务,
+**                          内核线程的调度算法改为基于优先级而非剩余时间片
+**                          为保障中断底半处理及时地运行, 请把中断底半处理线程的优先级抬到较高水平
 **
 *********************************************************************************************************/
 #include "kern/config.h"
@@ -165,14 +166,14 @@ void schedule(void)
         /*
          * 先做内核线程调度, 再做进程调度
          */
-        for (i = TASK_NR - 1, task = tasks + TASK_NR - 1; i > PROCESS_NR - 1; i--, task--) {
-            if ((task->state == TASK_RUNNING) && (max < (int32_t)task->counter)) {
-                max  = (int32_t)task->counter;                          /*  用剩余时间片来做竞争        */
+        for (i = PROCESS_NR, task = tasks + PROCESS_NR; i < TASK_NR; i++, task++) {
+            if ((task->state == TASK_RUNNING) && (max < (int32_t)task->priority)) {
+                max  = (int32_t)task->priority;                         /*  用优先级来做竞争            */
                 next = i;
             }
         }
 
-        if (max > 0) {                                                  /*  找到了一个有剩余时间片的线程*/
+        if (max > 0) {                                                  /*  找到了一个就绪的线程        */
             break;
         }
 
@@ -246,6 +247,10 @@ void kernel_timer(void)
         flag = FALSE;
     }
 
+    if (current->counter > 0) {                                         /*  如果当前任务还有剩余时间片  */
+        current->counter--;                                             /*  当前任务的剩余时间片减一    */
+    }
+
     for (i = 0, task = tasks; i < TASK_NR; i++, task++) {               /*  遍历所有任务                */
         if (task->state != TASK_UNALLOCATE) {                           /*  如果任务有效                */
             /*
@@ -303,10 +308,6 @@ void kernel_timer(void)
                 }
             }
         }
-    }
-
-    if (current->counter > 0) {                                         /*  如果当前任务还有剩余时间片  */
-        current->counter--;                                             /*  当前任务的剩余时间片减一    */
     }
 
     interrupt_resume(reg);

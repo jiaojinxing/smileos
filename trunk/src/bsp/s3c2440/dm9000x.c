@@ -899,8 +899,8 @@ low_level_init(struct netif *netif)
     /*
      * 创建接收线程
      */
-    rx_thread = sys_thread_new("ethif_rx", ethernetif_input, (void *)netif,
-            LW_CFG_LWIP_STK_SIZE, LW_CFG_LWIP_PRIORITY);
+    rx_thread = sys_thread_new(NETIF_THREAD_NAME, ethernetif_input, (void *)netif,
+            NETIF_THREAD_STACKSIZE, NETIF_THREAD_PRIO);
     if (rx_thread == -1) {
         LWIP_DEBUGF(NETIF_DEBUG, ("low_level_init: create rx thread error\n"));
         return;
