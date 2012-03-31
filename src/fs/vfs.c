@@ -213,7 +213,7 @@ static mount_point_t *vfs_mount_point_lookup(char pathbuf[PATH_MAX], char **ppat
          * cwd 要以 / 号开头和结尾
          */
         int32_t tid = gettid();
-        mutex_lock(&infos[tid].cwd_lock, 0);                   /*  在前面加入当前工作目录      */
+        mutex_lock(&infos[tid].cwd_lock, 0);                            /*  在前面加入当前工作目录      */
         snprintf(pathbuf, PATH_MAX, "%s%s", infos[tid].cwd, path);
         mutex_unlock(&infos[tid].cwd_lock);
     }
@@ -258,7 +258,7 @@ static mount_point_t *vfs_mount_point_lookup2(char pathbuf[PATH_MAX], char **ppa
          * cwd 要以 / 号开头和结尾
          */
         int32_t tid = gettid();
-        mutex_lock(&infos[tid].cwd_lock, 0);                   /*  在前面加入当前工作目录      */
+        mutex_lock(&infos[tid].cwd_lock, 0);                            /*  在前面加入当前工作目录      */
         snprintf(pathbuf, PATH_MAX, "%s%s", infos[tid].cwd, path);
         mutex_unlock(&infos[tid].cwd_lock);
     }
@@ -329,7 +329,7 @@ static mount_point_t *vfs_mount_point_lookup2(char pathbuf[PATH_MAX], char **ppa
         if (fd < 0 || fd >= OPEN_MAX) {                                 /*  文件描述符合法性判断        */\
             return -1;                                                                                    \
         }                                                                                                 \
-        file = infos[gettid()].files + fd;                     /*  获得文件结构                */\
+        file = infos[gettid()].files + fd;                              /*  获得文件结构                */\
         mutex_lock(&file->lock, 0);                                     /*  锁住文件                    */
 
 #define vfs_file_api_begin                                                                                \
@@ -878,7 +878,7 @@ int vfs_sync(const char *path)
         if (fd < 1 || fd >= OPEN_MAX) {                                 /*  文件描述符合法性判断        */\
             return -1;                                                                                    \
         }                                                                                                 \
-        file = infos[gettid()].files + fd;                     /*  获得文件结构                */\
+        file = infos[gettid()].files + fd;                              /*  获得文件结构                */\
         mutex_lock(&file->lock, 0);                                     /*  锁住文件                    */
 
 #define vfs_dir_api_begin                                                                                 \
