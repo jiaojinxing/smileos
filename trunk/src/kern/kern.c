@@ -561,6 +561,9 @@ int32_t process_create(const char *name, uint8_t *code, uint32_t size, uint32_t 
     return pid;
 }
 
+#include <unistd.h>
+#include <stdio.h>
+
 /*
  * 内核线程外壳
  */
@@ -569,10 +572,22 @@ static void kthread_shell(task_t *task)
     vfs_task_init(task->tid);                                           /*  初始化任务的文件信息        */
 
     open("/dev/null", O_RDONLY, 0666);                                  /*  打开三个标准文件            */
+    stdin = fdopen(STDIN_FILENO, "r");
+    if (stdin == NULL) {
+        printk("%s: failed to fdopen /dev/null for stdin\r\n");
+    }
 
     open("/dev/null", O_WRONLY, 0666);
+    stdout = fdopen(STDOUT_FILENO, "w");
+    if (stdout == NULL) {
+        printk("%s: failed to fdopen /dev/null for stdout\r\n");
+    }
 
     open("/dev/null", O_WRONLY, 0666);
+    stderr = fdopen(STDERR_FILENO, "w");
+    if (stderr == NULL) {
+        printk("%s: failed to fdopen /dev/null for stderr\r\n");
+    }
 
     task->thread(task->arg);                                            /*  进入真正的内核线程函数      */
 

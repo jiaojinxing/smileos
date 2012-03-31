@@ -42,6 +42,11 @@
 
 #include "lwip/sockets.h"
 
+/*
+ * Áª½á socket
+ */
+int socket_attach(int sockfd);
+
 #endif                                                                  /*  SOCKET_H_                   */
 /*********************************************************************************************************
   END FILE

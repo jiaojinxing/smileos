@@ -158,6 +158,7 @@ void lcd_init(void)
 }
 
 #include "vfs/device.h"
+#include <sys/stat.h>
 
 /*
  * 打开 FrameBuffer
@@ -196,6 +197,16 @@ int fb_close(void *ctx, file_t *file)
 }
 
 /*
+ * 获得 FrameBuffer 状态
+ */
+static int fb_fstat(void *ctx, file_t *file, struct stat *buf)
+{
+    buf->st_size = sizeof(framebuffer);
+
+    return 0;
+}
+
+/*
  * FrameBuffer 驱动
  */
 driver_t fb_drv = {
@@ -203,6 +214,7 @@ driver_t fb_drv = {
         .open  = fb_open,
         .ioctl = fb_ioctl,
         .close = fb_close,
+        .fstat = fb_fstat,
 };
 
 /*

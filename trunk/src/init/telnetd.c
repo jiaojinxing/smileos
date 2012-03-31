@@ -54,7 +54,7 @@
 /*
  * 获得任务信息
  */
-static int get_task_info(task_t *task, char *buf)
+static int ptask(task_t *task, char *buf)
 {
     const char *state;
 
@@ -105,30 +105,30 @@ static int get_task_info(task_t *task, char *buf)
     }
 }
 
-static int do_ts(int argc, char **argv, int fd, char buf[LINE_MAX])
+static int ts_main(int argc, char **argv)
 {
-    int len;
     int i;
     uint32_t reg;
     task_t *task;
+    char buf[LINE_MAX];
 
-    len = sprintf(buf, "type\t name\t\t pid\t state\t count\t timer\t\t prio\t cpu\t stack\t page\t dabt\r\n");
-    write(fd, buf, len);
+    printf("type\t name\t\t pid\t state\t count\t timer\t\t prio\t cpu\t stack\t page\t dabt\r\n");
 
     for (i = 0, task = tasks; i < TASK_NR; i++, task++) {
         reg = interrupt_disable();
         if (task->state != TASK_UNALLOCATE) {
-            len = get_task_info(task, buf);
+            ptask(task, buf);
             interrupt_resume(reg);
-            write(fd, buf, len);
+            printf(buf);
         } else {
             interrupt_resume(reg);
         }
     }
+    fflush(stdout);
     return 0;
 }
 
-static int do_cd(int argc, char **argv, int fd, char buf[LINE_MAX])
+static int cd_main(int argc, char **argv)
 {
     if (argc == 2) {
         return vfs_chdir(argv[1]);
@@ -140,9 +140,8 @@ static int do_cd(int argc, char **argv, int fd, char buf[LINE_MAX])
 /*
  * 执行内建的 sbin 命令
  */
-static int do_exec_buildin(int argc, char **argv, int fd, char buf[LINE_MAX])
+static int exec_buildin(int argc, char **argv)
 {
-    int len;
     uint8_t *code;
     uint32_t size;
 
@@ -150,15 +149,14 @@ static int do_exec_buildin(int argc, char **argv, int fd, char buf[LINE_MAX])
     if (code != NULL) {
         return process_create(argv[0], code, size, 10);
     } else {
-        len = sprintf(buf, "unknown cmd\r\n");
-        write(fd, buf, len);
+        printf("unknown cmd\r\n");
         return -1;
     }
 }
 
 #define ARGMAX      32
 
-static int exec_cmd(char *cmd, int fd, char buf[LINE_MAX])
+static int exec_cmd(char *cmd)
 {
     static char *argv[ARGMAX];
     char *p, *word = NULL;
@@ -198,19 +196,18 @@ static int exec_cmd(char *cmd, int fd, char buf[LINE_MAX])
     argv[argc] = NULL;
 
     if (strcmp(argv[0], "ts") == 0) {
-        do_ts(argc, argv, fd, buf);
+        ts_main(argc, argv);
     } else if (strcmp(argv[0], "ls") == 0) {
         extern int ls_main(int argc, char *argv[]);
         ls_main(argc, argv);
     } else if (strcmp(argv[0], "cd") == 0) {
-        do_cd(argc, argv, fd, buf);
+        cd_main(argc, argv);
     } else if (strcmp(argv[0], "mems") == 0) {
-        kheap_show(fd);
+        kheap_show(STDOUT_FILENO);
     } else if (strcmp(argv[0], "exit") == 0) {
-        close(fd);
         _exit(0);
     } else {
-        do_exec_buildin(argc, argv, fd, buf);
+        exec_buildin(argc, argv);
     }
 
     return 0;
@@ -230,26 +227,25 @@ const char logo[] =
 static void telnetd_thread(void *arg)
 {
     int  fd = (int)arg;
-    int  len;
     int  ret;
     int  pos;
-    char buf[LINE_MAX];
     char cmd[LINE_MAX];
     char ch;
 
-    close(STDOUT_FILENO);
+    fclose(stdout);
 
     fd = socket_attach(fd);
+    stdout = fdopen(fd, "w+");
 
-    write(fd, logo, strlen(logo));
+    printf(logo);
 
-    len = sprintf(buf, "%s]#", vfs_getcwd(NULL, 0));
-    write(fd, buf, len);
+    printf("%s]#", vfs_getcwd(NULL, 0));
+    fflush(stdout);
 
     pos = 0;
 
     while (1) {
-        ret = vfs_read(fd, &ch, 1);
+        ret = read(fd, &ch, 1);
         if (ret <= 0) {
             fprintf(stderr, "%s: failed to read socket\r\n", __func__);
             break;
@@ -260,27 +256,24 @@ static void telnetd_thread(void *arg)
                 if (ch == '\b') {
                     if (pos > 0) {
                         pos--;
-                        len = sprintf(buf, " \b \b");
-                        write(fd, buf, len);
+                        printf(" \b \b");
                     } else {
-                        len = sprintf(buf, "#");
-                        write(fd, buf, len);
+                        putchar('#');
                     }
                 } else if (ch == '\n') {
                     if (pos > 0) {
                         cmd[pos] = '\0';
                         pos = 0;
-                        exec_cmd(cmd, fd, buf);
+                        exec_cmd(cmd);
                     }
-
-                    len = sprintf(buf, "%s]#", vfs_getcwd(NULL, 0));
-                    write(fd, buf, len);
+                    printf("%s]#", vfs_getcwd(NULL, 0));
                 }
             } else if (isprint(ch)){
                 cmd[pos] = ch;
                 pos++;
             }
         }
+        fflush(stdout);
     }
 
     close(fd);
@@ -298,7 +291,7 @@ void telnetd(void *arg)
 
     fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (fd < 0) {
-        printf("%s: failed to create socket\r\n", __func__);
+        fprintf(stderr, "%s: failed to create socket\r\n", __func__);
         _exit(-1);
     }
 
@@ -308,7 +301,7 @@ void telnetd(void *arg)
     local_addr.sin_port         = htons(23);
 
     if (bind(fd, (struct sockaddr *)&local_addr, sizeof(local_addr)) < 0) {
-        printf("%s: failed to bind port %d\r\n", __func__, ntohs(local_addr.sin_port));
+        fprintf(stderr, "%s: failed to bind port %d\r\n", __func__, ntohs(local_addr.sin_port));
         closesocket(fd);
         _exit(-1);
     }
@@ -322,9 +315,9 @@ void telnetd(void *arg)
         if (client_fd > 0) {
             sprintf(name, "%s%d", __func__, client_fd);
 
-            kthread_create(name, telnetd_thread, (void *)client_fd, 4 * KB, 10);
+            kthread_create(name, telnetd_thread, (void *)client_fd, 8 * KB, 10);
         } else {
-            printf("%s: failed to accept connect\r\n", __func__);
+            fprintf(stderr, "%s: failed to accept connect\r\n", __func__);
         }
     }
 }
