@@ -563,6 +563,7 @@ int32_t process_create(const char *name, uint8_t *code, uint32_t size, uint32_t 
 
 #include <unistd.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 /*
  * 内核线程外壳
@@ -591,8 +592,7 @@ static void kthread_shell(task_t *task)
 
     task->thread(task->arg);                                            /*  进入真正的内核线程函数      */
 
-    extern void _exit(int status);
-    _exit(0);                                                           /*  退出内核线程                */
+    exit(0);                                                            /*  退出内核线程                */
 }
 
 /*

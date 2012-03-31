@@ -169,9 +169,6 @@ svc_mode_save:
   执行任务切换
 *********************************************************************************************************/
 do_switch:
-    mov     r0, #0
-    mcr     p15, 0, r0, c7, c10, 4              /*  回写写缓冲                                          */
-
     ldr     r0, [r1, #PID_OFFSET]               /*  新任务的 PID                                        */
     mov     r0, r0, lsl #25                     /*  PID 在寄存器的最高 7 位                             */
     mcr     p15, 0, r0, c13, c0, 0              /*  写 PID, MVA 发生变化了!!!                           */
@@ -184,9 +181,8 @@ do_switch:
     ldmia   r1!, {r2-r6}                        /*  r2=sp_backup, r3=cpsr_int, r4=sp_int, r5=spsr_int   */
                                                 /*  r6=lr_int                                           */
 
-    mov     r0, r5
-    bic     r0, r0, #ARM_MODE_MASK
-    cmp     r0, #ARM_SVC_MODE                   /*  判断 spsr_int 中的模式是否为 svc 模式               */
+    bic     r5, r5, #ARM_MODE_MASK
+    cmp     r5, #ARM_SVC_MODE                   /*  判断 spsr_int 中的模式是否为 svc 模式               */
     beq     svc_mode_switch
 /*********************************************************************************************************
   sys 模式任务切换

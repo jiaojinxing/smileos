@@ -142,10 +142,10 @@ int syscall_template(void)
     __asm__ __volatile__("mov    r1,  %0": :"r"(param2));               /*  R1 传递参数 2               */
     __asm__ __volatile__("mov    r2,  %0": :"r"(param3));               /*  R2 传递参数 3               */
     __asm__ __volatile__("mov    r3,  %0": :"r"(param4));               /*  R3 传递参数 4               */
-    __asm__ __volatile__("stmdb  sp!, {r7, lr}");                       /*  保存 R7, LR 到堆栈          */
+    __asm__ __volatile__("stmfd  sp!, {r7, lr}");                       /*  保存 R7, LR 到堆栈          */
     __asm__ __volatile__("mov    r7,  %0": :"M"(SYS_CALL_EXIT));        /*  R7 传递系统调用号           */
     __asm__ __volatile__("swi    0");                                   /*  软件中断                    */
-    __asm__ __volatile__("ldmia  sp!, {r7, lr}");                       /*  从堆栈恢复 R7, LR           */
+    __asm__ __volatile__("ldmfd  sp!, {r7, lr}");                       /*  从堆栈恢复 R7, LR           */
     __asm__ __volatile__("mov    %0,  r0": "=r"(ret));                  /*  R0 传递返回值               */
 
     return ret;
@@ -184,10 +184,10 @@ void yield(void)
     if (in_kernel()) {
         (sys_do_table[SYS_CALL_YIELD])();
     } else {
-        __asm__ __volatile__("stmdb  sp!, {r7, lr}");
+        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    r7,  %0": :"M"(SYS_CALL_YIELD));
         __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmia  sp!, {r7, lr}");
+        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
     }
 }
 
@@ -201,10 +201,10 @@ static void sleep_tick(unsigned int ticks)
         (sys_do_table[SYS_CALL_SLEEP])(ticks);
     } else {
         __asm__ __volatile__("mov    r0,  %0": :"r"(ticks));
-        __asm__ __volatile__("stmdb  sp!, {r7, lr}");
+        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    r7,  %0": :"M"(SYS_CALL_SLEEP));
         __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmia  sp!, {r7, lr}");
+        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
     }
 }
 
@@ -241,10 +241,10 @@ int _gettimeofday_r(struct _reent *reent, struct timeval *tv, void *tzp)
     } else {
         __asm__ __volatile__("mov    r0,  %0": :"r"(tv));
         __asm__ __volatile__("mov    r1,  %0": :"r"(tzp));
-        __asm__ __volatile__("stmdb  sp!, {r7, lr}");
+        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    r7,  %0": :"M"(SYS_CALL_GETTIME));
         __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmia  sp!, {r7, lr}");
+        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
 
@@ -262,10 +262,10 @@ int _close_r(struct _reent *reent, int fd)
         ret = (sys_do_table[SYS_CALL_CLOSE])(fd);
     } else {
         __asm__ __volatile__("mov    r0,  %0": :"r"(fd));
-        __asm__ __volatile__("stmdb  sp!, {r7, lr}");
+        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    r7,  %0": :"M"(SYS_CALL_CLOSE));
         __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmia  sp!, {r7, lr}");
+        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
 
@@ -286,10 +286,10 @@ int _fcntl_r(struct _reent *reent, int fd, int cmd, int arg)
         __asm__ __volatile__("mov    r0,  %0": :"r"(fd));
         __asm__ __volatile__("mov    r1,  %0": :"r"(cmd));
         __asm__ __volatile__("mov    r2,  %0": :"r"(arg));
-        __asm__ __volatile__("stmdb  sp!, {r7, lr}");
+        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    r7,  %0": :"M"(SYS_CALL_FCNTL));
         __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmia  sp!, {r7, lr}");
+        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
 
@@ -308,10 +308,10 @@ int _fstat_r(struct _reent *reent, int fd, struct stat *buf)
     } else {
         __asm__ __volatile__("mov    r0,  %0": :"r"(fd));
         __asm__ __volatile__("mov    r1,  %0": :"r"(buf));
-        __asm__ __volatile__("stmdb  sp!, {r7, lr}");
+        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    r7,  %0": :"M"(SYS_CALL_FSTAT));
         __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmia  sp!, {r7, lr}");
+        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
 
@@ -328,10 +328,10 @@ int _getpid_r(struct _reent *reent)
     if (in_kernel()) {
         ret = (sys_do_table[SYS_CALL_GETPID])();
     } else {
-        __asm__ __volatile__("stmdb  sp!, {r7, lr}");
+        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    r7,  %0": :"M"(SYS_CALL_GETPID));
         __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmia  sp!, {r7, lr}");
+        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
 
@@ -349,10 +349,10 @@ int _isatty_r(struct _reent *reent, int fd)
         ret = (sys_do_table[SYS_CALL_ISATTY])(fd);
     } else {
         __asm__ __volatile__("mov    r0,  %0": :"r"(fd));
-        __asm__ __volatile__("stmdb  sp!, {r7, lr}");
+        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    r7,  %0": :"M"(SYS_CALL_ISATTY));
         __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmia  sp!, {r7, lr}");
+        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
 
@@ -371,10 +371,10 @@ int _link_r(struct _reent *reent, const char *path1, const char *path2)
     } else {
         __asm__ __volatile__("mov    r0,  %0": :"r"(path1));
         __asm__ __volatile__("mov    r1,  %0": :"r"(path2));
-        __asm__ __volatile__("stmdb  sp!, {r7, lr}");
+        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    r7,  %0": :"M"(SYS_CALL_LINK));
         __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmia  sp!, {r7, lr}");
+        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
 
@@ -394,10 +394,10 @@ _off_t _lseek_r(struct _reent *reent, int fd, _off_t offset, int whence)
         __asm__ __volatile__("mov    r0,  %0": :"r"(fd));
         __asm__ __volatile__("mov    r1,  %0": :"r"(offset));
         __asm__ __volatile__("mov    r2,  %0": :"r"(whence));
-        __asm__ __volatile__("stmdb  sp!, {r7, lr}");
+        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    r7,  %0": :"M"(SYS_CALL_LSEEK));
         __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmia  sp!, {r7, lr}");
+        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
 
@@ -416,10 +416,10 @@ int _mkdir_r(struct _reent *reent, const char *path, int mode)
     } else {
         __asm__ __volatile__("mov    r0,  %0": :"r"(path));
         __asm__ __volatile__("mov    r1,  %0": :"r"(mode));
-        __asm__ __volatile__("stmdb  sp!, {r7, lr}");
+        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    r7,  %0": :"M"(SYS_CALL_MKDIR));
         __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmia  sp!, {r7, lr}");
+        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
 
@@ -439,10 +439,10 @@ int _open_r(struct _reent *reent, const char *path, int oflag, int mode)
         __asm__ __volatile__("mov    r0,  %0": :"r"(path));
         __asm__ __volatile__("mov    r1,  %0": :"r"(oflag));
         __asm__ __volatile__("mov    r2,  %0": :"r"(mode));
-        __asm__ __volatile__("stmdb  sp!, {r7, lr}");
+        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    r7,  %0": :"M"(SYS_CALL_OPEN));
         __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmia  sp!, {r7, lr}");
+        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
 
@@ -462,10 +462,10 @@ _ssize_t _read_r(struct _reent *reent, int fd, void *buf, size_t nbytes)
         __asm__ __volatile__("mov    r0,  %0": :"r"(fd));
         __asm__ __volatile__("mov    r1,  %0": :"r"(buf));
         __asm__ __volatile__("mov    r2,  %0": :"r"(nbytes));
-        __asm__ __volatile__("stmdb  sp!, {r7, lr}");
+        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    r7,  %0": :"M"(SYS_CALL_READ));
         __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmia  sp!, {r7, lr}");
+        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
 
@@ -485,10 +485,10 @@ _ssize_t _write_r(struct _reent *reent, int fd, const void *buf, size_t nbytes)
         __asm__ __volatile__("mov    r0,  %0": :"r"(fd));
         __asm__ __volatile__("mov    r1,  %0": :"r"(buf));
         __asm__ __volatile__("mov    r2,  %0": :"r"(nbytes));
-        __asm__ __volatile__("stmdb  sp!, {r7, lr}");
+        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    r7,  %0": :"M"(SYS_CALL_WRITE));
         __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmia  sp!, {r7, lr}");
+        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
 
@@ -507,10 +507,10 @@ int _rename_r(struct _reent *reent, const char *old, const char *new)
     } else {
         __asm__ __volatile__("mov    r0,  %0": :"r"(old));
         __asm__ __volatile__("mov    r1,  %0": :"r"(new));
-        __asm__ __volatile__("stmdb  sp!, {r7, lr}");
+        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    r7,  %0": :"M"(SYS_CALL_RENAME));
         __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmia  sp!, {r7, lr}");
+        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
 
@@ -529,10 +529,10 @@ int _stat_r(struct _reent *reent, const char *path, struct stat *buf)
     } else {
         __asm__ __volatile__("mov    r0,  %0": :"r"(path));
         __asm__ __volatile__("mov    r1,  %0": :"r"(buf));
-        __asm__ __volatile__("stmdb  sp!, {r7, lr}");
+        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    r7,  %0": :"M"(SYS_CALL_STAT));
         __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmia  sp!, {r7, lr}");
+        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
 
@@ -550,10 +550,10 @@ int _unlink_r(struct _reent *reent, const char *path)
         ret = (sys_do_table[SYS_CALL_UNLINK])(path);
     } else {
         __asm__ __volatile__("mov    r0,  %0": :"r"(path));
-        __asm__ __volatile__("stmdb  sp!, {r7, lr}");
+        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    r7,  %0": :"M"(SYS_CALL_UNLINK));
         __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmia  sp!, {r7, lr}");
+        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
 
@@ -573,10 +573,10 @@ struct _reent *getreent(void)
     if (in_kernel()) {
         ret = (struct _reent *)(sys_do_table[SYS_CALL_GETREENT])();
     } else {
-        __asm__ __volatile__("stmdb  sp!, {r7, lr}");
+        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    r7,  %0": :"M"(SYS_CALL_GETREENT));
         __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmia  sp!, {r7, lr}");
+        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
 

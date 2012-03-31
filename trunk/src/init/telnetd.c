@@ -50,6 +50,7 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <limits.h>
+#include <stdlib.h>
 
 /*
  * 获得任务信息
@@ -124,7 +125,6 @@ static int ts_main(int argc, char **argv)
             interrupt_resume(reg);
         }
     }
-    fflush(stdout);
     return 0;
 }
 
@@ -205,7 +205,7 @@ static int exec_cmd(char *cmd)
     } else if (strcmp(argv[0], "mems") == 0) {
         kheap_show(STDOUT_FILENO);
     } else if (strcmp(argv[0], "exit") == 0) {
-        _exit(0);
+        exit(0);
     } else {
         exec_buildin(argc, argv);
     }
@@ -292,7 +292,7 @@ void telnetd(void *arg)
     fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (fd < 0) {
         fprintf(stderr, "%s: failed to create socket\r\n", __func__);
-        _exit(-1);
+        exit(-1);
     }
 
     local_addr.sin_family       = AF_INET;
@@ -303,7 +303,7 @@ void telnetd(void *arg)
     if (bind(fd, (struct sockaddr *)&local_addr, sizeof(local_addr)) < 0) {
         fprintf(stderr, "%s: failed to bind port %d\r\n", __func__, ntohs(local_addr.sin_port));
         closesocket(fd);
-        _exit(-1);
+        exit(-1);
     }
 
     listen(fd, 2);

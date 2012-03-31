@@ -106,7 +106,7 @@ ls_main(int argc, char *argv[])
 
         default:
         case '?':
-            fprintf(stderr, "usage: ls [-1CFAal] [file ...]\r\n");
+            printf("usage: ls [-1CFAal] [file ...]\r\n");
             return 0;
         }
     }
@@ -330,8 +330,6 @@ do_ls(char *path)
         printentry(path, &st);
         printf("\r\n");
     }
-
-    fflush(stdout);
 
     return 0;
 }

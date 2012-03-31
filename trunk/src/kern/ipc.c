@@ -664,7 +664,8 @@ int mqueue_trypost(mqueue_t *mqueue, void *msg)
             if (q->valid) {
                 if (q->cnt < q->size) {
                     q->msg[q->in] = msg;
-                    q->in = ++q->in % q->size;
+                    q->in++;
+                    q->in %= q->size;
                     q->cnt++;
 
                     task = q->r_wait_list;
@@ -703,7 +704,8 @@ int mqueue_post(mqueue_t *mqueue, void *msg, uint32_t timeout)
             if (q->valid) {
                 if (q->cnt < q->size) {
                     q->msg[q->in] = msg;
-                    q->in = ++q->in % q->size;
+                    q->in++;
+                    q->in %= q->size;
                     q->cnt++;
 
                     task = q->r_wait_list;
@@ -749,7 +751,8 @@ int mqueue_tryfetch(mqueue_t *mqueue, void **msg)
             if (q->valid) {
                 if (q->cnt) {
                     *msg = q->msg[q->out];
-                    q->out = ++q->out % q->size;
+                    q->out++;
+                    q->out %= q->size;
                     q->cnt--;
 
                     task = q->w_wait_list;
@@ -788,7 +791,8 @@ int mqueue_fetch(mqueue_t *mqueue, void **msg, uint32_t timeout)
             if (q->valid) {
                 if (q->cnt) {
                     *msg = q->msg[q->out];
-                    q->out = ++q->out % q->size;
+                    q->out++;
+                    q->out %= q->size;
                     q->cnt--;
 
                     task = q->w_wait_list;
