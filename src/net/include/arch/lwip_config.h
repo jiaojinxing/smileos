@@ -96,9 +96,6 @@
 #define LW_CFG_LWIP_PPPOE               0                               /*  lwip pppoe 支持             */
 #define LW_CFG_LWIP_NUM_PPP             2                               /*  lwip ppp 最大会话数         */
 
-#define LW_CFG_LWIP_PRIORITY            10                              /*  lwip thread default priority*/
-#define LW_CFG_LWIP_STK_SIZE            4 * KB                          /*  lwip thread default stksize */
-
 #define LW_CFG_LWIP_TCP_PCB             60                              /*  允许同时的 TCP 连接数       */
 #define LW_CFG_LWIP_UDP_PCB             50                              /*  允许同时的 UDP 数量         */
 #define LW_CFG_LWIP_RAW_PCB             15                              /*  允许同时的 RAW 数量         */
@@ -394,21 +391,16 @@
   inet thread
 *********************************************************************************************************/
 
+#define DEFAULT_LWIP_PRIORITY           10                              /*  lwip thread default priority*/
+#define DEFAULT_LWIP_STK_SIZE           4 * KB                          /*  lwip thread default stksize */
+
 #define TCPIP_THREAD_NAME               "lwip"
-#define TCPIP_THREAD_STACKSIZE          LW_CFG_LWIP_STK_SIZE
-#define TCPIP_THREAD_PRIO               LW_CFG_LWIP_PRIORITY
+#define TCPIP_THREAD_STACKSIZE          DEFAULT_LWIP_STK_SIZE
+#define TCPIP_THREAD_PRIO               50
 
-#define SLIPIF_THREAD_NAME              "slip"
-#define SLIPIF_THREAD_STACKSIZE         LW_CFG_LWIP_STK_SIZE
-#define SLIPIF_THREAD_PRIO              LW_CFG_LWIP_PRIORITY
-
-#define PPP_THREAD_NAME                 "ppp"
-#define PPP_THREAD_STACKSIZE            LW_CFG_LWIP_STK_SIZE
-#define PPP_THREAD_PRIO                 LW_CFG_LWIP_PRIORITY
-
-#define DEFAULT_THREAD_NAME             "netdef"
-#define DEFAULT_THREAD_STACKSIZE        LW_CFG_LWIP_STK_SIZE
-#define DEFAULT_THREAD_PRIO             LW_CFG_LWIP_PRIORITY
+#define NETIF_THREAD_NAME               "netif"
+#define NETIF_THREAD_STACKSIZE          DEFAULT_LWIP_STK_SIZE
+#define NETIF_THREAD_PRIO               100
 
 /*********************************************************************************************************
   Socket options

@@ -98,8 +98,6 @@
 
 /*
  * 恢复任务
- * 保证被中断唤醒的任务(一般是中断底半部处理), 在中断完全退出后立即运行
- * 抬高任务的剩余时间片, 在任务调度时, 具有较高的竞争优先级
  */
 #define resume_task(task, __wait_list, __resume_type)               \
                     task->timer = 0;                                \
@@ -107,10 +105,7 @@
                     __wait_list = task->next;                       \
                     task->wait_list = NULL;                         \
                     task->next = NULL;                              \
-                    task->resume_type = __resume_type;              \
-                    if (in_interrupt()) {                           \
-                        task->counter = task->priority + 2;         \
-                    }
+                    task->resume_type = __resume_type
 
 /*
  * IPC 对象类型放在 IPC 对象的首位, 有效性放在次位, 保证 IPC 对象关键成员变量兼容
