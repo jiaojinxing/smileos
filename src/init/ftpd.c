@@ -44,6 +44,7 @@
 #include <unistd.h>
 #include <sys/socket.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <ctype.h>
 #include <limits.h>
 
@@ -122,6 +123,7 @@ static void ftpd_thread(void *arg)
     while (1) {
         len = recv(fd, cmd, sizeof(cmd) - 1, 0);
         if (len <= 0) {
+            fprintf(stderr, "%s: failed to read socket\r\n", __func__);
             break;
         } else if (len > 0) {
             cmd[len] = '\0';
@@ -169,7 +171,7 @@ static void ftpd_thread(void *arg)
                 len = sprintf(buf, "200 /\r\n");
                 send(fd, buf, len, 0);
             } else {
-                printf("%s: unknown cmd %s\n", __func__, cmd);
+                fprintf(stderr, "%s: unknown cmd %s\n", __func__, cmd);
             }
         }
     }
@@ -189,8 +191,8 @@ void ftpd(void *arg)
 
     fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (fd < 0) {
-        printf("%s: failed to create socket\n", __func__);
-        _exit(-1);
+        fprintf(stderr, "%s: failed to create socket\r\n", __func__);
+        exit(-1);
     }
 
     local_addr.sin_family       = AF_INET;
@@ -199,9 +201,9 @@ void ftpd(void *arg)
     local_addr.sin_port         = htons(21);
 
     if (bind(fd, (struct sockaddr *)&local_addr, sizeof(local_addr)) < 0) {
-        printf("%s: failed to bind port %d\n", __func__, ntohs(local_addr.sin_port));
+        fprintf(stderr, "%s: failed to bind port %d\r\n", __func__, ntohs(local_addr.sin_port));
         closesocket(fd);
-        _exit(-1);
+        exit(-1);
     }
 
     listen(fd, 2);
@@ -215,7 +217,7 @@ void ftpd(void *arg)
 
             kthread_create(name, ftpd_thread, (void *)client_fd, 4 * KB, 10);
         } else {
-            printf("%s: failed to accept connect\n", __func__);
+            fprintf(stderr, "%s: failed to accept connect\r\n", __func__);
         }
     }
 }
