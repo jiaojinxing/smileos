@@ -66,7 +66,7 @@ static void tcpip_init_done(void *arg)
      * 如果使用 qemu, 请把 #if 1 改为 #if 0
      * 另外 kern/trap.c 文件也有一处要修改
      */
-#if 1
+#if 0
     IP4_ADDR(&ip,       192, 168,   2,  30);
     IP4_ADDR(&submask,  255, 255, 255,   0);
     IP4_ADDR(&gateway,  192, 168,   2,   1);

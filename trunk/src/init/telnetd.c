@@ -55,7 +55,7 @@
 /*
  * 获得任务信息
  */
-static int ptask(task_t *task, char *buf)
+static int pstat(task_t *task, char *buf)
 {
     const char *state;
 
@@ -118,7 +118,7 @@ static int ts_main(int argc, char **argv)
     for (i = 0, task = tasks; i < TASK_NR; i++, task++) {
         reg = interrupt_disable();
         if (task->state != TASK_UNALLOCATE) {
-            ptask(task, buf);
+            pstat(task, buf);
             interrupt_resume(reg);
             printf(buf);
         } else {
@@ -154,11 +154,9 @@ static int exec_buildin(int argc, char **argv)
     }
 }
 
-#define ARGMAX      32
-
 static int exec_cmd(char *cmd)
 {
-    static char *argv[ARGMAX];
+    static char *argv[ARG_MAX];
     char *p, *word = NULL;
     int argc = 0;
 
@@ -177,7 +175,7 @@ static int exec_cmd(char *cmd)
                 *p = '\0';
                 argv[argc++] = word;
                 word = NULL;
-                if (argc >= ARGMAX - 1) {
+                if (argc >= ARG_MAX - 1) {
                     return -1;
                 }
             }
@@ -275,8 +273,6 @@ static void telnetd_thread(void *arg)
         }
         fflush(stdout);
     }
-
-    close(fd);
 }
 
 /*

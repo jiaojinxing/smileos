@@ -40,6 +40,7 @@
 #include "kern/config.h"
 #include "kern/types.h"
 #include "kern/kern.h"
+#include "vfs/vfs.h"
 #include <string.h>
 #include <unistd.h>
 #include <sys/socket.h>
@@ -47,6 +48,8 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <limits.h>
+#include <sys/stat.h>
+#include <dirent.h>
 
 #include "lwip/init.h"
 #include "lwip/tcpip.h"
@@ -61,15 +64,13 @@ static void ftpd_list_thread(void *arg)
     struct sockaddr_in local_addr, remote_addr;
     socklen_t addr_len;
     int fd, client_fd;
-    char buf[LINE_MAX];
-    int len;
     int port = (int)arg;
     int on = 1;
 
     fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (fd < 0) {
-        printf("%s: failed to create socket\n", __func__);
-        _exit(-1);
+        fprintf(stderr, "%s: failed to create socket\r\n", __func__);
+        exit(-1);
     }
 
     local_addr.sin_family       = AF_INET;
@@ -81,8 +82,9 @@ static void ftpd_list_thread(void *arg)
     setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
 
     if (bind(fd, (struct sockaddr *)&local_addr, sizeof(local_addr)) < 0) {
+        fprintf(stderr, "%s: failed to bind port %d\r\n", __func__, ntohs(local_addr.sin_port));
         closesocket(fd);
-        _exit(-1);
+        exit(-1);
     }
 
     listen(fd, 2);
@@ -91,17 +93,34 @@ static void ftpd_list_thread(void *arg)
 
     client_fd = accept(fd, (struct sockaddr *)&remote_addr, &addr_len);
     if (client_fd > 0) {
-        len = sprintf(buf, "drw-r--r-- 1 admin admin %d Jan 1 2000 %s\r\n", 0, "..");
-        send(client_fd, buf, len, 0);
-        len = sprintf(buf, "drw-r--r-- 1 admin admin %d Jan 1 2000 %s\r\n", 0, "test");
-        send(client_fd, buf, len, 0);
-        len = sprintf(buf, "drw-r--r-- 1 admin admin %d Jan 1 2000 %s\r\n", 0, "aa");
-        send(client_fd, buf, len, 0);
-        len = sprintf(buf, "drw-r--r-- 1 admin admin %d Jan 1 2000 %s\r\n", 0, "bb");
-        send(client_fd, buf, len, 0);
-        closesocket(client_fd);
+        FILE *fp;
+        struct stat st;
+        DIR *dir;
+        struct dirent *entry;
+
+        client_fd = socket_attach(client_fd);
+        fp        = fdopen(client_fd, "w+");
+
+        dir = vfs_opendir(".");
+
+        while (NULL != (entry = vfs_readdir(dir))) {
+
+            stat(entry->d_name, &st);
+
+            if (S_ISDIR(st.st_mode)) {
+                fprintf(fp, "drw-r--r-- 1 admin admin %d Jan 1 2000 %s\r\n", 0, entry->d_name);
+                fflush(fp);
+            } else {
+                fprintf(fp, "-rw-r--r-- 1 admin admin %d Jan 1 2000 %s\r\n", 0, entry->d_name);
+                fflush(fp);
+            }
+        }
+
+        vfs_closedir(dir);
+
+        fclose(fp);
     } else {
-        printf("%s: failed to accept connect\n", __func__);
+        fprintf(stderr, "%s: failed to accept connect\r\n", __func__);
     }
 
     closesocket(fd);
@@ -113,41 +132,39 @@ static void ftpd_list_thread(void *arg)
 static void ftpd_thread(void *arg)
 {
     int  fd = (int)arg;
-    char buf[LINE_MAX];
     char cmd[LINE_MAX];
     int  len;
 
-    len = sprintf(buf, "220 SmileOS FTP Server Ready\r\n");
-    send(fd, buf, len, 0);
+    fclose(stdout);
+
+    fd = socket_attach(fd);
+    stdout = fdopen(fd, "w+");
+
+    printf("220 SmileOS FTP Server Ready\r\n");
+    fflush(stdout);
 
     while (1) {
-        len = recv(fd, cmd, sizeof(cmd) - 1, 0);
+        len = read(fd, cmd, sizeof(cmd) - 1);
         if (len <= 0) {
             fprintf(stderr, "%s: failed to read socket\r\n", __func__);
             break;
         } else if (len > 0) {
             cmd[len] = '\0';
             if (strncmp(cmd, "USER", 4) == 0) {
-                len = sprintf(buf, "331 Guest login OK, send your complete e-mail address as password\r\n");
-                send(fd, buf, len, 0);
+                printf("331 Guest login OK, send your e-mail as password\r\n");
             } else if (strncmp(cmd, "PASS", 4) == 0) {
-                len = sprintf(buf, "230 Guest login OK, access restrictions apply\r\n");
-                send(fd, buf, len, 0);
+                printf("230 Guest login OK\r\n");
             } else if (strncmp(cmd, "SYST", 4) == 0) {
-                len = sprintf(buf, "200 SmileOS\r\n");
-                send(fd, buf, len, 0);
+                printf("200 SmileOS\r\n");
             } else if (strncmp(cmd, "FEAT", 4) == 0) {
-                len = sprintf(buf, "500 Failure\r\n");
-                send(fd, buf, len, 0);
+                printf("500 Failure\r\n");
             } else if (strncmp(cmd, "PWD", 3) == 0) {
-                len = sprintf(buf, "200 /\r\n");
-                send(fd, buf, len, 0);
+                printf("200 %s\r\n", vfs_getcwd(NULL, 0));
             } else if (strncmp(cmd, "TYPE", 4) == 0) {
-                len = sprintf(buf, "200 ASCII\r\n");
-                send(fd, buf, len, 0);
+                printf("200 ASCII\r\n");
             } else if (strncmp(cmd, "PASV", 4) == 0) {
                 extern struct netif *netif_default;
-                len = sprintf(buf, "200 %d,%d,%d,%d,%s,%s\r\n",
+                printf("200 %d,%d,%d,%d,%s,%s\r\n",
                         (netif_default->ip_addr.addr >> 0 ) & 0xFF,
                         (netif_default->ip_addr.addr >> 8 ) & 0xFF,
                         (netif_default->ip_addr.addr >> 16) & 0xFF,
@@ -157,26 +174,19 @@ static void ftpd_thread(void *arg)
                          */
                         "9",
                         "13");
-                send(fd, buf, len, 0);
             } else if (strncmp(cmd, "LIST", 4) == 0) {
-
-                len = sprintf(buf, "150 Opening ASCII mode data connection for /\r\n");
-                send(fd, buf, len, 0);
-
+                printf("150 Opening ASCII mode data connection for /\r\n");
                 ftpd_list_thread((void *)2317);
-
-                len = sprintf(buf, "226 Transfer complete\r\n");
-                send(fd, buf, len, 0);
+                printf("226 Transfer complete\r\n");
             } else if (strncmp(cmd, "CWD", 3) == 0) {
-                len = sprintf(buf, "200 /\r\n");
-                send(fd, buf, len, 0);
+                vfs_chdir(cmd + 4);
+                printf("200 %s\r\n", cmd + 4);
             } else {
                 fprintf(stderr, "%s: unknown cmd %s\n", __func__, cmd);
             }
+            fflush(stdout);
         }
     }
-
-    closesocket(fd);
 }
 
 /*
