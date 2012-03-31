@@ -51,13 +51,15 @@
 #endif
 
 #ifndef TICK_PER_SECOND
-#define TICK_PER_SECOND             (100)                               /*  每秒 TICK 数                */
+#define TICK_PER_SECOND             (50)                                /*  每秒 TICK 数                */
 #endif
 
 #define PROCESS_SPACE_SIZE          (32 * MB)                           /*  进程空间大小                */
 #define PROCESS_STACK_SIZE          (128 * KB)                          /*  进程栈空间大小              */
 
 #define LINE_MAX                    (512)                               /*  行大小, limits.h 无此定义   */
+
+#define ARG_MAX                     (32)
 
 #endif                                                                  /*  KERN_CONFIG_H_              */
 /*********************************************************************************************************
