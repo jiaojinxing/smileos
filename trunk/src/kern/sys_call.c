@@ -584,7 +584,7 @@ struct _reent *getreent(void)
 }
 
 /*
- * _sbrk
+ * _sbrk_r
  */
 void *_sbrk_r(struct _reent *reent, ptrdiff_t incr)
 {

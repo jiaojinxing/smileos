@@ -61,7 +61,7 @@
 
 #define	_USE_LFN	    0                                               /*  不使用长文件名              */
 
-#define	_MAX_LFN	    PATH_MAX                                        /*  长文件名的最大长度          */
+#define	_MAX_LFN	    NAME_MAX                                        /*  长文件名的最大长度          */
 
 #define	_LFN_UNICODE	0                                               /*  支持 unicode                */
 
@@ -79,7 +79,7 @@
 
 #define _FS_REENTRANT	1                                               /*  可重入                      */
 
-#define _FS_TIMEOUT		1000                                            /*  超时 TICK 数                */
+#define _FS_TIMEOUT		2000                                            /*  超时 TICK 数                */
 
 struct mutex;
 #define	_SYNC_t			struct mutex *                                  /*  同步对象类型                */
