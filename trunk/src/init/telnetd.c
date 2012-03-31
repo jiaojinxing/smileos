@@ -259,14 +259,14 @@ static void telnetd_thread(void *arg)
                         putchar('#');
                     }
                 } else if (ch == '\n') {
-                    if (pos > 0) {
+                    if (pos > 0 && pos < LINE_MAX) {
                         cmd[pos] = '\0';
                         pos = 0;
                         exec_cmd(cmd);
                     }
                     printf("%s]#", vfs_getcwd(NULL, 0));
                 }
-            } else if (isprint(ch)){
+            } else if (isprint(ch) && pos < LINE_MAX){
                 cmd[pos] = ch;
                 pos++;
             }
