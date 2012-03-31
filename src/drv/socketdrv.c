@@ -109,7 +109,7 @@ static int socket_close(void *ctx, file_t *file)
 }
 
 /*
- * isatty
+ * socket 是不是一个 TTY
  */
 static int socket_isatty(void *ctx, file_t *file)
 {

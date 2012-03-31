@@ -33,7 +33,7 @@
 **--------------------------------------------------------------------------------------------------------
 ** Modified by:             JiaoJinXing
 ** Modified date:           2012-3-26
-** Version:                 1.2.0
+** Version:                 1.1.0
 ** Descriptions:            修改 mmu_map_section_as_page 和加入 mmu_map_section 函数,
 **                          以实现进程虚拟地址空间的保护
 **

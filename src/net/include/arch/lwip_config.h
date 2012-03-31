@@ -96,7 +96,7 @@
 #define LW_CFG_LWIP_PPPOE               0                               /*  lwip pppoe 支持             */
 #define LW_CFG_LWIP_NUM_PPP             2                               /*  lwip ppp 最大会话数         */
 
-#define LW_CFG_LWIP_PRIORITY            20                              /*  lwip thread default priority*/
+#define LW_CFG_LWIP_PRIORITY            10                              /*  lwip thread default priority*/
 #define LW_CFG_LWIP_STK_SIZE            4 * KB                          /*  lwip thread default stksize */
 
 #define LW_CFG_LWIP_TCP_PCB             60                              /*  允许同时的 TCP 连接数       */

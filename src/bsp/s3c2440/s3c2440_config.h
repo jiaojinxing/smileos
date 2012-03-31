@@ -88,7 +88,7 @@
 
 #define UART_BAUD_RATE      (115200)                                    /*  UART 波特率                 */
 
-#define TICK_PER_SECOND     (50)                                        /*  每秒 TICK 数                */
+#define TICK_PER_SECOND     (100)                                       /*  每秒 TICK 数                */
 
 #endif                                                                  /*  S3C2440_CONFIG_H_           */
 /*********************************************************************************************************

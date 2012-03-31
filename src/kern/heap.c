@@ -300,13 +300,13 @@ void libc_init(void)
     /*
      * 打开三个标准文件
      */
-    open("/dev/null", O_RDONLY, 0666);                                  /*  打开三个标准文件            */
+    open("/dev/ttyS0", O_RDONLY, 0666);
     stdin = fdopen(STDIN_FILENO, "r");
 
-    open("/dev/null", O_WRONLY, 0666);
+    open("/dev/ttyS0", O_WRONLY, 0666);
     stdout = fdopen(STDOUT_FILENO, "w");
 
-    open("/dev/null", O_WRONLY, 0666);
+    open("/dev/ttyS0", O_WRONLY, 0666);
     stderr = fdopen(STDERR_FILENO, "w");
 }
 

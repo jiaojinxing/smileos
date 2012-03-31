@@ -147,7 +147,7 @@ static int exec_buildin(int argc, char **argv)
 
     code = sbin_lookup(argv[0], &size);
     if (code != NULL) {
-        return process_create(argv[0], code, size, 10);
+        return process_create(argv[0], code, size, 5);
     } else {
         printf("unknown cmd\r\n");
         return -1;
@@ -311,7 +311,7 @@ void telnetd(void *arg)
         if (client_fd > 0) {
             sprintf(name, "%s%d", __func__, client_fd);
 
-            kthread_create(name, telnetd_thread, (void *)client_fd, 8 * KB, 10);
+            kthread_create(name, telnetd_thread, (void *)client_fd, 8 * KB, 5);
         } else {
             fprintf(stderr, "%s: failed to accept connect\r\n", __func__);
         }

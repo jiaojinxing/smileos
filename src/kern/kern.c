@@ -51,6 +51,13 @@
 ** Descriptions:            按 newlib 需求, 任务控制块增加 struct _reent 成员,
 **                          任务切换时也切换 _impure_ptr 指针
 **
+**--------------------------------------------------------------------------------------------------------
+** Modified by:             JiaoJinXing
+** Modified date:           2012-3-31
+** Version:                 1.4.0
+** Descriptions:            修改任务调度算法的一处错误: 重置所有就绪任务的剩余时间片而不是所有任务
+**                          任务调度算法有待改进!
+**
 *********************************************************************************************************/
 #include "kern/config.h"
 #include "kern/types.h"
@@ -158,7 +165,7 @@ void schedule(void)
         /*
          * 先做内核线程调度, 再做进程调度
          */
-        for (i = PROCESS_NR, task = tasks + PROCESS_NR; i < TASK_NR; i++, task++) {
+        for (i = TASK_NR - 1, task = tasks + TASK_NR - 1; i > PROCESS_NR - 1; i--, task--) {
             if ((task->state == TASK_RUNNING) && (max < (int32_t)task->counter)) {
                 max  = (int32_t)task->counter;                          /*  用剩余时间片来做竞争        */
                 next = i;
@@ -183,8 +190,10 @@ void schedule(void)
             break;
         }
 
-        for (i = 0, task = tasks; i < TASK_NR; i++, task++) {           /*  重置所有任务的剩余时间片    */
-            task->counter = task->priority;
+        for (i = 0, task = tasks; i < TASK_NR; i++, task++) {           /*  重置所有就绪任务的剩余时间片*/
+            if (task->state == TASK_RUNNING) {
+                task->counter = task->priority;
+            }
         }
 
         flag = TRUE;
@@ -572,23 +581,14 @@ static void kthread_shell(task_t *task)
 {
     vfs_task_init(task->tid);                                           /*  初始化任务的文件信息        */
 
-    open("/dev/null", O_RDONLY, 0666);                                  /*  打开三个标准文件            */
+    open("/dev/ttyS0", O_RDONLY, 0666);                                 /*  打开三个标准文件            */
     stdin = fdopen(STDIN_FILENO, "r");
-    if (stdin == NULL) {
-        printk("%s: failed to fdopen /dev/null for stdin\r\n");
-    }
 
-    open("/dev/null", O_WRONLY, 0666);
+    open("/dev/ttyS0", O_WRONLY, 0666);
     stdout = fdopen(STDOUT_FILENO, "w");
-    if (stdout == NULL) {
-        printk("%s: failed to fdopen /dev/null for stdout\r\n");
-    }
 
-    open("/dev/null", O_WRONLY, 0666);
+    open("/dev/ttyS0", O_WRONLY, 0666);
     stderr = fdopen(STDERR_FILENO, "w");
-    if (stderr == NULL) {
-        printk("%s: failed to fdopen /dev/null for stderr\r\n");
-    }
 
     task->thread(task->arg);                                            /*  进入真正的内核线程函数      */
 

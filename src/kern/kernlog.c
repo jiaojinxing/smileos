@@ -82,7 +82,7 @@ void klogd_create(void)
 {
     mqueue_new(&mqueue, 100);
 
-    kthread_create("klogd", klogd, NULL, 4 * KB, 10);
+    kthread_create("klogd", klogd, NULL, 4 * KB, 5);
 }
 
 /*

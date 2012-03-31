@@ -510,7 +510,7 @@ dm9000_init(struct netif *netif)
     while (!(dm9000_phy_read(1) & 0x20)) {                              /*  autonegation complete bit   */
         udelay(1000);
         i++;
-        if (i == 10000) {
+        if (i == 100000) {
             LWIP_DEBUGF(NETIF_DEBUG, ("dm9000_init: can not establish link\n"));
             return 0;
         }

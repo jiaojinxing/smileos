@@ -66,7 +66,7 @@ static int null_close(void *ctx, file_t *file)
 }
 
 /*
- * null
+ * null 是不是一个 TTY
  */
 static int null_isatty(void *ctx, file_t *file)
 {
