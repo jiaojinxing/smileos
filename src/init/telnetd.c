@@ -107,21 +107,21 @@ static int pstat(task_t *task, char *buf)
     }
 }
 
-static int ts_main(int argc, char **argv, FILE *fp)
+static int ts_main(int argc, char **argv)
 {
     int i;
     uint32_t reg;
     task_t *task;
     char buf[LINE_MAX];
 
-    fprintf(fp, "type\t name\t\t pid\t state\t count\t timer\t\t prio\t cpu\t stack\t page\t dabt\r\n");
+    printf("type\t name\t\t pid\t state\t count\t timer\t\t prio\t cpu\t stack\t page\t dabt\r\n");
 
     for (i = 0, task = tasks; i < TASK_NR; i++, task++) {
         reg = interrupt_disable();
         if (task->state != TASK_UNALLOCATE) {
             pstat(task, buf);
             interrupt_resume(reg);
-            fprintf(fp, buf);
+            printf(buf);
         } else {
             interrupt_resume(reg);
         }
@@ -129,7 +129,7 @@ static int ts_main(int argc, char **argv, FILE *fp)
     return 0;
 }
 
-static int cd_main(int argc, char **argv, FILE *fp)
+static int cd_main(int argc, char **argv)
 {
     if (argc == 2) {
         return vfs_chdir(argv[1]);
@@ -141,7 +141,7 @@ static int cd_main(int argc, char **argv, FILE *fp)
 /*
  * 执行内建的 sbin 命令
  */
-static int exec_buildin(int argc, char **argv, FILE *fp)
+static int exec_buildin(int argc, char **argv)
 {
     uint8_t *code;
     uint32_t size;
@@ -150,12 +150,12 @@ static int exec_buildin(int argc, char **argv, FILE *fp)
     if (code != NULL) {
         return process_create(argv[0], code, size, 5);
     } else {
-        fprintf(fp, "unknown cmd\r\n");
+        printf("unknown cmd\r\n");
         return -1;
     }
 }
 
-static int exec_cmd(char *cmd, FILE *fp)
+static int exec_cmd(char *cmd)
 {
     static char *argv[ARG_MAX];
     char *p, *word = NULL;
@@ -195,19 +195,18 @@ static int exec_cmd(char *cmd, FILE *fp)
     argv[argc] = NULL;
 
     if (strcmp(argv[0], "ts") == 0) {
-        ts_main(argc, argv, fp);
+        ts_main(argc, argv);
     } else if (strcmp(argv[0], "ls") == 0) {
-        extern int ls_main(int argc, char *argv[], FILE *fp);
-        ls_main(argc, argv, fp);
+        extern int ls_main(int argc, char *argv[]);
+        ls_main(argc, argv);
     } else if (strcmp(argv[0], "cd") == 0) {
-        cd_main(argc, argv, fp);
+        cd_main(argc, argv);
     } else if (strcmp(argv[0], "mems") == 0) {
-        kheap_show(fileno(fp));
+        kheap_show(STDOUT_FILENO);
     } else if (strcmp(argv[0], "exit") == 0) {
-        fclose(fp);
-        _exit(0);
+        exit(0);
     } else {
-        exec_buildin(argc, argv, fp);
+        exec_buildin(argc, argv);
     }
 
     return 0;
@@ -231,14 +230,16 @@ static void telnetd_thread(void *arg)
     int  pos;
     char cmd[LINE_MAX];
     char ch;
-    FILE *fp;
 
-    fp = fdopen(fd, "w+");
+    fclose(stdout);
 
-    fprintf(fp, logo);
+    fd = socket_attach(fd);
+    stdout = fdopen(fd, "w+");
 
-    fprintf(fp, "%s]#", vfs_getcwd(NULL, 0));
-    fflush(fp);
+    printf(logo);
+
+    printf("%s]#", vfs_getcwd(NULL, 0));
+    fflush(stdout);
 
     pos = 0;
 
@@ -254,7 +255,7 @@ static void telnetd_thread(void *arg)
                 if (ch == '\b') {
                     if (pos > 0) {
                         pos--;
-                        fprintf(fp, " \b \b");
+                        printf(" \b \b");
                     } else {
                         putchar('#');
                     }
@@ -262,16 +263,16 @@ static void telnetd_thread(void *arg)
                     if (pos > 0 && pos < LINE_MAX) {
                         cmd[pos] = '\0';
                         pos = 0;
-                        exec_cmd(cmd, fp);
+                        exec_cmd(cmd);
                     }
-                    fprintf(fp, "%s]#", vfs_getcwd(NULL, 0));
+                    printf("%s]#", vfs_getcwd(NULL, 0));
                 }
             } else if (isprint(ch) && pos < LINE_MAX){
                 cmd[pos] = ch;
                 pos++;
             }
         }
-        fflush(fp);
+        fflush(stdout);
     }
 }
 
@@ -288,7 +289,7 @@ void telnetd(void *arg)
     fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (fd < 0) {
         fprintf(stderr, "%s: failed to create socket\r\n", __func__);
-        _exit(-1);
+        exit(-1);
     }
 
     local_addr.sin_family       = AF_INET;
@@ -298,8 +299,8 @@ void telnetd(void *arg)
 
     if (bind(fd, (struct sockaddr *)&local_addr, sizeof(local_addr)) < 0) {
         fprintf(stderr, "%s: failed to bind port %d\r\n", __func__, ntohs(local_addr.sin_port));
-        close(fd);
-        _exit(-1);
+        closesocket(fd);
+        exit(-1);
     }
 
     listen(fd, 2);
@@ -316,8 +317,6 @@ void telnetd(void *arg)
             fprintf(stderr, "%s: failed to accept connect\r\n", __func__);
         }
     }
-
-    close(fd);
 }
 /*********************************************************************************************************
   END FILE

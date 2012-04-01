@@ -409,7 +409,7 @@
 #define ERRNO                                                           /*  include errno               */
 #define LWIP_SOCKET                     1
 #define LWIP_TIMEVAL_PRIVATE            0                               /*  SmileOS has already defined */
-#define LWIP_COMPAT_SOCKETS             0                               /*  some function conflict      */
+#define LWIP_COMPAT_SOCKETS             1                               /*  some function conflict      */
 
 #define LWIP_POSIX_SOCKETS_IO_NAMES     0                               /*  do not have this!!!         */
 
