@@ -57,6 +57,12 @@ void cpu_init(void)
     INTMSK      = BIT_ALLMSK;                                           /*  屏蔽所有中断                */
 
     INTSUBMSK   = BIT_SUB_ALLMSK;                                       /*  屏蔽所有子中断              */
+
+    mmu_disable();
+
+    mmu_disable_dcache();
+
+    mmu_disable_icache();
 }
 
 /*
