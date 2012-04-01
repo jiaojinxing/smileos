@@ -75,6 +75,12 @@ _fiq:       .word fiq_handler                                           // FIQ
 reset_handler:
     msr     cpsr_c, #(ARM_FIQ_NO + ARM_IRQ_NO + ARM_SVC_MODE)           /*  进入 svc 模式, 关中断       */
 
+    mov     r0, #0                                                      /*  写 pid = 0                  */
+    mcr     p15, 0, r0, c13, c0, 0
+    nop
+    nop
+    nop
+
     ldr     sp, =(PROCESS0_STACK_BASE)                                  /*  设置 svc 模式的 sp          */
 
     bl      cpu_init                                                    /*  初始化 CPU                  */

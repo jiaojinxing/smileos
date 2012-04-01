@@ -105,7 +105,12 @@
                     __wait_list = task->next;                       \
                     task->wait_list = NULL;                         \
                     task->next = NULL;                              \
-                    task->resume_type = __resume_type
+                    task->resume_type = __resume_type;              \
+                    if (!in_interrupt() &&                          \
+                        task->type == TASK_TYPE_THREAD &&           \
+                        task->priority > current->priority) {       \
+                        yield();                                    \
+                    }
 
 /*
  * IPC 对象类型放在 IPC 对象的首位, 有效性放在次位, 保证 IPC 对象关键成员变量兼容

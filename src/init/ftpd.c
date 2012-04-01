@@ -88,8 +88,9 @@ static int ftpd_list(int pasv_fd)
             } else {
                 fprintf(fp, "-rw-r--r-- 1 admin admin %d Jan 1 2000 %s\r\n", 0, entry->d_name);
             }
-            fflush(fp);
         }
+
+        fflush(fp);
 
         vfs_closedir(dir);
 
@@ -151,7 +152,7 @@ static void ftpd_thread(void *arg)
     int  cmd_fd;
     char cmd[LINE_MAX];
     int  len;
-    int  pasv_fd;
+    int  pasv_fd = -1;
 
     fclose(stdout);
     cmd_fd = socket_attach((int)arg);
@@ -185,8 +186,8 @@ static void ftpd_thread(void *arg)
                 printf("150 Opening ASCII mode data connection for /\r\n");
                 fflush(stdout);
                 ftpd_list(pasv_fd);
-                printf("226 Transfer complete\r\n");
                 closesocket(pasv_fd);
+                printf("226 Transfer complete\r\n");
             } else if (strncmp(cmd, "CWD", 3) == 0) {
                 vfs_chdir(cmd + 4);
                 printf("200 %s\r\n", cmd + 4);
@@ -234,7 +235,7 @@ void ftpd(void *arg)
         if (client_fd > 0) {
             sprintf(name, "%s%d", __func__, client_fd);
 
-            kthread_create(name, ftpd_thread, (void *)client_fd, 8 * KB, 5);
+            kthread_create(name, ftpd_thread, (void *)client_fd, 8 * KB, 10);
         } else {
             fprintf(stderr, "%s: failed to accept connect\r\n", __func__);
         }
