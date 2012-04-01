@@ -121,11 +121,6 @@ static sys_do_t sys_do_table[1];
 #define SYS_CALL_LSEEK      16
 #define SYS_CALL_STAT       17
 #define SYS_CALL_GETREENT   18
-#define SYS_CALL_SOCKET     19
-#define SYS_CALL_BIND       20
-#define SYS_CALL_ACCEPT     21
-#define SYS_CALL_CONNECT    22
-#define SYS_CALL_LISTEN     23
 #define SYS_CALL_NR         40                                          /*  系统调用数                  */
 
 /*
@@ -437,7 +432,7 @@ int _open_r(struct _reent *reent, const char *path, int oflag, int mode)
 {
     int ret;
 
-    debug("%s %s by %d\r\n", __func__, path, getpid());
+    debug("%s %s by %d\r\n", __func__, path, gettid());
     if (in_kernel()) {
         ret = (sys_do_table[SYS_CALL_OPEN])(path, oflag, mode);
     } else {
@@ -676,116 +671,108 @@ select(int maxfdp1, fd_set *readset, fd_set *writeset, fd_set *exceptset, struct
 #endif
 }
 
+#if 0
+
 #include <sys/socket.h>
 
 int
 socket(int domain, int type, int protocol)
 {
-    int ret;
 
-    debug("%s\r\n", __func__);
-    if (in_kernel()) {
-        ret = (sys_do_table[SYS_CALL_SOCKET])(domain, type, protocol);
-    } else {
-        __asm__ __volatile__("mov    r0,  %0": :"r"(domain));
-        __asm__ __volatile__("mov    r1,  %0": :"r"(type));
-        __asm__ __volatile__("mov    r2,  %0": :"r"(protocol));
-        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    r7,  %0": :"M"(SYS_CALL_SOCKET));
-        __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
-    }
-
-    return ret;
 }
 
 int
 bind(int s, const struct sockaddr *name, socklen_t namelen)
 {
-    int ret;
 
-    debug("%s\r\n", __func__);
-    if (in_kernel()) {
-        ret = (sys_do_table[SYS_CALL_BIND])(s, name, namelen);
-    } else {
-        __asm__ __volatile__("mov    r0,  %0": :"r"(s));
-        __asm__ __volatile__("mov    r1,  %0": :"r"(name));
-        __asm__ __volatile__("mov    r2,  %0": :"r"(namelen));
-        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    r7,  %0": :"M"(SYS_CALL_BIND));
-        __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
-    }
+}
 
-    return ret;
+int
+ioctlsocket(int s, long cmd, void *argp)
+{
+
 }
 
 int
 accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 {
-    int ret;
 
-    debug("%s\r\n", __func__);
-    if (in_kernel()) {
-        ret = (sys_do_table[SYS_CALL_ACCEPT])(s, addr, addrlen);
-    } else {
-        __asm__ __volatile__("mov    r0,  %0": :"r"(s));
-        __asm__ __volatile__("mov    r1,  %0": :"r"(addr));
-        __asm__ __volatile__("mov    r2,  %0": :"r"(addrlen));
-        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    r7,  %0": :"M"(SYS_CALL_ACCEPT));
-        __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
-    }
+}
 
-    return ret;
+int
+shutdown(int s, int how)
+{
+
+}
+
+int
+closesocket(int s)
+{
+
 }
 
 int
 connect(int s, const struct sockaddr *name, socklen_t namelen)
 {
-    int ret;
 
-    debug("%s\r\n", __func__);
-    if (in_kernel()) {
-        ret = (sys_do_table[SYS_CALL_CONNECT])(s, name, namelen);
-    } else {
-        __asm__ __volatile__("mov    r0,  %0": :"r"(s));
-        __asm__ __volatile__("mov    r1,  %0": :"r"(name));
-        __asm__ __volatile__("mov    r2,  %0": :"r"(namelen));
-        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    r7,  %0": :"M"(SYS_CALL_CONNECT));
-        __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
-    }
-
-    return ret;
 }
 
 int
 listen(int s, int backlog)
 {
-    int ret;
 
-    debug("%s\r\n", __func__);
-    if (in_kernel()) {
-        ret = (sys_do_table[SYS_CALL_LISTEN])(s, backlog);
-    } else {
-        __asm__ __volatile__("mov    r0,  %0": :"r"(s));
-        __asm__ __volatile__("mov    r1,  %0": :"r"(backlog));
-        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    r7,  %0": :"M"(SYS_CALL_LISTEN));
-        __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
-    }
-
-    return ret;
 }
+
+int
+recv(int s, void *mem, size_t len, int flags)
+{
+
+}
+
+int
+send(int s, const void *data, size_t size, int flags)
+{
+
+}
+
+int
+recvfrom(int s, void *mem, size_t len, int flags,
+        struct sockaddr *from, socklen_t *fromlen)
+{
+
+}
+
+int
+sendto(int s, const void *data, size_t size, int flags,
+       const struct sockaddr *to, socklen_t tolen)
+{
+
+}
+
+int
+getsockname(int s, struct sockaddr *name, socklen_t *namelen)
+{
+
+}
+
+int
+getpeername(int s, struct sockaddr *name, socklen_t *namelen)
+{
+
+}
+
+int
+setsockopt(int s, int level, int optname, const void *optval, socklen_t optlen)
+{
+
+}
+
+int
+getsockopt(int s, int level, int optname, void *optval, socklen_t *optlen)
+{
+
+}
+#endif
 /*********************************************************************************************************
   END FILE
 *********************************************************************************************************/

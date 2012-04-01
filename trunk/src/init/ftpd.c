@@ -119,12 +119,12 @@ int ftpd_pasv(int port)
     local_addr.sin_addr.s_addr  = INADDR_ANY;
     local_addr.sin_port         = htons(port);
 
-//    setsockopt(pasv_fd, SOL_SOCKET, SO_REUSEPORT, &on, sizeof(on));
-//    setsockopt(pasv_fd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
+    setsockopt(pasv_fd, SOL_SOCKET, SO_REUSEPORT, &on, sizeof(on));
+    setsockopt(pasv_fd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
 
     if (bind(pasv_fd, (struct sockaddr *)&local_addr, sizeof(local_addr)) < 0) {
         fprintf(stderr, "%s: failed to bind port %d\r\n", __func__, ntohs(local_addr.sin_port));
-        close(pasv_fd);
+        closesocket(pasv_fd);
         return -1;
     }
 
@@ -186,7 +186,7 @@ static void ftpd_thread(void *arg)
                 printf("150 Opening ASCII mode data connection for /\r\n");
                 fflush(stdout);
                 ftpd_list(pasv_fd);
-                close(pasv_fd);
+                closesocket(pasv_fd);
                 printf("226 Transfer complete\r\n");
             } else if (strncmp(cmd, "CWD", 3) == 0) {
                 vfs_chdir(cmd + 4);
@@ -212,7 +212,7 @@ void ftpd(void *arg)
     fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (fd < 0) {
         fprintf(stderr, "%s: failed to create socket\r\n", __func__);
-        _exit(-1);
+        exit(-1);
     }
 
     local_addr.sin_family       = AF_INET;
@@ -222,8 +222,8 @@ void ftpd(void *arg)
 
     if (bind(fd, (struct sockaddr *)&local_addr, sizeof(local_addr)) < 0) {
         fprintf(stderr, "%s: failed to bind port %d\r\n", __func__, ntohs(local_addr.sin_port));
-        close(fd);
-        _exit(-1);
+        closesocket(fd);
+        exit(-1);
     }
 
     listen(fd, 2);

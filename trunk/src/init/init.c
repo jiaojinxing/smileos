@@ -106,9 +106,6 @@ static void init(void *arg)
     kheap_show(STDOUT_FILENO);
 }
 
-#include <unistd.h>
-#include <stdio.h>
-
 /*
  * 主函数
  */
@@ -128,17 +125,6 @@ int main(void)
 
     extern int ttyS0_init(void);
     ttyS0_init();
-
-    vfs_process_init(0);                                                   /*  初始化任务的文件信息        */
-
-    open("/dev/ttyS0", O_RDONLY, 0666);                                 /*  打开三个标准文件            */
-    stdin = fdopen(STDIN_FILENO, "r");
-
-    open("/dev/ttyS0", O_WRONLY, 0666);
-    stdout = fdopen(STDOUT_FILENO, "w");
-
-    open("/dev/ttyS0", O_WRONLY, 0666);
-    stderr = fdopen(STDERR_FILENO, "w");
 
     kthread_create("init", init, NULL, 4 * KB, 10);
 

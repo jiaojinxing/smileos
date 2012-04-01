@@ -47,11 +47,6 @@
  */
 int socket_attach(int sockfd);
 
-/*
- * 获得 socket 的私有文件描述符
- */
-int socket_priv_fd(int fd);
-
 #endif                                                                  /*  SOCKET_H_                   */
 /*********************************************************************************************************
   END FILE

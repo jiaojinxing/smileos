@@ -257,34 +257,6 @@ int vmm_page_map(task_t *task, uint32_t va)
 }
 
 /*
- * 清理进程的虚拟内存信息
- */
-int vmm_process_cleanup(task_t *task)
-{
-    int          i;
-    vmm_frame_t *next;
-    uint32_t     tbl;
-
-    while (task->frame_list != NULL) {                                  /*  释放进程占用的页框          */
-        next = task->frame_list->process_next;
-        vmm_frame_free(task->frame_list);
-        task->frame_list = next;
-    }
-    task->frame_nr = 0;
-
-    for (i = 0; i < PROCESS_SPACE_SIZE / SECTION_SIZE; i++) {           /*  释放进程占用的页表          */
-        tbl = vmm_page_table_lookup(task->pid * PROCESS_SPACE_SIZE / SECTION_SIZE + i);
-        if (tbl != 0) {
-            vmm_page_table_free(tbl);                                   /*  释放页表                    */
-        }                                                               /*  取消映射段                  */
-        mmu_unmap_section(task->pid * PROCESS_SPACE_SIZE / SECTION_SIZE + i);
-        task->mmu_backup[i] = 0;
-    }
-
-    return 0;
-}
-
-/*
  * 初始化进程的虚拟内存信息
  */
 int vmm_process_init(task_t *task, uint32_t file_size)
@@ -307,6 +279,34 @@ int vmm_process_init(task_t *task, uint32_t file_size)
     if (vmm_page_map(task, (task->pid + 1) * PROCESS_SPACE_SIZE - PAGE_SIZE) < 0) {
         vmm_process_cleanup(task);
         return -1;
+    }
+
+    return 0;
+}
+
+/*
+ * 清理进程的虚拟内存信息
+ */
+int vmm_process_cleanup(task_t *task)
+{
+    int          i;
+    vmm_frame_t *next;
+    uint32_t     tbl;
+
+    while (task->frame_list != NULL) {                                  /*  释放进程占用的页框          */
+        next = task->frame_list->process_next;
+        vmm_frame_free(task->frame_list);
+        task->frame_list = next;
+    }
+    task->frame_nr = 0;
+
+    for (i = 0; i < PROCESS_SPACE_SIZE / SECTION_SIZE; i++) {           /*  释放进程占用的页表          */
+        tbl = vmm_page_table_lookup(task->pid * PROCESS_SPACE_SIZE / SECTION_SIZE + i);
+        if (tbl != 0) {
+            vmm_page_table_free(tbl);                                   /*  释放页表                    */
+        }                                                               /*  取消映射段                  */
+        mmu_unmap_section(task->pid * PROCESS_SPACE_SIZE / SECTION_SIZE + i);
+        task->mmu_backup[i] = 0;
     }
 
     return 0;
