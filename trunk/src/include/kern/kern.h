@@ -227,11 +227,6 @@ void interrupt_exit_no_sched(void);
 uint64_t gettick(void);
 
 /*
- * 获得任务 ID
- */
-int32_t gettid(void);
-
-/*
  * 杀死任务
  * 只能在任务出错导致进入异常处理程序或任务主动退出通过软件中断进入内核时才能调用
  */
