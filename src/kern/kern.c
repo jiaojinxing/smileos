@@ -542,14 +542,14 @@ int32_t process_create(const char *name, uint8_t *code, uint32_t size, uint32_t 
         strcpy(task->name, "???");
     }
 
-    if (vfs_task_init(task->tid)) {                                     /*  初始化进程的文件信息        */
+    if (vfs_process_init(task->pid)) {                                  /*  初始化进程的文件信息        */
         task->state = TASK_UNALLOCATE;
         interrupt_resume(reg);
         return -1;
     }
 
     if (vmm_process_init(task, size)) {                                 /*  初始化进程的虚拟内存信息    */
-        vfs_task_cleanup(task->tid);
+        vfs_process_cleanup(task->pid);
         task->state = TASK_UNALLOCATE;
         interrupt_resume(reg);
         return -1;
@@ -571,8 +571,6 @@ int32_t process_create(const char *name, uint8_t *code, uint32_t size, uint32_t 
     return pid;
 }
 
-#include <unistd.h>
-#include <stdio.h>
 #include <stdlib.h>
 
 /*
@@ -580,20 +578,9 @@ int32_t process_create(const char *name, uint8_t *code, uint32_t size, uint32_t 
  */
 static void kthread_shell(task_t *task)
 {
-    vfs_task_init(task->tid);                                           /*  初始化任务的文件信息        */
-
-    open("/dev/ttyS0", O_RDONLY, 0666);                                 /*  打开三个标准文件            */
-    stdin = fdopen(STDIN_FILENO, "r");
-
-    open("/dev/ttyS0", O_WRONLY, 0666);
-    stdout = fdopen(STDOUT_FILENO, "w");
-
-    open("/dev/ttyS0", O_WRONLY, 0666);
-    stderr = fdopen(STDERR_FILENO, "w");
-
     task->thread(task->arg);                                            /*  进入真正的内核线程函数      */
 
-    exit(0);                                                            /*  退出内核线程                */
+    _exit(0);                                                           /*  退出内核线程                */
 }
 
 /*
@@ -704,14 +691,17 @@ void task_kill(int32_t tid)
 
         task = &tasks[tid];                                             /*  获得任务控制块              */
 
-        vfs_task_cleanup(tid);                                          /*  清理任务的文件信息          */
-
         if (task->type == TASK_TYPE_PROCESS) {                          /*  如果任务是进程              */
+
             printk("kill process %s pid=%d!\r\n", task->name, task->pid);
+
+            vfs_process_cleanup(tid);                                   /*  清理进程的文件信息          */
+
             vmm_process_cleanup(task);                                  /*  清理进程的虚拟内存信息      */
 
         } else {                                                        /*  如果任务是内核线程          */
             printk("kill kthread %s tid=%d!\r\n", task->name, task->tid);
+
             kfree((void *)task->stack_base);                            /*  释放内核线程的栈空间        */
         }
 
@@ -734,23 +724,6 @@ uint64_t gettick(void)
     reg = interrupt_disable();
 
     ret = tick;
-
-    interrupt_resume(reg);
-
-    return ret;
-}
-
-/*
- * 获得任务 ID
- */
-int32_t gettid(void)
-{
-    int32_t  ret;
-    uint32_t reg;
-
-    reg = interrupt_disable();
-
-    ret = current->tid;
 
     interrupt_resume(reg);
 

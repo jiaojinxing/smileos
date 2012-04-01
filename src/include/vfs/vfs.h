@@ -209,14 +209,19 @@ int vfs_init(void);
 const char *vfs_path_add_mount_point(const char *path);
 
 /*
- * 初始化任务的文件信息
+ * 初始化进程的文件信息
  */
-int vfs_task_init(pid_t tid);
+int vfs_process_init(pid_t pid);
 
 /*
- * 清理任务的文件信息
+ * 清理进程的文件信息
  */
-int vfs_task_cleanup(pid_t tid);
+int vfs_process_cleanup(pid_t pid);
+
+/*
+ * 根据文件描述符获得文件结构
+ */
+file_t *vfs_get_file(int fd);
 
 #endif                                                                  /*  VFS_H_                      */
 /*********************************************************************************************************
