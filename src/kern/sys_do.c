@@ -44,6 +44,7 @@
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/reent.h>
+#include <sys/socket.h>
 /*********************************************************************************************************
   系统调用处理
 *********************************************************************************************************/
@@ -107,6 +108,86 @@ static struct _reent *do_getreent(void)
 {
     return _impure_ptr;
 }
+
+/*
+ * do_socket
+ */
+static int do_socket(int domain, int type, int protocol)
+{
+    int sock_fd = lwip_socket(domain, type, protocol);
+    if (sock_fd >= 0) {
+        int fd = socket_attach(sock_fd);
+        if (fd < 0) {
+            lwip_close(sock_fd);
+            return -1;
+        }
+        return fd;
+    } else {
+        return -1;
+    }
+}
+
+/*
+ * do_bind
+ */
+static int do_bind(int s, const struct sockaddr *name, socklen_t namelen)
+{
+    int sock_fd = socket_priv_fd(s);
+    if (sock_fd >= 0) {
+        return lwip_bind(sock_fd, name, namelen);
+    } else {
+        return -1;
+    }
+}
+
+/*
+ * do_accept
+ */
+static int do_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
+{
+    int sock_fd = socket_priv_fd(s);
+    if (sock_fd >= 0) {
+        int new_sock_fd = lwip_accept(sock_fd, addr, addrlen);
+        if (new_sock_fd >= 0) {
+            int fd = socket_attach(new_sock_fd);
+            if (fd < 0) {
+                lwip_close(new_sock_fd);
+                return -1;
+            }
+            return fd;
+        } else {
+            return -1;
+        }
+    } else {
+        return -1;
+    }
+}
+
+/*
+ * do_connect
+ */
+static int do_connect(int s, const struct sockaddr *name, socklen_t namelen)
+{
+    int sock_fd = socket_priv_fd(s);
+    if (sock_fd >= 0) {
+        return lwip_connect(sock_fd, name, namelen);
+    } else {
+        return -1;
+    }
+}
+
+/*
+ * do_listen
+ */
+static int do_listen(int s, int backlog)
+{
+    int sock_fd = socket_priv_fd(s);
+    if (sock_fd >= 0) {
+        return lwip_listen(sock_fd, backlog);
+    } else {
+        return -1;
+    }
+}
 /*********************************************************************************************************
   系统调用处理表
 *********************************************************************************************************/
@@ -133,6 +214,11 @@ sys_do_t sys_do_table[] = {
         (sys_do_t)vfs_lseek,
         (sys_do_t)vfs_stat,
         (sys_do_t)do_getreent,
+        (sys_do_t)do_socket,
+        (sys_do_t)do_bind,
+        (sys_do_t)do_accept,
+        (sys_do_t)do_connect,
+        (sys_do_t)do_listen,
 };
 /*********************************************************************************************************
   END FILE

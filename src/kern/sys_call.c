@@ -53,6 +53,7 @@
 #include "kern/types.h"
 #include <sys/types.h>
 #include <sys/time.h>
+#include <sys/socket.h>
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
@@ -121,6 +122,11 @@ static sys_do_t sys_do_table[1];
 #define SYS_CALL_LSEEK      16
 #define SYS_CALL_STAT       17
 #define SYS_CALL_GETREENT   18
+#define SYS_CALL_SOCKET     19
+#define SYS_CALL_BIND       20
+#define SYS_CALL_ACCEPT     21
+#define SYS_CALL_CONNECT    22
+#define SYS_CALL_LISTEN     23
 #define SYS_CALL_NR         40                                          /*  系统调用数                  */
 
 /*
@@ -152,15 +158,7 @@ int syscall_template(void)
 }
 
 /*
- * C 库初始化完成时调用
- */
-void _fini(void)
-{
-
-}
-
-/*
- * exit
+ * _exit
  */
 void _exit(int status)
 {
@@ -229,7 +227,7 @@ int usleep(useconds_t useconds)
 }
 
 /*
- * gettimeofday
+ * _gettimeofday_r
  */
 int _gettimeofday_r(struct _reent *reent, struct timeval *tv, void *tzp)
 {
@@ -253,6 +251,9 @@ int _gettimeofday_r(struct _reent *reent, struct timeval *tv, void *tzp)
     return ret;
 }
 
+/*
+ * _close_r
+ */
 int _close_r(struct _reent *reent, int fd)
 {
     int ret;
@@ -274,7 +275,9 @@ int _close_r(struct _reent *reent, int fd)
     return ret;
 }
 
-
+/*
+ * _fcntl_r
+ */
 int _fcntl_r(struct _reent *reent, int fd, int cmd, int arg)
 {
     int ret;
@@ -298,6 +301,9 @@ int _fcntl_r(struct _reent *reent, int fd, int cmd, int arg)
     return ret;
 }
 
+/*
+ * _fstat_r
+ */
 int _fstat_r(struct _reent *reent, int fd, struct stat *buf)
 {
     int ret;
@@ -320,6 +326,9 @@ int _fstat_r(struct _reent *reent, int fd, struct stat *buf)
     return ret;
 }
 
+/*
+ * _getpid_r
+ */
 int _getpid_r(struct _reent *reent)
 {
     int ret;
@@ -340,6 +349,9 @@ int _getpid_r(struct _reent *reent)
     return ret;
 }
 
+/*
+ * _isatty_r
+ */
 int _isatty_r(struct _reent *reent, int fd)
 {
     int ret;
@@ -361,6 +373,9 @@ int _isatty_r(struct _reent *reent, int fd)
     return ret;
 }
 
+/*
+ * _link_r
+ */
 int _link_r(struct _reent *reent, const char *path1, const char *path2)
 {
     int ret;
@@ -383,6 +398,9 @@ int _link_r(struct _reent *reent, const char *path1, const char *path2)
     return ret;
 }
 
+/*
+ * _lseek_r
+ */
 _off_t _lseek_r(struct _reent *reent, int fd, _off_t offset, int whence)
 {
     _off_t ret;
@@ -406,6 +424,9 @@ _off_t _lseek_r(struct _reent *reent, int fd, _off_t offset, int whence)
     return ret;
 }
 
+/*
+ * _mkdir_r
+ */
 int _mkdir_r(struct _reent *reent, const char *path, int mode)
 {
     int ret;
@@ -428,11 +449,14 @@ int _mkdir_r(struct _reent *reent, const char *path, int mode)
     return ret;
 }
 
+/*
+ * _open_r
+ */
 int _open_r(struct _reent *reent, const char *path, int oflag, int mode)
 {
     int ret;
 
-    debug("%s %s by %d\r\n", __func__, path, gettid());
+    debug("%s %s by %d\r\n", __func__, path, getpid());
     if (in_kernel()) {
         ret = (sys_do_table[SYS_CALL_OPEN])(path, oflag, mode);
     } else {
@@ -451,6 +475,9 @@ int _open_r(struct _reent *reent, const char *path, int oflag, int mode)
     return ret;
 }
 
+/*
+ * _read_r
+ */
 _ssize_t _read_r(struct _reent *reent, int fd, void *buf, size_t nbytes)
 {
     _ssize_t ret;
@@ -474,6 +501,9 @@ _ssize_t _read_r(struct _reent *reent, int fd, void *buf, size_t nbytes)
     return ret;
 }
 
+/*
+ * _write_r
+ */
 _ssize_t _write_r(struct _reent *reent, int fd, const void *buf, size_t nbytes)
 {
     _ssize_t ret;
@@ -497,6 +527,9 @@ _ssize_t _write_r(struct _reent *reent, int fd, const void *buf, size_t nbytes)
     return ret;
 }
 
+/*
+ * _rename_r
+ */
 int _rename_r(struct _reent *reent, const char *old, const char *new)
 {
     int ret;
@@ -519,6 +552,9 @@ int _rename_r(struct _reent *reent, const char *old, const char *new)
     return ret;
 }
 
+/*
+ * _stat_r
+ */
 int _stat_r(struct _reent *reent, const char *path, struct stat *buf)
 {
     int ret;
@@ -541,6 +577,9 @@ int _stat_r(struct _reent *reent, const char *path, struct stat *buf)
     return ret;
 }
 
+/*
+ * _unlink_r
+ */
 int _unlink_r(struct _reent *reent, const char *path)
 {
     int ret;
@@ -599,6 +638,9 @@ void *_sbrk_r(struct _reent *reent, ptrdiff_t incr)
 #endif
 }
 
+/*
+ * _fork_r
+ */
 int _fork_r(struct _reent *reent)
 {
 #ifdef SMILEOS_KERNEL
@@ -612,6 +654,9 @@ int _fork_r(struct _reent *reent)
 #endif
 }
 
+/*
+ * _times_r
+ */
 _CLOCK_T_ _times_r(struct _reent *reent, struct tms *buf)
 {
 #ifdef SMILEOS_KERNEL
@@ -625,6 +670,9 @@ _CLOCK_T_ _times_r(struct _reent *reent, struct tms *buf)
 #endif
 }
 
+/*
+ * _wait_r
+ */
 int _wait_r(struct _reent *reent, int *status)
 {
 #ifdef SMILEOS_KERNEL
@@ -638,6 +686,9 @@ int _wait_r(struct _reent *reent, int *status)
 #endif
 }
 
+/*
+ * _execve_r
+ */
 int _execve_r(struct _reent *reent, const char *path, char *const *argv, char *const *env)
 {
 #ifdef SMILEOS_KERNEL
@@ -651,14 +702,19 @@ int _execve_r(struct _reent *reent, const char *path, char *const *argv, char *c
 #endif
 }
 
+/*
+ * _kill_r
+ */
 int _kill_r(struct _reent *reent, int pid, int sig)
 {
     debug("%s\r\n", __func__);
     _exit(0);
 }
 
-int
-select(int maxfdp1, fd_set *readset, fd_set *writeset, fd_set *exceptset, struct timeval *timeout)
+/*
+ * select
+ */
+int select(int maxfdp1, fd_set *readset, fd_set *writeset, fd_set *exceptset, struct timeval *timeout)
 {
 #ifdef SMILEOS_KERNEL
     printk("can't call %s()!, kill kthread %s tid=%d abort\n", __func__, current->name, current->tid);
@@ -672,105 +728,123 @@ select(int maxfdp1, fd_set *readset, fd_set *writeset, fd_set *exceptset, struct
 }
 
 #if 0
-
-#include <sys/socket.h>
-
-int
-socket(int domain, int type, int protocol)
+/*
+ * socket
+ */
+int socket(int domain, int type, int protocol)
 {
+    int ret;
 
+    debug("%s\r\n", __func__);
+    if (in_kernel()) {
+        ret = (sys_do_table[SYS_CALL_SOCKET])(domain, type, protocol);
+    } else {
+        __asm__ __volatile__("mov    r0,  %0": :"r"(domain));
+        __asm__ __volatile__("mov    r1,  %0": :"r"(type));
+        __asm__ __volatile__("mov    r2,  %0": :"r"(protocol));
+        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
+        __asm__ __volatile__("mov    r7,  %0": :"M"(SYS_CALL_SOCKET));
+        __asm__ __volatile__("swi    0");
+        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
+        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
+    }
+
+    return ret;
 }
 
-int
-bind(int s, const struct sockaddr *name, socklen_t namelen)
+/*
+ * bind
+ */
+int bind(int s, const struct sockaddr *name, socklen_t namelen)
 {
+    int ret;
 
+    debug("%s\r\n", __func__);
+    if (in_kernel()) {
+        ret = (sys_do_table[SYS_CALL_BIND])(s, name, namelen);
+    } else {
+        __asm__ __volatile__("mov    r0,  %0": :"r"(s));
+        __asm__ __volatile__("mov    r1,  %0": :"r"(name));
+        __asm__ __volatile__("mov    r2,  %0": :"r"(namelen));
+        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
+        __asm__ __volatile__("mov    r7,  %0": :"M"(SYS_CALL_BIND));
+        __asm__ __volatile__("swi    0");
+        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
+        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
+    }
+
+    return ret;
 }
 
-int
-ioctlsocket(int s, long cmd, void *argp)
+/*
+ * accept
+ */
+int accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 {
+    int ret;
 
+    debug("%s\r\n", __func__);
+    if (in_kernel()) {
+        ret = (sys_do_table[SYS_CALL_ACCEPT])(s, addr, addrlen);
+    } else {
+        __asm__ __volatile__("mov    r0,  %0": :"r"(s));
+        __asm__ __volatile__("mov    r1,  %0": :"r"(addr));
+        __asm__ __volatile__("mov    r2,  %0": :"r"(addrlen));
+        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
+        __asm__ __volatile__("mov    r7,  %0": :"M"(SYS_CALL_ACCEPT));
+        __asm__ __volatile__("swi    0");
+        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
+        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
+    }
+
+    return ret;
 }
 
-int
-accept(int s, struct sockaddr *addr, socklen_t *addrlen)
+/*
+ * connect
+ */
+int connect(int s, const struct sockaddr *name, socklen_t namelen)
 {
+    int ret;
 
+    debug("%s\r\n", __func__);
+    if (in_kernel()) {
+        ret = (sys_do_table[SYS_CALL_CONNECT])(s, name, namelen);
+    } else {
+        __asm__ __volatile__("mov    r0,  %0": :"r"(s));
+        __asm__ __volatile__("mov    r1,  %0": :"r"(name));
+        __asm__ __volatile__("mov    r2,  %0": :"r"(namelen));
+        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
+        __asm__ __volatile__("mov    r7,  %0": :"M"(SYS_CALL_CONNECT));
+        __asm__ __volatile__("swi    0");
+        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
+        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
+    }
+
+    return ret;
 }
 
-int
-shutdown(int s, int how)
+/*
+ * listen
+ */
+int listen(int s, int backlog)
 {
+    int ret;
 
-}
+    debug("%s\r\n", __func__);
+    if (in_kernel()) {
+        ret = (sys_do_table[SYS_CALL_LISTEN])(s, backlog);
+    } else {
+        __asm__ __volatile__("mov    r0,  %0": :"r"(s));
+        __asm__ __volatile__("mov    r1,  %0": :"r"(backlog));
+        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
+        __asm__ __volatile__("mov    r7,  %0": :"M"(SYS_CALL_LISTEN));
+        __asm__ __volatile__("swi    0");
+        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
+        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
+    }
 
-int
-closesocket(int s)
-{
-
-}
-
-int
-connect(int s, const struct sockaddr *name, socklen_t namelen)
-{
-
-}
-
-int
-listen(int s, int backlog)
-{
-
-}
-
-int
-recv(int s, void *mem, size_t len, int flags)
-{
-
-}
-
-int
-send(int s, const void *data, size_t size, int flags)
-{
-
-}
-
-int
-recvfrom(int s, void *mem, size_t len, int flags,
-        struct sockaddr *from, socklen_t *fromlen)
-{
-
-}
-
-int
-sendto(int s, const void *data, size_t size, int flags,
-       const struct sockaddr *to, socklen_t tolen)
-{
-
-}
-
-int
-getsockname(int s, struct sockaddr *name, socklen_t *namelen)
-{
-
-}
-
-int
-getpeername(int s, struct sockaddr *name, socklen_t *namelen)
-{
-
-}
-
-int
-setsockopt(int s, int level, int optname, const void *optval, socklen_t optlen)
-{
-
-}
-
-int
-getsockopt(int s, int level, int optname, void *optval, socklen_t *optlen)
-{
-
+    return ret;
 }
 #endif
 /*********************************************************************************************************

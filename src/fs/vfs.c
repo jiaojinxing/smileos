@@ -1204,6 +1204,25 @@ int vfs_task_cleanup(pid_t tid)
         return -1;
     }
 }
+
+/*
+ * 根据文件描述符获得文件结构
+ */
+file_t *vfs_get_file(int fd)
+{
+    file_t *file;
+
+    if (fd >= 0 && fd < OPEN_MAX) {
+        file = &infos[gettid()].files[fd];
+        mutex_lock(&file->lock, 0);
+        if (file->flag != VFS_FILE_TYPE_FREE) {
+            mutex_unlock(&file->lock);
+            return file;
+        }
+        mutex_unlock(&file->lock);
+    }
+    return NULL;
+}
 /*********************************************************************************************************
   END FILE
 *********************************************************************************************************/

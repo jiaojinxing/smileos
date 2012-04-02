@@ -41,7 +41,7 @@
 ** Modified date:           2012-3-28
 ** Version:                 1.2.0
 ** Descriptions:            增加 newlib 需要的可重入版本 _malloc_r 等函数,
-**                          修改 heap_show 允许打印内存堆信息到文件
+**                          修改 heap_show 允许打印内存堆信息到指定的文件
 **
 *********************************************************************************************************/
 #include "kern/config.h"
@@ -230,7 +230,6 @@ void *_malloc_r(struct _reent *reent, size_t size)
     if (ptr == NULL) {
         reent->_errno = ENOMEM;
     }
-
     return ptr;
 }
 
@@ -301,7 +300,7 @@ void libc_init(void)
      * 打开三个标准文件
      */
     open("/dev/ttyS0", O_RDONLY, 0666);
-    stdin = fdopen(STDIN_FILENO, "r");
+    stdin  = fdopen(STDIN_FILENO,  "r");
 
     open("/dev/ttyS0", O_WRONLY, 0666);
     stdout = fdopen(STDOUT_FILENO, "w");

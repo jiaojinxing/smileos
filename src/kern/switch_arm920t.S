@@ -181,8 +181,9 @@ do_switch:
     ldmia   r1!, {r2-r6}                        /*  r2=sp_backup, r3=cpsr_int, r4=sp_int, r5=spsr_int   */
                                                 /*  r6=lr_int                                           */
 
-    bic     r5, r5, #ARM_MODE_MASK
-    cmp     r5, #ARM_SVC_MODE                   /*  判断 spsr_int 中的模式是否为 svc 模式               */
+    mov     r0, r5                              /*  下面可能还要用到 r5, 使用 r0 来作比较               */
+    bic     r0, r0, #ARM_MODE_MASK
+    cmp     r0, #ARM_SVC_MODE                   /*  判断 spsr_int 中的模式是否为 svc 模式               */
     beq     svc_mode_switch
 /*********************************************************************************************************
   sys 模式任务切换
