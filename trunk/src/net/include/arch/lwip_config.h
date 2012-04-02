@@ -391,16 +391,13 @@
   inet thread
 *********************************************************************************************************/
 
-#define DEFAULT_LWIP_PRIORITY           10                              /*  lwip thread default priority*/
-#define DEFAULT_LWIP_STK_SIZE           4 * KB                          /*  lwip thread default stksize */
-
 #define TCPIP_THREAD_NAME               "lwip"
-#define TCPIP_THREAD_STACKSIZE          DEFAULT_LWIP_STK_SIZE
-#define TCPIP_THREAD_PRIO               50
+#define TCPIP_THREAD_STACKSIZE          (4 * KB)
+#define TCPIP_THREAD_PRIO               (50)
 
 #define NETIF_THREAD_NAME               "netif"
-#define NETIF_THREAD_STACKSIZE          DEFAULT_LWIP_STK_SIZE
-#define NETIF_THREAD_PRIO               100
+#define NETIF_THREAD_STACKSIZE          (4 * KB)
+#define NETIF_THREAD_PRIO               (100)
 
 /*********************************************************************************************************
   Socket options

@@ -34,8 +34,8 @@
 ** Modified by:             JiaoJinXing
 ** Modified date:           2012-3-25
 ** Version:                 1.1.0
-** Descriptions:            加入内核模式和内核日志线程及 interrupt_exit_no_sched 函数
-**                          strcpy 改用更安全的 strlcpy
+** Descriptions:            加入内核模式和内核日志线程及 interrupt_exit_no_sched 函数,
+**                          strcpy 改用更安全的 strlcpy,
 **                          拷贝代码到进程的虚拟地址空间时开中断以提高实时性
 **
 **--------------------------------------------------------------------------------------------------------
@@ -56,8 +56,8 @@
 ** Modified date:           2012-3-31
 ** Version:                 1.4.0
 ** Descriptions:            修改任务调度算法的一处错误: 重置所有就绪任务的剩余时间片而不是所有任务,
-**                          内核线程的调度算法改为基于优先级而非剩余时间片
-**                          为保障中断底半处理及时地运行, 请把中断底半处理线程的优先级抬到较高水平
+**                          内核线程的调度算法改为基于优先级而非剩余时间片,
+**                          为保障中断底半部处理及时地运行, 请把中断底半部处理线程的优先级抬到较高水平
 **
 *********************************************************************************************************/
 #include "kern/config.h"
@@ -213,7 +213,7 @@ void schedule(void)
     }
 
     if (task->pid != current->pid) {                                    /*  如果需要切换进程            */
-        for (i = 0; i < PROCESS_SPACE_SIZE / SECTION_SIZE; i++) {       /*  保护旧进程的虚拟地址空间    */
+        for (i = 0; i < PROCESS_SPACE_SIZE / SECTION_SIZE; i++) {       /*  保护原进程的虚拟地址空间    */
             mmu_map_section(task->pid * PROCESS_SPACE_SIZE / SECTION_SIZE + i, 0);
         }
 
@@ -264,7 +264,7 @@ void kernel_timer(void)
                     /*
                      * 统计内核线程的栈使用率, 栈溢出检查
                      *
-                     * 注意: 编译器加了参数 -fsigned-char, char 是有符号的!
+                     * 注意: 如果加了编译参数 -fsigned-char, char 是有符号的!
                      *
                      * THREAD_STACK_MAGIC0 = 0xAA, 必须要用 uint8_t 类型, 否则...
                      */
@@ -542,14 +542,14 @@ int32_t process_create(const char *name, uint8_t *code, uint32_t size, uint32_t 
         strcpy(task->name, "???");
     }
 
-    if (vfs_task_init(task->tid)) {                                     /*  初始化进程的文件信息        */
+    if (vfs_task_init(pid)) {                                           /*  初始化进程的文件信息        */
         task->state = TASK_UNALLOCATE;
         interrupt_resume(reg);
         return -1;
     }
 
     if (vmm_process_init(task, size)) {                                 /*  初始化进程的虚拟内存信息    */
-        vfs_task_cleanup(task->tid);
+        vfs_task_cleanup(pid);
         task->state = TASK_UNALLOCATE;
         interrupt_resume(reg);
         return -1;
@@ -560,7 +560,7 @@ int32_t process_create(const char *name, uint8_t *code, uint32_t size, uint32_t 
     /*
      * 拷贝代码到进程的虚拟地址空间
      */
-    memcpy((char *)(task->pid * PROCESS_SPACE_SIZE), code, size);
+    memcpy((char *)(pid * PROCESS_SPACE_SIZE), code, size);
 
     reg = interrupt_disable();
 
@@ -707,11 +707,14 @@ void task_kill(int32_t tid)
         vfs_task_cleanup(tid);                                          /*  清理任务的文件信息          */
 
         if (task->type == TASK_TYPE_PROCESS) {                          /*  如果任务是进程              */
+
             printk("kill process %s pid=%d!\r\n", task->name, task->pid);
+
             vmm_process_cleanup(task);                                  /*  清理进程的虚拟内存信息      */
 
         } else {                                                        /*  如果任务是内核线程          */
-            printk("kill kthread %s tid=%d!\r\n", task->name, task->tid);
+            printk("kill kthread %s tid=%d!\r\n", task->name, tid);
+
             kfree((void *)task->stack_base);                            /*  释放内核线程的栈空间        */
         }
 

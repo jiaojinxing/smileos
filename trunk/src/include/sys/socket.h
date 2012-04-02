@@ -45,7 +45,12 @@
 /*
  * 联结 socket
  */
-int socket_attach(int sockfd);
+int socket_attach(int sock_fd);
+
+/*
+ * 获得 socket 的私有文件描述符
+ */
+int socket_priv_fd(int fd);
 
 #endif                                                                  /*  SOCKET_H_                   */
 /*********************************************************************************************************

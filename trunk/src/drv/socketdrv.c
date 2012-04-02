@@ -39,6 +39,7 @@
 *********************************************************************************************************/
 #include "vfs/device.h"
 #include "vfs/driver.h"
+#include "vfs/vfs.h"
 #include "kern/kern.h"
 #include <sys/socket.h>
 #include <unistd.h>
@@ -49,7 +50,7 @@
  * 私有信息
  */
 typedef struct {
-    int         sockfd;
+    int         sock_fd;
     int         ref;
 } privinfo_t;
 
@@ -75,7 +76,7 @@ static int socket_ioctl(void *ctx, file_t *file, int cmd, void *arg)
 {
     privinfo_t *priv = ctx;
 
-    return lwip_ioctl(priv->sockfd, cmd, arg);
+    return lwip_ioctl(priv->sock_fd, cmd, arg);
 }
 
 /*
@@ -85,7 +86,7 @@ static int socket_fcntl(void *ctx, file_t *file, int cmd, void *arg)
 {
     privinfo_t *priv = ctx;
 
-    return lwip_fcntl(priv->sockfd, cmd, (int)arg);
+    return lwip_fcntl(priv->sock_fd, cmd, (int)arg);
 }
 
 /*
@@ -97,10 +98,10 @@ static int socket_close(void *ctx, file_t *file)
     char buf[32];
 
     if (--priv->ref == 0) {
-        sprintf(buf, "/dev/socket%d", priv->sockfd);
+        sprintf(buf, "/dev/socket%d", priv->sock_fd);
         device_remove(buf);
 
-        lwip_close(priv->sockfd);
+        lwip_close(priv->sock_fd);
 
         kfree(priv);
     }
@@ -125,7 +126,7 @@ static ssize_t socket_read(void *ctx, file_t *file, void *buf, size_t len)
 
     debug("%s %d\r\n", __func__, len);
 
-    return lwip_recv(priv->sockfd, buf, len, 0);
+    return lwip_recv(priv->sock_fd, buf, len, 0);
 }
 
 /*
@@ -135,7 +136,7 @@ static ssize_t socket_write(void *ctx, file_t *file, const void *buf, size_t len
 {
     privinfo_t *priv = ctx;
 
-    return lwip_send(priv->sockfd, buf, len, 0);
+    return lwip_send(priv->sock_fd, buf, len, 0);
 }
 
 /*
@@ -175,7 +176,7 @@ int socket_init(void)
 /*
  * 联结 socket
  */
-int socket_attach(int sockfd)
+int socket_attach(int sock_fd)
 {
     char buf[32];
     int fd;
@@ -183,16 +184,16 @@ int socket_attach(int sockfd)
 
     priv = kmalloc(sizeof(privinfo_t));
     if (priv != NULL) {
-        priv->sockfd = sockfd;
+        priv->sock_fd = sock_fd;
         priv->ref    = 0;
 
-        sprintf(buf, "/dev/socket%d", sockfd);
+        sprintf(buf, "/dev/socket%d", sock_fd);
         if (device_create(buf, "socket", priv) < 0) {
             kfree(priv);
             return -1;
         }
 
-        fd = open(buf, O_RDWR, 0666);
+        fd = vfs_open(buf, O_RDWR, 0666);
         if (fd < 0) {
             device_remove(buf);
             kfree(priv);
@@ -202,6 +203,28 @@ int socket_attach(int sockfd)
     } else {
         return -1;
     }
+}
+
+/*
+ * 获得 socket 的私有文件描述符
+ */
+int socket_priv_fd(int fd)
+{
+    file_t *file;
+    device_t *dev;
+    privinfo_t *priv;
+
+    file = vfs_get_file(fd);
+    if (file != NULL) {
+        dev = file->ctx;
+        if (dev != NULL) {
+            priv = dev->ctx;
+            if (priv != NULL && priv->ref > 0) {
+                return priv->sock_fd;
+            }
+        }
+    }
+    return -1;
 }
 /*********************************************************************************************************
   END FILE
