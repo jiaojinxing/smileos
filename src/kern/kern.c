@@ -593,7 +593,7 @@ static void kthread_shell(task_t *task)
 
     task->thread(task->arg);                                            /*  进入真正的内核线程函数      */
 
-    exit(0);                                                            /*  退出内核线程                */
+    _exit(0);                                                           /*  退出内核线程                */
 }
 
 /*
