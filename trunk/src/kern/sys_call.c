@@ -727,7 +727,7 @@ int select(int maxfdp1, fd_set *readset, fd_set *writeset, fd_set *exceptset, st
 #endif
 }
 
-#if 0
+#ifndef SMILEOS_KERNEL
 /*
  * socket
  */

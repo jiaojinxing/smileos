@@ -84,9 +84,9 @@ static int ftpd_list(int pasv_fd)
             stat(entry->d_name, &st);
 
             if (S_ISDIR(st.st_mode)) {
-                fprintf(fp, "drw-r--r-- 1 admin admin %d Jan 1 2000 %s\r\n", 0, entry->d_name);
+                fprintf(fp, "drwxrwxrwx 1 admin admin %d Jan 1 2000 %s\r\n", 0, entry->d_name);
             } else {
-                fprintf(fp, "-rw-r--r-- 1 admin admin %d Jan 1 2000 %s\r\n", 0, entry->d_name);
+                fprintf(fp, "-rwxrwxrwx 1 admin admin %d Jan 1 2000 %s\r\n", 0, entry->d_name);
             }
         }
 
@@ -189,7 +189,7 @@ static void ftpd_thread(void *arg)
                 closesocket(pasv_fd);
                 printf("226 Transfer complete\r\n");
             } else if (strncmp(cmd, "CWD", 3) == 0) {
-                vfs_chdir(cmd + 4);
+                vfs_chdir(cmd + 5);
                 printf("200 %s\r\n", cmd + 4);
             } else {
                 fprintf(stderr, "%s: unknown cmd %s\n", __func__, cmd);
@@ -212,7 +212,7 @@ void ftpd(void *arg)
     fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (fd < 0) {
         fprintf(stderr, "%s: failed to create socket\r\n", __func__);
-        exit(-1);
+        _exit(-1);
     }
 
     local_addr.sin_family       = AF_INET;
@@ -223,7 +223,7 @@ void ftpd(void *arg)
     if (bind(fd, (struct sockaddr *)&local_addr, sizeof(local_addr)) < 0) {
         fprintf(stderr, "%s: failed to bind port %d\r\n", __func__, ntohs(local_addr.sin_port));
         closesocket(fd);
-        exit(-1);
+        _exit(-1);
     }
 
     listen(fd, 2);

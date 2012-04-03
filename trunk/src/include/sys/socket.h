@@ -42,6 +42,7 @@
 
 #include "lwip/sockets.h"
 
+#ifdef SMILEOS_KERNEL
 /*
  * 联结 socket
  */
@@ -51,6 +52,30 @@ int socket_attach(int sock_fd);
  * 获得 socket 的私有文件描述符
  */
 int socket_priv_fd(int fd);
+#else
+/*
+ * socket
+ */
+int socket(int domain, int type, int protocol);
+
+/*
+ * bind
+ */
+int bind(int s, const struct sockaddr *name, socklen_t namelen);
+/*
+ * accept
+ */
+int accept(int s, struct sockaddr *addr, socklen_t *addrlen);
+
+/*
+ * connect
+ */
+int connect(int s, const struct sockaddr *name, socklen_t namelen);
+/*
+ * listen
+ */
+int listen(int s, int backlog);
+#endif
 
 #endif                                                                  /*  SOCKET_H_                   */
 /*********************************************************************************************************
