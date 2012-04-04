@@ -1190,7 +1190,7 @@ int vfs_task_cleanup(pid_t tid)
 
         for (i = 0, file = info->files; i < OPEN_MAX; i++, file++) {
             if (file->flag & VFS_FILE_TYPE_FILE) {
-                close(i);
+                vfs_close(i);
             } else if (file->flag & VFS_FILE_TYPE_DIR) {
                 vfs_closedir((DIR *)i);
             }

@@ -195,25 +195,98 @@ sys_do_t sys_do_table[] = {
         /*
          * do_xxx 的位置必须要和 SYS_CALL_XXX 的值一致
          */
+#define SYS_CALL_EXIT       0
+#define SYS_CALL_SLEEP      1
+#define SYS_CALL_YIELD      2
         (sys_do_t)do_exit,
         (sys_do_t)do_sleep,
         (sys_do_t)do_yeild,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+#define SYS_CALL_GETTIME    10
+#define SYS_CALL_GETPID     11
+#define SYS_CALL_GETREENT   12
         (sys_do_t)do_gettimeofday,
         (sys_do_t)do_getpid,
-        (sys_do_t)vfs_write,
-        (sys_do_t)vfs_mkdir,
+        (sys_do_t)do_getreent,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+#define SYS_CALL_OPEN       20
+#define SYS_CALL_READ       21
+#define SYS_CALL_WRITE      22
+#define SYS_CALL_FCNTL      23
+#define SYS_CALL_ISATTY     24
+#define SYS_CALL_FSTAT      25
+#define SYS_CALL_LSEEK      26
+#define SYS_CALL_CLOSE      27
         (sys_do_t)vfs_open,
         (sys_do_t)vfs_read,
-        (sys_do_t)vfs_rename,
-        (sys_do_t)vfs_fstat,
-        (sys_do_t)vfs_unlink,
-        (sys_do_t)vfs_close,
+        (sys_do_t)vfs_write,
         (sys_do_t)vfs_fcntl,
         (sys_do_t)vfs_isatty,
-        (sys_do_t)vfs_link,
+        (sys_do_t)vfs_fstat,
         (sys_do_t)vfs_lseek,
+        (sys_do_t)vfs_close,
+        NULL,
+        NULL,
+#define SYS_CALL_RENAME     30
+#define SYS_CALL_UNLINK     31
+#define SYS_CALL_LINK       32
+#define SYS_CALL_STAT       33
+#define SYS_CALL_MKDIR      34
+        (sys_do_t)vfs_rename,
+        (sys_do_t)vfs_unlink,
+        (sys_do_t)vfs_link,
         (sys_do_t)vfs_stat,
-        (sys_do_t)do_getreent,
+        (sys_do_t)vfs_mkdir,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+#define SYS_CALL_OPENDIR    40
+#define SYS_CALL_READDIR    41
+#define SYS_CALL_SEEKDIR    42
+#define SYS_CALL_REWINDDIR  43
+#define SYS_CALL_TELLDIR    44
+#define SYS_CALL_CLOSEDIR   45
+        (sys_do_t)vfs_opendir,
+        (sys_do_t)vfs_readdir,
+        (sys_do_t)vfs_seekdir,
+        (sys_do_t)vfs_rewinddir,
+        (sys_do_t)vfs_telldir,
+        (sys_do_t)vfs_closedir,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+#define SYS_CALL_GETCWD     50
+#define SYS_CALL_CHDIR      51
+        (sys_do_t)vfs_getcwd,
+        (sys_do_t)vfs_chdir,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+#define SYS_CALL_SOCKET     60
+#define SYS_CALL_BIND       61
+#define SYS_CALL_ACCEPT     62
+#define SYS_CALL_CONNECT    63
+#define SYS_CALL_LISTEN     64
         (sys_do_t)do_socket,
         (sys_do_t)do_bind,
         (sys_do_t)do_accept,

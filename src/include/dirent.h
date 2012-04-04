@@ -41,12 +41,43 @@
 #define DIRENT_H_
 
 #include "vfs/config.h"
+#include "vfs/types.h"
 #include <sys/types.h>
 
 struct dirent {
     ino_t  d_ino;
     char   d_name[NAME_MAX];
 };
+
+/*
+ * 打开目录
+ */
+DIR *opendir(const char *path);
+
+/*
+* 关闭目录
+*/
+int closedir(DIR *dir);
+
+/*
+* 读目录项
+*/
+struct dirent *readdir(DIR *dir);
+
+/*
+* 重置目录读点
+*/
+int rewinddir(DIR *dir);
+
+/*
+* 调整目录读点
+*/
+int seekdir(DIR *dir, long loc);
+
+/*
+* 获得目录读点
+*/
+long telldir(DIR *dir);
 
 #endif                                                                  /*  DIRENT_H_                   */
 /*********************************************************************************************************

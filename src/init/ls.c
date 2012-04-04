@@ -37,7 +37,6 @@
 ** Descriptions:
 **
 *********************************************************************************************************/
-#include "vfs/vfs.h"
 #include <sys/stat.h>
 #include <unistd.h>
 #include <string.h>
@@ -285,7 +284,7 @@ do_ls(char *path)
 
     if (S_ISDIR(st.st_mode)) {
 
-        dir = vfs_opendir(path);
+        dir = opendir(path);
         if (dir == NULL) {
             return -ENOTDIR;
         }
@@ -293,7 +292,7 @@ do_ls(char *path)
         cols = 0;
         for (;;) {
 
-            entry = vfs_readdir(dir);
+            entry = readdir(dir);
             if (entry == NULL) {
                 break;
             }
@@ -319,7 +318,7 @@ do_ls(char *path)
             nr_file++;
         }
 
-        vfs_closedir(dir);
+        closedir(dir);
 
         if (ls_flags & LSF_LONG) {
             printf("total %d\r\n", nr_file);
