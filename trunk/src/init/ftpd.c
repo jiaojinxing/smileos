@@ -40,7 +40,6 @@
 #include "kern/config.h"
 #include "kern/types.h"
 #include "kern/kern.h"
-#include "vfs/vfs.h"
 #include <string.h>
 #include <unistd.h>
 #include <sys/socket.h>
@@ -59,6 +58,9 @@
 #include "lwip/sys.h"
 #include "lwip/sockets.h"
 
+/*
+ * 处理 list 命令
+ */
 static int ftpd_list(int pasv_fd)
 {
     socklen_t addr_len;
@@ -77,22 +79,22 @@ static int ftpd_list(int pasv_fd)
         data_fd = socket_attach(data_fd);
         fp      = fdopen(data_fd, "w+");
 
-        dir = vfs_opendir(".");
+        dir = opendir(".");
 
-        while (NULL != (entry = vfs_readdir(dir))) {
+        while (NULL != (entry = readdir(dir))) {
 
             stat(entry->d_name, &st);
 
             if (S_ISDIR(st.st_mode)) {
-                fprintf(fp, "drwxrwxrwx 1 admin admin %d Jan 1 2000 %s\r\n", 0, entry->d_name);
+                fprintf(fp, "drw------- 1 admin admin %d Jan 1 2000 %s\r\n", 0, entry->d_name);
             } else {
-                fprintf(fp, "-rwxrwxrwx 1 admin admin %d Jan 1 2000 %s\r\n", 0, entry->d_name);
+                fprintf(fp, "-rw------- 1 admin admin %d Jan 1 2000 %s\r\n", 0, entry->d_name);
             }
         }
 
         fflush(fp);
 
-        vfs_closedir(dir);
+        closedir(dir);
 
         fclose(fp);
 
@@ -102,6 +104,9 @@ static int ftpd_list(int pasv_fd)
     }
 }
 
+/*
+ * 处理 pasv 命令
+ */
 int ftpd_pasv(int port)
 {
     struct sockaddr_in local_addr;
@@ -168,6 +173,7 @@ static void ftpd_thread(void *arg)
             break;
         } else if (len > 0) {
             cmd[len] = '\0';
+            *strchr(cmd, '\r') = '\0';
             if (strncmp(cmd, "USER", 4) == 0) {
                 printf("331 Guest login OK, send your e-mail as password\r\n");
             } else if (strncmp(cmd, "PASS", 4) == 0) {
@@ -177,7 +183,7 @@ static void ftpd_thread(void *arg)
             } else if (strncmp(cmd, "FEAT", 4) == 0) {
                 printf("500 Failure\r\n");
             } else if (strncmp(cmd, "PWD", 3) == 0) {
-                printf("200 %s\r\n", vfs_getcwd(NULL, 0));
+                printf("200 %s\r\n", getcwd(NULL, 0));
             } else if (strncmp(cmd, "TYPE", 4) == 0) {
                 printf("200 ASCII\r\n");
             } else if (strncmp(cmd, "PASV", 4) == 0) {
@@ -189,10 +195,13 @@ static void ftpd_thread(void *arg)
                 closesocket(pasv_fd);
                 printf("226 Transfer complete\r\n");
             } else if (strncmp(cmd, "CWD", 3) == 0) {
-                vfs_chdir(cmd + 5);
+                chdir(cmd + 4);
                 printf("200 %s\r\n", cmd + 4);
+            } else if (strncmp(cmd, "CDUP", 4) == 0) {
+                chdir("..");
+                printf("200 CDUP OK\r\n");
             } else {
-                fprintf(stderr, "%s: unknown cmd %s\n", __func__, cmd);
+                fprintf(stderr, "%s: unknown cmd %s\r\n", __func__, cmd);
             }
             fflush(stdout);
         }

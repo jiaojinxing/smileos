@@ -42,7 +42,6 @@
 #include "kern/types.h"
 #include "kern/kern.h"
 #include "kern/sbin.h"
-#include "vfs/vfs.h"
 #include <fcntl.h>
 #include <dirent.h>
 #include <unistd.h>
@@ -107,6 +106,9 @@ static int pstat(task_t *task, char *buf)
     }
 }
 
+/*
+ * ts √¸¡Ó
+ */
 static int ts_main(int argc, char **argv)
 {
     int i;
@@ -129,10 +131,13 @@ static int ts_main(int argc, char **argv)
     return 0;
 }
 
+/*
+ * cd √¸¡Ó
+ */
 static int cd_main(int argc, char **argv)
 {
     if (argc == 2) {
-        return vfs_chdir(argv[1]);
+        return chdir(argv[1]);
     } else {
         return 0;
     }
@@ -155,6 +160,9 @@ static int exec_buildin(int argc, char **argv)
     }
 }
 
+/*
+ * ÷¥––√¸¡Ó
+ */
 static int exec_cmd(char *cmd)
 {
     static char *argv[ARG_MAX];
@@ -212,6 +220,9 @@ static int exec_cmd(char *cmd)
     return 0;
 }
 
+/*
+ * logo
+ */
 const char logo[] =
         "_________________________________________________\r\n"
         "      __                            __       __\r\n"
@@ -238,7 +249,7 @@ static void telnetd_thread(void *arg)
 
     printf(logo);
 
-    printf("%s]#", vfs_getcwd(NULL, 0));
+    printf("%s]#", getcwd(NULL, 0));
     fflush(stdout);
 
     pos = 0;
@@ -265,7 +276,7 @@ static void telnetd_thread(void *arg)
                         pos = 0;
                         exec_cmd(cmd);
                     }
-                    printf("%s]#", vfs_getcwd(NULL, 0));
+                    printf("%s]#", getcwd(NULL, 0));
                 }
             } else if (isprint(ch) && pos < LINE_MAX){
                 cmd[pos] = ch;
