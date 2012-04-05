@@ -288,7 +288,8 @@ void kernel_timer(void)
             if (task->state == TASK_SLEEPING) {                         /*  如果任务正在休睡            */
                 task->timer--;                                          /*  任务延时减一                */
                 if (task->timer == 0) {                                 /*  如果任务延时到期            */
-                    task->state = TASK_RUNNING;                         /*  任务进入就绪态              */
+                    task->state       = TASK_RUNNING;                   /*  任务进入就绪态              */
+                    task->resume_type = TASK_RESUME_TIMEOUT;            /*  设置任务的恢复类型为超时    */
                     if (task->wait_list != NULL) {                      /*  如果任务在某个等待链表      */
                         task_t *prev = *task->wait_list;                /*  获得等待链表的链头任务      */
                         if (task == prev) {                             /*  如果任务就是链头任务        */
@@ -301,9 +302,8 @@ void kernel_timer(void)
                                 prev->next = task->next;                /*  修改前趋的后趋              */
                             }
                         }
-                        task->next        = NULL;
-                        task->wait_list   = NULL;
-                        task->resume_type = TASK_RESUME_TIMEOUT;        /*  设置任务的恢复类型为超时    */
+                        task->next      = NULL;
+                        task->wait_list = NULL;
                     }
                 }
             }

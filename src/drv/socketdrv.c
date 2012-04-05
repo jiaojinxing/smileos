@@ -82,11 +82,11 @@ static int socket_ioctl(void *ctx, file_t *file, int cmd, void *arg)
 /*
  * ¿ØÖÆ socket
  */
-static int socket_fcntl(void *ctx, file_t *file, int cmd, void *arg)
+static int socket_fcntl(void *ctx, file_t *file, int cmd, int arg)
 {
     privinfo_t *priv = ctx;
 
-    return lwip_fcntl(priv->sock_fd, cmd, (int)arg);
+    return lwip_fcntl(priv->sock_fd, cmd, arg);
 }
 
 /*

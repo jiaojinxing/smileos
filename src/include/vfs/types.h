@@ -77,13 +77,16 @@ struct driver {
     ssize_t (*write)(void *ctx, file_t *file, const void *buf, size_t len);
     int     (*ioctl)(void *ctx, file_t *file, int cmd, void *arg);
     int     (*close)(void *ctx, file_t *file);
-    int     (*fcntl)(void *ctx, file_t *file, int cmd, void *arg);
+    int     (*fcntl)(void *ctx, file_t *file, int cmd, int arg);
     int     (*fstat)(void *ctx, file_t *file, struct stat *buf);
     int     (*isatty)(void *ctx, file_t *file);
     int     (*fsync)(void *ctx, file_t *file);
     int     (*fdatasync)(void *ctx, file_t *file);
     int     (*ftruncate)(void *ctx, file_t *file, off_t len);
     int     (*lseek)(void *ctx, file_t *file, off_t offset, int whence);
+    int     (*scan)(mount_point_t *point, file_t *file, int flags);
+    int     (*select)(mount_point_t *point, file_t *file, int flags);
+    int     (*unselect)(mount_point_t *point, file_t *file, int flags);
 
     /*
      * 读写块
@@ -139,13 +142,16 @@ struct file_system {
     ssize_t (*write)(mount_point_t *point, file_t *file, const void *buf, size_t len);
     int     (*ioctl)(mount_point_t *point, file_t *file, int cmd, void *arg);
     int     (*close)(mount_point_t *point, file_t *file);
-    int     (*fcntl)(mount_point_t *point, file_t *file, int cmd, void *arg);
+    int     (*fcntl)(mount_point_t *point, file_t *file, int cmd, int arg);
     int     (*fstat)(mount_point_t *point, file_t *file, struct stat *buf);
     int     (*isatty)(mount_point_t *point, file_t *file);
     int     (*fsync)(mount_point_t *point, file_t *file);
     int     (*fdatasync)(mount_point_t *point, file_t *file);
     int     (*ftruncate)(mount_point_t *point, file_t *file, off_t len);
     int     (*lseek)(mount_point_t *point, file_t *file, off_t offset, int whence);
+    int     (*scan)(mount_point_t *point, file_t *file, int flags);
+    int     (*select)(mount_point_t *point, file_t *file, int flags);
+    int     (*unselect)(mount_point_t *point, file_t *file, int flags);
 
     /*
      * 目录接口
@@ -189,6 +195,19 @@ struct file {
  * 判断路径是不是根目录
  */
 #define PATH_IS_ROOT_DIR(path)  (path[0] == '/' && path[1] == '\0')
+
+#define VFS_FILE_READBLE        (1 << 0)
+#define VFS_FILE_WRITEBLE       (1 << 1)
+#define VFS_FILE_ERROR          (1 << 2)
+
+/*
+ * select 节点
+ */
+typedef struct _select_node {
+    void                   *task;
+    int                     select_type;
+    struct _select_node    *next;
+} select_node_t;
 
 #endif                                                                  /*  VFS_TYPES_H_                */
 /*********************************************************************************************************

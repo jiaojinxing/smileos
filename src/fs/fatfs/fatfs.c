@@ -164,7 +164,7 @@ static int fatfs_ioctl(mount_point_t *point, file_t *file, int cmd, void *arg)
     return -1;
 }
 
-static int fatfs_fcntl(mount_point_t *point, file_t *file, int cmd, void *arg)
+static int fatfs_fcntl(mount_point_t *point, file_t *file, int cmd, int arg)
 {
     return -1;
 }

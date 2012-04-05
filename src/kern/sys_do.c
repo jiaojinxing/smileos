@@ -65,6 +65,8 @@ static int do_sleep(unsigned int ticks)
 
     current->state = TASK_SLEEPING;                                     /*  当前任务进入休睡态          */
 
+    current->resume_type = TASK_RESUME_UNKNOW;                          /*  设置恢复类型为未知          */
+
     schedule();                                                         /*  任务调度                    */
 
     return 0;
