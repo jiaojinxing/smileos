@@ -84,9 +84,9 @@ struct driver {
     int     (*fdatasync)(void *ctx, file_t *file);
     int     (*ftruncate)(void *ctx, file_t *file, off_t len);
     int     (*lseek)(void *ctx, file_t *file, off_t offset, int whence);
-    int     (*scan)(mount_point_t *point, file_t *file, int flags);
-    int     (*select)(mount_point_t *point, file_t *file, int flags);
-    int     (*unselect)(mount_point_t *point, file_t *file, int flags);
+    int     (*scan)(void *ctx, file_t *file, int flags);
+    int     (*select)(void *ctx, file_t *file, int flags);
+    int     (*unselect)(void *ctx, file_t *file, int flags);
 
     /*
      * 读写块
@@ -186,9 +186,10 @@ struct file {
      * 一个文件可以同时被多次打开, ctx 用于维护文件实例信息
      */
     void                   *ctx;
+    void                   *ctx1;
     mount_point_t          *point;
     unsigned int            flag;
-    struct mutex      *lock;
+    struct mutex           *lock;
 };
 
 /*
@@ -204,9 +205,10 @@ struct file {
  * select 节点
  */
 typedef struct _select_node {
+    struct _select_node    *prev;
+    struct _select_node    *next;
     void                   *task;
     int                     select_type;
-    struct _select_node    *next;
 } select_node_t;
 
 #endif                                                                  /*  VFS_TYPES_H_                */
