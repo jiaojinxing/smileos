@@ -227,6 +227,36 @@ static int devfs_lseek(mount_point_t *point, file_t *file, off_t offset, int whe
     return dev->drv->lseek(dev->ctx, file, offset, whence);
 }
 
+static int devfs_scan(mount_point_t *point, file_t *file, int flags)
+{
+    device_t *dev = file->ctx;
+
+    if (dev == NULL || dev->drv->scan == NULL) {
+        return -1;
+    }
+    return dev->drv->scan(dev->ctx, file, flags);
+}
+
+static int devfs_select(mount_point_t *point, file_t *file, int flags)
+{
+    device_t *dev = file->ctx;
+
+    if (dev == NULL || dev->drv->select == NULL) {
+        return -1;
+    }
+    return dev->drv->select(dev->ctx, file, flags);
+}
+
+static int devfs_unselect(mount_point_t *point, file_t *file, int flags)
+{
+    device_t *dev = file->ctx;
+
+    if (dev == NULL || dev->drv->unselect == NULL) {
+        return -1;
+    }
+    return dev->drv->unselect(dev->ctx, file, flags);
+}
+
 static int devfs_stat(mount_point_t *point, const char *path, struct stat *buf)
 {
     if (PATH_IS_ROOT_DIR(path)) {
@@ -419,6 +449,10 @@ file_system_t devfs = {
         .seekdir    = devfs_seekdir,
         .telldir    = devfs_telldir,
         .closedir   = devfs_closedir,
+
+        .scan       = devfs_scan,
+        .select     = devfs_select,
+        .unselect   = devfs_unselect,
 };
 /*********************************************************************************************************
   END FILE

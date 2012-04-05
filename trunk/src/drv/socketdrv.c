@@ -64,8 +64,10 @@ static int socket_open(void *ctx, file_t *file, int oflag, mode_t mode)
 {
     privinfo_t *priv = ctx;
 
+    if (priv == NULL) {
+        return -1;
+    }
     priv->ref++;
-
     return 0;
 }
 
@@ -76,6 +78,9 @@ static int socket_ioctl(void *ctx, file_t *file, int cmd, void *arg)
 {
     privinfo_t *priv = ctx;
 
+    if (priv == NULL) {
+        return -1;
+    }
     return lwip_ioctl(priv->sock_fd, cmd, arg);
 }
 
@@ -86,6 +91,9 @@ static int socket_fcntl(void *ctx, file_t *file, int cmd, int arg)
 {
     privinfo_t *priv = ctx;
 
+    if (priv == NULL) {
+        return -1;
+    }
     return lwip_fcntl(priv->sock_fd, cmd, arg);
 }
 
@@ -97,6 +105,10 @@ static int socket_close(void *ctx, file_t *file)
     privinfo_t *priv = ctx;
     char buf[32];
 
+    if (priv == NULL) {
+        return -1;
+    }
+
     if (--priv->ref == 0) {
         sprintf(buf, "/dev/socket%d", priv->sock_fd);
         device_remove(buf);
@@ -105,7 +117,6 @@ static int socket_close(void *ctx, file_t *file)
 
         kfree(priv);
     }
-
     return 0;
 }
 
@@ -114,6 +125,11 @@ static int socket_close(void *ctx, file_t *file)
  */
 static int socket_isatty(void *ctx, file_t *file)
 {
+    privinfo_t *priv = ctx;
+
+    if (priv == NULL) {
+        return -1;
+    }
     return 1;
 }
 
@@ -124,8 +140,9 @@ static ssize_t socket_read(void *ctx, file_t *file, void *buf, size_t len)
 {
     privinfo_t *priv = ctx;
 
-    debug("%s %d\r\n", __func__, len);
-
+    if (priv == NULL) {
+        return -1;
+    }
     return lwip_recv(priv->sock_fd, buf, len, 0);
 }
 
@@ -136,6 +153,9 @@ static ssize_t socket_write(void *ctx, file_t *file, const void *buf, size_t len
 {
     privinfo_t *priv = ctx;
 
+    if (priv == NULL) {
+        return -1;
+    }
     return lwip_send(priv->sock_fd, buf, len, 0);
 }
 
@@ -144,9 +164,13 @@ static ssize_t socket_write(void *ctx, file_t *file, const void *buf, size_t len
  */
 static int socket_fstat(void *ctx, file_t *file, struct stat *buf)
 {
+    privinfo_t *priv = ctx;
+
+    if (priv == NULL) {
+        return -1;
+    }
     buf->st_mode    = (buf->st_mode & (~S_IFMT)) | S_IFSOCK;
     buf->st_blksize = 1;
-
     return 0;
 }
 
@@ -185,7 +209,7 @@ int socket_attach(int sock_fd)
     priv = kmalloc(sizeof(privinfo_t));
     if (priv != NULL) {
         priv->sock_fd = sock_fd;
-        priv->ref    = 0;
+        priv->ref     = 0;
 
         sprintf(buf, "/dev/socket%d", sock_fd);
         if (device_create(buf, "socket", priv) < 0) {
