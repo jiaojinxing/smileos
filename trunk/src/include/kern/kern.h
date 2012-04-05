@@ -72,6 +72,7 @@
 #define TASK_RESUME_MSG_COME    (1 << 4)                                /*  消息到达                    */
 #define TASK_RESUME_MSG_OUT     (1 << 5)                                /*  消息被读取                  */
 #define TASK_RESUME_INTERRUPT   (1 << 6)                                /*  等待被中断                  */
+#define TASK_RESUME_SELECT      (1 << 7)                                /*  select                      */
 
 struct vmm_frame;
 #include <sys/reent.h>                                                  /*  for struct _reent           */
@@ -106,9 +107,10 @@ typedef struct task {
     struct task            *next;                                       /*  后趋                        */
     struct task           **wait_list;                                  /*  等待链表                    */
     struct vmm_frame       *frame_list;                                 /*  页框链表                    */
-    int                     dabt_cnt;                                   /*  数据访问中止次数            */
+    uint32_t                dabt_cnt;                                   /*  数据访问中止次数            */
     uint32_t                mmu_backup[PROCESS_SPACE_SIZE / SECTION_SIZE];  /*  一级段表备份            */
     struct _reent           reent;                                      /*  可重入结构                  */
+    uint32_t                select_type;                                /*  select 类型                 */
 } task_t;
 
 /*

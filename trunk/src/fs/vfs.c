@@ -46,6 +46,7 @@
 #include "vfs/mount.h"
 #include "vfs/fs.h"
 #include "vfs/vfs.h"
+#include <sys/time.h>
 #include <dirent.h>
 #include <string.h>
 #include <stdio.h>
@@ -418,7 +419,7 @@ int vfs_close(int fd)
 /*
  * 控制文件
  */
-int vfs_fcntl(int fd, int cmd, void *arg)
+int vfs_fcntl(int fd, int cmd, int arg)
 {
     int ret;
 
@@ -629,6 +630,306 @@ off_t vfs_lseek(int fd, off_t offset, int whence)
     return offset;
 }
 
+/*********************************************************************************************************
+ *                                          select 实现
+ */
+/*
+ * 扫描文件
+ */
+static int vfs_scan_file(int fd, int flags)
+{
+    int ret;
+
+    vfs_file_api_begin
+    if (point->fs->scan == NULL) {
+        vfs_file_api_end
+        return -1;
+    }
+    ret = point->fs->scan(point, file, flags);
+    vfs_file_api_end
+    return ret;
+}
+
+/*
+ * 将当前任务加入到文件的等待列表
+ */
+static int vfs_select_file(int fd, int flags)
+{
+    int ret;
+
+    vfs_file_api_begin
+    if (point->fs->select == NULL) {
+        vfs_file_api_end
+        return -1;
+    }
+    ret = point->fs->select(point, file, flags);
+    vfs_file_api_end
+    return ret;
+}
+
+/*
+ * 将当前任务从文件的等待列表中移除
+ */
+static int vfs_unselect_file(int fd, int flags)
+{
+    int ret;
+
+    vfs_file_api_begin
+    if (point->fs->unselect == NULL) {
+        vfs_file_api_end
+        return -1;
+    }
+    ret = point->fs->unselect(point, file, flags);
+    vfs_file_api_end
+    return ret;
+}
+
+/*
+ * 扫描文件集
+ */
+static int vfs_select_scan(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds)
+{
+    fd_set rfds, wfds, efds;
+    int flags;
+    int i;
+    int nset;
+    int ret;
+
+    nset = 0;
+
+    FD_ZERO(&rfds);
+    FD_ZERO(&wfds);
+    FD_ZERO(&efds);
+
+    for (i = 0; i < nfds; i++) {
+        flags = 0;
+        if (readfds && FD_ISSET(i, readfds)) {
+            flags |= VFS_FILE_READBLE;
+        }
+        if (writefds && FD_ISSET(i, writefds)) {
+            flags |= VFS_FILE_WRITEBLE;
+        }
+        if (errorfds && FD_ISSET(i, errorfds)) {
+            flags |= VFS_FILE_ERROR;
+        }
+        if (flags != 0) {
+            ret = vfs_scan_file(i, flags);
+            if (ret < 0) {
+                FD_SET(i, &efds);
+                nset++;
+            } else if (ret > 0) {
+                if (readfds && ret & VFS_FILE_READBLE) {
+                    FD_SET(i, &rfds);
+                    nset++;
+                } else if (writefds && ret & VFS_FILE_WRITEBLE) {
+                    FD_SET(i, &wfds);
+                    nset++;
+                } else if (errorfds && ret & VFS_FILE_ERROR) {
+                    FD_SET(i, &efds);
+                    nset++;
+                } else {
+                    continue;
+                }
+            } else {
+                continue;
+            }
+        }
+    }
+
+    if (nset > 0) {
+        if (readfds) {
+            *readfds  = rfds;
+        }
+        if (writefds) {
+            *writefds = wfds;
+        }
+        if (errorfds) {
+            *errorfds = efds;
+        }
+        return nset;
+    } else {
+        return 0;
+    }
+}
+
+/*
+ * 将当前任务加入到文件集的等待列表
+ */
+static int vfs_select_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds)
+{
+    int flags;
+    int i;
+    int ret;
+
+    for (i = 0; i < nfds; i++) {
+        flags = 0;
+        if (readfds && FD_ISSET(i, readfds)) {
+            flags |= VFS_FILE_READBLE;
+        }
+        if (writefds && FD_ISSET(i, writefds)) {
+            flags |= VFS_FILE_WRITEBLE;
+        }
+        if (errorfds && FD_ISSET(i, errorfds)) {
+            flags |= VFS_FILE_ERROR;
+        }
+        if (flags != 0) {
+            ret = vfs_select_file(i, flags);
+            if (ret < 0) {
+                goto error;
+            }
+        }
+    }
+    return 0;
+
+    error:
+    nfds = i;
+    for (i = 0; i < nfds; i++) {
+        flags = 0;
+        if (readfds && FD_ISSET(i, readfds)) {
+            flags |= VFS_FILE_READBLE;
+        }
+        if (writefds && FD_ISSET(i, writefds)) {
+            flags |= VFS_FILE_WRITEBLE;
+        }
+        if (errorfds && FD_ISSET(i, errorfds)) {
+            flags |= VFS_FILE_ERROR;
+        }
+        if (flags != 0) {
+            vfs_unselect_file(i, flags);
+        }
+    }
+    return -1;
+}
+
+/*
+ * 将当前任务从文件集的等待列表中移除
+ */
+static int vfs_select_unselect(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds)
+{
+    int flags;
+    int i;
+
+    for (i = 0; i < nfds; i++) {
+        flags = 0;
+        if (readfds && FD_ISSET(i, readfds)) {
+            flags |= VFS_FILE_READBLE;
+        }
+        if (writefds && FD_ISSET(i, writefds)) {
+            flags |= VFS_FILE_WRITEBLE;
+        }
+        if (errorfds && FD_ISSET(i, errorfds)) {
+            flags |= VFS_FILE_ERROR;
+        }
+        if (flags != 0) {
+            vfs_unselect_file(i, flags);
+        }
+    }
+    return 0;
+}
+
+/*
+ * select
+ */
+int vfs_select(int nfds, fd_set *readfds, fd_set *writefds,
+               fd_set *errorfds, struct timeval *timeout)
+{
+    int resume_type;
+    int nset;
+    int ret;
+    uint32_t reg;
+
+    if ((nfds < 1) || ((readfds == NULL) && (writefds == NULL) && (errorfds == NULL))) {
+        return -1;
+    }
+
+    reg = interrupt_disable();
+    nset = vfs_select_scan(nfds, readfds, writefds, errorfds);
+    if (nset > 0) {
+        interrupt_resume(reg);
+        return nset;
+    }
+
+    if (timeout != NULL && (timeout->tv_sec == 0 && timeout->tv_usec == 0)) {
+        interrupt_resume(reg);
+        if (readfds) {
+            FD_ZERO(&readfds);
+        }
+        if (writefds) {
+            FD_ZERO(&writefds);
+        }
+        if (errorfds) {
+            FD_ZERO(&errorfds);
+        }
+        return 0;
+    }
+
+    ret = vfs_select_select(nfds, readfds, writefds, errorfds);
+    if (ret < 0) {
+        interrupt_resume(reg);
+        if (readfds) {
+            FD_ZERO(&readfds);
+        }
+        if (writefds) {
+            FD_ZERO(&writefds);
+        }
+        if (errorfds) {
+            FD_ZERO(&errorfds);
+        }
+        return -1;
+    }
+
+    if (timeout == NULL) {
+        current->timer   = 0;
+        current->state   = TASK_SUSPEND;
+    } else {
+        current->timer   = timeout->tv_sec * TICK_PER_SECOND + timeout->tv_usec * TICK_PER_SECOND / 1000000;
+        current->state   = TASK_SLEEPING;
+    }
+    current->resume_type = TASK_RESUME_UNKNOW;
+
+    yield();
+
+    vfs_select_unselect(nfds, readfds, writefds, errorfds);
+
+    current->timer       = 0;
+    resume_type          = current->resume_type;
+    current->resume_type = TASK_RESUME_UNKNOW;
+
+    if (resume_type & TASK_RESUME_INTERRUPT || resume_type & TASK_RESUME_TIMEOUT) {
+        interrupt_resume(reg);
+        if (readfds) {
+            FD_ZERO(&readfds);
+        }
+        if (writefds) {
+            FD_ZERO(&writefds);
+        }
+        if (errorfds) {
+            FD_ZERO(&errorfds);
+        }
+        if (resume_type & TASK_RESUME_INTERRUPT) {
+            return -1;
+        } else {
+            return 0;
+        }
+    } else {
+        nset = vfs_select_scan(nfds, readfds, writefds, errorfds);
+        interrupt_resume(reg);
+        if (nset > 0) {
+            return nset;
+        } else {
+            if (readfds) {
+                FD_ZERO(&readfds);
+            }
+            if (writefds) {
+                FD_ZERO(&writefds);
+            }
+            if (errorfds) {
+                FD_ZERO(&errorfds);
+            }
+            return 0;
+        }
+    }
+}
 /*********************************************************************************************************
  *                                          文件系统操作接口
  */
@@ -866,7 +1167,6 @@ int vfs_sync(const char *path)
     ret = point->fs->sync(point);
     return ret;
 }
-
 /*********************************************************************************************************
  *                                          目录操作接口
  */

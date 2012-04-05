@@ -122,7 +122,7 @@ static int devfs_close(mount_point_t *point, file_t *file)
     return dev->drv->close(dev->ctx, file);
 }
 
-static int devfs_fcntl(mount_point_t *point, file_t *file, int cmd, void *arg)
+static int devfs_fcntl(mount_point_t *point, file_t *file, int cmd, int arg)
 {
     device_t *dev = file->ctx;
 

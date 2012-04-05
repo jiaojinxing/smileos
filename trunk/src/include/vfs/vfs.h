@@ -44,6 +44,7 @@
 
 struct stat;
 struct dirent;
+struct timeval;
 
 #include "vfs/types.h"
 
@@ -60,7 +61,7 @@ int vfs_close(int fd);
 /*
  * 控制文件
  */
-int vfs_fcntl(int fd, int cmd, void *arg);
+int vfs_fcntl(int fd, int cmd, int arg);
 
 /*
  * 获得文件状态
@@ -106,6 +107,12 @@ int vfs_ioctl(int fd, int cmd, void *arg);
  * 调整文件读写位置
  */
 off_t vfs_lseek(int fd, off_t offset, int whence);
+
+/*
+ * select
+ */
+int vfs_select(int nfds, fd_set *readfds, fd_set *writefds,
+               fd_set *errorfds, struct timeval *timeout);
 
 /*********************************************************************************************************
  *                                          文件系统操作接口
