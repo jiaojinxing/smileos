@@ -50,8 +50,9 @@
  * 私有信息
  */
 typedef struct {
-    int         sock_fd;
-    int         ref;
+    SELECT_MEMBERS
+    int             sock_fd;
+    int             ref;
 } privinfo_t;
 
 //#define debug        kcomplain
@@ -175,18 +176,74 @@ static int socket_fstat(void *ctx, file_t *file, struct stat *buf)
 }
 
 /*
+ * 扫描
+ */
+static int socket_scan(void *ctx, file_t *file, int flags)
+{
+    privinfo_t *priv = ctx;
+    int ret;
+    int readable;
+    int writeable;
+    int error;
+
+    if (priv == NULL) {
+        return -1;
+    }
+
+    extern int socket_stat(int sock_fd, int *readable, int *writeable, int *error);
+    ret = socket_stat(priv->sock_fd, &readable, &writeable, &error);
+    if (ret < 0) {
+        return -1;
+    }
+
+    ret = 0;
+
+    if (readable && flags & VFS_FILE_READABLE) {
+        ret |= VFS_FILE_READABLE;
+    }
+    if (writeable && flags & VFS_FILE_WRITEABLE) {
+        ret |= VFS_FILE_WRITEABLE;
+    }
+    if (error && flags & VFS_FILE_ERROR) {
+        ret |= VFS_FILE_ERROR;
+    }
+    return ret;
+}
+
+#include "selectdrv.h"
+
+/*
+ * 回报事件
+ */
+void smileos_socket_report(int sock_fd, int type)
+{
+    char buf[32];
+    device_t *dev;
+
+    sprintf(buf, "/dev/socket%d", sock_fd);
+
+    dev = device_lookup(buf);
+    if (dev != NULL) {
+        select_report(dev->ctx, type);
+    }
+}
+
+/*
  * socket 驱动
  */
 driver_t socket_drv = {
-        .name   = "socket",
-        .open   = socket_open,
-        .write  = socket_write,
-        .read   = socket_read,
-        .isatty = socket_isatty,
-        .ioctl  = socket_ioctl,
-        .fcntl  = socket_fcntl,
-        .close  = socket_close,
-        .fstat  = socket_fstat,
+        .name     = "socket",
+        .open     = socket_open,
+        .write    = socket_write,
+        .read     = socket_read,
+        .isatty   = socket_isatty,
+        .ioctl    = socket_ioctl,
+        .fcntl    = socket_fcntl,
+        .close    = socket_close,
+        .fstat    = socket_fstat,
+        .scan     = socket_scan,
+        .select   = select_select,
+        .unselect = select_unselect,
 };
 
 /*
@@ -208,6 +265,7 @@ int socket_attach(int sock_fd)
 
     priv = kmalloc(sizeof(privinfo_t));
     if (priv != NULL) {
+        select_init(priv);
         priv->sock_fd = sock_fd;
         priv->ref     = 0;
 
@@ -237,17 +295,23 @@ int socket_priv_fd(int fd)
     file_t *file;
     device_t *dev;
     privinfo_t *priv;
+    uint32_t reg;
+    int sock_fd;
 
+    reg = interrupt_disable();
     file = vfs_get_file(fd);
     if (file != NULL) {
         dev = file->ctx;
         if (dev != NULL) {
             priv = dev->ctx;
             if (priv != NULL && priv->ref > 0) {
-                return priv->sock_fd;
+                sock_fd = priv->sock_fd;
+                interrupt_resume(reg);
+                return sock_fd;
             }
         }
     }
+    interrupt_resume(reg);
     return -1;
 }
 /*********************************************************************************************************

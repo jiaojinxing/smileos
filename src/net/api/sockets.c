@@ -1068,6 +1068,61 @@ lwip_selscan(int maxfdp1, fd_set *readset_in, fd_set *writeset_in, fd_set *excep
   return nready;
 }
 
+/*************************************** jiaojinxing1987@gmail.com **************************************/
+/*
+ * socket_stat
+ */
+int
+socket_stat(int sock_fd, int *readable, int *writeable, int *error)
+{
+    void *lastdata = NULL;
+    s16_t rcvevent = 0;
+    u16_t sendevent = 0;
+    u16_t errevent = 0;
+    struct lwip_sock *sock;
+    SYS_ARCH_DECL_PROTECT(lev);
+
+    /* First get the socket's status (protected)... */
+    SYS_ARCH_PROTECT(lev);
+    sock = tryget_socket(sock_fd);
+    if (sock == NULL) {
+        SYS_ARCH_UNPROTECT(lev);
+        *readable = FALSE;
+        *writeable = FALSE;
+        *error = FALSE;
+        return -1;
+    }
+
+    lastdata = sock->lastdata;
+    rcvevent = sock->rcvevent;
+    sendevent = sock->sendevent;
+    errevent = sock->errevent;
+
+    SYS_ARCH_UNPROTECT(lev);
+
+    /* ... then examine it: */
+    /* See if netconn of this socket is ready for read */
+    if ((lastdata != NULL) || (rcvevent > 0)) {
+        *readable = TRUE;
+    } else {
+        *readable = FALSE;
+    }
+
+    if (sendevent != 0) {
+        *writeable = TRUE;
+    } else {
+        *writeable = FALSE;
+    }
+
+    if (errevent != 0) {
+        *error = TRUE;
+    } else {
+        *error = FALSE;
+    }
+    return 0;
+}
+/********************************************************************************************************/
+
 /**
  * Processing exceptset is not yet implemented.
  */
@@ -1292,6 +1347,11 @@ event_callback(struct netconn *conn, enum netconn_evt evt, u16_t len)
       LWIP_ASSERT("unknown event", 0);
       break;
   }
+
+/*************************************** jiaojinxing1987@gmail.com **************************************/
+  extern void smileos_socket_report(int sock_fd, int type);
+  smileos_socket_report(s, 0);
+/********************************************************************************************************/
 
   if (sock->select_waiting == 0) {
     /* noone is waiting for this socket, no need to check select_cb_list */
