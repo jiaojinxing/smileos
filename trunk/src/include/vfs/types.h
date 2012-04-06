@@ -100,6 +100,7 @@ struct driver {
  */
 struct device {
     char                    name[NAME_MAX];
+    unsigned int            key;
     driver_t               *drv;
     /*
      * 一个驱动可以被多个设备使用, ctx 用于维护设备信息
@@ -197,8 +198,8 @@ struct file {
  */
 #define PATH_IS_ROOT_DIR(path)  (path[0] == '/' && path[1] == '\0')
 
-#define VFS_FILE_READBLE        (1 << 0)
-#define VFS_FILE_WRITEBLE       (1 << 1)
+#define VFS_FILE_READABLE       (1 << 0)
+#define VFS_FILE_WRITEABLE      (1 << 1)
 #define VFS_FILE_ERROR          (1 << 2)
 
 /*
@@ -210,6 +211,10 @@ typedef struct _select_node {
     void                   *task;
     int                     select_type;
 } select_node_t;
+
+#define SELECT_MEMBERS                  \
+    int                     flags;      \
+    select_node_t           wait_list;  \
 
 #endif                                                                  /*  VFS_TYPES_H_                */
 /*********************************************************************************************************

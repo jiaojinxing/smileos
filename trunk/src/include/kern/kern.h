@@ -65,14 +65,14 @@
 /*
  * 任务恢复类型
  */
-#define TASK_RESUME_UNKNOW      0                                       /*  未知                        */
-#define TASK_RESUME_MUTEX_COME  (1 << 1)                                /*  互斥量到达                  */
-#define TASK_RESUME_SEM_COME    (1 << 2)                                /*  信号到达                    */
-#define TASK_RESUME_TIMEOUT     (1 << 3)                                /*  超时                        */
-#define TASK_RESUME_MSG_COME    (1 << 4)                                /*  消息到达                    */
-#define TASK_RESUME_MSG_OUT     (1 << 5)                                /*  消息被读取                  */
-#define TASK_RESUME_INTERRUPT   (1 << 6)                                /*  等待被中断                  */
-#define TASK_RESUME_SELECT      (1 << 7)                                /*  select                      */
+#define TASK_RESUME_UNKNOW          0                                   /*  未知                        */
+#define TASK_RESUME_MUTEX_COME      (1 << 1)                            /*  互斥量到达                  */
+#define TASK_RESUME_SEM_COME        (1 << 2)                            /*  信号到达                    */
+#define TASK_RESUME_TIMEOUT         (1 << 3)                            /*  超时                        */
+#define TASK_RESUME_MSG_COME        (1 << 4)                            /*  消息到达                    */
+#define TASK_RESUME_MSG_OUT         (1 << 5)                            /*  消息被读取                  */
+#define TASK_RESUME_INTERRUPT       (1 << 6)                            /*  等待被中断                  */
+#define TASK_RESUME_SELECT_EVENT    (1 << 7)                            /*  select 事件                 */
 
 struct vmm_frame;
 #include <sys/reent.h>                                                  /*  for struct _reent           */
@@ -110,7 +110,6 @@ typedef struct task {
     uint32_t                dabt_cnt;                                   /*  数据访问中止次数            */
     uint32_t                mmu_backup[PROCESS_SPACE_SIZE / SECTION_SIZE];  /*  一级段表备份            */
     struct _reent           reent;                                      /*  可重入结构                  */
-    uint32_t                select_type;                                /*  select 类型                 */
 } task_t;
 
 /*

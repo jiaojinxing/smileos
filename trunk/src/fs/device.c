@@ -68,20 +68,42 @@ static int device_install(device_t *dev)
 }
 
 /*
+ * 各种字符串 Hash 函数比较
+ * http://www.byvoid.com/blog/string-hash-compare/
+ */
+/*
+ * BKDR Hash Function
+ */
+unsigned int BKDRHash(const char *str)
+{
+    unsigned int seed = 131;                                            /*  31 131 1313 13131 131313 etc*/
+    unsigned int hash = 0;
+
+    while (*str) {
+        hash = hash * seed + (*str++);
+    }
+
+    return (hash & 0x7FFFFFFF);
+}
+
+/*
  * 查找设备
  */
 device_t *device_lookup(const char *name)
 {
     device_t *dev;
+    unsigned int key;
 
     if (name == NULL) {
         return NULL;
     }
 
+    key = BKDRHash(name);
+
     mutex_lock(&devmgr_lock, 0);
     dev = dev_list;
     while (dev != NULL) {
-        if (strcmp(dev->name, name) == 0) {
+        if (key == dev->key) {
             break;
         }
         dev = dev->next;
@@ -160,6 +182,7 @@ int device_create(const char *dev_name, const char *drv_name, void *ctx)
             dev->drv    = drv;
             dev->ctx    = ctx;
             dev->devno  = 0;
+            dev->key    = BKDRHash(dev_name);
             device_install(dev);
             mutex_unlock(&devmgr_lock);
             return 0;

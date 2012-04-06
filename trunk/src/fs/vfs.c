@@ -704,10 +704,10 @@ static int vfs_select_scan(int nfds, fd_set *readfds, fd_set *writefds, fd_set *
     for (i = 0; i < nfds; i++) {
         flags = 0;
         if (readfds && FD_ISSET(i, readfds)) {
-            flags |= VFS_FILE_READBLE;
+            flags |= VFS_FILE_READABLE;
         }
         if (writefds && FD_ISSET(i, writefds)) {
-            flags |= VFS_FILE_WRITEBLE;
+            flags |= VFS_FILE_WRITEABLE;
         }
         if (errorfds && FD_ISSET(i, errorfds)) {
             flags |= VFS_FILE_ERROR;
@@ -718,10 +718,10 @@ static int vfs_select_scan(int nfds, fd_set *readfds, fd_set *writefds, fd_set *
                 FD_SET(i, &efds);
                 nset++;
             } else if (ret > 0) {
-                if (readfds && ret & VFS_FILE_READBLE) {
+                if (readfds && ret & VFS_FILE_READABLE) {
                     FD_SET(i, &rfds);
                     nset++;
-                } else if (writefds && ret & VFS_FILE_WRITEBLE) {
+                } else if (writefds && ret & VFS_FILE_WRITEABLE) {
                     FD_SET(i, &wfds);
                     nset++;
                 } else if (errorfds && ret & VFS_FILE_ERROR) {
@@ -764,10 +764,10 @@ static int vfs_select_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set
     for (i = 0; i < nfds; i++) {
         flags = 0;
         if (readfds && FD_ISSET(i, readfds)) {
-            flags |= VFS_FILE_READBLE;
+            flags |= VFS_FILE_READABLE;
         }
         if (writefds && FD_ISSET(i, writefds)) {
-            flags |= VFS_FILE_WRITEBLE;
+            flags |= VFS_FILE_WRITEABLE;
         }
         if (errorfds && FD_ISSET(i, errorfds)) {
             flags |= VFS_FILE_ERROR;
@@ -786,10 +786,10 @@ static int vfs_select_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set
     for (i = 0; i < nfds; i++) {
         flags = 0;
         if (readfds && FD_ISSET(i, readfds)) {
-            flags |= VFS_FILE_READBLE;
+            flags |= VFS_FILE_READABLE;
         }
         if (writefds && FD_ISSET(i, writefds)) {
-            flags |= VFS_FILE_WRITEBLE;
+            flags |= VFS_FILE_WRITEABLE;
         }
         if (errorfds && FD_ISSET(i, errorfds)) {
             flags |= VFS_FILE_ERROR;
@@ -812,10 +812,10 @@ static int vfs_select_unselect(int nfds, fd_set *readfds, fd_set *writefds, fd_s
     for (i = 0; i < nfds; i++) {
         flags = 0;
         if (readfds && FD_ISSET(i, readfds)) {
-            flags |= VFS_FILE_READBLE;
+            flags |= VFS_FILE_READABLE;
         }
         if (writefds && FD_ISSET(i, writefds)) {
-            flags |= VFS_FILE_WRITEBLE;
+            flags |= VFS_FILE_WRITEABLE;
         }
         if (errorfds && FD_ISSET(i, errorfds)) {
             flags |= VFS_FILE_ERROR;
@@ -895,23 +895,7 @@ int vfs_select(int nfds, fd_set *readfds, fd_set *writefds,
     resume_type          = current->resume_type;
     current->resume_type = TASK_RESUME_UNKNOW;
 
-    if (resume_type & TASK_RESUME_INTERRUPT || resume_type & TASK_RESUME_TIMEOUT) {
-        interrupt_resume(reg);
-        if (readfds) {
-            FD_ZERO(&readfds);
-        }
-        if (writefds) {
-            FD_ZERO(&writefds);
-        }
-        if (errorfds) {
-            FD_ZERO(&errorfds);
-        }
-        if (resume_type & TASK_RESUME_INTERRUPT) {
-            return -1;
-        } else {
-            return 0;
-        }
-    } else {
+    if (resume_type & TASK_RESUME_SELECT_EVENT) {
         nset = vfs_select_scan(nfds, readfds, writefds, errorfds);
         interrupt_resume(reg);
         if (nset > 0) {
@@ -926,6 +910,22 @@ int vfs_select(int nfds, fd_set *readfds, fd_set *writefds,
             if (errorfds) {
                 FD_ZERO(&errorfds);
             }
+            return 0;
+        }
+    } else {
+        interrupt_resume(reg);
+        if (readfds) {
+            FD_ZERO(&readfds);
+        }
+        if (writefds) {
+            FD_ZERO(&writefds);
+        }
+        if (errorfds) {
+            FD_ZERO(&errorfds);
+        }
+        if (resume_type & TASK_RESUME_INTERRUPT) {
+            return -1;
+        } else {
             return 0;
         }
     }
