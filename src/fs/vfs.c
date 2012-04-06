@@ -31,10 +31,21 @@
 ** Descriptions:            创建文件
 **
 **--------------------------------------------------------------------------------------------------------
-** Modified by:
-** Modified date:
-** Version:
+** Modified by:             JiaoJinXing
+** Modified date:           2012-4-6
+** Version:                 1.1.0
 ** Descriptions:
+**
+** 现在支持 select 了, 支持 select 主要是因为用户空间中的 GNU/pth 库的要求!
+** 因为 pthread 里调 write 等函数, 会造成整个进程被阻塞, 而 GNU/pth 库是这样做的:
+** 1) 强制将文件设置为非阻塞模式
+** 2) 如果 1 步 OK, 那么就调用 write
+** 3) 如果 2 步不 OK, 那么 select 文件可写 0 秒
+** 4) 如果 select OK, 那么就调用 write
+** 5) 如果 select 不 OK, 那么等待 PTH_EVENT_FD|PTH_UNTIL_FD_WRITEABLE|PTH_MODE_STATIC 事件
+** 6) pth_scheduler 线程会做没有其它线程运行时调用 pth_sched_eventmanager
+** 7) pth_sched_eventmanager 会 select 所有文件可读可写出错一个最小的等待时间
+** 8) pth_sched_eventmanager 会对 select 的结果进行判定, 以唤醒等待事件的线程
 **
 *********************************************************************************************************/
 #include "kern/kern.h"
