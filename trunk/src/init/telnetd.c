@@ -211,6 +211,9 @@ static int exec_cmd(char *cmd)
         cd_main(argc, argv);
     } else if (strcmp(argv[0], "mems") == 0) {
         kheap_show(STDOUT_FILENO);
+    } else if (strcmp(argv[0], "basic") == 0) {
+        int basic_test(void);
+        basic_test();
     } else if (strcmp(argv[0], "exit") == 0) {
         _exit(0);
     } else {
