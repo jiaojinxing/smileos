@@ -219,13 +219,17 @@ void smileos_socket_report(int sock_fd, int type)
 {
     char buf[32];
     device_t *dev;
+    uint32_t reg;
 
     sprintf(buf, "/dev/socket%d", sock_fd);
+
+    reg = interrupt_disable();
 
     dev = device_lookup(buf);
     if (dev != NULL) {
         select_report(dev->ctx, type);
     }
+    interrupt_resume(reg);
 }
 
 /*
@@ -262,6 +266,7 @@ int socket_attach(int sock_fd)
     char buf[32];
     int fd;
     privinfo_t *priv;
+    uint32_t reg;
 
     priv = kmalloc(sizeof(privinfo_t));
     if (priv != NULL) {
@@ -270,7 +275,10 @@ int socket_attach(int sock_fd)
         priv->ref     = 0;
 
         sprintf(buf, "/dev/socket%d", sock_fd);
+
+        reg = interrupt_disable();
         if (device_create(buf, "socket", priv) < 0) {
+            interrupt_resume(reg);
             kfree(priv);
             return -1;
         }
@@ -278,9 +286,11 @@ int socket_attach(int sock_fd)
         fd = vfs_open(buf, O_RDWR, 0666);
         if (fd < 0) {
             device_remove(buf);
+            interrupt_resume(reg);
             kfree(priv);
             return -1;
         }
+        interrupt_resume(reg);
         return fd;
     } else {
         return -1;

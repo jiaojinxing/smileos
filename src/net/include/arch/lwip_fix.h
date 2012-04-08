@@ -22,7 +22,7 @@
 ** File name:               lwip_fix.h
 ** Last modified Date:      2012-2-22
 ** Last Version:            1.0.0
-** Descriptions:            LwIP 修正头文件
+** Descriptions:            lwIP 修正头文件
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing
@@ -105,9 +105,9 @@ typedef int32_t                     sys_thread_t;
 #define SYS_SEM_NULL                0ul
 #define SYS_MBOX_NULL               0ul
 
-#define LWIP_COMPAT_MUTEX           0                                   /*  LwIP 不使用兼容的互斥量     */
-#define LWIP_TIMEVAL_PRIVATE        0                                   /*  LwIP 不定义 struct timeval  */
-//#define LWIP_PROVIDE_ERRNO        0                                   /*  LwIP 不提供错误代号         */
+#define LWIP_COMPAT_MUTEX           0                                   /*  lwIP 不使用兼容的互斥量     */
+#define LWIP_TIMEVAL_PRIVATE        0                                   /*  lwIP 不定义 struct timeval  */
+//#define LWIP_PROVIDE_ERRNO        0                                   /*  lwIP 不提供错误代号         */
 #define ENSRNOTFOUND                163                                 /*  Domain name not found       */
 /*********************************************************************************************************
   时间性能测量操作宏

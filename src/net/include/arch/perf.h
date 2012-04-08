@@ -22,7 +22,7 @@
 ** File name:               perf.h
 ** Last modified Date:      2012-2-22
 ** Last Version:            1.0.0
-** Descriptions:            LwIP 时间性能测量头文件
+** Descriptions:            lwIP 时间性能测量头文件
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing

@@ -22,7 +22,7 @@
 ** File name:               sys_arch.h
 ** Last modified Date:      2012-2-22
 ** Last Version:            1.0.0
-** Descriptions:            LwIP 系统模拟层头文件
+** Descriptions:            lwIP 系统模拟层头文件
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing
