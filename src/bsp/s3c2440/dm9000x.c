@@ -65,10 +65,11 @@
  */
 struct ethernetif {
     struct eth_addr *mac_addr;
-    u8_t  tx_packet_nr;
-    u16_t tx_packet_len;
+    u8_t  tx_pkt_cnt;
+    u16_t queue_pkt_len;
     void (*out_blk)(const void *data, int len);
     void (*in_blk)(void *data, int len);
+    void (*dummy_in_blk)(int len);
     void (*rx_status)(u16_t *status, u16_t *len);
 };
 
@@ -172,6 +173,21 @@ dm9000_in_blk_16bit(void *data, int len)
 
     for (i = 0; i < len; i++) {
         ((u16_t *)data)[i] = DM9000_inw(DM9000_DATA);
+    }
+}
+
+/*
+ * 输入块 16 位模式
+ */
+static void
+dm9000_dummy_in_blk_16bit(int len)
+{
+    int i;
+
+    len = (len + 1) / 2;
+
+    for (i = 0; i < len; i++) {
+        DM9000_inw(DM9000_DATA);
     }
 }
 
@@ -406,9 +422,10 @@ dm9000_init(struct netif *netif)
     switch (mode) {
     case 0x00:  /* 16-bit mode */
         LWIP_DEBUGF(NETIF_DEBUG, ("dm9000_init: running in 16 bit mode\n"));
-        ethernetif->out_blk    = dm9000_out_blk_16bit;
-        ethernetif->in_blk     = dm9000_in_blk_16bit;
-        ethernetif->rx_status  = dm9000_rx_status_16bit;
+        ethernetif->out_blk      = dm9000_out_blk_16bit;
+        ethernetif->in_blk       = dm9000_in_blk_16bit;
+        ethernetif->rx_status    = dm9000_rx_status_16bit;
+        ethernetif->dummy_in_blk = dm9000_dummy_in_blk_16bit;
         break;
 
     case 0x01:  /* 32-bit mode */
@@ -547,10 +564,152 @@ dm9000_init(struct netif *netif)
     return 0;
 }
 
-static sys_mutex_t  dm9000_lock;
-static sys_sem_t    rx_sem;
-static sys_sem_t    tx_sem;
-static sys_thread_t rx_thread;
+/**
+ * This function should be called when a packet is ready to be read
+ * from the interface. It uses the function low_level_input() that
+ * should handle the actual reception of bytes from the network
+ * interface. Then the type of the received packet is determined and
+ * the appropriate input function is called.
+ *
+ * @param netif the lwip network interface structure for this ethernetif
+ */
+static void
+ethernetif_input(struct netif *netif, struct pbuf *p)
+{
+    struct eth_hdr *ethhdr;
+
+    /*
+     * no packet could be read, silently ignore this
+     */
+    if (p == NULL) {
+        return;
+    }
+
+    /*
+     * points to packet payload, which starts with an Ethernet header
+     */
+    ethhdr = p->payload;
+    if (ethhdr == NULL) {
+        return;
+    }
+
+    switch (htons(ethhdr->type)) {
+    /*
+     * IP or ARP packet?
+     */
+    case ETHTYPE_IP:
+    case ETHTYPE_ARP:
+#if PPPOE_SUPPORT
+    /*
+     * PPPoE packet?
+     */
+    case ETHTYPE_PPPOEDISC:
+    case ETHTYPE_PPPOE:
+#endif /* PPPOE_SUPPORT */
+        /*
+         * full packet send to tcpip_thread to process
+         */
+        if (netif->input(p, netif) != ERR_OK) {
+            LWIP_DEBUGF(NETIF_DEBUG, ("ethernetif_input: IP input error\n"));
+            pbuf_free(p);
+            p = NULL;
+        }
+        break;
+
+    default:
+        pbuf_free(p);
+        p = NULL;
+        break;
+    }
+}
+
+/**
+ * Should allocate a pbuf and transfer the bytes of the incoming
+ * packet from the interface into the pbuf.
+ *
+ * @param netif the lwip network interface structure for this ethernetif
+ * @return a pbuf filled with the received packet (including MAC header)
+ *         NULL on memory error
+ */
+static void
+dm9000_recv(struct netif *netif)
+{
+    struct ethernetif *ethernetif = netif->state;
+    struct pbuf *p, *q;
+    u8_t  rx_byte;
+    u16_t rx_len;
+    u16_t rx_status;
+    int good_packet;
+
+    do {
+        dm9000_io_read(DM9000_MRCMDX);
+        rx_byte = DM9000_inb(DM9000_DATA) & 0x03;
+
+        if (rx_byte > DM9000_PKT_RDY) {
+            LWIP_DEBUGF(NETIF_DEBUG, ("dm9000_recv: rx error\n"));
+            dm9000_io_write(DM9000_RCR, 0x00);                          /*  Stop Device                 */
+            dm9000_io_write(DM9000_ISR, IMR_PAR);                       /*  Stop INT request            */
+            return;
+        }
+
+        if (rx_byte != DM9000_PKT_RDY) {
+            return;
+        }
+
+        good_packet = TRUE;
+
+        (ethernetif->rx_status)(&rx_status, &rx_len);
+
+        if (rx_len < 0x40) {
+            LWIP_DEBUGF(NETIF_DEBUG, ("dm9000_recv: rx len error, rx len < 0x40\n"));
+            good_packet = FALSE;
+        }
+
+        if (rx_len > DM9000_PKT_MAX) {
+            LWIP_DEBUGF(NETIF_DEBUG, ("dm9000_recv: rx len error, rx len > %d\n", DM9000_PKT_MAX));
+            good_packet = FALSE;
+        }
+
+        rx_status >>= 8;
+
+        if (rx_status & (RSR_FOE | RSR_CE | RSR_AE |
+                         RSR_PLE | RSR_RWTO |
+                         RSR_LCS | RSR_RF)) {
+
+            if (rx_status & RSR_FOE) {
+                LWIP_DEBUGF(NETIF_DEBUG, ("dm9000_recv: rx fifo error\n"));
+            }
+
+            if (rx_status & RSR_CE) {
+                LWIP_DEBUGF(NETIF_DEBUG, ("dm9000_recv: rx crc error\n"));
+            }
+
+            if (rx_status & RSR_RF) {
+                LWIP_DEBUGF(NETIF_DEBUG, ("dm9000_recv: rx len error\n"));
+            }
+
+            good_packet = FALSE;
+        }
+
+        if (good_packet && (p = pbuf_alloc(PBUF_RAW, rx_len, PBUF_POOL)) != NULL) {
+
+            for (q = p; q != NULL; q = q->next) {
+                (ethernetif->in_blk)(q->payload, q->len);
+            }
+
+            LINK_STATS_INC(link.recv);
+
+            ethernetif_input(netif, p);
+        } else {
+            /*
+             * need to dump the packet's data
+             */
+            ethernetif->dummy_in_blk(rx_len);
+
+            LINK_STATS_INC(link.drop);
+        }
+    } while (rx_byte == DM9000_PKT_RDY);
+}
 
 /**
  * This function should do the actual transmission of the packet. The packet is
@@ -573,10 +732,15 @@ low_level_output(struct netif *netif, struct pbuf *p)
 {
     struct ethernetif *ethernetif = netif->state;
     struct pbuf *q;
+    u8_t reg;
 
-    sys_mutex_lock(&dm9000_lock);
-
+    reg = dm9000_io_read(DM9000_IMR);
     dm9000_io_write(DM9000_IMR, IMR_PAR);
+
+    if (ethernetif->tx_pkt_cnt > 1) {
+        dm9000_io_write(DM9000_IMR, reg);
+        return ERR_INPROGRESS;
+    }
 
     DM9000_outb(DM9000_MWCMD, DM9000_IO);
 
@@ -584,178 +748,45 @@ low_level_output(struct netif *netif, struct pbuf *p)
         (ethernetif->out_blk)(q->payload, q->len);
     }
 
-    if (ethernetif->tx_packet_nr == 0) {
-        ethernetif->tx_packet_nr++;
+    ethernetif->tx_pkt_cnt++;
 
+    if (ethernetif->tx_pkt_cnt == 1) {
         dm9000_io_write(DM9000_TXPLL, (p->tot_len & 0xFF));
         dm9000_io_write(DM9000_TXPLH, (p->tot_len >> 8) & 0xFF);
-
         dm9000_io_write(DM9000_TCR, TCR_TXREQ);
     } else {
-        ethernetif->tx_packet_nr++;
-        ethernetif->tx_packet_len = p->tot_len;
+        ethernetif->queue_pkt_len = p->tot_len;
     }
 
-    dm9000_io_write(DM9000_IMR, IMR_PAR | IMR_PTM | IMR_PRM);
-
-    LINK_STATS_INC(link.xmit);
-
-    sys_mutex_unlock(&dm9000_lock);
-
-    sys_arch_sem_wait(&tx_sem, 0);
+    dm9000_io_write(DM9000_IMR, reg);
 
     return ERR_OK;
 }
 
-/**
- * Should allocate a pbuf and transfer the bytes of the incoming
- * packet from the interface into the pbuf.
- *
- * @param netif the lwip network interface structure for this ethernetif
- * @return a pbuf filled with the received packet (including MAC header)
- *         NULL on memory error
- */
-static struct pbuf *
-dm9000_recv(struct netif *netif)
-{
-    struct ethernetif *ethernetif = netif->state;
-    struct pbuf *p, *q;
-    u8_t  byte;
-    u16_t len;
-    u16_t status;
-
-    sys_mutex_lock(&dm9000_lock);
-
-    again:
-
-    dm9000_io_read(DM9000_MRCMDX);
-    byte = DM9000_inb(DM9000_DATA) & 0x03;
-
-    if (byte > DM9000_PKT_RDY) {
-        LWIP_DEBUGF(NETIF_DEBUG, ("dm9000_recv: rx error, reset device\n"));
-        dm9000_init(netif);
-        sys_mutex_unlock(&dm9000_lock);
-        return NULL;
-    } else if (byte != DM9000_PKT_RDY) {
-        LWIP_DEBUGF(NETIF_DEBUG, ("dm9000_recv: rx error, no data, reset device\n"));
-        dm9000_init(netif);
-        sys_mutex_unlock(&dm9000_lock);
-        return NULL;
-    }
-
-    (ethernetif->rx_status)(&status, &len);
-
-    p = pbuf_alloc(PBUF_RAW, len, PBUF_POOL);
-    if (p != NULL) {
-        for (q = p; q != NULL; q = q->next) {
-            (ethernetif->in_blk)(q->payload, q->len);
-        }
-    } else {
-        LWIP_DEBUGF(NETIF_DEBUG, ("dm9000_recv: alloc pbuf error\n"));
-    }
-
-    if ((status & 0xBF00) || (len < 0x40) || (len > DM9000_PKT_MAX)) {
-        if (status & 0x100) {
-            LWIP_DEBUGF(NETIF_DEBUG, ("dm9000_recv: rx fifo error\n"));
-        }
-
-        if (status & 0x200) {
-            LWIP_DEBUGF(NETIF_DEBUG, ("dm9000_recv: rx crc error\n"));
-        }
-
-        if (status & 0x8000) {
-            LWIP_DEBUGF(NETIF_DEBUG, ("dm9000_recv: rx len error\n"));
-        }
-
-        if (len > DM9000_PKT_MAX) {
-            LWIP_DEBUGF(NETIF_DEBUG, ("dm9000_recv: rx len too long error\n"));
-            dm9000_reset();
-        }
-
-        if (p != NULL) {
-            pbuf_free(p);
-            p = NULL;
-        }
-        goto again;
-    } else {
-        if (p != NULL) {
-            LINK_STATS_INC(link.recv);
-        }
-        sys_mutex_unlock(&dm9000_lock);
-        return p;
-    }
-}
-
-/**
- * This function should be called when a packet is ready to be read
- * from the interface. It uses the function low_level_input() that
- * should handle the actual reception of bytes from the network
- * interface. Then the type of the received packet is determined and
- * the appropriate input function is called.
- *
- * @param netif the lwip network interface structure for this ethernetif
+/*
+ * dm9000 发送完成
  */
 static void
-ethernetif_input(void *arg)
+dm9000_send_done(struct netif *netif)
 {
-    struct netif *netif = (struct netif *)arg;
-    struct eth_hdr *ethhdr;
-    struct pbuf *p;
+    struct ethernetif *ethernetif = netif->state;
+    u8_t tx_status;
 
-    while (1) {
-/********************************************************************************************************/
+    tx_status = dm9000_io_read(DM9000_NSR);                             /*  Got TX status               */
+    if (tx_status & (NSR_TX2END | NSR_TX1END)) {
         /*
-         * 等待接收信号量
+         * One packet sent complete
          */
-        if (sys_arch_sem_wait(&rx_sem, 0) == SYS_ARCH_TIMEOUT) {
-            continue;
-        }
+        LINK_STATS_INC(link.xmit);
+        ethernetif->tx_pkt_cnt--;
 
         /*
-         * 接收数据到 pbuf
+         * Queue packet check & send
          */
-        p = dm9000_recv(netif);
-/********************************************************************************************************/
-
-        /*
-         * no packet could be read, silently ignore this
-         */
-        if (p == NULL) {
-            continue;
-        }
-
-        /*
-         * points to packet payload, which starts with an Ethernet header
-         */
-        ethhdr = p->payload;
-
-        switch (htons(ethhdr->type)) {
-        /*
-         * IP or ARP packet?
-         */
-        case ETHTYPE_IP:
-        case ETHTYPE_ARP:
-#if PPPOE_SUPPORT
-        /*
-         * PPPoE packet?
-         */
-        case ETHTYPE_PPPOEDISC:
-        case ETHTYPE_PPPOE:
-#endif /* PPPOE_SUPPORT */
-            /*
-             * full packet send to tcpip_thread to process
-             */
-            if (netif->input(p, netif) != ERR_OK) {
-                LWIP_DEBUGF(NETIF_DEBUG, ("ethernetif_input: IP input error\n"));
-                pbuf_free(p);
-                p = NULL;
-            }
-            break;
-
-        default:
-            pbuf_free(p);
-            p = NULL;
-            break;
+        if (ethernetif->tx_pkt_cnt > 0) {
+            dm9000_io_write(DM9000_TXPLL, (ethernetif->queue_pkt_len & 0xFF));
+            dm9000_io_write(DM9000_TXPLH, (ethernetif->queue_pkt_len >> 8) & 0xFF);
+            dm9000_io_write(DM9000_TCR, TCR_TXREQ);
         }
     }
 }
@@ -766,47 +797,57 @@ ethernetif_input(void *arg)
 static void
 dm9000_isr(struct netif *netif)
 {
-    struct ethernetif *ethernetif = netif->state;
     u8_t int_status;
     u8_t last_io;
+    u8_t reg;
 
+    /*
+     * Save previous register address
+     */
     last_io = DM9000_inb(DM9000_IO);
 
+    /*
+     * Disable all interrupts
+     */
+    reg = dm9000_io_read(DM9000_IMR);
     dm9000_io_write(DM9000_IMR, IMR_PAR);
 
-    int_status = dm9000_io_read(DM9000_ISR);
-
-    dm9000_io_write(DM9000_ISR, int_status);
+    /*
+     * Got DM9000 interrupt status
+     */
+    int_status = dm9000_io_read(DM9000_ISR);                            /*  Got ISR                     */
+    dm9000_io_write(DM9000_ISR, int_status);                            /*  Clear ISR status            */
 
     if (int_status & ISR_ROS) {
-        LWIP_DEBUGF(NETIF_DEBUG, ("dm9000_isr: overflow\n"));
+        LWIP_DEBUGF(NETIF_DEBUG, ("dm9000_isr: rx overflow\n"));
     }
 
     if (int_status & ISR_ROOS) {
-        LWIP_DEBUGF(NETIF_DEBUG, ("dm9000_isr: overflow counter overflow\n"));
+        LWIP_DEBUGF(NETIF_DEBUG, ("dm9000_isr: rx overflow counter overflow\n"));
     }
 
+    /*
+     * Received the coming packet
+     */
     if (int_status & ISR_PRS) {
-        sys_sem_signal(&rx_sem);
+        dm9000_recv(netif);
     }
 
+    /*
+     * Trnasmit Interrupt check
+     */
     if (int_status & ISR_PTS) {
-        int tx_status;
-
-        tx_status = dm9000_io_read(DM9000_NSR);
-        if (tx_status & (NSR_TX2END | NSR_TX1END)) {
-            ethernetif->tx_packet_nr--;
-            if (ethernetif->tx_packet_nr > 0) {
-                dm9000_io_write(DM9000_TXPLL, (ethernetif->tx_packet_len & 0xFF));
-                dm9000_io_write(DM9000_TXPLH, (ethernetif->tx_packet_len >> 8) & 0xFF);
-                dm9000_io_write(DM9000_TCR, TCR_TXREQ);
-            }
-            sys_sem_signal(&tx_sem);
-        }
+        dm9000_send_done(netif);
     }
 
-    dm9000_io_write(DM9000_IMR, IMR_PAR | IMR_PTM | IMR_PRM);
+    /*
+     * Re-enable interrupt mask
+     */
+    dm9000_io_write(DM9000_IMR, reg);
 
+    /*
+     * Restore previous register address
+     */
     DM9000_outb(last_io, DM9000_IO);
 }
 
@@ -841,6 +882,7 @@ eint47_isr(uint32_t interrupt, void *arg)
 static void
 low_level_init(struct netif *netif)
 {
+    struct ethernetif *ethernetif = netif->state;
     err_t ret;
 
     /*
@@ -869,42 +911,8 @@ low_level_init(struct netif *netif)
     netif->flags = NETIF_FLAG_BROADCAST | NETIF_FLAG_ETHARP | NETIF_FLAG_LINK_UP | NETIF_FLAG_ETHERNET;
 
 /********************************************************************************************************/
-    /*
-     * 创建接收信号量
-     */
-    ret = sys_sem_new(&rx_sem, 0);
-    if (ret != ERR_OK) {
-        LWIP_DEBUGF(NETIF_DEBUG, ("low_level_init: create rx sem error\n"));
-        return;
-    }
-
-    /*
-     * 创建发送信号量
-     */
-    ret = sys_sem_new(&tx_sem, 0);
-    if (ret != ERR_OK) {
-        LWIP_DEBUGF(NETIF_DEBUG, ("low_level_init: create tx sem error\n"));
-        return;
-    }
-
-    /*
-     * 创建 DM9000 操作锁
-     */
-    ret = sys_mutex_new(&dm9000_lock);
-    if (ret != ERR_OK) {
-        LWIP_DEBUGF(NETIF_DEBUG, ("low_level_init: create dm9000 lock error\n"));
-        return;
-    }
-
-    /*
-     * 创建接收线程
-     */
-    rx_thread = sys_thread_new(NETIF_THREAD_NAME, ethernetif_input, (void *)netif,
-            NETIF_THREAD_STACKSIZE, NETIF_THREAD_PRIO);
-    if (rx_thread == -1) {
-        LWIP_DEBUGF(NETIF_DEBUG, ("low_level_init: create rx thread error\n"));
-        return;
-    }
+    ethernetif->queue_pkt_len = 0;
+    ethernetif->tx_pkt_cnt    = 0;
 
     /*
      * mini2440 开发板上的 DM9000 芯片挂在 BANK4
@@ -991,7 +999,7 @@ ethernetif_init(struct netif *netif)
     /*
      * Initialize interface hostname
      */
-    netif->hostname = "lwip";
+    netif->hostname = "lwIP";
 #endif /* LWIP_NETIF_HOSTNAME */
 
     /*
@@ -1011,8 +1019,8 @@ ethernetif_init(struct netif *netif)
      * from it if you have to do some checks before sending (e.g. if link
      * is available...)
      */
-    netif->output       = etharp_output;
-    netif->linkoutput   = low_level_output;
+    netif->output     = etharp_output;
+    netif->linkoutput = low_level_output;
 
     ethernetif->mac_addr = (struct eth_addr *)&(netif->hwaddr[0]);
 

@@ -40,10 +40,6 @@
 #ifndef SELECTDRV_H_
 #define SELECTDRV_H_
 
-#define SELECT_COMMON_MEMBER    \
-    int             flags;      \
-    select_node_t   wait_list;  \
-
 /*
  * 将当前任务加入到文件的等待列表
  */

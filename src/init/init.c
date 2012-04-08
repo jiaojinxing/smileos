@@ -88,6 +88,9 @@ static void tcpip_init_done(void *arg)
 
     extern void ftpd(void *arg);
     kthread_create("ftpd", ftpd, NULL, 4 * KB, 10);
+
+    extern void netio_init(void);
+    netio_init();
 }
 
 /*
@@ -104,6 +107,9 @@ static void init(void *arg)
     tcpip_init(tcpip_init_done, NULL);
 
     kheap_show(STDOUT_FILENO);
+
+    int sd_init(void);
+    sd_init();
 }
 
 /*

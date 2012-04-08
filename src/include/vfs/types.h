@@ -212,7 +212,7 @@ typedef struct _select_node {
     int                     select_type;
 } select_node_t;
 
-#define SELECT_MEMBERS                  \
+#define VFS_SELECT_MEMBERS              \
     int                     flags;      \
     select_node_t           wait_list;  \
 

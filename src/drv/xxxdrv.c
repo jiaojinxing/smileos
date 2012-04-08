@@ -45,7 +45,7 @@
  * к╫сппео╒
  */
 typedef struct {
-    SELECT_MEMBERS
+    VFS_SELECT_MEMBERS
 } privinfo_t;
 
 /*
