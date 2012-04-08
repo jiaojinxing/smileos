@@ -89,7 +89,7 @@
                                   lwIP 组件配置
 *********************************************************************************************************/
 
-#define LW_CFG_LWIP_DEBUG               0                               /*  lwIP 运行在调试模式         */
+#define LW_CFG_LWIP_DEBUG               1                               /*  lwIP 运行在调试模式         */
 #define LW_CFG_LWIP_DEBUG_LEVEL         1                               /*  lwIP 调试等级               */
 
 #define LW_CFG_LWIP_PPP                 0                               /*  lwIP ppp 支持               */
@@ -459,10 +459,11 @@
 #if LW_CFG_LWIP_DEBUG > 0
 #define LWIP_DEBUG
 #define LWIP_DBG_MIN_LEVEL              LWIP_DBG_LEVEL_OFF              /*  允许全部主动打印信息        */
-#define TCP_DEBUG                       (LWIP_DBG_ON | 0)               /*  仅允许 TCP UDP IP debug     */
-#define UDP_DEBUG                       (LWIP_DBG_ON | 0)
-#define IP_DEBUG                        (LWIP_DBG_ON | 0)
-#define SOCKETS_DEBUG                   (LWIP_DBG_ON | 0)
+#define TCP_DEBUG                       (LWIP_DBG_OFF | 0)               /*  仅允许 TCP UDP IP debug     */
+#define UDP_DEBUG                       (LWIP_DBG_OFF | 0)
+#define IP_DEBUG                        (LWIP_DBG_OFF | 0)
+#define SOCKETS_DEBUG                   (LWIP_DBG_OFF | 0)
+#define NETIF_DEBUG                     (LWIP_DBG_ON  | 0)
 #else
 #define LWIP_DBG_MIN_LEVEL              LWIP_DBG_LEVEL_SEVERE           /*  不允许主动打印信息          */
 #endif                                                                  /*  LW_CFG_LWIP_DEBUG > 0       */
