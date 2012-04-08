@@ -36,6 +36,12 @@
 ** Version:                 1.1.0
 ** Descriptions:            查找到安装期间必须上锁
 **
+**--------------------------------------------------------------------------------------------------------
+** Modified by:             JiaoJinXing
+** Modified date:           2012-4-6
+** Version:                 1.2.0
+** Descriptions:            使用 HASH 来做设备查找, 提升性能
+**
 *********************************************************************************************************/
 #include "kern/kern.h"
 #include "kern/ipc.h"
@@ -119,16 +125,19 @@ device_t *device_lookup(const char *name)
 int device_remove(const char *name)
 {
     device_t *dev, *prev;
+    unsigned int key;
 
     if (name == NULL) {
         return -1;
     }
 
+    key = BKDRHash(name);
+
     mutex_lock(&devmgr_lock, 0);
     prev = NULL;
     dev  = dev_list;
     while (dev != NULL) {
-        if (strcmp(dev->name, name) == 0) {
+        if (key == dev->key) {
             break;
         }
         prev = dev;

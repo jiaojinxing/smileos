@@ -51,16 +51,16 @@
 /*
  * 任务类型
  */
-#define TASK_TYPE_PROCESS       0                                       /*  进程                        */
-#define TASK_TYPE_THREAD        1                                       /*  内核线程                    */
+#define TASK_TYPE_PROCESS           0                                   /*  进程                        */
+#define TASK_TYPE_THREAD            1                                   /*  内核线程                    */
 
 /*
  * 任务状态
  */
-#define TASK_UNALLOCATE         ((uint32_t)-1)                          /*  未分配                      */
-#define TASK_RUNNING            0                                       /*  就绪                        */
-#define TASK_SLEEPING           1                                       /*  休睡                        */
-#define TASK_SUSPEND            2                                       /*  挂起                        */
+#define TASK_UNALLOCATE             ((uint32_t)-1)                      /*  未分配                      */
+#define TASK_RUNNING                0                                   /*  就绪                        */
+#define TASK_SLEEPING               1                                   /*  休睡                        */
+#define TASK_SUSPEND                2                                   /*  挂起                        */
 
 /*
  * 任务恢复类型

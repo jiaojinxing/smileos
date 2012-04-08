@@ -59,7 +59,7 @@
 
 #include "kern/kern.h"
 
-#define getpid()    current->tid
+#define getpid()    gettid
 
 /*
  * printk 会使用内存分配, 不使用 printk
@@ -370,7 +370,7 @@ int heap_init(heap_t *heap, uint8_t *base, uint32_t size)
 
     heap->free_list             = heap->block_list;                     /*  空闲内存块链表              */
 
-    heap->block_cnt             = 1;                                    /*  初始化统计信息              */
+    heap->block_nr              = 1;                                    /*  初始化统计信息              */
     heap->used_size             = 0;
     heap->alloc_cnt             = 0;
     heap->free_cnt              = 0;
@@ -449,7 +449,7 @@ void *heap_alloc(heap_t *heap, uint32_t size)
 
             blk->size -= MEM_ALIGN_SIZE(sizeof(mem_block_t)) + size;    /*  原内存块变小                */
 
-            heap->block_cnt++;
+            heap->block_nr++;
         }
 
         new_blk->magic0 = MEM_BLOCK_MAGIC0;                             /*  加入魔数                    */
@@ -527,7 +527,7 @@ void *heap_free(heap_t *heap, void *ptr)
             next->prev = prev;
         }
 
-        heap->block_cnt--;
+        heap->block_nr--;
 
     } else if (next != NULL && next->status == MEM_BLOCK_STATE_FREE) {  /*  后一个内存块空闲, 合并之    */
 
@@ -556,7 +556,7 @@ void *heap_free(heap_t *heap, void *ptr)
             heap->free_list = blk;
         }
 
-        heap->block_cnt--;
+        heap->block_nr--;
 
     } else {
         /*
@@ -608,25 +608,25 @@ int heap_show(heap_t *heap, int fd)
     len = sprintf(buf, "********** heap info **********\r\n");
     write(fd, buf, len);
 
-    len = sprintf(buf, "heap block count = %d\r\n", tmp.block_cnt);
+    len = sprintf(buf, "heap block amount = %d\r\n", tmp.block_nr);
     write(fd, buf, len);
 
-    len = sprintf(buf, "heap alloc count = %d\r\n", tmp.alloc_cnt);
+    len = sprintf(buf, "heap alloc count  = %d\r\n", tmp.alloc_cnt);
     write(fd, buf, len);
 
-    len = sprintf(buf, "heap free  count = %d\r\n", tmp.free_cnt);
+    len = sprintf(buf, "heap free  count  = %d\r\n", tmp.free_cnt);
     write(fd, buf, len);
 
-    len = sprintf(buf, "heap leak  count = %d\r\n", tmp.alloc_cnt - tmp.free_cnt);
+    len = sprintf(buf, "heap leak  count  = %d\r\n", tmp.alloc_cnt - tmp.free_cnt);
     write(fd, buf, len);
 
-    len = sprintf(buf, "heap used  size  = %dMB.%dKB.%dB\r\n",
+    len = sprintf(buf, "heap used  size   = %dMB.%dKB.%dB\r\n",
             tmp.used_size / MB,
             tmp.used_size % MB / KB,
             tmp.used_size % KB);
     write(fd, buf, len);
 
-    len = sprintf(buf, "heap free  size  = %dMB.%dKB.%dB\r\n",
+    len = sprintf(buf, "heap free  size   = %dMB.%dKB.%dB\r\n",
             (tmp.size - tmp.used_size) / MB,
             (tmp.size - tmp.used_size) % MB / KB,
             (tmp.size - tmp.used_size) % KB);
