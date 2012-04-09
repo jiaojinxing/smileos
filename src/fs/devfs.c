@@ -486,8 +486,7 @@ static int devfs_seekdir(mount_point_t *point, file_t *file, long loc)
         }
     }
     mutex_unlock(&devmgr_lock);
-    if (ret == 0) {
-    } else {
+    if (ret < 0) {
         seterrno(EINVAL);
     }
     return ret;

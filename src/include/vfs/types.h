@@ -91,8 +91,8 @@ struct driver {
     /*
      * ¶ÁÐ´¿é
      */
-    int     (*readb )(void *ctx, file_t *file, size_t blk_nr, size_t blk_cnt, void *buf);
-    int     (*writeb)(void *ctx, file_t *file, size_t blk_nr, size_t blk_cnt, const void *buf);
+    ssize_t (*readblk )(void *ctx, file_t *file, size_t blk_nr, size_t blk_cnt, void *buf);
+    ssize_t (*writeblk)(void *ctx, file_t *file, size_t blk_nr, size_t blk_cnt, const void *buf);
 };
 
 /*

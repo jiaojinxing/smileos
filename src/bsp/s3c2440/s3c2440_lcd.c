@@ -163,7 +163,7 @@ void lcd_init(void)
 /*
  * 打开 FrameBuffer
  */
-int fb_open(void *ctx, file_t *file, int oflag, mode_t mode)
+static int fb_open(void *ctx, file_t *file, int oflag, mode_t mode)
 {
     LCDCON1 = (LCDCON1 & ~(1)) | ENVID;                                 /*  开启视频输出                */
     return 0;
@@ -172,7 +172,7 @@ int fb_open(void *ctx, file_t *file, int oflag, mode_t mode)
 /*
  * 控制 FrameBuffer
  */
-int fb_ioctl(void *ctx, file_t *file, int cmd, void *arg)
+static int fb_ioctl(void *ctx, file_t *file, int cmd, void *arg)
 {
     int ret = 0;
 
@@ -190,7 +190,7 @@ int fb_ioctl(void *ctx, file_t *file, int cmd, void *arg)
 /*
  * 关闭 FrameBuffer
  */
-int fb_close(void *ctx, file_t *file)
+static int fb_close(void *ctx, file_t *file)
 {
     LCDCON1 = (LCDCON1 & ~(1)) | 0;                                     /*  关闭视频输出                */
     return 0;

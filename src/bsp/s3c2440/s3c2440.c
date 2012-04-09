@@ -45,7 +45,6 @@
 #include "s3c2440_uart.h"
 #include "s3c2440_int.h"
 #include "s3c2440_timer.h"
-#include "s3c2440_lcd.h"
 
 /*
  * ≥ı ºªØ CPU
@@ -129,6 +128,9 @@ int bsp_drivers_install(void)
     extern driver_t fb_drv;
     driver_install(&fb_drv);
 
+    extern driver_t sd_drv;
+    driver_install(&sd_drv);
+
     return 0;
 }
 
@@ -139,6 +141,9 @@ int bsp_devices_create(void)
 {
     extern int fb_create(void);
     fb_create();
+
+    extern int sd_create(void);
+    sd_create();
 
     return 0;
 }

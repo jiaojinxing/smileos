@@ -43,6 +43,7 @@
 #include "kern/ipc.h"
 #include "ff.h"
 #include "diskio.h"
+
 /*------------------------------------------------------------------------*/
 /* Create a Synchronization Object                                        */
 /*------------------------------------------------------------------------*/
@@ -147,6 +148,13 @@ DRESULT disk_read (
     BYTE SectorCount    /* Number of sectros to read */
 )
 {
+    int i;
+
+    for (i = 0; i < SectorCount; i++) {
+        extern int sd_readblock(uint32_t address, uint8_t *buf);
+        sd_readblock((SectorNumber + i) * 512, Buffer + i * 512);
+    }
+
     return 0;
 }
 
@@ -157,6 +165,13 @@ DRESULT disk_write (
     BYTE SectorCount    /* Number of sectors to write */
 )
 {
+    int i;
+
+    for (i = 0; i < SectorCount; i++) {
+        extern int sd_writeblock(uint32_t address, const uint8_t *buf);
+        sd_writeblock((SectorNumber + i) * 512, Buffer + i * 512);
+    }
+
     return 0;
 }
 
