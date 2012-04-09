@@ -107,8 +107,6 @@ static void init(void *arg)
     tcpip_init(tcpip_init_done, NULL);
 
     kheap_show(STDOUT_FILENO);
-
-    mount("/sd0", "/dev/sd0", "fatfs");
 }
 
 /*

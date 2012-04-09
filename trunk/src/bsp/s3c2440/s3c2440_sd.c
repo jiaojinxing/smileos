@@ -348,6 +348,7 @@ int sd_writeblock(uint32_t address, const uint8_t *buf)
     return 0;
 }
 
+#include "vfs/vfs.h"
 #include "vfs/device.h"
 #include <sys/stat.h>
 
@@ -403,6 +404,8 @@ int sd_create(void)
     sd_init();
 
     device_create("/dev/sd0", "sd", NULL);
+
+    mount("/sd0", "/dev/sd0", "fatfs");
 
     return 0;
 }
