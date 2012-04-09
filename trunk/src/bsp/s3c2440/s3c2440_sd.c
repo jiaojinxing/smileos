@@ -1,24 +1,55 @@
-/*
- * s3c2440_sd.c
- *
- *  Created on: 2012-4-4
- *      Author: Administrator
- */
-
+/*********************************************************************************************************
+**
+** Copyright (c) 2011 - 2012  Jiao JinXing <JiaoJinXing1987@gmail.com>
+**
+** Licensed under the Academic Free License version 2.1
+**
+** This program is free software; you can redistribute it and/or modify
+** it under the terms of the GNU General Public License as published by
+** the Free Software Foundation; either version 2 of the License, or
+** (at your option) any later version.
+**
+** This program is distributed in the hope that it will be useful,
+** but WITHOUT ANY WARRANTY; without even the implied warranty of
+** MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+** GNU General Public License for more details.
+**
+** You should have received a copy of the GNU General Public License
+** along with this program; if not, write to the Free Software
+** Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+**
+**--------------------------------------------------------------------------------------------------------
+** File name:               s3c2440_sd.c
+** Last modified Date:      2012-4-4
+** Last Version:            1.0.0
+** Descriptions:            S3C2440 SD 卡驱动
+**
+**--------------------------------------------------------------------------------------------------------
+** Created by:              JiaoJinXing
+** Created date:            2012-4-4
+** Version:                 1.0.0
+** Descriptions:            创建文件
+**
+**--------------------------------------------------------------------------------------------------------
+** Modified by:
+** Modified date:
+** Version:
+** Descriptions:
+**
+*********************************************************************************************************/
 #include "kern/config.h"
 #include "kern/types.h"
 #include "kern/kern.h"
 #include "s3c2440.h"
 #include "s3c2440_clock.h"
 #include <unistd.h>
+#include <string.h>
 
-#define INICLK  300000
-#define SDCLK   24000000
-#define MMCCLK  15000000
+#define INICLK      300000
+#define SDCLK       24000000
+#define MMCCLK      15000000
 
-volatile uint32_t rd_cnt;
-volatile uint32_t wt_cnt;
-volatile int32_t RCA;
+static uint32_t RCA;
 
 static void sd_delay(uint32_t ms)
 {
@@ -27,7 +58,7 @@ static void sd_delay(uint32_t ms)
 
 static int sd_cmd_end(int cmd, int be_resp)
 {
-    int finish0;
+    uint32_t finish0;
 
     if (!be_resp) {
         finish0 = SDICSTA;
@@ -69,7 +100,7 @@ static int sd_cmd_end(int cmd, int be_resp)
 
 static int sd_data_end(void)
 {
-    int finish;
+    uint32_t finish;
 
     finish = SDIDSTA;
 
@@ -175,7 +206,7 @@ static int sd_ocr(void)
     return -1;
 }
 
-int sd_init(void)
+static int sd_init(void)
 {
     int i;
 
@@ -199,9 +230,9 @@ int sd_init(void)
     sd_cmd0();
 
     if (sd_ocr() == 0) {
-        printk("In SD ready\n");
+        printk("SD Card Found\n");
     } else {
-        printk("Initialize fail\nNo Card assertion\n");
+        printk("SD Card No Found\n");
         return -1;
     }
 
@@ -235,3 +266,146 @@ int sd_init(void)
     return 0;
 }
 
+int sd_readblock(uint32_t address, uint8_t *buf)
+{
+    uint32_t status;
+    uint32_t temp;
+    uint32_t read_cnt;
+
+    read_cnt = 0;
+    SDIFSTA = SDIFSTA | (1 << 16);
+
+    SDIDCON = (2 << 22) | (1 << 19) | (1 << 17) | (1 << 16) | (1 << 14) | (2 << 12) | (1 << 0);
+    SDICARG = address;
+
+    RERDCMD:
+    SDICCON = (0x1 << 9) | (0x1 << 8) | 0x51;
+    if (sd_cmd_end(17, 1) < 0) {
+        goto RERDCMD;
+    }
+
+    SDICSTA = 0xa00;
+
+    while (read_cnt < 128) {
+        if ((SDIDSTA & 0x20) == 0x20) {
+            SDIDSTA = (0x1 << 0x5);
+            break;
+        }
+        status = SDIFSTA;
+        if ((status & 0x1000) == 0x1000) {
+            temp = SDIDAT;
+            memcpy(buf, &temp, sizeof(uint32_t));
+            read_cnt++;
+            buf += 4;
+        }
+    }
+    if (sd_data_end() < 0) {
+        return -1;
+    }
+
+    SDIDCON = SDIDCON & ~(7 << 12);
+    SDIFSTA = SDIFSTA & 0x200;
+    SDIDSTA = 0x10;
+
+    return 0;
+}
+
+int sd_writeblock(uint32_t address, const uint8_t *buf)
+{
+    uint32_t status;
+    uint32_t temp;
+    uint32_t write_cnt;
+
+    write_cnt = 0;
+    SDIFSTA = SDIFSTA | (1 << 16);
+    SDIDCON = (2 << 22) | (1 << 20) | (1 << 17) | (1 << 16) | (1 << 14) | (3 << 12) | (1 << 0);
+    SDICARG = address;
+
+    REWTCMD:
+    SDICCON = (0x1 << 9) | (0x1 << 8) | 0x58;
+
+    if (sd_cmd_end(24, 1) < 0) {
+        goto REWTCMD;
+    }
+
+    SDICSTA = 0xa00;
+
+    while (write_cnt < 128 * 1) {
+        status = SDIFSTA;
+        if ((status & 0x2000) == 0x2000) {
+            memcpy(&temp, buf, sizeof(uint32_t));
+            SDIDAT = temp;
+            write_cnt++;
+            buf += 4;
+        }
+    }
+    if (sd_data_end() < 0) {
+        return -1;
+    }
+    SDIDCON = SDIDCON & ~(7 << 12);
+    SDIDSTA = 0x10;
+
+    return 0;
+}
+
+#include "vfs/device.h"
+#include <sys/stat.h>
+
+/*
+ * 打开 SD 卡
+ */
+static int sd_open(void *ctx, file_t *file, int oflag, mode_t mode)
+{
+    return 0;
+}
+
+/*
+ * 控制 SD 卡
+ */
+static int sd_ioctl(void *ctx, file_t *file, int cmd, void *arg)
+{
+    int ret = 0;
+
+    switch (cmd) {
+    case 0:
+        break;
+
+    default:
+        ret = -1;
+        break;
+    }
+    return ret;
+}
+
+/*
+ * 关闭 SD 卡
+ */
+static int sd_close(void *ctx, file_t *file)
+{
+    return 0;
+}
+
+/*
+ * SD 卡驱动
+ */
+driver_t sd_drv = {
+        .name  = "sd",
+        .open  = sd_open,
+        .ioctl = sd_ioctl,
+        .close = sd_close,
+};
+
+/*
+ * 创建 SD 卡设备
+ */
+int sd_create(void)
+{
+    sd_init();
+
+    device_create("/dev/sd0", "sd", NULL);
+
+    return 0;
+}
+/*********************************************************************************************************
+  END FILE
+*********************************************************************************************************/

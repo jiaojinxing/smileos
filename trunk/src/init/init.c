@@ -108,8 +108,7 @@ static void init(void *arg)
 
     kheap_show(STDOUT_FILENO);
 
-    int sd_init(void);
-    sd_init();
+    mount("/sd0", "/dev/sd0", "fatfs");
 }
 
 /*

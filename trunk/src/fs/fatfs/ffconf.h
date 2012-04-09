@@ -59,9 +59,9 @@
 
 #define _CODE_PAGE	    936                                             /*  936 代码页                  */
 
-#define	_USE_LFN	    0                                               /*  不使用长文件名              */
+#define	_USE_LFN	    2                                               /*  不使用长文件名              */
 
-#define	_MAX_LFN	    NAME_MAX                                        /*  长文件名的最大长度          */
+#define	_MAX_LFN	    255                                             /*  长文件名的最大长度          */
 
 #define	_LFN_UNICODE	0                                               /*  支持 unicode                */
 
@@ -73,7 +73,7 @@
 
 #define	_MULTI_PARTITION	0                                           /*  不支持多分区                */
 
-#define	_USE_ERASE	    1                                               /*  使用扇区擦除函数            */
+#define	_USE_ERASE	    0                                               /*  不使用扇区擦除函数          */
 
 #define _WORD_ACCESS	0                                               /*  不使用字访问                */
 

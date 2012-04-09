@@ -1529,6 +1529,9 @@ int vfs_init(void)
     extern file_system_t devfs;
     file_system_install(&devfs);
 
+    extern file_system_t fatfs;
+    file_system_install(&fatfs);
+
     mount("/",    NULL, "rootfs");
 
     mount("/dev", NULL, "devfs");

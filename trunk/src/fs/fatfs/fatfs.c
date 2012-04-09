@@ -72,7 +72,7 @@ static int fatfs_mount(mount_point_t *point, device_t *dev, const char *dev_name
     fs = (FATFS *)kmalloc(sizeof(FATFS));
     if (fs != NULL) {
         memset(fs, 0, sizeof(FATFS));
-        if (f_mount(atoi(dev_name), fs) != FR_OK) {
+        if (f_mount(0, fs) != FR_OK) {
             kfree(fs);
             return -1;
         } else {
@@ -393,9 +393,18 @@ static struct dirent *fatfs_readdir(mount_point_t *point, file_t *file)
 
     if (priv != NULL) {
         FILINFO info;
+        WCHAR lbuf[_MAX_LFN + 1];
 
-        if (f_readdir(&priv->dir, &info) == FR_OK) {
-            strlcpy(priv->entry.d_name, info.fname, sizeof(priv->entry.d_name));
+        info.lfname = (TCHAR *)lbuf;
+        info.lfsize = _MAX_LFN + 1;
+
+        if (f_readdir(&priv->dir, &info) == FR_OK && info.fname[0] != '\0') {
+            if (info.lfname[0] != '\0') {
+                strlcpy(priv->entry.d_name, info.lfname, sizeof(priv->entry.d_name));
+            } else {
+                strlcpy(priv->entry.d_name, info.fname, sizeof(priv->entry.d_name));
+            }
+
             priv->entry.d_ino = 0;
             return &priv->entry;
         } else {
