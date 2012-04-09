@@ -64,6 +64,7 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <errno.h>
 
 /*
  * 任务文件信息
@@ -120,6 +121,7 @@ static int vfs_path_normalization(char path[PATH_MAX], int sprit_end)
         switch (state) {
         case BEGIN:                                                     /*  开始状态                    */
             if (ch != '/') {                                            /*  如果不是以 / 号开始, 出错   */
+                seterrno(EINVAL);
                 return -1;
             }
             path[pos++] = ch;                                           /*  记录 / 号                   */
@@ -142,6 +144,7 @@ static int vfs_path_normalization(char path[PATH_MAX], int sprit_end)
                         pos--;
                     }
                     if (pos < 0) {
+                        seterrno(ENOENT);
                         return -1;
                     }
                     if (pos == 0) {
@@ -213,11 +216,13 @@ static mount_point_t *vfs_mount_point_lookup(char pathbuf[PATH_MAX], char **ppat
     char *tmp;
 
     if (path == NULL) {                                                 /*  PATH 合法性检查             */
+        seterrno(EINVAL);
         return NULL;
     }
 
     if (path[0] == '/') {                                               /*  如果是绝对路径              */
         if (path[1] == '\0') {                                          /*  不能是根目录                */
+            seterrno(EINVAL);
             return NULL;
         }
         strlcpy(pathbuf, path, PATH_MAX);
@@ -237,9 +242,11 @@ static mount_point_t *vfs_mount_point_lookup(char pathbuf[PATH_MAX], char **ppat
 
     tmp = strchr(pathbuf + 1, '/');                                     /*  查找挂载点名后的 / 号       */
     if (tmp == NULL) {                                                  /*  没有到                      */
+        seterrno(EINVAL);
         return NULL;
     }
     if (tmp[1] == '\0') {                                               /*  不能是挂载点                */
+        seterrno(EINVAL);
         return NULL;
     }
 
@@ -248,6 +255,9 @@ static mount_point_t *vfs_mount_point_lookup(char pathbuf[PATH_MAX], char **ppat
     *tmp = '/';                                                         /*  恢复 / 号                   */
 
     *ppath = tmp;
+    if (point == NULL) {
+        seterrno(ENOENT);
+    }
     return point;
 }
 
@@ -261,6 +271,7 @@ static mount_point_t *vfs_mount_point_lookup2(char pathbuf[PATH_MAX], char **ppa
     static char rootdir[] = "/";
 
     if (path == NULL) {                                                 /*  PATH 合法性检查             */
+        seterrno(EINVAL);
         return NULL;
     }
 
@@ -296,6 +307,9 @@ static mount_point_t *vfs_mount_point_lookup2(char pathbuf[PATH_MAX], char **ppa
     }
 
     *ppath = tmp;
+    if (point == NULL) {
+        seterrno(ENOENT);
+    }
     return point;
 }
 
@@ -340,6 +354,7 @@ static mount_point_t *vfs_mount_point_lookup2(char pathbuf[PATH_MAX], char **ppa
         file_t *file;                                                                                     \
                                                                                                           \
         if (fd < 0 || fd >= OPEN_MAX) {                                 /*  文件描述符合法性判断        */\
+            seterrno(EBADFD);                                                                             \
             return -1;                                                                                    \
         }                                                                                                 \
         file = infos[gettid()].files + fd;                              /*  获得文件结构                */\
@@ -348,6 +363,7 @@ static mount_point_t *vfs_mount_point_lookup2(char pathbuf[PATH_MAX], char **ppa
 #define vfs_file_api_begin                                                                                \
         vfs_file_api_begin0                                                                               \
         if (!(file->flag & VFS_FILE_TYPE_FILE)) {                       /*  如果文件未打开或不是文件    */\
+            seterrno(EFTYPE);                                                                             \
             mutex_unlock(&file->lock);                                                                    \
             return -1;                                                                                    \
         }                                                                                                 \
@@ -381,6 +397,7 @@ int vfs_open(const char *path, int oflag, mode_t mode)
         mutex_unlock(&file->lock);
     }
     if (fd == OPEN_MAX) {                                               /*  没找到                      */
+        seterrno(EMFILE);
         return -1;
     }
 
@@ -389,9 +406,11 @@ int vfs_open(const char *path, int oflag, mode_t mode)
 
     if (point->fs->open == NULL) {
         mutex_unlock(&file->lock);
+        seterrno(ENOSYS);
         return -1;
     }
 
+    seterrno(0);
     ret = point->fs->open(point, file, filepath, oflag, mode);          /*  打开文件                    */
     if (ret < 0) {
         mutex_unlock(&file->lock);
@@ -418,8 +437,10 @@ int vfs_close(int fd)
     vfs_file_api_begin
     if (point->fs->close == NULL) {
         vfs_file_api_end
+        seterrno(ENOSYS);
         return -1;
     }
+    seterrno(0);
     ret = point->fs->close(point, file);
     if (ret == 0) {
         file->flag = VFS_FILE_TYPE_FREE;                                /*  如果关闭成功, 释放文件结构  */
@@ -438,8 +459,10 @@ int vfs_fcntl(int fd, int cmd, int arg)
     vfs_file_api_begin
     if (point->fs->fcntl == NULL) {
         vfs_file_api_end
+        seterrno(ENOSYS);
         return -1;
     }
+    seterrno(0);
     ret = point->fs->fcntl(point, file, cmd, arg);
     vfs_file_api_end
     return ret;
@@ -453,6 +476,7 @@ int vfs_fstat(int fd, struct stat *buf)
     int ret;
 
     if (buf == NULL) {
+        seterrno(EINVAL);
         return -1;
     }
 
@@ -460,8 +484,10 @@ int vfs_fstat(int fd, struct stat *buf)
         vfs_file_api_begin
         if (point->fs->fstat == NULL) {
             vfs_file_api_end
+            seterrno(ENOSYS);
             return -1;
         }
+        seterrno(0);
         ret = point->fs->fstat(point, file, buf);
         vfs_file_api_end
         return ret;
@@ -478,8 +504,10 @@ int vfs_isatty(int fd)
     vfs_file_api_begin
     if (point->fs->isatty == NULL) {
         vfs_file_api_end
+        seterrno(0);
         return 0;
     }
+    seterrno(0);
     ret = point->fs->isatty(point, file);
     vfs_file_api_end
     return ret;
@@ -495,12 +523,15 @@ int vfs_fsync(int fd)
     vfs_file_api_begin
     if (!(file->flag & FWRITE)) {
         vfs_file_api_end
+        seterrno(0);
         return 0;
     }
     if (point->fs->fsync == NULL) {
         vfs_file_api_end
+        seterrno(0);
         return 0;
     }
+    seterrno(0);
     ret = point->fs->fsync(point, file);
     vfs_file_api_end
     return ret;
@@ -516,12 +547,15 @@ int vfs_fdatasync(int fd)
     vfs_file_api_begin
     if (!(file->flag & FWRITE)) {
         vfs_file_api_end
+        seterrno(0);
         return 0;
     }
     if (point->fs->fdatasync == NULL) {
         vfs_file_api_end
+        seterrno(0);
         return 0;
     }
+    seterrno(0);
     ret = point->fs->fdatasync(point, file);
     vfs_file_api_end
     return ret;
@@ -537,12 +571,15 @@ int vfs_ftruncate(int fd, off_t len)
     vfs_file_api_begin
     if (!(file->flag & FWRITE)) {
         vfs_file_api_end
+        seterrno(EIO);
         return -1;
     }
     if (point->fs->ftruncate == NULL) {
         vfs_file_api_end
+        seterrno(ENOSYS);
         return -1;
     }
+    seterrno(0);
     ret = point->fs->ftruncate(point, file, len);
     vfs_file_api_end
     return ret;
@@ -556,10 +593,12 @@ ssize_t vfs_read(int fd, void *buf, size_t len)
     ssize_t slen;
 
     if (buf == NULL || len < 0) {
+        seterrno(EINVAL);
         return -1;
     }
 
     if (len == 0) {
+        seterrno(0);
         return 0;
     }
 
@@ -567,12 +606,15 @@ ssize_t vfs_read(int fd, void *buf, size_t len)
         vfs_file_api_begin
         if (!(file->flag & FREAD)) {
             vfs_file_api_end
+            seterrno(EIO);
             return -1;
         }
         if (point->fs->read == NULL) {
             vfs_file_api_end
+            seterrno(ENOSYS);
             return -1;
         }
+        seterrno(0);
         slen = point->fs->read(point, file, buf, len);
         vfs_file_api_end
         return slen;
@@ -587,10 +629,12 @@ ssize_t vfs_write(int fd, const void *buf, size_t len)
     ssize_t slen;
 
     if (buf == NULL || len < 0) {
+        seterrno(EINVAL);
         return -1;
     }
 
     if (len == 0) {
+        seterrno(0);
         return 0;
     }
 
@@ -598,12 +642,15 @@ ssize_t vfs_write(int fd, const void *buf, size_t len)
         vfs_file_api_begin
         if (!(file->flag & FWRITE)) {
             vfs_file_api_end
+            seterrno(EIO);
             return -1;
         }
         if (point->fs->write == NULL) {
             vfs_file_api_end
+            seterrno(ENOSYS);
             return -1;
         }
+        seterrno(0);
         slen = point->fs->write(point, file, buf, len);
         vfs_file_api_end
         return slen;
@@ -620,8 +667,10 @@ int vfs_ioctl(int fd, int cmd, void *arg)
     vfs_file_api_begin
     if (point->fs->ioctl == NULL) {
         vfs_file_api_end
+        seterrno(ENOSYS);
         return -1;
     }
+    seterrno(0);
     ret = point->fs->ioctl(point, file, cmd, arg);
     vfs_file_api_end
     return ret;
@@ -635,8 +684,10 @@ off_t vfs_lseek(int fd, off_t offset, int whence)
     vfs_file_api_begin
     if (point->fs->lseek == NULL) {
         vfs_file_api_end
+        seterrno(ENOSYS);
         return -1;
     }
+    seterrno(0);
     offset = point->fs->lseek(point, file, offset, whence);
     vfs_file_api_end
     return offset;
@@ -655,8 +706,10 @@ static int vfs_scan_file(int fd, int flags)
     vfs_file_api_begin
     if (point->fs->scan == NULL) {
         vfs_file_api_end
+        seterrno(ENOSYS);
         return -1;
     }
+    seterrno(0);
     ret = point->fs->scan(point, file, flags);
     vfs_file_api_end
     return ret;
@@ -672,8 +725,10 @@ static int vfs_select_file(int fd, int flags)
     vfs_file_api_begin
     if (point->fs->select == NULL) {
         vfs_file_api_end
+        seterrno(ENOSYS);
         return -1;
     }
+    seterrno(0);
     ret = point->fs->select(point, file, flags);
     vfs_file_api_end
     return ret;
@@ -689,8 +744,10 @@ static int vfs_unselect_file(int fd, int flags)
     vfs_file_api_begin
     if (point->fs->unselect == NULL) {
         vfs_file_api_end
+        seterrno(ENOSYS);
         return -1;
     }
+    seterrno(0);
     ret = point->fs->unselect(point, file, flags);
     vfs_file_api_end
     return ret;
@@ -727,8 +784,7 @@ static int vfs_select_scan(int nfds, fd_set *readfds, fd_set *writefds, fd_set *
         if (flags != 0) {
             ret = vfs_scan_file(i, flags);
             if (ret < 0) {
-                FD_SET(i, &efds);
-                nset++;
+                return -1;
             } else if (ret > 0) {
                 if (readfds && ret & VFS_FILE_READABLE) {
                     FD_SET(i, &rfds);
@@ -765,55 +821,6 @@ static int vfs_select_scan(int nfds, fd_set *readfds, fd_set *writefds, fd_set *
 }
 
 /*
- * 将当前任务加入到文件集的等待列表
- */
-static int vfs_select_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds)
-{
-    int flags;
-    int i;
-    int ret;
-
-    for (i = 0; i < nfds; i++) {
-        flags = 0;
-        if (readfds && FD_ISSET(i, readfds)) {
-            flags |= VFS_FILE_READABLE;
-        }
-        if (writefds && FD_ISSET(i, writefds)) {
-            flags |= VFS_FILE_WRITEABLE;
-        }
-        if (errorfds && FD_ISSET(i, errorfds)) {
-            flags |= VFS_FILE_ERROR;
-        }
-        if (flags != 0) {
-            ret = vfs_select_file(i, flags);
-            if (ret < 0) {
-                goto error;
-            }
-        }
-    }
-    return 0;
-
-    error:
-    nfds = i;
-    for (i = 0; i < nfds; i++) {
-        flags = 0;
-        if (readfds && FD_ISSET(i, readfds)) {
-            flags |= VFS_FILE_READABLE;
-        }
-        if (writefds && FD_ISSET(i, writefds)) {
-            flags |= VFS_FILE_WRITEABLE;
-        }
-        if (errorfds && FD_ISSET(i, errorfds)) {
-            flags |= VFS_FILE_ERROR;
-        }
-        if (flags != 0) {
-            vfs_unselect_file(i, flags);
-        }
-    }
-    return -1;
-}
-
-/*
  * 将当前任务从文件集的等待列表中移除
  */
 static int vfs_select_unselect(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds)
@@ -840,6 +847,37 @@ static int vfs_select_unselect(int nfds, fd_set *readfds, fd_set *writefds, fd_s
 }
 
 /*
+ * 将当前任务加入到文件集的等待列表
+ */
+static int vfs_select_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds)
+{
+    int flags;
+    int i;
+    int ret;
+
+    for (i = 0; i < nfds; i++) {
+        flags = 0;
+        if (readfds && FD_ISSET(i, readfds)) {
+            flags |= VFS_FILE_READABLE;
+        }
+        if (writefds && FD_ISSET(i, writefds)) {
+            flags |= VFS_FILE_WRITEABLE;
+        }
+        if (errorfds && FD_ISSET(i, errorfds)) {
+            flags |= VFS_FILE_ERROR;
+        }
+        if (flags != 0) {
+            ret = vfs_select_file(i, flags);
+            if (ret < 0) {
+                vfs_select_unselect(i, readfds, writefds, errorfds);
+                return -1;
+            }
+        }
+    }
+    return 0;
+}
+
+/*
  * select
  */
 int vfs_select(int nfds, fd_set *readfds, fd_set *writefds,
@@ -851,6 +889,7 @@ int vfs_select(int nfds, fd_set *readfds, fd_set *writefds,
     uint32_t reg;
 
     if ((nfds < 1) || ((readfds == NULL) && (writefds == NULL) && (errorfds == NULL))) {
+        seterrno(EINVAL);
         return -1;
     }
 
@@ -858,7 +897,11 @@ int vfs_select(int nfds, fd_set *readfds, fd_set *writefds,
     nset = vfs_select_scan(nfds, readfds, writefds, errorfds);
     if (nset > 0) {
         interrupt_resume(reg);
+        seterrno(0);
         return nset;
+    } else if (nset < 0) {
+        interrupt_resume(reg);
+        return -1;
     }
 
     if (timeout != NULL && (timeout->tv_sec == 0 && timeout->tv_usec == 0)) {
@@ -872,6 +915,7 @@ int vfs_select(int nfds, fd_set *readfds, fd_set *writefds,
         if (errorfds) {
             FD_ZERO(&errorfds);
         }
+        seterrno(0);
         return 0;
     }
 
@@ -911,18 +955,25 @@ int vfs_select(int nfds, fd_set *readfds, fd_set *writefds,
         nset = vfs_select_scan(nfds, readfds, writefds, errorfds);
         interrupt_resume(reg);
         if (nset > 0) {
+            seterrno(0);
             return nset;
-        } else {
-            if (readfds) {
-                FD_ZERO(&readfds);
-            }
-            if (writefds) {
-                FD_ZERO(&writefds);
-            }
-            if (errorfds) {
-                FD_ZERO(&errorfds);
-            }
+        }
+
+        if (readfds) {
+            FD_ZERO(&readfds);
+        }
+        if (writefds) {
+            FD_ZERO(&writefds);
+        }
+        if (errorfds) {
+            FD_ZERO(&errorfds);
+        }
+
+        if (nset == 0) {
+            seterrno(0);
             return 0;
+        } else {
+            return -1;
         }
     } else {
         interrupt_resume(reg);
@@ -936,6 +987,7 @@ int vfs_select(int nfds, fd_set *readfds, fd_set *writefds,
             FD_ZERO(&errorfds);
         }
         if (resume_type & TASK_RESUME_INTERRUPT) {
+            seterrno(EINTR);
             return -1;
         } else {
             return 0;
@@ -969,13 +1021,16 @@ int vfs_link(const char *path1, const char *path2)
     }
 
     if (point2 != point1) {                                             /*  两个挂载点必须要相同        */
+        seterrno(EXDEV);
         return -1;
     }
 
     if (point1->fs->link == NULL) {
+        seterrno(ENOSYS);
         return -1;
     }
 
+    seterrno(0);
     ret = point1->fs->link(point1, filepath1, filepath2);
     return ret;
 }
@@ -1004,13 +1059,16 @@ int vfs_rename(const char *old, const char *new)
     }
 
     if (point2 != point1) {                                             /*  两个挂载点必须要相同        */
+        seterrno(EXDEV);
         return -1;
     }
 
     if (point1->fs->rename == NULL) {
+        seterrno(ENOSYS);
         return -1;
     }
 
+    seterrno(0);
     ret = point1->fs->rename(point1, filepath1, filepath2);
     return ret;
 }
@@ -1035,9 +1093,11 @@ int vfs_stat(const char *path, struct stat *buf)
     }
 
     if (point->fs->stat == NULL) {
+        seterrno(ENOSYS);
         return -1;
     }
 
+    seterrno(0);
     ret = point->fs->stat(point, filepath, buf);
     return ret;
 }
@@ -1058,9 +1118,11 @@ int vfs_unlink(const char *path)
     }
 
     if (point->fs->unlink == NULL) {
+        seterrno(ENOSYS);
         return -1;
     }
 
+    seterrno(0);
     ret = point->fs->unlink(point, filepath);
     return ret;
 }
@@ -1081,9 +1143,11 @@ int vfs_mkdir(const char *path, mode_t mode)
     }
 
     if (point->fs->mkdir == NULL) {
+        seterrno(ENOSYS);
         return -1;
     }
 
+    seterrno(0);
     ret = point->fs->mkdir(point, filepath, mode);
     return ret;
 }
@@ -1104,9 +1168,11 @@ int vfs_rmdir(const char *path)
     }
 
     if (point->fs->rmdir == NULL) {
+        seterrno(ENOSYS);
         return -1;
     }
 
+    seterrno(0);
     ret = point->fs->rmdir(point, filepath);
     return ret;
 }
@@ -1127,9 +1193,11 @@ int vfs_access(const char *path, int amode)
     }
 
     if (point->fs->access == NULL) {
+        seterrno(ENOSYS);
         return -1;
     }
 
+    seterrno(0);
     ret = point->fs->access(point, filepath, amode);
     return ret;
 }
@@ -1150,9 +1218,11 @@ int vfs_truncate(const char *path, off_t len)
     }
 
     if (point->fs->truncate == NULL) {
+        seterrno(ENOSYS);
         return -1;
     }
 
+    seterrno(0);
     ret = point->fs->truncate(point, filepath, len);
     return ret;
 }
@@ -1173,9 +1243,11 @@ int vfs_sync(const char *path)
     }
 
     if (point->fs->sync == NULL) {
+        seterrno(ENOSYS);
         return 0;
     }
 
+    seterrno(0);
     ret = point->fs->sync(point);
     return ret;
 }
@@ -1188,6 +1260,7 @@ int vfs_sync(const char *path)
         file_t *file;                                                                                     \
                                                                                                           \
         if (fd < 1 || fd >= OPEN_MAX) {                                 /*  文件描述符合法性判断        */\
+            seterrno(EBADFD);                                                                             \
             return -1;                                                                                    \
         }                                                                                                 \
         file = infos[gettid()].files + fd;                              /*  获得文件结构                */\
@@ -1197,6 +1270,7 @@ int vfs_sync(const char *path)
         vfs_dir_api_begin0                                                                                \
         if (!(file->flag & VFS_FILE_TYPE_DIR)) {                        /*  如果文件未打开或不是目录    */\
             mutex_unlock(&file->lock);                                                                    \
+            seterrno(EFTYPE);                                                                             \
             return -1;                                                                                    \
         }                                                                                                 \
         point = file->point;                                            /*  获得挂载点                  */
@@ -1229,6 +1303,7 @@ DIR *vfs_opendir(const char *path)
         mutex_unlock(&file->lock);
     }
     if (fd == OPEN_MAX) {                                               /*  没找到                      */
+        seterrno(EMFILE);
         return (DIR *)0;
     }
 
@@ -1236,9 +1311,11 @@ DIR *vfs_opendir(const char *path)
 
     if (point->fs->opendir == NULL) {
         mutex_unlock(&file->lock);
+        seterrno(ENOSYS);
         return (DIR *)0;
     }
 
+    seterrno(0);
     ret = point->fs->opendir(point, file, filepath);                    /*  打开目录                    */
     if (ret < 0) {
         mutex_unlock(&file->lock);
@@ -1262,8 +1339,10 @@ int vfs_closedir(DIR *dir)
     vfs_dir_api_begin
     if (point->fs->closedir == NULL) {
         vfs_dir_api_end
+        seterrno(ENOSYS);
         return -1;
     }
+    seterrno(0);
     ret = point->fs->closedir(point, file);
     if (ret == 0) {
         file->flag = VFS_FILE_TYPE_FREE;                                /*  如果关闭成功, 释放文件结构  */
@@ -1283,8 +1362,10 @@ static int __vfs_readdir(DIR *dir, struct dirent **entry)
     vfs_dir_api_begin
     if (point->fs->readdir == NULL) {
         vfs_dir_api_end
+        seterrno(ENOSYS);
         return -1;
     }
+    seterrno(0);
     *entry = point->fs->readdir(point, file);
     if (*entry != NULL) {
         ret = 0;
@@ -1317,8 +1398,10 @@ int vfs_rewinddir(DIR *dir)
     vfs_dir_api_begin
     if (point->fs->rewinddir == NULL) {
         vfs_dir_api_end
+        seterrno(ENOSYS);
         return -1;
     }
+    seterrno(0);
     ret = point->fs->rewinddir(point, file);
     vfs_dir_api_end
     return ret;
@@ -1335,8 +1418,10 @@ int vfs_seekdir(DIR *dir, long loc)
     vfs_dir_api_begin
     if (point->fs->seekdir == NULL) {
         vfs_dir_api_end
+        seterrno(ENOSYS);
         return -1;
     }
+    seterrno(0);
     ret = point->fs->seekdir(point, file, loc);
     vfs_dir_api_end
     return ret;
@@ -1353,8 +1438,10 @@ long vfs_telldir(DIR *dir)
     vfs_dir_api_begin
     if (point->fs->telldir == NULL) {
         vfs_dir_api_end
+        seterrno(ENOSYS);
         return -1;
     }
+    seterrno(0);
     loc = point->fs->telldir(point, file);
     vfs_dir_api_end
     return loc;
@@ -1370,6 +1457,7 @@ int vfs_chdir(const char *path)
     int32_t tid;
 
     if (path == NULL) {
+        seterrno(EINVAL);
         return -1;
     }
 

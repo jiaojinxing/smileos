@@ -44,6 +44,7 @@
 #include <dirent.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <errno.h>
 
 /*
  * ¹ÒÔØµãÁ´±í
@@ -97,6 +98,7 @@ static int rootfs_stat(mount_point_t *point, const char *path, struct stat *buf)
         buf->st_spare4[1] = 0;
         return 0;
     } else {
+        seterrno(ENOENT);
         return -1;
     }
 }
@@ -111,6 +113,7 @@ static int rootfs_access(mount_point_t *point, const char *path, int amode)
         if ((buf.st_mode & 0700) == (amode * 8 * 8)) {
             return 0;
         } else {
+            seterrno(EACCES);
             return -1;
         }
     } else {
@@ -123,6 +126,7 @@ static int rootfs_opendir(mount_point_t *point, file_t *file, const char *path)
     privinfo_t *priv;
 
     if (!PATH_IS_ROOT_DIR(path)) {
+        seterrno(ENOENT);
         return -1;
     }
 
@@ -138,6 +142,7 @@ static int rootfs_opendir(mount_point_t *point, file_t *file, const char *path)
         mutex_unlock(&pointmgr_lock);
         return 0;
     } else {
+        seterrno(ENOMEM);
         return -1;
     }
 }
@@ -146,7 +151,12 @@ static struct dirent *rootfs_readdir(mount_point_t *point, file_t *file)
 {
     privinfo_t *priv = file->ctx;
 
-    if (priv != NULL && priv->current != rootfs_point) {
+    if (priv == NULL) {
+        seterrno(EINVAL);
+        return NULL;
+    }
+
+    if (priv->current != rootfs_point) {
         strcpy(priv->entry.d_name, priv->current->name + 1);            /*  Ìø¹ý /                      */
         priv->entry.d_ino = priv->loc++;
         mutex_lock(&pointmgr_lock, 0);
@@ -169,6 +179,7 @@ static int rootfs_rewinddir(mount_point_t *point, file_t *file)
         mutex_unlock(&pointmgr_lock);
         return 0;
     } else {
+        seterrno(EINVAL);
         return -1;
     }
 }
@@ -176,12 +187,14 @@ static int rootfs_rewinddir(mount_point_t *point, file_t *file)
 static int rootfs_seekdir(mount_point_t *point, file_t *file, long loc)
 {
     privinfo_t *priv = file->ctx;
-    int ret = -1;
 
-    mutex_lock(&pointmgr_lock, 0);
     if (priv != NULL) {
-        mount_point_t *point = point_list;
+        mount_point_t *point;
         int i;
+
+        mutex_lock(&pointmgr_lock, 0);
+
+        point = point_list;
 
         for (i = 0; i < loc && point != rootfs_point; i++) {
             point = point->next;
@@ -190,11 +203,17 @@ static int rootfs_seekdir(mount_point_t *point, file_t *file, long loc)
         if (point != rootfs_point) {
             priv->current = point;
             priv->loc     = loc;
-            ret           = 0;
+            mutex_unlock(&pointmgr_lock);
+            return 0;
+        } else {
+            mutex_unlock(&pointmgr_lock);
+            seterrno(EINVAL);
+            return -1;
         }
+    } else {
+        seterrno(EINVAL);
+        return -1;
     }
-    mutex_unlock(&pointmgr_lock);
-    return ret;
 }
 
 static long rootfs_telldir(mount_point_t *point, file_t *file)
@@ -204,6 +223,7 @@ static long rootfs_telldir(mount_point_t *point, file_t *file)
     if (priv != NULL) {
         return priv->loc;
     } else {
+        seterrno(EINVAL);
         return -1;
     }
 }
@@ -216,6 +236,7 @@ static int rootfs_closedir(mount_point_t *point, file_t *file)
         kfree(priv);
         return 0;
     } else {
+        seterrno(EINVAL);
         return -1;
     }
 }
