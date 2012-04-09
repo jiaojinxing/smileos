@@ -252,6 +252,12 @@ int in_kernel(void);
  * 释放 CPU 使用权
  */
 void yield(void);
+
+/*
+ * 设置 errno
+ */
+#define seterrno(err) errno = (err)
+
 #endif
 
 #endif                                                                  /*  KERN_H_                     */

@@ -48,6 +48,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <errno.h>
 
 /*
  * 设备链表
@@ -68,9 +69,16 @@ static int devfs_open(mount_point_t *point, file_t *file, const char *path, int 
 {
     device_t *dev = device_lookup(vfs_path_add_mount_point(path));
 
-    if (dev == NULL || dev->drv->open == NULL) {
+    if (dev == NULL) {
+        seterrno(ENODEV);
         return -1;
     }
+
+    if (dev->drv->open == NULL) {
+        seterrno(ENOSYS);
+        return -1;
+    }
+
     file->ctx = dev;
     return dev->drv->open(dev->ctx, file, oflag, mode);
 }
@@ -79,9 +87,16 @@ static ssize_t devfs_read(mount_point_t *point, file_t *file, void *buf, size_t 
 {
     device_t *dev = file->ctx;
 
-    if (dev == NULL || dev->drv->read == NULL) {
+    if (dev == NULL) {
+        seterrno(EINVAL);
         return -1;
     }
+
+    if (dev->drv->read == NULL) {
+        seterrno(ENOSYS);
+        return -1;
+    }
+
     return dev->drv->read(dev->ctx, file, buf, len);
 }
 
@@ -91,7 +106,13 @@ static ssize_t devfs_write(mount_point_t *point, file_t *file, const void *buf, 
 {
     device_t *dev = file->ctx;
 
-    if (dev == NULL || dev->drv->write == NULL) {
+    if (dev == NULL) {
+        seterrno(EINVAL);
+        return -1;
+    }
+
+    if (dev->drv->write == NULL) {
+        seterrno(ENOSYS);
         return -1;
     }
 
@@ -106,9 +127,16 @@ static int devfs_ioctl(mount_point_t *point, file_t *file, int cmd, void *arg)
 {
     device_t *dev = file->ctx;
 
-    if (dev == NULL || dev->drv->ioctl == NULL) {
+    if (dev == NULL) {
+        seterrno(EINVAL);
         return -1;
     }
+
+    if (dev->drv->ioctl == NULL) {
+        seterrno(ENOSYS);
+        return -1;
+    }
+
     return dev->drv->ioctl(dev->ctx, file, cmd, arg);
 }
 
@@ -116,9 +144,16 @@ static int devfs_close(mount_point_t *point, file_t *file)
 {
     device_t *dev = file->ctx;
 
-    if (dev == NULL || dev->drv->close == NULL) {
+    if (dev == NULL) {
+        seterrno(EINVAL);
         return -1;
     }
+
+    if (dev->drv->close == NULL) {
+        seterrno(ENOSYS);
+        return -1;
+    }
+
     return dev->drv->close(dev->ctx, file);
 }
 
@@ -126,9 +161,16 @@ static int devfs_fcntl(mount_point_t *point, file_t *file, int cmd, int arg)
 {
     device_t *dev = file->ctx;
 
-    if (dev == NULL || dev->drv->fcntl == NULL) {
+    if (dev == NULL) {
+        seterrno(EINVAL);
         return -1;
     }
+
+    if (dev->drv->fcntl == NULL) {
+        seterrno(ENOSYS);
+        return -1;
+    }
+
     return dev->drv->fcntl(dev->ctx, file, cmd, arg);
 }
 
@@ -137,6 +179,7 @@ static int devfs_fstat(mount_point_t *point, file_t *file, struct stat *buf)
     device_t *dev = file->ctx;
 
     if (dev == NULL) {
+        seterrno(EINVAL);
         return -1;
     }
 
@@ -170,12 +213,14 @@ static int devfs_isatty(mount_point_t *point, file_t *file)
     device_t *dev = file->ctx;
 
     if (dev == NULL) {
+        seterrno(EINVAL);
         return -1;
     }
 
     if (dev->drv->isatty == NULL) {
         return 0;
     }
+
     return dev->drv->isatty(dev->ctx, file);
 }
 
@@ -184,12 +229,14 @@ static int devfs_fsync(mount_point_t *point, file_t *file)
     device_t *dev = file->ctx;
 
     if (dev == NULL) {
+        seterrno(EINVAL);
         return -1;
     }
 
     if (dev->drv->fsync == NULL) {
         return 0;
     }
+
     return dev->drv->fsync(dev->ctx, file);
 }
 
@@ -198,12 +245,14 @@ static int devfs_fdatasync(mount_point_t *point, file_t *file)
     device_t *dev = file->ctx;
 
     if (dev == NULL) {
+        seterrno(EINVAL);
         return -1;
     }
 
     if (dev->drv->fdatasync == NULL) {
         return 0;
     }
+
     return dev->drv->fdatasync(dev->ctx, file);
 }
 
@@ -211,9 +260,16 @@ static int devfs_ftruncate(mount_point_t *point, file_t *file, off_t len)
 {
     device_t *dev = file->ctx;
 
-    if (dev == NULL || dev->drv->ftruncate == NULL) {
+    if (dev == NULL) {
+        seterrno(EINVAL);
         return -1;
     }
+
+    if (dev->drv->ftruncate == NULL) {
+        seterrno(ENOSYS);
+        return -1;
+    }
+
     return dev->drv->ftruncate(dev->ctx, file, len);
 }
 
@@ -221,9 +277,16 @@ static int devfs_lseek(mount_point_t *point, file_t *file, off_t offset, int whe
 {
     device_t *dev = file->ctx;
 
-    if (dev == NULL || dev->drv->lseek == NULL) {
+    if (dev == NULL) {
+        seterrno(EINVAL);
         return -1;
     }
+
+    if (dev->drv->lseek == NULL) {
+        seterrno(ENOSYS);
+        return -1;
+    }
+
     return dev->drv->lseek(dev->ctx, file, offset, whence);
 }
 
@@ -231,9 +294,16 @@ static int devfs_scan(mount_point_t *point, file_t *file, int flags)
 {
     device_t *dev = file->ctx;
 
-    if (dev == NULL || dev->drv->scan == NULL) {
+    if (dev == NULL) {
+        seterrno(EINVAL);
         return -1;
     }
+
+    if (dev->drv->scan == NULL) {
+        seterrno(ENOSYS);
+        return -1;
+    }
+
     return dev->drv->scan(dev->ctx, file, flags);
 }
 
@@ -241,9 +311,16 @@ static int devfs_select(mount_point_t *point, file_t *file, int flags)
 {
     device_t *dev = file->ctx;
 
-    if (dev == NULL || dev->drv->select == NULL) {
+    if (dev == NULL) {
+        seterrno(EINVAL);
         return -1;
     }
+
+    if (dev->drv->select == NULL) {
+        seterrno(ENOSYS);
+        return -1;
+    }
+
     return dev->drv->select(dev->ctx, file, flags);
 }
 
@@ -251,9 +328,16 @@ static int devfs_unselect(mount_point_t *point, file_t *file, int flags)
 {
     device_t *dev = file->ctx;
 
-    if (dev == NULL || dev->drv->unselect == NULL) {
+    if (dev == NULL) {
+        seterrno(EINVAL);
         return -1;
     }
+
+    if (dev->drv->unselect == NULL) {
+        seterrno(ENOSYS);
+        return -1;
+    }
+
     return dev->drv->unselect(dev->ctx, file, flags);
 }
 
@@ -280,18 +364,13 @@ static int devfs_stat(mount_point_t *point, const char *path, struct stat *buf)
         buf->st_spare4[1] = 0;
         return 0;
     } else {
-        device_t *dev = device_lookup(vfs_path_add_mount_point(path));
-        if (dev == NULL) {
-            return -1;
+        int fd = vfs_open(vfs_path_add_mount_point(path), O_RDONLY, 0666);
+        if (fd >= 0) {
+            int ret = vfs_fstat(fd, buf);
+            vfs_close(fd);
+            return ret;
         } else {
-            int fd = vfs_open(vfs_path_add_mount_point(path), O_RDONLY, 0666);
-            if (fd >= 0) {
-                int ret = vfs_fstat(fd, buf);
-                vfs_close(fd);
-                return ret;
-            } else {
-                return -1;
-            }
+            return -1;
         }
     }
 }
@@ -306,6 +385,7 @@ static int devfs_access(mount_point_t *point, const char *path, int amode)
         if ((buf.st_mode & 0700) == (amode * 8 * 8)) {
             return 0;
         } else {
+            seterrno(EACCES);
             return -1;
         }
     } else {
@@ -327,6 +407,7 @@ static int devfs_opendir(mount_point_t *point, file_t *file, const char *path)
     privinfo_t *priv;
 
     if (!PATH_IS_ROOT_DIR(path)) {
+        seterrno(ENOENT);
         return -1;
     }
 
@@ -342,6 +423,7 @@ static int devfs_opendir(mount_point_t *point, file_t *file, const char *path)
         mutex_unlock(&devmgr_lock);
         return 0;
     } else {
+        seterrno(ENOMEM);
         return -1;
     }
 }
@@ -350,7 +432,12 @@ static struct dirent *devfs_readdir(mount_point_t *point, file_t *file)
 {
     privinfo_t *priv = file->ctx;
 
-    if (priv != NULL && priv->current != NULL) {
+    if (priv == NULL) {
+        seterrno(EINVAL);
+        return NULL;
+    }
+
+    if (priv->current != NULL) {
         strcpy(priv->entry.d_name, priv->current->name + 5);            /*  跳过 /dev/                  */
         priv->entry.d_ino = priv->loc++;
         mutex_lock(&devmgr_lock, 0);
@@ -373,6 +460,7 @@ static int devfs_rewinddir(mount_point_t *point, file_t *file)
         mutex_unlock(&devmgr_lock);
         return 0;
     } else {
+        seterrno(EINVAL);
         return -1;
     }
 }
@@ -398,6 +486,10 @@ static int devfs_seekdir(mount_point_t *point, file_t *file, long loc)
         }
     }
     mutex_unlock(&devmgr_lock);
+    if (ret == 0) {
+    } else {
+        seterrno(EINVAL);
+    }
     return ret;
 }
 
@@ -408,6 +500,7 @@ static long devfs_telldir(mount_point_t *point, file_t *file)
     if (priv != NULL) {
         return priv->loc;
     } else {
+        seterrno(EINVAL);
         return -1;
     }
 }
@@ -420,6 +513,7 @@ static int devfs_closedir(mount_point_t *point, file_t *file)
         kfree(priv);
         return 0;
     } else {
+        seterrno(EINVAL);
         return -1;
     }
 }

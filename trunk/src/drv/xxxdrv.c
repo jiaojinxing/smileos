@@ -40,6 +40,7 @@
 #include "vfs/device.h"
 #include "vfs/driver.h"
 #include "kern/kern.h"
+#include <errno.h>
 
 /*
  * ÀΩ”––≈œ¢
@@ -56,6 +57,7 @@ static int xxx_open(void *ctx, file_t *file, int oflag, mode_t mode)
     privinfo_t *priv = ctx;
 
     if (priv == NULL) {
+        seterrno(EINVAL);
         return -1;
     }
     return 0;
@@ -69,6 +71,7 @@ static int xxx_ioctl(void *ctx, file_t *file, int cmd, void *arg)
     privinfo_t *priv = ctx;
 
     if (priv == NULL) {
+        seterrno(EINVAL);
         return -1;
     }
     return 0;
@@ -82,6 +85,7 @@ static int xxx_close(void *ctx, file_t *file)
     privinfo_t *priv = ctx;
 
     if (priv == NULL) {
+        seterrno(EINVAL);
         return -1;
     }
     return 0;
@@ -95,6 +99,7 @@ static int xxx_isatty(void *ctx, file_t *file)
     privinfo_t *priv = ctx;
 
     if (priv == NULL) {
+        seterrno(EINVAL);
         return -1;
     }
     return 1;
@@ -108,6 +113,7 @@ static ssize_t xxx_read(void *ctx, file_t *file, void *buf, size_t len)
     privinfo_t *priv = ctx;
 
     if (priv == NULL) {
+        seterrno(EINVAL);
         return -1;
     }
     return 0;
@@ -121,6 +127,7 @@ static ssize_t xxx_write(void *ctx, file_t *file, const void *buf, size_t len)
     privinfo_t *priv = ctx;
 
     if (priv == NULL) {
+        seterrno(EINVAL);
         return -1;
     }
     return 0;
@@ -135,6 +142,7 @@ static int xxx_scan(void *ctx, file_t *file, int flags)
     int ret;
 
     if (priv == NULL) {
+        seterrno(EINVAL);
         return -1;
     }
 

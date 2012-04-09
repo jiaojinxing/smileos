@@ -224,7 +224,6 @@ int usleep(useconds_t useconds)
     return 0;
 }
 
-
 /*
  * yield
  */
@@ -263,9 +262,6 @@ int _gettimeofday_r(struct _reent *reent, struct timeval *tv, void *tzp)
         __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
-
-    reent->_errno = 0;
-
     return ret;
 }
 
@@ -288,9 +284,6 @@ int _close_r(struct _reent *reent, int fd)
         __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
-
-    reent->_errno = 0;
-
     return ret;
 }
 
@@ -315,9 +308,6 @@ int _fcntl_r(struct _reent *reent, int fd, int cmd, int arg)
         __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
-
-    reent->_errno = 0;
-
     return ret;
 }
 
@@ -341,9 +331,6 @@ int _fstat_r(struct _reent *reent, int fd, struct stat *buf)
         __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
-
-    reent->_errno = 0;
-
     return ret;
 }
 
@@ -365,9 +352,6 @@ int _getpid_r(struct _reent *reent)
         __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
-
-    reent->_errno = 0;
-
     return ret;
 }
 
@@ -390,9 +374,6 @@ int _isatty_r(struct _reent *reent, int fd)
         __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
-
-    reent->_errno = 0;
-
     return ret;
 }
 
@@ -416,9 +397,6 @@ int _link_r(struct _reent *reent, const char *path1, const char *path2)
         __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
-
-    reent->_errno = 0;
-
     return ret;
 }
 
@@ -443,9 +421,6 @@ _off_t _lseek_r(struct _reent *reent, int fd, _off_t offset, int whence)
         __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
-
-    reent->_errno = 0;
-
     return ret;
 }
 
@@ -469,9 +444,6 @@ int _mkdir_r(struct _reent *reent, const char *path, int mode)
         __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
-
-    reent->_errno = 0;
-
     return ret;
 }
 
@@ -496,9 +468,6 @@ int _open_r(struct _reent *reent, const char *path, int oflag, int mode)
         __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
-
-    reent->_errno = 0;
-
     return ret;
 }
 
@@ -523,9 +492,6 @@ _ssize_t _read_r(struct _reent *reent, int fd, void *buf, size_t nbytes)
         __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
-
-    reent->_errno = 0;
-
     return ret;
 }
 
@@ -550,9 +516,6 @@ _ssize_t _write_r(struct _reent *reent, int fd, const void *buf, size_t nbytes)
         __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
-
-    reent->_errno = 0;
-
     return ret;
 }
 
@@ -576,9 +539,6 @@ int _rename_r(struct _reent *reent, const char *old, const char *new)
         __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
-
-    reent->_errno = 0;
-
     return ret;
 }
 
@@ -602,9 +562,6 @@ int _stat_r(struct _reent *reent, const char *path, struct stat *buf)
         __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
-
-    reent->_errno = 0;
-
     return ret;
 }
 
@@ -627,9 +584,6 @@ int _unlink_r(struct _reent *reent, const char *path)
         __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
-
-    reent->_errno = 0;
-
     return ret;
 }
 
@@ -651,7 +605,6 @@ struct _reent *getreent(void)
         __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
-
     return ret;
 }
 
@@ -763,7 +716,6 @@ DIR *opendir(const char *path)
         __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
-
     return ret;
 }
 
@@ -786,7 +738,6 @@ int closedir(DIR *dir)
         __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
-
     return ret;
 }
 
@@ -809,7 +760,6 @@ struct dirent *readdir(DIR *dir)
         __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
-
     return ret;
 }
 
@@ -832,7 +782,6 @@ int rewinddir(DIR *dir)
         __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
-
     return ret;
 }
 
@@ -856,7 +805,6 @@ int seekdir(DIR *dir, long loc)
         __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
-
     return ret;
 }
 
@@ -879,7 +827,6 @@ long telldir(DIR *dir)
         __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
-
     return ret;
 }
 
@@ -902,7 +849,6 @@ int chdir(const char *path)
         __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
-
     return ret;
 }
 
@@ -926,7 +872,6 @@ char *getcwd(char *buf, size_t size)
         __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
-
     return ret;
 }
 
@@ -968,7 +913,6 @@ int socket(int domain, int type, int protocol)
         __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
-
     return ret;
 }
 
@@ -993,7 +937,6 @@ int bind(int s, const struct sockaddr *name, socklen_t namelen)
         __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
-
     return ret;
 }
 
@@ -1018,7 +961,6 @@ int accept(int s, struct sockaddr *addr, socklen_t *addrlen)
         __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
-
     return ret;
 }
 
@@ -1043,7 +985,6 @@ int connect(int s, const struct sockaddr *name, socklen_t namelen)
         __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
-
     return ret;
 }
 
@@ -1067,7 +1008,6 @@ int listen(int s, int backlog)
         __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
-
     return ret;
 }
 #endif

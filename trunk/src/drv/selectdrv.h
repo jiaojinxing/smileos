@@ -49,10 +49,13 @@ static int select_select(void *ctx, file_t *file, int type)
     select_node_t *node;
 
     if (priv == NULL) {
+        seterrno(EINVAL);
         return -1;
     }
+
     node = kmalloc(sizeof(sizeof(select_node_t)));
     if (node == NULL) {
+        seterrno(ENOMEM);
         return -1;
     }
 
@@ -78,6 +81,7 @@ static int select_unselect(void *ctx, file_t *file, int type)
     select_node_t *node = file->ctx1;
 
     if (priv == NULL || node == NULL) {
+        seterrno(EINVAL);
         return -1;
     }
 

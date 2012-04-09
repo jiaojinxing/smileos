@@ -45,6 +45,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <stdio.h>
+#include <errno.h>
 
 /*
  * 私有信息
@@ -66,6 +67,7 @@ static int socket_open(void *ctx, file_t *file, int oflag, mode_t mode)
     privinfo_t *priv = ctx;
 
     if (priv == NULL) {
+        seterrno(EINVAL);
         return -1;
     }
     priv->ref++;
@@ -80,6 +82,7 @@ static int socket_ioctl(void *ctx, file_t *file, int cmd, void *arg)
     privinfo_t *priv = ctx;
 
     if (priv == NULL) {
+        seterrno(EINVAL);
         return -1;
     }
     return lwip_ioctl(priv->sock_fd, cmd, arg);
@@ -93,6 +96,7 @@ static int socket_fcntl(void *ctx, file_t *file, int cmd, int arg)
     privinfo_t *priv = ctx;
 
     if (priv == NULL) {
+        seterrno(EINVAL);
         return -1;
     }
     return lwip_fcntl(priv->sock_fd, cmd, arg);
@@ -107,6 +111,7 @@ static int socket_close(void *ctx, file_t *file)
     char buf[32];
 
     if (priv == NULL) {
+        seterrno(EINVAL);
         return -1;
     }
 
@@ -129,6 +134,7 @@ static int socket_isatty(void *ctx, file_t *file)
     privinfo_t *priv = ctx;
 
     if (priv == NULL) {
+        seterrno(EINVAL);
         return -1;
     }
     return 1;
@@ -142,6 +148,7 @@ static ssize_t socket_read(void *ctx, file_t *file, void *buf, size_t len)
     privinfo_t *priv = ctx;
 
     if (priv == NULL) {
+        seterrno(EINVAL);
         return -1;
     }
     return lwip_recv(priv->sock_fd, buf, len, 0);
@@ -155,6 +162,7 @@ static ssize_t socket_write(void *ctx, file_t *file, const void *buf, size_t len
     privinfo_t *priv = ctx;
 
     if (priv == NULL) {
+        seterrno(EINVAL);
         return -1;
     }
     return lwip_send(priv->sock_fd, buf, len, 0);
@@ -168,6 +176,7 @@ static int socket_fstat(void *ctx, file_t *file, struct stat *buf)
     privinfo_t *priv = ctx;
 
     if (priv == NULL) {
+        seterrno(EINVAL);
         return -1;
     }
     buf->st_mode    = (buf->st_mode & (~S_IFMT)) | S_IFSOCK;
@@ -187,12 +196,14 @@ static int socket_scan(void *ctx, file_t *file, int flags)
     int error;
 
     if (priv == NULL) {
+        seterrno(EINVAL);
         return -1;
     }
 
     extern int socket_stat(int sock_fd, int *readable, int *writeable, int *error);
     ret = socket_stat(priv->sock_fd, &readable, &writeable, &error);
     if (ret < 0) {
+        seterrno(EINVAL);
         return -1;
     }
 
@@ -214,22 +225,18 @@ static int socket_scan(void *ctx, file_t *file, int flags)
 
 /*
  * 回报事件
+ *
  */
 void smileos_socket_report(int sock_fd, int type)
 {
     char buf[32];
     device_t *dev;
-    uint32_t reg;
 
     sprintf(buf, "/dev/socket%d", sock_fd);
-
-    reg = interrupt_disable();
-
     dev = device_lookup(buf);
     if (dev != NULL) {
         select_report(dev->ctx, type);
     }
-    interrupt_resume(reg);
 }
 
 /*
@@ -280,6 +287,7 @@ int socket_attach(int sock_fd)
         if (device_create(buf, "socket", priv) < 0) {
             interrupt_resume(reg);
             kfree(priv);
+            seterrno(ENOMEM);
             return -1;
         }
 
@@ -291,8 +299,10 @@ int socket_attach(int sock_fd)
             return -1;
         }
         interrupt_resume(reg);
+        seterrno(0);
         return fd;
     } else {
+        seterrno(ENOMEM);
         return -1;
     }
 }
@@ -317,11 +327,13 @@ int socket_priv_fd(int fd)
             if (priv != NULL && priv->ref > 0) {
                 sock_fd = priv->sock_fd;
                 interrupt_resume(reg);
+                seterrno(0);
                 return sock_fd;
             }
         }
     }
     interrupt_resume(reg);
+    seterrno(EBADFD);
     return -1;
 }
 /*********************************************************************************************************

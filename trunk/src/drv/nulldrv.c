@@ -40,6 +40,7 @@
 #include "vfs/device.h"
 #include "vfs/driver.h"
 #include "kern/kern.h"
+#include <errno.h>
 
 /*
  * ´ò¿ª null
