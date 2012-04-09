@@ -207,6 +207,9 @@ static int exec_cmd(char *cmd)
     } else if (strcmp(argv[0], "ls") == 0) {
         extern int ls_main(int argc, char *argv[]);
         ls_main(argc, argv);
+    } else if (strcmp(argv[0], "cat") == 0) {
+        extern int cat_main(int argc, char *argv[]);
+        cat_main(argc, argv);
     } else if (strcmp(argv[0], "cd") == 0) {
         cd_main(argc, argv);
     } else if (strcmp(argv[0], "mems") == 0) {
