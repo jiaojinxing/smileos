@@ -669,6 +669,9 @@ int tty_ioctl(struct tty *tp, u_long cmd, void *data)
         if (copyout(&tp->t_outq.tq_count, data, sizeof(int)))
             return EFAULT;
         break;
+
+    default:
+        return ENOSYS;
     }
     return 0;
 }

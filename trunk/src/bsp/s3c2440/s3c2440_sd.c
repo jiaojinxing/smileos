@@ -230,9 +230,9 @@ static int sd_init(void)
     sd_cmd0();
 
     if (sd_ocr() == 0) {
-        printk("SD Card Found\n");
+        printk("%s: sd card found\n", __func__);
     } else {
-        printk("SD Card No Found\n");
+        printk("%s: sd card no found\n", __func__);
         return -1;
     }
 

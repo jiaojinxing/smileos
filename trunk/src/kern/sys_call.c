@@ -175,7 +175,7 @@ void _exit(int status)
 {
     int syscall = SYS_CALL_EXIT;
 
-    debug("%s\r\n", __func__);
+    debug("%s\n", __func__);
     if (in_kernel()) {
         (sys_do_table[syscall])(status);
     } else {
@@ -193,7 +193,7 @@ static void sleep_tick(unsigned int ticks)
 {
     int syscall = SYS_CALL_SLEEP;
 
-    //debug("%s\r\n", __func__);
+    //debug("%s\n", __func__);
     if (in_kernel()) {
         (sys_do_table[syscall])(ticks);
     } else {
@@ -210,7 +210,7 @@ static void sleep_tick(unsigned int ticks)
  */
 unsigned sleep(unsigned int seconds)
 {
-    //debug("%s\r\n", __func__);
+    //debug("%s\n", __func__);
     sleep_tick(TICK_PER_SECOND * seconds);
     return 0;
 }
@@ -220,7 +220,7 @@ unsigned sleep(unsigned int seconds)
  */
 int usleep(useconds_t useconds)
 {
-    //debug("%s\r\n", __func__);
+    //debug("%s\n", __func__);
     sleep_tick(TICK_PER_SECOND * useconds / 1000000);
     return 0;
 }
@@ -232,7 +232,7 @@ void yield(void)
 {
     int syscall = SYS_CALL_YIELD;
 
-    //debug("%s\r\n", __func__);
+    //debug("%s\n", __func__);
     if (in_kernel()) {
         (sys_do_table[syscall])();
     } else {
@@ -251,7 +251,7 @@ int _gettimeofday_r(struct _reent *reent, struct timeval *tv, void *tzp)
     int ret;
     int syscall = SYS_CALL_GETTIME;
 
-    debug("%s\r\n", __func__);
+    debug("%s\n", __func__);
     if (in_kernel()) {
         ret = (sys_do_table[syscall])(tv, tzp);
     } else {
@@ -274,7 +274,7 @@ int _close_r(struct _reent *reent, int fd)
     int ret;
     int syscall = SYS_CALL_CLOSE;
 
-    debug("%s\r\n", __func__);
+    debug("%s\n", __func__);
     if (in_kernel()) {
         ret = (sys_do_table[syscall])(fd);
     } else {
@@ -296,7 +296,7 @@ int ioctl(int fd, int cmd, void *arg)
     int ret;
     int syscall = SYS_CALL_IOCTL;
 
-    debug("%s\r\n", __func__);
+    debug("%s\n", __func__);
     if (in_kernel()) {
         ret = (sys_do_table[syscall])(fd, cmd, arg);
     } else {
@@ -320,7 +320,7 @@ int _fcntl_r(struct _reent *reent, int fd, int cmd, int arg)
     int ret;
     int syscall = SYS_CALL_FCNTL;
 
-    debug("%s\r\n", __func__);
+    debug("%s\n", __func__);
     if (in_kernel()) {
         ret = (sys_do_table[syscall])(fd, cmd, arg);
     } else {
@@ -344,7 +344,7 @@ int _fstat_r(struct _reent *reent, int fd, struct stat *buf)
     int ret;
     int syscall = SYS_CALL_FSTAT;
 
-    debug("%s\r\n", __func__);
+    debug("%s\n", __func__);
     if (in_kernel()) {
         ret = (sys_do_table[syscall])(fd, buf);
     } else {
@@ -367,7 +367,7 @@ int _getpid_r(struct _reent *reent)
     int ret;
     int syscall = SYS_CALL_GETPID;
 
-    debug("%s\r\n", __func__);
+    debug("%s\n", __func__);
     if (in_kernel()) {
         ret = (sys_do_table[syscall])();
     } else {
@@ -388,7 +388,7 @@ int _isatty_r(struct _reent *reent, int fd)
     int ret;
     int syscall = SYS_CALL_ISATTY;
 
-    debug("%s\r\n", __func__);
+    debug("%s\n", __func__);
     if (in_kernel()) {
         ret = (sys_do_table[syscall])(fd);
     } else {
@@ -410,7 +410,7 @@ int _link_r(struct _reent *reent, const char *path1, const char *path2)
     int ret;
     int syscall = SYS_CALL_LINK;
 
-    debug("%s\r\n", __func__);
+    debug("%s\n", __func__);
     if (in_kernel()) {
         ret = (sys_do_table[syscall])(path1, path2);
     } else {
@@ -433,7 +433,7 @@ _off_t _lseek_r(struct _reent *reent, int fd, _off_t offset, int whence)
     _off_t ret;
     int syscall = SYS_CALL_LSEEK;
 
-    debug("%s\r\n", __func__);
+    debug("%s\n", __func__);
     if (in_kernel()) {
         ret = (sys_do_table[syscall])(fd, offset, whence);
     } else {
@@ -457,7 +457,7 @@ int _mkdir_r(struct _reent *reent, const char *path, int mode)
     int ret;
     int syscall = SYS_CALL_MKDIR;
 
-    debug("%s\r\n", __func__);
+    debug("%s\n", __func__);
     if (in_kernel()) {
         ret = (sys_do_table[syscall])(path, mode);
     } else {
@@ -480,7 +480,7 @@ int _open_r(struct _reent *reent, const char *path, int oflag, int mode)
     int ret;
     int syscall = SYS_CALL_OPEN;
 
-    debug("%s %s by %d\r\n", __func__, path, getpid());
+    debug("%s %s by %d\n", __func__, path, getpid());
     if (in_kernel()) {
         ret = (sys_do_table[syscall])(path, oflag, mode);
     } else {
@@ -504,7 +504,7 @@ _ssize_t _read_r(struct _reent *reent, int fd, void *buf, size_t nbytes)
     _ssize_t ret;
     int syscall = SYS_CALL_READ;
 
-    debug("%s\r\n", __func__);
+    debug("%s\n", __func__);
     if (in_kernel()) {
         ret = (sys_do_table[syscall])(fd, buf, nbytes);
     } else {
@@ -528,7 +528,7 @@ _ssize_t _write_r(struct _reent *reent, int fd, const void *buf, size_t nbytes)
     _ssize_t ret;
     int syscall = SYS_CALL_WRITE;
 
-    debug("%s\r\n", __func__);
+    debug("%s\n", __func__);
     if (in_kernel()) {
         ret = (sys_do_table[syscall])(fd, buf, nbytes);
     } else {
@@ -552,7 +552,7 @@ int _rename_r(struct _reent *reent, const char *old, const char *new)
     int ret;
     int syscall = SYS_CALL_RENAME;
 
-    debug("%s\r\n", __func__);
+    debug("%s\n", __func__);
     if (in_kernel()) {
         ret = (sys_do_table[syscall])(old, new);
     } else {
@@ -575,7 +575,7 @@ int _stat_r(struct _reent *reent, const char *path, struct stat *buf)
     int ret;
     int syscall = SYS_CALL_STAT;
 
-    debug("%s\r\n", __func__);
+    debug("%s\n", __func__);
     if (in_kernel()) {
         ret = (sys_do_table[syscall])(path, buf);
     } else {
@@ -598,7 +598,7 @@ int _unlink_r(struct _reent *reent, const char *path)
     int ret;
     int syscall = SYS_CALL_UNLINK;
 
-    debug("%s\r\n", __func__);
+    debug("%s\n", __func__);
     if (in_kernel()) {
         ret = (sys_do_table[syscall])(path);
     } else {
@@ -620,7 +620,7 @@ struct _reent *getreent(void)
     struct _reent *ret;
     int syscall = SYS_CALL_GETREENT;
 
-    debug("%s\r\n", __func__);
+    debug("%s\n", __func__);
     if (in_kernel()) {
         ret = (struct _reent *)(sys_do_table[syscall])();
     } else {
@@ -718,7 +718,7 @@ int _execve_r(struct _reent *reent, const char *path, char *const *argv, char *c
  */
 int _kill_r(struct _reent *reent, int pid, int sig)
 {
-    debug("%s\r\n", __func__);
+    debug("%s\n", __func__);
     _exit(0);
 }
 
@@ -730,7 +730,7 @@ DIR *opendir(const char *path)
     DIR *ret;
     int syscall = SYS_CALL_OPENDIR;
 
-    debug("%s\r\n", __func__);
+    debug("%s\n", __func__);
     if (in_kernel()) {
         ret = (DIR *)(sys_do_table[syscall])(path);
     } else {
@@ -752,7 +752,7 @@ int closedir(DIR *dir)
     int ret;
     int syscall = SYS_CALL_CLOSEDIR;
 
-    debug("%s\r\n", __func__);
+    debug("%s\n", __func__);
     if (in_kernel()) {
         ret = (sys_do_table[syscall])(dir);
     } else {
@@ -774,7 +774,7 @@ struct dirent *readdir(DIR *dir)
     struct dirent *ret;
     int syscall = SYS_CALL_READDIR;
 
-    debug("%s\r\n", __func__);
+    debug("%s\n", __func__);
     if (in_kernel()) {
         ret = (struct dirent *)(sys_do_table[syscall])(dir);
     } else {
@@ -796,7 +796,7 @@ int rewinddir(DIR *dir)
     int ret;
     int syscall = SYS_CALL_REWINDDIR;
 
-    debug("%s\r\n", __func__);
+    debug("%s\n", __func__);
     if (in_kernel()) {
         ret = (sys_do_table[syscall])(dir);
     } else {
@@ -818,7 +818,7 @@ int seekdir(DIR *dir, long loc)
     int ret;
     int syscall = SYS_CALL_SEEKDIR;
 
-    debug("%s\r\n", __func__);
+    debug("%s\n", __func__);
     if (in_kernel()) {
         ret = (sys_do_table[syscall])(dir, loc);
     } else {
@@ -841,7 +841,7 @@ long telldir(DIR *dir)
     long ret;
     int syscall = SYS_CALL_TELLDIR;
 
-    debug("%s\r\n", __func__);
+    debug("%s\n", __func__);
     if (in_kernel()) {
         ret = (long)(sys_do_table[syscall])(dir);
     } else {
@@ -863,7 +863,7 @@ int chdir(const char *path)
     int ret;
     int syscall = SYS_CALL_CHDIR;
 
-    debug("%s\r\n", __func__);
+    debug("%s\n", __func__);
     if (in_kernel()) {
         ret = (sys_do_table[syscall])(path);
     } else {
@@ -885,7 +885,7 @@ char *getcwd(char *buf, size_t size)
     char *ret;
     int syscall = SYS_CALL_GETCWD;
 
-    debug("%s\r\n", __func__);
+    debug("%s\n", __func__);
     if (in_kernel()) {
         ret = (char *)(sys_do_table[syscall])(buf, size);
     } else {
@@ -925,7 +925,7 @@ int socket(int domain, int type, int protocol)
     int ret;
     int syscall = SYS_CALL_SOCKET;
 
-    debug("%s\r\n", __func__);
+    debug("%s\n", __func__);
     if (in_kernel()) {
         ret = (sys_do_table[syscall])(domain, type, protocol);
     } else {
@@ -949,7 +949,7 @@ int bind(int s, const struct sockaddr *name, socklen_t namelen)
     int ret;
     int syscall = SYS_CALL_BIND;
 
-    debug("%s\r\n", __func__);
+    debug("%s\n", __func__);
     if (in_kernel()) {
         ret = (sys_do_table[syscall])(s, name, namelen);
     } else {
@@ -973,7 +973,7 @@ int accept(int s, struct sockaddr *addr, socklen_t *addrlen)
     int ret;
     int syscall = SYS_CALL_ACCEPT;
 
-    debug("%s\r\n", __func__);
+    debug("%s\n", __func__);
     if (in_kernel()) {
         ret = (sys_do_table[syscall])(s, addr, addrlen);
     } else {
@@ -997,7 +997,7 @@ int connect(int s, const struct sockaddr *name, socklen_t namelen)
     int ret;
     int syscall = SYS_CALL_CONNECT;
 
-    debug("%s\r\n", __func__);
+    debug("%s\n", __func__);
     if (in_kernel()) {
         ret = (sys_do_table[syscall])(s, name, namelen);
     } else {
@@ -1021,7 +1021,7 @@ int listen(int s, int backlog)
     int ret;
     int syscall = SYS_CALL_LISTEN;
 
-    debug("%s\r\n", __func__);
+    debug("%s\n", __func__);
     if (in_kernel()) {
         ret = (sys_do_table[syscall])(s, backlog);
     } else {

@@ -605,34 +605,34 @@ int heap_show(heap_t *heap, int fd)
      */
     memcpy(&tmp, heap, sizeof(heap_t));
 
-    len = sprintf(buf, "********** heap info **********\r\n");
+    len = sprintf(buf, "********** heap info **********\n");
     write(fd, buf, len);
 
-    len = sprintf(buf, "heap block amount = %d\r\n", tmp.block_nr);
+    len = sprintf(buf, "heap block amount = %d\n", tmp.block_nr);
     write(fd, buf, len);
 
-    len = sprintf(buf, "heap alloc count  = %d\r\n", tmp.alloc_cnt);
+    len = sprintf(buf, "heap alloc count  = %d\n", tmp.alloc_cnt);
     write(fd, buf, len);
 
-    len = sprintf(buf, "heap free  count  = %d\r\n", tmp.free_cnt);
+    len = sprintf(buf, "heap free  count  = %d\n", tmp.free_cnt);
     write(fd, buf, len);
 
-    len = sprintf(buf, "heap leak  count  = %d\r\n", tmp.alloc_cnt - tmp.free_cnt);
+    len = sprintf(buf, "heap leak  count  = %d\n", tmp.alloc_cnt - tmp.free_cnt);
     write(fd, buf, len);
 
-    len = sprintf(buf, "heap used  size   = %dMB.%dKB.%dB\r\n",
+    len = sprintf(buf, "heap used  size   = %dMB.%dKB.%dB\n",
             tmp.used_size / MB,
             tmp.used_size % MB / KB,
             tmp.used_size % KB);
     write(fd, buf, len);
 
-    len = sprintf(buf, "heap free  size   = %dMB.%dKB.%dB\r\n",
+    len = sprintf(buf, "heap free  size   = %dMB.%dKB.%dB\n",
             (tmp.size - tmp.used_size) / MB,
             (tmp.size - tmp.used_size) % MB / KB,
             (tmp.size - tmp.used_size) % KB);
     write(fd, buf, len);
 
-    len = sprintf(buf, "************* end *************\r\n");
+    len = sprintf(buf, "************* end *************\n");
     write(fd, buf, len);
 
     return 0;

@@ -25,7 +25,7 @@ cat_main(int argc, char *argv[])
 		switch(ch) {
 		case '?':
 		default:
-			printf("usage: cat [-] [file ...]\r\n");
+			printf("usage: cat [-] [file ...]\n");
             return 0;
 			/* NOTREACHED */
 		}
