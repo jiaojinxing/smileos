@@ -71,7 +71,7 @@ static int null_close(void *ctx, file_t *file)
  */
 static int null_isatty(void *ctx, file_t *file)
 {
-    return 1;
+    return 0;
 }
 
 /*

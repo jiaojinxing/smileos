@@ -56,9 +56,6 @@ typedef struct {
     int             ref;
 } privinfo_t;
 
-//#define debug        kcomplain
-#define debug(...)
-
 /*
  * ´ò¿ª socket
  */
@@ -108,7 +105,7 @@ static int socket_fcntl(void *ctx, file_t *file, int cmd, int arg)
 static int socket_close(void *ctx, file_t *file)
 {
     privinfo_t *priv = ctx;
-    char buf[32];
+    char buf[NAME_MAX];
 
     if (priv == NULL) {
         seterrno(EINVAL);
@@ -137,7 +134,7 @@ static int socket_isatty(void *ctx, file_t *file)
         seterrno(EINVAL);
         return -1;
     }
-    return 1;
+    return 0;
 }
 
 /*
@@ -229,7 +226,7 @@ static int socket_scan(void *ctx, file_t *file, int flags)
  */
 void smileos_socket_report(int sock_fd, int type)
 {
-    char buf[32];
+    char buf[NAME_MAX];
     device_t *dev;
 
     sprintf(buf, "/dev/socket%d", sock_fd);
@@ -270,10 +267,12 @@ int socket_init(void)
  */
 int socket_attach(int sock_fd)
 {
-    char buf[32];
+    char buf[NAME_MAX];
     int fd;
     privinfo_t *priv;
     uint32_t reg;
+
+    reg = interrupt_disable();
 
     priv = kmalloc(sizeof(privinfo_t));
     if (priv != NULL) {
@@ -282,27 +281,27 @@ int socket_attach(int sock_fd)
         priv->ref     = 0;
 
         sprintf(buf, "/dev/socket%d", sock_fd);
-
-        reg = interrupt_disable();
         if (device_create(buf, "socket", priv) < 0) {
-            interrupt_resume(reg);
             kfree(priv);
             seterrno(ENOMEM);
+            interrupt_resume(reg);
             return -1;
         }
 
         fd = vfs_open(buf, O_RDWR, 0666);
         if (fd < 0) {
             device_remove(buf);
-            interrupt_resume(reg);
             kfree(priv);
+            interrupt_resume(reg);
             return -1;
         }
-        interrupt_resume(reg);
+
         seterrno(0);
+        interrupt_resume(reg);
         return fd;
     } else {
         seterrno(ENOMEM);
+        interrupt_resume(reg);
         return -1;
     }
 }
@@ -326,14 +325,14 @@ int socket_priv_fd(int fd)
             priv = dev->ctx;
             if (priv != NULL && priv->ref > 0) {
                 sock_fd = priv->sock_fd;
-                interrupt_resume(reg);
                 seterrno(0);
+                interrupt_resume(reg);
                 return sock_fd;
             }
         }
     }
-    interrupt_resume(reg);
     seterrno(EBADFD);
+    interrupt_resume(reg);
     return -1;
 }
 /*********************************************************************************************************

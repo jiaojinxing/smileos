@@ -37,58 +37,12 @@
 ** Descriptions:
 **
 *********************************************************************************************************/
-#include "vfs/device.h"
-#include "vfs/driver.h"
-#include "kern/kern.h"
-#include "kern/ipc.h"
 #include <errno.h>
 #include <string.h>
-#include <sys/signal.h>
+#include <fcntl.h>
 #define KERNEL
-#include <sys/termios.h>
-
-#define MAX_INPUT       128
-#define TTYQ_SIZE       MAX_INPUT
-#define TTYQ_HIWAT      (TTYQ_SIZE - 10)
-
-/*
- * tty 队列
- */
-struct tty_queue {
-    char                tq_buf[TTYQ_SIZE];
-    int                 tq_head;
-    int                 tq_tail;
-    int                 tq_count;
-};
-
-/*
- * tty, 私有信息
- */
-typedef struct tty {
-    VFS_SELECT_MEMBERS
-    struct tty_queue    t_rawq;                             /*  raw input queue                         */
-    struct tty_queue    t_canq;                             /*  canonical queue                         */
-    struct tty_queue    t_outq;                             /*  ouput queue                             */
-    struct termios      t_termios;                          /*  termios state                           */
-    struct winsize      t_winsize;                          /*  window size                             */
-    int                 t_state;                            /*  driver state                            */
-    int                 t_column;                           /*  tty output column                       */
-    pid_t               t_pgid;                             /*  foreground process group                */
-    void (*t_oproc)(struct tty *);                          /*  routine to start output                 */
-    task_t             *t_input;                            /*  等待输入数据到达                        */
-    task_t             *t_output;                           /*  等待输出数据完成                        */
-} privinfo_t;
-
-#define t_iflag         t_termios.c_iflag
-#define t_oflag         t_termios.c_oflag
-#define t_cflag         t_termios.c_cflag
-#define t_lflag         t_termios.c_lflag
-#define t_cc            t_termios.c_cc
-#define t_ispeed        t_termios.c_ispeed
-#define t_ospeed        t_termios.c_ospeed
-
-#define FREAD           0x0001
-#define FWRITE          0x0002
+#include "tty.h"
+#include "kern/ipc.h"
 
 /*
  * default control characters
@@ -105,15 +59,6 @@ static const cc_t       ttydefchars[NCCS] = TTYDEFCHARS;
 #define ttyq_full(q)    ((q)->tq_count >= TTYQ_SIZE)
 #define ttyq_empty(q)   ((q)->tq_count == 0)
 
-/*
- * These flags are kept in t_state.
- */
-#define TS_ASLEEP       0x00001                             /* Process waiting for tty.                 */
-#define TS_BUSY         0x00004                             /* Draining output.                         */
-#define TS_TIMEOUT      0x00100                             /* Wait for output char processing.         */
-#define TS_TTSTOP       0x00200                             /* Output paused.                           */
-#define TS_ISIG         0x00400                             /* Input is interrupted by signal.          */
-
 static int copyin(const void *src, void *dst, size_t len)
 {
     memcpy(dst, src, len);
@@ -129,7 +74,7 @@ static int copyout(const void *src, void *dst, size_t len)
 /*
  * Get a character from a queue.
  */
-static int tty_getc(struct tty_queue *tq)
+int tty_getc(struct tty_queue *tq)
 {
     char c;
 
@@ -336,7 +281,7 @@ static void tty_flush(struct tty *tp, int rw)
 /*
  * Output is completed.
  */
-static void tty_done(struct tty *tp)
+void tty_done(struct tty *tp)
 {
     task_t *task;
 
@@ -385,7 +330,7 @@ static void tty_wait(struct tty *tp)
  * echo if required.
  * This may be called with interrupt level.
  */
-static void tty_input(int c, struct tty *tp)
+void tty_input(int c, struct tty *tp)
 {
     cc_t *cc;
     tcflag_t iflag, lflag;
@@ -538,7 +483,7 @@ restartoutput:
 /*
  * Process a read call on a tty device.
  */
-static int __tty_read(struct tty *tp, char *buf, size_t *nbyte)
+int tty_read(struct tty *tp, char *buf, size_t *nbyte)
 {
     cc_t *cc;
     struct tty_queue *qp;
@@ -591,7 +536,7 @@ static int __tty_read(struct tty *tp, char *buf, size_t *nbyte)
 /*
  * Process a write call on a tty device.
  */
-static int __tty_write(struct tty *tp, const char *buf, size_t *nbyte)
+int tty_write(struct tty *tp, const char *buf, size_t *nbyte)
 {
     size_t remain, count = 0;
     u_char c;
@@ -638,7 +583,7 @@ static int __tty_write(struct tty *tp, const char *buf, size_t *nbyte)
 /*
  * Ioctls for all tty devices.
  */
-static int __tty_ioctl(struct tty *tp, u_long cmd, void *data)
+int tty_ioctl(struct tty *tp, u_long cmd, void *data)
 {
     int flags;
     struct tty_queue *qp;
@@ -721,8 +666,12 @@ static int __tty_ioctl(struct tty *tp, u_long cmd, void *data)
 /*
  * Attach a tty to the tty list.
  */
-int __tty_init(struct tty *tp)
+int tty_attach(struct tty *tp)
 {
+    if (tp == NULL) {
+        return -1;
+    }
+
     memcpy(&tp->t_termios.c_cc, ttydefchars, sizeof(ttydefchars));
 
     tp->t_input  = NULL;
@@ -736,184 +685,6 @@ int __tty_init(struct tty *tp)
     tp->t_ospeed = TTYDEF_SPEED;
 
     return 0;
-}
-
-/*
- * 打开 tty
- */
-static int tty_open(void *ctx, file_t *file, int oflag, mode_t mode)
-{
-    privinfo_t *priv = ctx;
-
-    if (priv == NULL) {
-        seterrno(EINVAL);
-        return -1;
-    }
-    return 0;
-}
-
-/*
- * 控制 tty
- */
-static int tty_ioctl(void *ctx, file_t *file, int cmd, void *arg)
-{
-    privinfo_t *priv = ctx;
-    int ret;
-
-    if (priv == NULL) {
-        seterrno(EINVAL);
-        return -1;
-    }
-
-    ret = __tty_ioctl(priv, cmd, arg);
-    if (ret != 0) {
-        seterrno(ret);
-        return -1;
-    }
-    return 0;
-}
-
-/*
- * 关闭 tty
- */
-static int tty_close(void *ctx, file_t *file)
-{
-    privinfo_t *priv = ctx;
-
-    if (priv == NULL) {
-        seterrno(EINVAL);
-        return -1;
-    }
-    return 0;
-}
-
-/*
- * tty 是不是一个 tty
- */
-static int tty_isatty(void *ctx, file_t *file)
-{
-    privinfo_t *priv = ctx;
-
-    if (priv == NULL) {
-        seterrno(EINVAL);
-        return -1;
-    }
-    return 1;
-}
-
-/*
- * 读 tty
- */
-static ssize_t tty_read(void *ctx, file_t *file, void *buf, size_t len)
-{
-    privinfo_t *priv = ctx;
-    int ret;
-
-    if (priv == NULL) {
-        seterrno(EINVAL);
-        return -1;
-    }
-
-    ret = __tty_read(priv, buf, &len);
-    if (ret != 0) {
-        seterrno(ret);
-        return -1;
-    } else {
-        return len;
-    }
-}
-
-/*
- * 写 tty
- */
-static ssize_t tty_write(void *ctx, file_t *file, const void *buf, size_t len)
-{
-    privinfo_t *priv = ctx;
-    int ret;
-
-    if (priv == NULL) {
-        seterrno(EINVAL);
-        return -1;
-    }
-
-    ret = __tty_write(priv, buf, &len);
-    if (ret != 0) {
-        seterrno(ret);
-        return -1;
-    } else {
-        return len;
-    }
-}
-
-/*
- * 扫描
- */
-static int tty_scan(void *ctx, file_t *file, int flags)
-{
-    privinfo_t *priv = ctx;
-    int ret;
-
-    if (priv == NULL) {
-        seterrno(EINVAL);
-        return -1;
-    }
-
-    ret = 0;
-    if (priv->flags & flags & VFS_FILE_READABLE) {
-        ret |= VFS_FILE_READABLE;
-    }
-    if (priv->flags & flags & VFS_FILE_WRITEABLE) {
-        ret |= VFS_FILE_WRITEABLE;
-    }
-    if (priv->flags & flags & VFS_FILE_ERROR) {
-        ret |= VFS_FILE_ERROR;
-    }
-    return ret;
-}
-
-#include "selectdrv.h"
-
-/*
- * tty 驱动
- */
-static driver_t tty_drv = {
-        .name     = "tty",
-        .open     = tty_open,
-        .write    = tty_write,
-        .read     = tty_read,
-        .isatty   = tty_isatty,
-        .ioctl    = tty_ioctl,
-        .close    = tty_close,
-        .scan     = tty_scan,
-        .select   = select_select,
-        .unselect = select_unselect,
-};
-
-/*
- * 初始化 tty
- */
-int tty_init(void)
-{
-    privinfo_t *priv;
-
-    driver_install(&tty_drv);
-
-    priv = kmalloc(sizeof(privinfo_t));
-    if (priv != NULL) {
-        memset(priv, 0, sizeof(privinfo_t));
-
-        select_init(priv);
-
-        __tty_init(priv);
-
-        if (device_create("/dev/tty", "tty", priv) < 0) {
-            kfree(priv);
-            return -1;
-        }
-        return 0;
-    } else {
-        return -1;
-    }
 }
 /*********************************************************************************************************
   END FILE
