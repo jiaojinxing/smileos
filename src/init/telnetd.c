@@ -78,7 +78,7 @@ static int pstat(task_t *task, char *buf)
     }
 
     if (strlen(task->name) < 7) {
-        return sprintf(buf, "%s\t %s\t\t %4u\t %s\t %4u\t %10u\t %4u\t %4u%%\t %4u%%\t %4u\t %4u\r\n",
+        return sprintf(buf, "%s\t %s\t\t %4u\t %s\t %4u\t %10u\t %4u\t %4u%%\t %4u%%\t %4u\t %4u\n",
                         task->type == TASK_TYPE_PROCESS ? "process" : "kthread",
                         task->name,
                         task->tid,
@@ -91,7 +91,7 @@ static int pstat(task_t *task, char *buf)
                         task->frame_nr,
                         task->dabt_cnt);
     } else {
-        return sprintf(buf, "%s\t %s\t %4u\t %s\t %4u\t %10u\t %4u\t %4u%%\t %4u%%\t %4u\t %4u\r\n",
+        return sprintf(buf, "%s\t %s\t %4u\t %s\t %4u\t %10u\t %4u\t %4u%%\t %4u%%\t %4u\t %4u\n",
                         task->type == TASK_TYPE_PROCESS ? "process" : "kthread",
                         task->name,
                         task->tid,
@@ -116,7 +116,7 @@ static int ts_main(int argc, char **argv)
     task_t *task;
     char buf[LINE_MAX];
 
-    printf("type\t name\t\t pid\t state\t count\t timer\t\t prio\t cpu\t stack\t page\t dabt\r\n");
+    printf("type\t name\t\t pid\t state\t count\t timer\t\t prio\t cpu\t stack\t page\t dabt\n");
 
     for (i = 0, task = tasks; i < TASK_NR; i++, task++) {
         reg = interrupt_disable();
@@ -155,7 +155,7 @@ static int exec_buildin(int argc, char **argv)
     if (code != NULL) {
         return process_create(argv[0], code, size, 5);
     } else {
-        printf("unknown cmd\r\n");
+        printf("unknown cmd\n");
         return -1;
     }
 }
@@ -227,12 +227,12 @@ static int exec_cmd(char *cmd)
  * logo
  */
 const char logo[] =
-        "_________________________________________________\r\n"
-        "      __                            __       __\r\n"
-        "    /    )          ,   /         /    )   /    )\r\n"
-        "    \\       _--_       /   ___   /    /    \\\r\n"
-        "     \\     / /  ) /   /   /___) /    /      \\\r\n"
-        "_(____/___/_/__/_/___/___(___ _(____/___(____/___\r\n";
+        "_________________________________________________\n"
+        "      __                            __       __\n"
+        "    /    )          ,   /         /    )   /    )\n"
+        "    \\       _--_       /   ___   /    /    \\\n"
+        "     \\     / /  ) /   /   /___) /    /      \\\n"
+        "_(____/___/_/__/_/___/___(___ _(____/___(____/___\n";
 
 /*
  * telnetd Ïß³Ì
@@ -247,7 +247,7 @@ static void telnetd_thread(void *arg)
 
     fclose(stdout);
 
-    fd = socket_attach(fd);
+    fd = socket_attach(fd, TRUE);
     stdout = fdopen(fd, "w+");
 
     printf(logo);
@@ -260,7 +260,7 @@ static void telnetd_thread(void *arg)
     while (1) {
         ret = read(fd, &ch, 1);
         if (ret <= 0) {
-            fprintf(stderr, "%s: failed to read socket\r\n", __func__);
+            fprintf(stderr, "%s: failed to read socket\n", __func__);
             break;
         }
 
@@ -302,7 +302,7 @@ void telnetd(void *arg)
 
     fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (fd < 0) {
-        fprintf(stderr, "%s: failed to create socket\r\n", __func__);
+        fprintf(stderr, "%s: failed to create socket\n", __func__);
         _exit(-1);
     }
 
@@ -312,7 +312,7 @@ void telnetd(void *arg)
     local_addr.sin_port         = htons(23);
 
     if (bind(fd, (struct sockaddr *)&local_addr, sizeof(local_addr)) < 0) {
-        fprintf(stderr, "%s: failed to bind port %d\r\n", __func__, ntohs(local_addr.sin_port));
+        fprintf(stderr, "%s: failed to bind port %d\n", __func__, ntohs(local_addr.sin_port));
         closesocket(fd);
         _exit(-1);
     }
@@ -328,7 +328,7 @@ void telnetd(void *arg)
 
             kthread_create(name, telnetd_thread, (void *)client_fd, 8 * KB, 10);
         } else {
-            fprintf(stderr, "%s: failed to accept connect\r\n", __func__);
+            fprintf(stderr, "%s: failed to accept connect\n", __func__);
         }
     }
 }

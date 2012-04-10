@@ -105,8 +105,6 @@ static void init(void *arg)
     bsp_devices_create();
 
     tcpip_init(tcpip_init_done, NULL);
-
-    kheap_show(STDOUT_FILENO);
 }
 
 /*

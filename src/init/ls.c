@@ -105,7 +105,7 @@ ls_main(int argc, char *argv[])
 
         default:
         case '?':
-            printf("usage: ls [-1CFAal] [file ...]\r\n");
+            printf("usage: ls [-1CFAal] [file ...]\n");
             return 0;
         }
     }
@@ -248,12 +248,12 @@ printentry(char *name, struct stat *st)
     printf("\033[0m");
 
     if (ls_flags & LSF_LONG || ls_flags & LSF_SINGLE) {
-        printf("\r\n");
+        printf("\n");
     } else {
         len = strlen(name);
         cols += len;
         if (cols > termwidth / 2 + 8) {
-            printf("\r\n");
+            printf("\n");
             cols = 0;
         } else {
             if (len > 8) {
@@ -321,13 +321,13 @@ do_ls(char *path)
         closedir(dir);
 
         if (ls_flags & LSF_LONG) {
-            printf("total %d\r\n", nr_file);
+            printf("total %d\n", nr_file);
         } else {
-            printf("\r\n");
+            printf("\n");
         }
     } else {
         printentry(path, &st);
-        printf("\r\n");
+        printf("\n");
     }
 
     return 0;
