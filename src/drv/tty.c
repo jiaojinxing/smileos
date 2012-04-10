@@ -22,7 +22,7 @@
 ** File name:               tty.c
 ** Last modified Date:      2012-4-10
 ** Last Version:            1.0.0
-** Descriptions:            TTY 设备驱动
+** Descriptions:            tty 设备驱动
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing
@@ -52,7 +52,7 @@
 #define TTYQ_HIWAT      (TTYQ_SIZE - 10)
 
 /*
- * TTY 队列
+ * tty 队列
  */
 struct tty_queue {
     char                tq_buf[TTYQ_SIZE];
@@ -62,7 +62,7 @@ struct tty_queue {
 };
 
 /*
- * TTY, 私有信息
+ * tty, 私有信息
  */
 typedef struct tty {
     VFS_SELECT_MEMBERS
@@ -98,7 +98,7 @@ static const cc_t       ttydefchars[NCCS] = TTYDEFCHARS;
 #define is_ctrl(c)      ((c) < 32 || (c) == 0x7f)
 
 /*
- * TTY queue operations
+ * tty queue operations
  */
 #define ttyq_next(i)    (((i) + 1) & (TTYQ_SIZE - 1))
 #define ttyq_prev(i)    (((i) - 1) & (TTYQ_SIZE - 1))
@@ -788,7 +788,7 @@ static int tty_close(void *ctx, file_t *file)
 }
 
 /*
- * tty 是不是一个 TTY
+ * tty 是不是一个 tty
  */
 static int tty_isatty(void *ctx, file_t *file)
 {

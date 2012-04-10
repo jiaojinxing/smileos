@@ -127,7 +127,7 @@ static int socket_close(void *ctx, file_t *file)
 }
 
 /*
- * socket 是不是一个 TTY
+ * socket 是不是一个 tty
  */
 static int socket_isatty(void *ctx, file_t *file)
 {
