@@ -108,8 +108,7 @@ struct ethernetif {
 /*
  * 输出块 8 位模式
  */
-static void
-dm9000_out_blk_8bit(const void *data, int len)
+static void dm9000_out_blk_8bit(const void *data, int len)
 {
     int i;
 
@@ -121,8 +120,7 @@ dm9000_out_blk_8bit(const void *data, int len)
 /*
  * 输出块 16 位模式
  */
-static void
-dm9000_out_blk_16bit(const void *data, int len)
+static void dm9000_out_blk_16bit(const void *data, int len)
 {
     int i;
 
@@ -136,8 +134,7 @@ dm9000_out_blk_16bit(const void *data, int len)
 /*
  * 输出块 32 位模式
  */
-static void
-dm9000_out_blk_32bit(const void *data, int len)
+static void dm9000_out_blk_32bit(const void *data, int len)
 {
     int i;
 
@@ -151,8 +148,7 @@ dm9000_out_blk_32bit(const void *data, int len)
 /*
  * 输入块 8 位模式
  */
-static void
-dm9000_in_blk_8bit(void *data, int len)
+static void dm9000_in_blk_8bit(void *data, int len)
 {
     int i;
 
@@ -164,8 +160,7 @@ dm9000_in_blk_8bit(void *data, int len)
 /*
  * 输入块 16 位模式
  */
-static void
-dm9000_in_blk_16bit(void *data, int len)
+static void dm9000_in_blk_16bit(void *data, int len)
 {
     int i;
 
@@ -179,8 +174,7 @@ dm9000_in_blk_16bit(void *data, int len)
 /*
  * 输入块 16 位模式
  */
-static void
-dm9000_dummy_in_blk_16bit(int len)
+static void dm9000_dummy_in_blk_16bit(int len)
 {
     int i;
 
@@ -194,8 +188,7 @@ dm9000_dummy_in_blk_16bit(int len)
 /*
  * 输入块 32 位模式
  */
-static void
-dm9000_in_blk_32bit(void *data, int len)
+static void dm9000_in_blk_32bit(void *data, int len)
 {
     int i;
 
@@ -209,8 +202,7 @@ dm9000_in_blk_32bit(void *data, int len)
 /*
  * 获得接收状态 32 位模式
  */
-static void
-dm9000_rx_status_32bit(u16_t *status, u16_t *len)
+static void dm9000_rx_status_32bit(u16_t *status, u16_t *len)
 {
     u32_t temp;
 
@@ -224,8 +216,7 @@ dm9000_rx_status_32bit(u16_t *status, u16_t *len)
 /*
  * 获得接收状态 16 位模式
  */
-static void
-dm9000_rx_status_16bit(u16_t *status, u16_t *len)
+static void dm9000_rx_status_16bit(u16_t *status, u16_t *len)
 {
     DM9000_outb(DM9000_MRCMD, DM9000_IO);
 
@@ -236,8 +227,7 @@ dm9000_rx_status_16bit(u16_t *status, u16_t *len)
 /*
  * 获得接收状态 8 位模式
  */
-static void
-dm9000_rx_status_8bit(u16_t *status, u16_t *len)
+static void dm9000_rx_status_8bit(u16_t *status, u16_t *len)
 {
     DM9000_outb(DM9000_MRCMD, DM9000_IO);
 
@@ -248,8 +238,7 @@ dm9000_rx_status_8bit(u16_t *status, u16_t *len)
 /*
  * 从 IO 端口读一个字节
  */
-static u8_t
-dm9000_io_read(u8_t reg)
+static u8_t dm9000_io_read(u8_t reg)
 {
     DM9000_outb(reg, DM9000_IO);
     return DM9000_inb(DM9000_DATA);
@@ -258,8 +247,7 @@ dm9000_io_read(u8_t reg)
 /*
  * 从 IO 端口写一个字节
  */
-static void
-dm9000_io_write(u8_t reg, u8_t value)
+static void dm9000_io_write(u8_t reg, u8_t value)
 {
     DM9000_outb(reg, DM9000_IO);
     DM9000_outb(value, DM9000_DATA);
@@ -268,8 +256,7 @@ dm9000_io_write(u8_t reg, u8_t value)
 /*
  * Read a word from phyxcer
  */
-static u16_t
-dm9000_phy_read(u8_t reg)
+static u16_t dm9000_phy_read(u8_t reg)
 {
     u16_t value;
 
@@ -291,8 +278,7 @@ dm9000_phy_read(u8_t reg)
 /*
  * Write a word to phyxcer
  */
-static void
-dm9000_phy_write(u8_t reg, u16_t value)
+static void dm9000_phy_write(u8_t reg, u16_t value)
 {
     /*
      * Fill the phyxcer register into REG_0C
@@ -314,8 +300,7 @@ dm9000_phy_write(u8_t reg, u16_t value)
 /*
  * 探测 DM9000 芯片
  */
-static err_t
-dm9000_probe(void)
+static err_t dm9000_probe(void)
 {
     u32_t id;
 
@@ -336,8 +321,7 @@ dm9000_probe(void)
 /*
  * 复位 DM9000 芯片
  */
-static err_t
-dm9000_reset(void)
+static err_t dm9000_reset(void)
 {
     LWIP_DEBUGF(NETIF_DEBUG, ("dm9000_reset: resetting\n"));
 
@@ -389,8 +373,7 @@ dm9000_reset(void)
 /*
  * 初始化 DM9000 芯片
  */
-static err_t
-dm9000_init(struct netif *netif)
+static err_t dm9000_init(struct netif *netif)
 {
     struct ethernetif *ethernetif = netif->state;
     u8_t  mode, oft, link;
@@ -573,8 +556,7 @@ dm9000_init(struct netif *netif)
  *
  * @param netif the lwip network interface structure for this ethernetif
  */
-static void
-ethernetif_input(struct netif *netif, struct pbuf *p)
+static void ethernetif_input(struct netif *netif, struct pbuf *p)
 {
     struct eth_hdr *ethhdr;
 
@@ -631,8 +613,7 @@ ethernetif_input(struct netif *netif, struct pbuf *p)
  * @return a pbuf filled with the received packet (including MAC header)
  *         NULL on memory error
  */
-static void
-dm9000_recv(struct netif *netif)
+static void dm9000_recv(struct netif *netif)
 {
     struct ethernetif *ethernetif = netif->state;
     struct pbuf *p, *q;
@@ -726,9 +707,7 @@ dm9000_recv(struct netif *netif)
  *       to become availale since the stack doesn't retry to send a packet
  *       dropped because of memory failure (except for the TCP timers).
  */
-
-static err_t
-low_level_output(struct netif *netif, struct pbuf *p)
+static err_t low_level_output(struct netif *netif, struct pbuf *p)
 {
     struct ethernetif *ethernetif = netif->state;
     struct pbuf *q;
@@ -766,8 +745,7 @@ low_level_output(struct netif *netif, struct pbuf *p)
 /*
  * dm9000 发送完成
  */
-static void
-dm9000_send_done(struct netif *netif)
+static void dm9000_send_done(struct netif *netif)
 {
     struct ethernetif *ethernetif = netif->state;
     u8_t tx_status;
@@ -794,8 +772,7 @@ dm9000_send_done(struct netif *netif)
 /*
  * dm9000 中断
  */
-static void
-dm9000_isr(struct netif *netif)
+static void dm9000_isr(struct netif *netif)
 {
     u8_t int_status;
     u8_t last_io;
@@ -857,8 +834,7 @@ dm9000_isr(struct netif *netif)
 /*
  * EINT4-7 中断
  */
-static int
-eint47_isr(uint32_t interrupt, void *arg)
+static int eint47_isr(uint32_t interrupt, void *arg)
 {
     uint32_t sub_interrupt;
 
@@ -879,8 +855,7 @@ eint47_isr(uint32_t interrupt, void *arg)
  * @param netif the already initialized lwip network interface structure
  *        for this ethernetif
  */
-static void
-low_level_init(struct netif *netif)
+static void low_level_init(struct netif *netif)
 {
     struct ethernetif *ethernetif = netif->state;
     err_t ret;
@@ -982,8 +957,7 @@ low_level_init(struct netif *netif)
  *         ERR_MEM if private data couldn't be allocated
  *         any other err_t on error
  */
-err_t
-ethernetif_init(struct netif *netif)
+err_t ethernetif_init(struct netif *netif)
 {
     struct ethernetif *ethernetif;
 

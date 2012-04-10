@@ -102,7 +102,7 @@ static int xxx_isatty(void *ctx, file_t *file)
         seterrno(EINVAL);
         return -1;
     }
-    return 1;
+    return 0;
 }
 
 /*

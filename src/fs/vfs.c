@@ -888,7 +888,7 @@ int vfs_select(int nfds, fd_set *readfds, fd_set *writefds,
     int ret;
     uint32_t reg;
 
-    if ((nfds < 1) || ((readfds == NULL) && (writefds == NULL) && (errorfds == NULL))) {
+    if (nfds < 0) {
         seterrno(EINVAL);
         return -1;
     }

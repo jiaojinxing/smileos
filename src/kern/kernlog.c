@@ -101,7 +101,7 @@ void printk(const char *fmt, ...)
 
     va_start(va, fmt);
 
-    msg->len = vsnprintf(msg->buf, LINE_MAX, fmt, va);
+    msg->len = vsnprintf(msg->buf, sizeof(msg->buf), fmt, va);
 
     mqueue_post(&mqueue, msg, 0);
 
@@ -120,7 +120,7 @@ void kcomplain(const char *fmt, ...)
 
     va_start(va, fmt);
 
-    vsnprintf(buf, LINE_MAX, fmt, va);
+    vsnprintf(buf, sizeof(buf), fmt, va);
 
     for (i = 0; buf[i] != '\0'; i++) {
         kputc(buf[i]);
