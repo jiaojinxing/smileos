@@ -92,7 +92,7 @@ static int xxx_close(void *ctx, file_t *file)
 }
 
 /*
- * xxx 是不是一个 TTY
+ * xxx 是不是一个 tty
  */
 static int xxx_isatty(void *ctx, file_t *file)
 {

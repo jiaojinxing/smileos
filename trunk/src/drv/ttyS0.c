@@ -67,7 +67,7 @@ static int ttyS0_close(void *ctx, file_t *file)
 }
 
 /*
- * ttyS0 是不是一个 TTY
+ * ttyS0 是不是一个 tty
  */
 static int ttyS0_isatty(void *ctx, file_t *file)
 {
