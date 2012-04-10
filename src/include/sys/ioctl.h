@@ -19,14 +19,14 @@
 ** Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 **
 **--------------------------------------------------------------------------------------------------------
-** File name:               fcntl.h
-** Last modified Date:      2012-4-5
+** File name:               ioctl.h
+** Last modified Date:      2012-4-10
 ** Last Version:            1.0.0
-** Descriptions:            文件控制头文件
+** Descriptions:            IO 控制头文件
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing
-** Created date:            2012-4-5
+** Created date:            2012-4-10
 ** Version:                 1.0.0
 ** Descriptions:            创建文件
 **
@@ -37,33 +37,25 @@
 ** Descriptions:
 **
 *********************************************************************************************************/
-#ifndef FCNTL_H_
-#define FCNTL_H_
+#ifndef IOCTL_H_
+#define IOCTL_H_
 
-#include <sys/fcntl.h>
-#include <sys/ioctl.h>
+#define IOCPARM_MASK    0x7fU                                           /*  parameters must be < 128 bytes*/
+#define IOC_VOID        0x20000000UL                                    /*  no parameters               */
+#define IOC_OUT         0x40000000UL                                    /*  copy out parameters         */
+#define IOC_IN          0x80000000UL                                    /*  copy in parameters          */
+#define IOC_INOUT       (IOC_IN | IOC_OUT)
+                                                                        /*  0x20000000 distinguishes new &
+                                                                            old ioctl's                 */
+#define _IO(x, y)       (IOC_VOID | ((x) << 8) | (y))
 
-#ifndef FIONREAD
-#define FIONREAD        _IOR('f', 127, unsigned long)                   /*  get # bytes to read         */
-#endif
+#define _IOR(x, y, t)   (IOC_OUT | (((unsigned long)sizeof(t) & IOCPARM_MASK) << 16) | ((x) << 8) | (y))
 
-#ifndef FIONBIO
-#define FIONBIO         _IOW('f', 126, unsigned long)                   /*  set/clear non-blocking i/o  */
-#endif
+#define _IOW(x, y, t)   (IOC_IN  | (((unsigned long)sizeof(t) & IOCPARM_MASK) << 16) | ((x) << 8) | (y))
 
-#ifndef SIOCSHIWAT
-#define SIOCSHIWAT      _IOW('s', 0, unsigned long)                     /*  set high watermark          */
-#define SIOCGHIWAT      _IOR('s', 1, unsigned long)                     /*  get high watermark          */
-#define SIOCSLOWAT      _IOW('s', 2, unsigned long)                     /*  set low watermark           */
-#define SIOCGLOWAT      _IOR('s', 3, unsigned long)                     /*  get low watermark           */
-#define SIOCATMARK      _IOR('s', 7, unsigned long)                     /*  at oob mark?                */
-#endif
+extern int ioctl(int fd, int cmd, void *arg);
 
-#ifndef O_NDELAY
-#define O_NDELAY        O_NONBLOCK                                      /*  same as O_NONBLOCK          */
-#endif
-
-#endif                                                                  /*  FCNTL_H_                    */
+#endif                                                                  /*  IOCTL_H_                    */
 /*********************************************************************************************************
   END FILE
 *********************************************************************************************************/

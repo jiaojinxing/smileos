@@ -118,6 +118,7 @@ static sys_do_t sys_do_table[1];
 #define SYS_CALL_FSTAT      25
 #define SYS_CALL_LSEEK      26
 #define SYS_CALL_CLOSE      27
+#define SYS_CALL_IOCTL      28
 #define SYS_CALL_RENAME     30
 #define SYS_CALL_UNLINK     31
 #define SYS_CALL_LINK       32
@@ -278,6 +279,30 @@ int _close_r(struct _reent *reent, int fd)
         ret = (sys_do_table[syscall])(fd);
     } else {
         __asm__ __volatile__("mov    r0,  %0": :"r"(fd));
+        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
+        __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
+        __asm__ __volatile__("swi    0");
+        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
+        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
+    }
+    return ret;
+}
+
+/*
+ * ioctl
+ */
+int ioctl(int fd, int cmd, void *arg)
+{
+    int ret;
+    int syscall = SYS_CALL_IOCTL;
+
+    debug("%s\r\n", __func__);
+    if (in_kernel()) {
+        ret = (sys_do_table[syscall])(fd, cmd, arg);
+    } else {
+        __asm__ __volatile__("mov    r0,  %0": :"r"(fd));
+        __asm__ __volatile__("mov    r1,  %0": :"r"(cmd));
+        __asm__ __volatile__("mov    r2,  %0": :"r"(arg));
         __asm__ __volatile__("stmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
         __asm__ __volatile__("swi    0");
