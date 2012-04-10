@@ -116,8 +116,6 @@ int main(void)
 {
     kernel_init();
 
-    kernel_start();
-
     vfs_init();
 
     extern int null_init(void);
@@ -128,6 +126,8 @@ int main(void)
 
     extern int ttyS0_init(void);
     ttyS0_init();
+
+    kernel_start();
 
     kthread_create("init", init, NULL, 4 * KB, 10);
 

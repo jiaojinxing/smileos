@@ -44,6 +44,7 @@
 #include <sys/signal.h>
 #include <sys/termios.h>
 #include "kern/kern.h"
+#include "kern/ipc.h"
 
 #define MAX_INPUT       128
 #define TTYQ_SIZE       MAX_INPUT
@@ -57,6 +58,7 @@ struct tty_queue {
     int                 tq_head;
     int                 tq_tail;
     int                 tq_count;
+    mutex_t             tq_lock;
 };
 
 /*
