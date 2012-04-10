@@ -231,6 +231,7 @@ sys_do_t sys_do_table[] = {
 #define SYS_CALL_FSTAT      25
 #define SYS_CALL_LSEEK      26
 #define SYS_CALL_CLOSE      27
+#define SYS_CALL_IOCTL      28
         (sys_do_t)vfs_open,
         (sys_do_t)vfs_read,
         (sys_do_t)vfs_write,
@@ -239,7 +240,7 @@ sys_do_t sys_do_table[] = {
         (sys_do_t)vfs_fstat,
         (sys_do_t)vfs_lseek,
         (sys_do_t)vfs_close,
-        NULL,
+        (sys_do_t)vfs_ioctl,
         NULL,
 #define SYS_CALL_RENAME     30
 #define SYS_CALL_UNLINK     31
