@@ -275,12 +275,12 @@ void kernel_timer(void)
                         p++;
                     }
 
-                    if (p < end) {
-                        task->stack_rate = 100 * ((uint32_t)(end - p)) / task->stack_size;
-                    } else {
+                    if (p == task->stack_base) {
                         printk("kthread %s tid=%d stack overflow!\n", task->name, task->tid);
                         task_kill(task->tid);
                         continue;
+                    } else {
+                        task->stack_rate = 100 * ((uint32_t)(end - p)) / task->stack_size;
                     }
                 }
             }

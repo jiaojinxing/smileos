@@ -42,7 +42,7 @@
 #include <fcntl.h>
 #define KERNEL
 #include "tty.h"
-#include "kern/ipc.h"
+
 
 /*
  * default control characters
@@ -78,13 +78,16 @@ int tty_getc(struct tty_queue *tq)
 {
     char c;
 
+    mutex_lock(&tq->tq_lock, 0);
     if (ttyq_empty(tq)) {
+        mutex_unlock(&tq->tq_lock);
         return -1;
     }
 
     c = tq->tq_buf[tq->tq_head];
     tq->tq_head = ttyq_next(tq->tq_head);
     tq->tq_count--;
+    mutex_unlock(&tq->tq_lock);
 
     return (int)c;
 }
@@ -94,13 +97,16 @@ int tty_getc(struct tty_queue *tq)
  */
 static void tty_putc(int c, struct tty_queue *tq)
 {
+    mutex_lock(&tq->tq_lock, 0);
     if (ttyq_full(tq)) {
+        mutex_unlock(&tq->tq_lock);
         return;
     }
 
     tq->tq_buf[tq->tq_tail] = (char)(c & 0xff);
     tq->tq_tail = ttyq_next(tq->tq_tail);
     tq->tq_count++;
+    mutex_unlock(&tq->tq_lock);
 }
 
 /*
@@ -110,13 +116,16 @@ static int tty_unputc(struct tty_queue *tq)
 {
     char c;
 
+    mutex_lock(&tq->tq_lock, 0);
     if (ttyq_empty(tq)) {
+        mutex_unlock(&tq->tq_lock);
         return -1;
     }
 
     tq->tq_tail = ttyq_prev(tq->tq_tail);
     c = tq->tq_buf[tq->tq_tail];
     tq->tq_count--;
+    mutex_unlock(&tq->tq_lock);
 
     return (int)c;
 }
@@ -218,7 +227,7 @@ static void tty_rubout(int c, struct tty *tp)
 }
 
 /*
- * Echo char
+ * Echo char.
  */
 static void tty_echo(int c, struct tty *tp)
 {
@@ -268,7 +277,7 @@ static void tty_flush(struct tty *tp, int rw)
 
         task = tp->t_input;
         if (task) {
-            resume_task(task, tp->t_input, TASK_RESUME_MSG_COME);
+            resume_task(task, tp->t_input, TASK_RESUME_INTERRUPT);
         }
     }
 
@@ -403,6 +412,7 @@ void tty_input(int c, struct tty *tp)
             goto endcase;
         }
     }
+
     if (lflag & ISIG) {
         /*
          * quit (^C)
@@ -683,6 +693,10 @@ int tty_attach(struct tty *tp)
     tp->t_lflag  = TTYDEF_LFLAG;
     tp->t_ispeed = TTYDEF_SPEED;
     tp->t_ospeed = TTYDEF_SPEED;
+
+    mutex_new(&tp->t_rawq.tq_lock);
+    mutex_new(&tp->t_canq.tq_lock);
+    mutex_new(&tp->t_outq.tq_lock);
 
     return 0;
 }

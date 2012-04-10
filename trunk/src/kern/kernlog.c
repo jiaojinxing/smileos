@@ -43,6 +43,7 @@
 #include "kern/ipc.h"
 #include <stdio.h>
 #include <stdarg.h>
+#include <unistd.h>
 
 /*
  * 内核日志消息队列
@@ -63,13 +64,10 @@ typedef struct {
 static void klogd(void *arg)
 {
     msg_t *msg;
-    int    i;
 
     while (1) {
         if (mqueue_fetch(&mqueue, (void **)&msg, 0) == 0) {
-            for (i = 0; i < msg->len && msg->buf[i] != '\0'; i++) {
-                kputc(msg->buf[i]);
-            }
+            write(STDOUT_FILENO, msg->buf, msg->len);
             kfree(msg);
         }
     }
