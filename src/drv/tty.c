@@ -43,7 +43,6 @@
 #define KERNEL
 #include "tty.h"
 
-
 /*
  * default control characters
  */

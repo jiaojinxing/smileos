@@ -196,12 +196,15 @@ unsigned char kgetc(void);
 /*
  * 从内核内存堆分配内存
  */
-void *kmalloc(uint32_t size);
+void *__kmalloc(const char *func, uint32_t size);
 
 /*
  * 释放内存回内核内存堆
  */
-void kfree(void *ptr);
+void __kfree(const char *func, void *ptr);
+
+#define kmalloc(a)  __kmalloc(__func__, a)
+#define kfree(a)    __kfree(__func__, a)
 
 /*
  * kcalloc

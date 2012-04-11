@@ -1349,8 +1349,39 @@ event_callback(struct netconn *conn, enum netconn_evt evt, u16_t len)
   }
 
 /*************************************** jiaojinxing1987@gmail.com **************************************/
-  extern void smileos_socket_report(int sock_fd, int type);
-  smileos_socket_report(s, 0);
+  {
+      void *lastdata;
+      s16_t rcvevent;
+      u16_t sendevent;
+      u16_t errevent;
+      int type;
+
+#define VFS_FILE_READABLE       (1 << 0)
+#define VFS_FILE_WRITEABLE      (1 << 1)
+#define VFS_FILE_ERROR          (1 << 2)
+
+      lastdata = sock->lastdata;
+      rcvevent = sock->rcvevent;
+      sendevent = sock->sendevent;
+      errevent = sock->errevent;
+
+      type = 0;
+
+      if ((lastdata != NULL) || (rcvevent > 0)) {
+          type |= VFS_FILE_READABLE;
+      }
+
+      if (sendevent != 0) {
+          type |= VFS_FILE_WRITEABLE;
+      }
+
+      if (errevent != 0) {
+          type |= VFS_FILE_ERROR;
+      }
+
+      extern void smileos_socket_report(int sock_fd, int type);
+      smileos_socket_report(s, type);
+  }
 /********************************************************************************************************/
 
   if (sock->select_waiting == 0) {

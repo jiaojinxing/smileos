@@ -53,7 +53,7 @@ static int select_select(void *ctx, file_t *file, int type)
         return -1;
     }
 
-    node = kmalloc(sizeof(sizeof(select_node_t)));
+    node = kmalloc(sizeof(select_node_t));
     if (node == NULL) {
         seterrno(ENOMEM);
         return -1;
