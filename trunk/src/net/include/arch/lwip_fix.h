@@ -45,6 +45,7 @@
 #include "kern/types.h"
 #include <sys/types.h>
 #include <sys/time.h>
+#include <limits.h>
 #include <fcntl.h>
 #include <errno.h>
 /*********************************************************************************************************

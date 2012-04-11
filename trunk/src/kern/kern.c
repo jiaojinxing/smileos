@@ -79,7 +79,7 @@ static uint8_t      interrupt_nest;                                     /*  中断
 static uint8_t      running;                                            /*  内核是否正在运行            */
 uint8_t             kernel_mode;                                        /*  当前是否处于内核模式        */
 
-#define THREAD_STACK_MAGIC0         0xAA                                /*  内核线程栈魔数              */
+#define KTHREAD_STACK_MAGIC0        0xAA                                /*  内核线程栈魔数              */
 
 static void idle_create(void);
 /*********************************************************************************************************
@@ -260,7 +260,7 @@ void kernel_timer(void)
                 task->cpu_rate = task->tick;                            /*  任务的 CPU 占用率           */
                 task->tick     = 0;                                     /*  重置该任务被定时器中断的次数*/
 
-                if (task->type == TASK_TYPE_THREAD) {                   /*  如果任务是内核线程          */
+                if (task->type == TASK_TYPE_KTHREAD) {                  /*  如果任务是内核线程          */
                     /*
                      * 统计内核线程的栈使用率, 栈溢出检查
                      *
@@ -271,11 +271,11 @@ void kernel_timer(void)
                     uint8_t *p   = (uint8_t *)task->stack_base;
                     uint8_t *end = (uint8_t *)(task->stack_base + task->stack_size);
 
-                    while (*p == THREAD_STACK_MAGIC0 && p < end) {
+                    while (*p == KTHREAD_STACK_MAGIC0 && p < end) {
                         p++;
                     }
 
-                    if (p == task->stack_base) {
+                    if (p == (uint8_t *)task->stack_base) {
                         printk("kthread %s tid=%d stack overflow!\n", task->name, task->tid);
                         task_kill(task->tid);
                         continue;
@@ -583,7 +583,7 @@ static void kthread_shell(task_t *task)
     vfs_task_init(task->tid);                                           /*  初始化任务的文件信息        */
 
     open("/dev/ttyS0", O_RDONLY, 0666);                                 /*  打开三个标准文件            */
-    stdin = fdopen(STDIN_FILENO, "r");
+    stdin  = fdopen(STDIN_FILENO,  "r");
 
     open("/dev/ttyS0", O_WRONLY, 0666);
     stdout = fdopen(STDOUT_FILENO, "w");
@@ -607,10 +607,6 @@ int32_t kthread_create(const char *name, void (*func)(void *), void *arg, uint32
 
     if (func == NULL) {
         return -1;
-    }
-
-    if (priority < 5) {                                                 /*  优先级最小为 5              */
-        priority = 5;
     }
 
     if (stack_size < 1 * KB) {                                          /*  栈空间最小为 1 KB           */
@@ -637,7 +633,7 @@ int32_t kthread_create(const char *name, void (*func)(void *), void *arg, uint32
         return -1;
     }
 
-    memset((char *)task->stack_base, THREAD_STACK_MAGIC0, stack_size);  /*  初始化栈空间                */
+    memset((char *)task->stack_base, KTHREAD_STACK_MAGIC0, stack_size);  /*  初始化栈空间                */
 
     task->pid          = current->pid;                                  /*  进程 ID 为当前任务的进程 ID */
     task->tid          = tid;                                           /*  任务 ID                     */
@@ -645,7 +641,7 @@ int32_t kthread_create(const char *name, void (*func)(void *), void *arg, uint32
     task->counter      = priority;
     task->timer        = 0;
     task->priority     = priority;
-    task->type         = TASK_TYPE_THREAD;                              /*  任务类型为内核线程          */
+    task->type         = TASK_TYPE_KTHREAD;                             /*  任务类型为内核线程          */
     task->resume_type  = TASK_RESUME_UNKNOW;
     task->next         = NULL;
     task->wait_list    = NULL;
