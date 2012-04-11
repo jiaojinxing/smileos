@@ -245,10 +245,13 @@ static void telnetd_thread(void *arg)
     char cmd[LINE_MAX];
     char ch;
 
+    pty_create("/dev/pty0", fd);
+
     fclose(stdout);
 
-    fd = socket_attach(fd, TRUE);
-    stdout = fdopen(fd, "w+");
+    while ((stdout = fopen("/dev/pty0", "w+")) == NULL) {
+        usleep(1000);
+    }
 
     printf(logo);
 

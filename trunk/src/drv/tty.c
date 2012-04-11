@@ -491,6 +491,21 @@ restartoutput:
 }
 
 /*
+ * A tty device readable?
+ */
+int tty_readable(struct tty *tp)
+{
+    struct tty_queue *qp;
+    tcflag_t lflag;
+
+    lflag = tp->t_lflag;
+
+    qp = (lflag & ICANON) ? &tp->t_canq : &tp->t_rawq;
+
+    return !ttyq_empty(qp);
+}
+
+/*
  * Process a read call on a tty device.
  */
 int tty_read(struct tty *tp, char *buf, size_t *nbyte)
