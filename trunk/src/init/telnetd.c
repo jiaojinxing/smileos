@@ -261,7 +261,7 @@ static void telnetd_thread(void *arg)
     pos = 0;
 
     while (1) {
-        ret = read(fd, &ch, 1);
+        ret = read(STDOUT_FILENO, &ch, 1);
         if (ret <= 0) {
             fprintf(stderr, "%s: failed to read socket\n", __func__);
             break;

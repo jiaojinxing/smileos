@@ -121,6 +121,9 @@ void kcomplain(const char *fmt, ...)
     vsnprintf(buf, sizeof(buf), fmt, va);
 
     for (i = 0; buf[i] != '\0'; i++) {
+        if (buf[i] == '\n') {
+            kputc('\r');
+        }
         kputc(buf[i]);
     }
 

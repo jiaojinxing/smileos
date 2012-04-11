@@ -246,14 +246,10 @@ void pty_thread(void *arg)
     fd_set rfds, efds;
     int ret;
 
-    printk("%s: socket_attach\n", __func__);
-
     priv->fd = socket_attach(priv->fd, FALSE);
     if (priv->fd < 0) {
         return;
     }
-
-    printk("%s: ioctl\n", __func__);
 
     ioctl(priv->fd, FIONBIO, &on);
 
@@ -263,26 +259,17 @@ void pty_thread(void *arg)
         FD_SET(priv->fd, &rfds);
         FD_SET(priv->fd, &efds);
 
-        printk("%s: select\n", __func__);
-
         ret = select(priv->fd + 1, &rfds, NULL, &efds, NULL);
-
-        printk("%s: select ok\n", __func__);
         if (ret < 0) {
-            printk("%s: ret < 0\n", __func__);
             select_report(priv, VFS_FILE_ERROR);
             break;
         } else if (ret == 0) {
-            printk("%s: ret == 0\n", __func__);
             continue;
         } else {
-            printk("%s: select_report ret == 0\n", __func__);
             if (FD_ISSET(priv->fd, &efds)) {
-                printk("%s: FD_ISSET(priv->fd, &efds)\n", __func__);
                 select_report(priv, VFS_FILE_ERROR);
                 break;
             } else if (FD_ISSET(priv->fd, &rfds)) {
-                printk("%s: FD_ISSET(priv->fd, &rfds)\n", __func__);
                 while (read(priv->fd, &c, 1) == 1) {
                     tty_input((int)c, &priv->tty);
                 }
