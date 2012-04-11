@@ -44,6 +44,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <stdio.h>
+#include <string.h>
 #include <sys/select.h>
 #include "tty.h"
 
@@ -54,6 +55,7 @@ typedef struct {
     VFS_SELECT_MEMBERS
     struct tty      tty;
     int             fd;
+    char            name[PATH_MAX];
 } privinfo_t;
 
 /*
@@ -179,10 +181,11 @@ static int pty_scan(void *ctx, file_t *file, int flags)
     }
 
     ret = 0;
-    if (tty_readable(&priv->tty) & flags & VFS_FILE_READABLE) {
+    if (tty_readable(&priv->tty) && (flags & VFS_FILE_READABLE)) {
         ret |= VFS_FILE_READABLE;
     }
-    if (flags & VFS_FILE_WRITEABLE) {
+
+    if (tty_writeable(&priv->tty) && (flags & VFS_FILE_WRITEABLE)) {
         ret |= VFS_FILE_WRITEABLE;
     }
 
@@ -220,17 +223,9 @@ int pty_init(void)
  */
 static void pty_start(struct tty *tp)
 {
-    int c;
     privinfo_t *priv = struct_addr(tp, privinfo_t, tty);
-    char buf[INPUT_MAX];
-    int i;
 
-    i = 0;
-    while ((c = tty_getc(&tp->t_outq)) >= 0) {
-        buf[i++] = (char)c;
-    }
-
-    write(priv->fd, buf, i);
+    select_report(priv, VFS_FILE_WRITEABLE);
 }
 
 #include <sys/socket.h>
@@ -242,42 +237,79 @@ void pty_thread(void *arg)
 {
     privinfo_t *priv = arg;
     int on = 1;
-    char c;
-    fd_set rfds, efds;
+    fd_set rfds, wfds, efds;
     int ret;
+    char buf[INPUT_MAX];
+    int i;
+    int host_fd;
+    int dev_fd;
+    uint32_t reg;
 
-    priv->fd = socket_attach(priv->fd, FALSE);
-    if (priv->fd < 0) {
+    dev_fd = socket_attach(priv->fd);
+    if (dev_fd < 0) {
+        lwip_close(priv->fd);
         return;
     }
 
-    ioctl(priv->fd, FIONBIO, &on);
+    host_fd = open(priv->name, O_RDWR, 0666);
+    if (host_fd < 0) {
+        close(dev_fd);
+        return;
+    }
+
+    ioctl(dev_fd, FIONBIO, &on);
 
     while (1) {
         FD_ZERO(&rfds);
+        FD_ZERO(&wfds);
         FD_ZERO(&efds);
-        FD_SET(priv->fd, &rfds);
-        FD_SET(priv->fd, &efds);
 
-        ret = select(priv->fd + 1, &rfds, NULL, &efds, NULL);
+        FD_SET(dev_fd,  &rfds);
+        FD_SET(dev_fd,  &efds);
+
+        FD_SET(host_fd, &wfds);
+        FD_SET(host_fd, &efds);
+
+        ret = select(host_fd + 1, &rfds, &wfds, &efds, NULL);
         if (ret < 0) {
             select_report(priv, VFS_FILE_ERROR);
             break;
         } else if (ret == 0) {
             continue;
         } else {
-            if (FD_ISSET(priv->fd, &efds)) {
+            if (FD_ISSET(dev_fd, &efds) || FD_ISSET(host_fd, &efds)) {
                 select_report(priv, VFS_FILE_ERROR);
                 break;
-            } else if (FD_ISSET(priv->fd, &rfds)) {
-                while (read(priv->fd, &c, 1) == 1) {
+            }
+
+            if (FD_ISSET(dev_fd, &rfds)) {
+                char c;
+
+                while (read(dev_fd, &c, 1) == 1) {
                     tty_input((int)c, &priv->tty);
                 }
                 select_report(priv, VFS_FILE_READABLE);
             }
+
+            if (FD_ISSET(host_fd, &wfds)) {
+                int c;
+
+                i = 0;
+                while ((c = tty_getc(&priv->tty.t_outq)) >= 0) {
+                    buf[i++] = (char)c;
+                }
+                write(dev_fd, buf, i);
+                tty_done(&priv->tty);
+            }
         }
     }
-    close(priv->fd);
+    close(host_fd);
+    close(dev_fd);
+
+    reg = interrupt_disable();
+    device_remove(priv->name);
+    kfree(priv);
+    interrupt_resume(reg);
 }
 
 /*
@@ -304,6 +336,10 @@ int pty_create(const char *name, int fd)
 
         tty_attach(&priv->tty);
         priv->tty.t_oproc = pty_start;
+
+        priv->tty.t_lflag &= ~ECHO;
+
+        strlcpy(priv->name, name, sizeof(priv->name));
 
         if (kthread_create(name, pty_thread, priv, 8 * KB, 20) < 0) {
             device_remove(name);

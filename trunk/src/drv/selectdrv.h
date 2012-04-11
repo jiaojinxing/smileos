@@ -112,7 +112,7 @@ static int select_report(void *ctx, int type)
     node = priv->wait_list.next;
     while (node != &priv->wait_list) {
         task = node->task;
-        if (type & node->select_type && task->resume_type != TASK_RESUME_INTERRUPT) {
+        if ((type & node->select_type) && task->resume_type != TASK_RESUME_INTERRUPT) {
             task->timer       = 0;
             task->state       = TASK_RUNNING;
             task->resume_type = TASK_RESUME_SELECT_EVENT;

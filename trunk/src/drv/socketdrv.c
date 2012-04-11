@@ -55,8 +55,6 @@ typedef struct {
     VFS_SELECT_MEMBERS
     int             sock_fd;
     int             ref;
-    struct tty      tty;
-    int             isatty;
 } privinfo_t;
 
 /*
@@ -80,25 +78,12 @@ static int socket_open(void *ctx, file_t *file, int oflag, mode_t mode)
 static int socket_ioctl(void *ctx, file_t *file, int cmd, void *arg)
 {
     privinfo_t *priv = ctx;
-    int ret;
 
     if (priv == NULL) {
         seterrno(EINVAL);
         return -1;
     }
-
-    if (priv->isatty) {
-        ret = tty_ioctl(&priv->tty, cmd, arg);
-        if (ENOSYS == ret) {
-            return lwip_ioctl(priv->sock_fd, cmd, arg);
-        } else if (ret != 0) {
-            seterrno(ret);
-            return -1;
-        }
-        return 0;
-    } else {
-        return lwip_ioctl(priv->sock_fd, cmd, arg);
-    }
+    return lwip_ioctl(priv->sock_fd, cmd, arg);
 }
 
 /*
@@ -121,7 +106,7 @@ static int socket_fcntl(void *ctx, file_t *file, int cmd, int arg)
 static int socket_close(void *ctx, file_t *file)
 {
     privinfo_t *priv = ctx;
-    char name[NAME_MAX];
+    char name[PATH_MAX];
 
     if (priv == NULL) {
         seterrno(EINVAL);
@@ -150,7 +135,7 @@ static int socket_isatty(void *ctx, file_t *file)
         seterrno(EINVAL);
         return -1;
     }
-    return priv->isatty;
+    return 0;
 }
 
 /*
@@ -159,24 +144,12 @@ static int socket_isatty(void *ctx, file_t *file)
 static ssize_t socket_read(void *ctx, file_t *file, void *buf, size_t len)
 {
     privinfo_t *priv = ctx;
-    int ret;
 
     if (priv == NULL) {
         seterrno(EINVAL);
         return -1;
     }
-
-//    if (priv->isatty) {
-//        ret = tty_read(&priv->tty, buf, &len);
-//        if (ret != 0) {
-//            seterrno(ret);
-//            return -1;
-//        } else {
-//            return len;
-//        }
-//    } else {
-        return lwip_recv(priv->sock_fd, buf, len, 0);
-//    }
+    return lwip_recv(priv->sock_fd, buf, len, 0);
 }
 
 /*
@@ -185,24 +158,12 @@ static ssize_t socket_read(void *ctx, file_t *file, void *buf, size_t len)
 static ssize_t socket_write(void *ctx, file_t *file, const void *buf, size_t len)
 {
     privinfo_t *priv = ctx;
-    int ret;
 
     if (priv == NULL) {
         seterrno(EINVAL);
         return -1;
     }
-
-    if (priv->isatty) {
-        ret = tty_write(&priv->tty, buf, &len);
-        if (ret != 0) {
-            seterrno(ret);
-            return -1;
-        } else {
-            return len;
-        }
-    } else {
-        return lwip_send(priv->sock_fd, buf, len, 0);
-    }
+    return lwip_send(priv->sock_fd, buf, len, 0);
 }
 
 /*
@@ -266,7 +227,7 @@ static int socket_scan(void *ctx, file_t *file, int flags)
  */
 void smileos_socket_report(int sock_fd, int type)
 {
-    char name[NAME_MAX];
+    char name[PATH_MAX];
     device_t *dev;
 
     sprintf(name, "/dev/socket%d", sock_fd);
@@ -274,24 +235,6 @@ void smileos_socket_report(int sock_fd, int type)
     if (dev != NULL) {
         select_report(dev->ctx, type);
     }
-}
-
-/*
- * 启动输出
- */
-static void socket_start(struct tty *tp)
-{
-    int c;
-    privinfo_t *priv = struct_addr(tp, privinfo_t, tty);
-    char buf[INPUT_MAX];
-    int i;
-
-    i = 0;
-    while ((c = tty_getc(&tp->t_outq)) >= 0) {
-        buf[i++] = (char)c;
-    }
-
-    lwip_send(priv->sock_fd, buf, i, 0);
 }
 
 /*
@@ -323,9 +266,9 @@ int socket_init(void)
 /*
  * 联结 socket
  */
-int socket_attach(int sock_fd, int isatty)
+int socket_attach(int sock_fd)
 {
-    char name[NAME_MAX];
+    char name[PATH_MAX];
     int fd;
     privinfo_t *priv;
     uint32_t reg;
@@ -346,11 +289,7 @@ int socket_attach(int sock_fd, int isatty)
             return -1;
         }
 
-        tty_attach(&priv->tty);
-        priv->tty.t_oproc = socket_start;
-        priv->isatty = isatty;
-
-        fd = vfs_open(name, O_RDWR, 0666);
+        fd = open(name, O_RDWR, 0666);
         if (fd < 0) {
             device_remove(name);
             kfree(priv);

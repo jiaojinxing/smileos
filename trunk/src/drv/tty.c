@@ -505,6 +505,18 @@ int tty_readable(struct tty *tp)
 }
 
 /*
+ * A tty device writeable?
+ */
+int tty_writeable(struct tty *tp)
+{
+    struct tty_queue *qp;
+
+    qp = &tp->t_outq;
+
+    return !ttyq_empty(qp);
+}
+
+/*
  * Process a read call on a tty device.
  */
 int tty_read(struct tty *tp, char *buf, size_t *nbyte)
