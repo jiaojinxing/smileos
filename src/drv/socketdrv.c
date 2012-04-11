@@ -286,7 +286,7 @@ static void socket_start(struct tty *tp)
 {
     int c;
     privinfo_t *priv = struct_addr(tp, privinfo_t, tty);
-    char buf[MAX_INPUT];
+    char buf[INPUT_MAX];
     int i;
 
     i = 0;

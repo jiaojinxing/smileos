@@ -43,11 +43,11 @@
 #include <sys/cdefs.h>
 #include <sys/signal.h>
 #include <sys/termios.h>
+#include <limits.h>
 #include "kern/kern.h"
 #include "kern/ipc.h"
 
-#define MAX_INPUT       128
-#define TTYQ_SIZE       MAX_INPUT
+#define TTYQ_SIZE       INPUT_MAX
 #define TTYQ_HIWAT      (TTYQ_SIZE - 10)
 
 /*

@@ -117,7 +117,7 @@ static int select_report(void *ctx, int type)
             task->state       = TASK_RUNNING;
             task->resume_type = TASK_RESUME_SELECT_EVENT;
             if (!in_interrupt() &&
-                task->type == TASK_TYPE_THREAD &&
+                task->type == TASK_TYPE_KTHREAD &&
                 task->priority > current->priority) {
                 flags = TRUE;
             }

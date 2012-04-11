@@ -86,21 +86,34 @@ static int fatfs_mount(mount_point_t *point, device_t *dev, const char *dev_name
 static int fatfs_open(mount_point_t *point, file_t *file, const char *path, int oflag, mode_t mode)
 {
     privinfo_t *priv;
+    int fatfs_mode = FA_READ;
 
     priv = kmalloc(sizeof(privinfo_t));
     if (priv != NULL) {
         memset(priv, 0, sizeof(privinfo_t));
         file->ctx = priv;
         /*
-         * TODO: oflag -> FATFS mode
+         * oflag -> FATFS mode
          */
-        if (f_open(&priv->file, path, FA_READ | FA_WRITE | FA_OPEN_ALWAYS) != FR_OK) {
+        if (oflag & O_WRONLY)
+            fatfs_mode |= FA_WRITE;
+
+        if ((oflag & O_ACCMODE) & O_RDWR)
+            fatfs_mode |= FA_WRITE;
+
+        if (oflag & O_CREAT)
+            fatfs_mode |= FA_OPEN_ALWAYS;
+
+        if (oflag & O_TRUNC)
+            fatfs_mode |= FA_CREATE_ALWAYS;
+
+        if (oflag & O_EXCL)
+            fatfs_mode |= FA_CREATE_NEW;
+
+        if (f_open(&priv->file, path, fatfs_mode) != FR_OK) {
             kfree(priv);
             return -1;
         } else {
-            if (oflag & O_TRUNC) {
-                f_truncate(&priv->file);
-            }
             return 0;
         }
     } else {

@@ -49,7 +49,7 @@
 typedef enum {
     IPC_TYPE_MUTEX      = 0xABCD1A1A,                                   /*  互斥量                      */
     IPC_TYPE_SEM        = 0xABCD2B2B,                                   /*  信号量                      */
-    IPC_TYPE_mqueue     = 0xABCD3C3C,                                   /*  消息队列                    */
+    IPC_TYPE_MQUEUE     = 0xABCD3C3C,                                   /*  消息队列                    */
     IPC_TYPE_DESTROY    = 0xABCD4D4D,                                   /*  已经销毁                    */
 } ipc_type_t;
 /*********************************************************************************************************
@@ -562,7 +562,7 @@ int mqueue_new(mqueue_t *mqueue, uint32_t size)
 
     q = kmalloc(sizeof(struct mqueue) + (size - 1) * sizeof(void *));
     if (q) {
-        q->type        = IPC_TYPE_mqueue;
+        q->type        = IPC_TYPE_MQUEUE;
         q->r_wait_list = NULL;
         q->w_wait_list = NULL;
         q->size        = size;
@@ -591,7 +591,7 @@ int mqueue_trypost(mqueue_t *mqueue, void *msg)
     reg = interrupt_disable();
     if (mqueue) {
         q = *mqueue;
-        if (q && q->type == IPC_TYPE_mqueue) {
+        if (q && q->type == IPC_TYPE_MQUEUE) {
             if (q->valid) {
                 if (q->cnt < q->size) {
                     q->msg[q->in] = msg;
@@ -631,7 +631,7 @@ int mqueue_post(mqueue_t *mqueue, void *msg, uint32_t timeout)
     if (mqueue) {
         again:
         q = *mqueue;
-        if (q && q->type == IPC_TYPE_mqueue) {
+        if (q && q->type == IPC_TYPE_MQUEUE) {
             if (q->valid) {
                 if (q->cnt < q->size) {
                     q->msg[q->in] = msg;
@@ -678,7 +678,7 @@ int mqueue_tryfetch(mqueue_t *mqueue, void **msg)
     reg = interrupt_disable();
     if (mqueue) {
         q = *mqueue;
-        if (q && q->type == IPC_TYPE_mqueue) {
+        if (q && q->type == IPC_TYPE_MQUEUE) {
             if (q->valid) {
                 if (q->cnt) {
                     *msg = q->msg[q->out];
@@ -718,7 +718,7 @@ int mqueue_fetch(mqueue_t *mqueue, void **msg, uint32_t timeout)
     if (mqueue) {
         again:
         q = *mqueue;
-        if (q && q->type == IPC_TYPE_mqueue) {
+        if (q && q->type == IPC_TYPE_MQUEUE) {
             if (q->valid) {
                 if (q->cnt) {
                     *msg = q->msg[q->out];
@@ -766,7 +766,7 @@ int mqueue_flush(mqueue_t *mqueue)
     reg = interrupt_disable();
     if (mqueue) {
         q = *mqueue;
-        if (q && q->type == IPC_TYPE_mqueue) {
+        if (q && q->type == IPC_TYPE_MQUEUE) {
             if (q->valid) {
                 q->cnt  = 0;
                 q->in   = 0;
@@ -796,7 +796,7 @@ int mqueue_abort_fetch(mqueue_t *mqueue)
     reg = interrupt_disable();
     if (mqueue) {
         q = *mqueue;
-        if (q && q->type == IPC_TYPE_mqueue) {
+        if (q && q->type == IPC_TYPE_MQUEUE) {
             if (q->valid) {
                 while ((task = q->r_wait_list) != NULL) {
                     resume_task(task, q->r_wait_list, TASK_RESUME_INTERRUPT);
@@ -823,7 +823,7 @@ int mqueue_abort_post(mqueue_t *mqueue)
     reg = interrupt_disable();
     if (mqueue) {
         q = *mqueue;
-        if (q && q->type == IPC_TYPE_mqueue) {
+        if (q && q->type == IPC_TYPE_MQUEUE) {
             if (q->valid) {
                 while ((task = q->w_wait_list) != NULL) {
                     resume_task(task, q->w_wait_list, TASK_RESUME_INTERRUPT);
@@ -850,7 +850,7 @@ int mqueue_abort(mqueue_t *mqueue)
     reg = interrupt_disable();
     if (mqueue) {
         q = *mqueue;
-        if (q && q->type == IPC_TYPE_mqueue) {
+        if (q && q->type == IPC_TYPE_MQUEUE) {
             if (q->valid) {
                 while ((task = q->w_wait_list) != NULL) {
                     resume_task(task, q->w_wait_list, TASK_RESUME_INTERRUPT);
@@ -880,7 +880,7 @@ int mqueue_free(mqueue_t *mqueue)
     reg = interrupt_disable();
     if (mqueue) {
         q = *mqueue;
-        if (q && q->type == IPC_TYPE_mqueue) {
+        if (q && q->type == IPC_TYPE_MQUEUE) {
             if (q->valid) {
                 if (!q->r_wait_list && !q->w_wait_list) {
                     q->valid = FALSE;
@@ -909,7 +909,7 @@ int mqueue_valid(mqueue_t *mqueue)
     reg = interrupt_disable();
     if (mqueue) {
         q = *mqueue;
-        if (q && q->type == IPC_TYPE_mqueue) {
+        if (q && q->type == IPC_TYPE_MQUEUE) {
             valid = q->valid;
         }
     }
@@ -928,7 +928,7 @@ int mqueue_set_valid(mqueue_t *mqueue, int valid)
     reg = interrupt_disable();
     if (mqueue) {
         q = *mqueue;
-        if (q && q->type == IPC_TYPE_mqueue) {
+        if (q && q->type == IPC_TYPE_MQUEUE) {
             q->valid = valid > 0 ? TRUE : FALSE;
             interrupt_resume(reg);
             return 0;

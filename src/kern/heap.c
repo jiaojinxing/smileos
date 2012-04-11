@@ -166,8 +166,6 @@ void *_realloc_r(struct _reent *reent, void *ptr, size_t newsize)
             memcpy(newptr, ptr, newsize);
             _free_r(reent, ptr);
         }
-    } else {
-        reent->_errno = ENOMEM;
     }
     interrupt_resume(reg);
 
@@ -187,8 +185,6 @@ void *_calloc_r(struct _reent *reent, size_t nelem, size_t elsize)
     ptr = _malloc_r(reent, nelem * MEM_ALIGN_SIZE(elsize));
     if (ptr != NULL) {
         memset(ptr, 0, nelem * MEM_ALIGN_SIZE(elsize));
-    } else {
-        reent->_errno = ENOMEM;
     }
     interrupt_resume(reg);
 
@@ -213,7 +209,7 @@ void kheap_create(void)
 
 #else
 
-#define debug   printf
+#define debug       printf
 
 static heap_t uheap;
 
@@ -254,8 +250,6 @@ void *_realloc_r(struct _reent *reent, void *ptr, size_t newsize)
             memcpy(newptr, ptr, newsize);
             _free_r(reent, ptr);
         }
-    } else {
-        reent->_errno = ENOMEM;
     }
     return newptr;
 }
@@ -270,8 +264,6 @@ void *_calloc_r(struct _reent *reent, size_t nelem, size_t elsize)
     ptr = _malloc_r(reent, nelem * MEM_ALIGN_SIZE(elsize));
     if (ptr != NULL) {
         memset(ptr, 0, nelem * MEM_ALIGN_SIZE(elsize));
-    } else {
-        reent->_errno = ENOMEM;
     }
     return ptr;
 }
@@ -520,6 +512,7 @@ void *heap_free(heap_t *heap, void *ptr)
     heap->used_size -= blk->size + MEM_ALIGN_SIZE(sizeof(mem_block_t));
 
     if (prev != NULL && prev->status == MEM_BLOCK_STATE_FREE) {         /*  前一个内存块空闲, 合并之    */
+
         prev->size += MEM_ALIGN_SIZE(sizeof(mem_block_t)) + blk->size;  /*  前一个内存块变大            */
 
         prev->next = blk->next;                                         /*  从内存块链表中删除内存块    */

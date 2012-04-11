@@ -52,7 +52,7 @@
  * 任务类型
  */
 #define TASK_TYPE_PROCESS           0                                   /*  进程                        */
-#define TASK_TYPE_THREAD            1                                   /*  内核线程                    */
+#define TASK_TYPE_KTHREAD           1                                   /*  内核线程                    */
 
 /*
  * 任务状态

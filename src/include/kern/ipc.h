@@ -200,6 +200,8 @@ int mqueue_set_valid(mqueue_t *mqueue, int valid);
 /*********************************************************************************************************
   操作宏
 *********************************************************************************************************/
+#include "kern/kern.h"
+
 /*
  * 等待事件
  */
@@ -262,7 +264,7 @@ int mqueue_set_valid(mqueue_t *mqueue, int valid);
                     task->next = NULL;                              \
                     task->resume_type = __resume_type;              \
                     if (!in_interrupt() &&                          \
-                        task->type == TASK_TYPE_THREAD &&           \
+                        task->type == TASK_TYPE_KTHREAD &&          \
                         task->priority > current->priority) {       \
                         yield();                                    \
                     }

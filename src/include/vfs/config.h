@@ -40,10 +40,7 @@
 #ifndef VFS_CONFIG_H_
 #define VFS_CONFIG_H_
 
-#define OPEN_MAX                    (20)                                /*  最多打开的文件数            */
-#define NAME_MAX                    (256)                               /*  名字最长的长度              */
-#undef  PATH_MAX
-#define PATH_MAX                    (512)                               /*  路径最长的长度              */
+#include "syslimits.h"
 
 #endif                                                                  /*  VFS_CONFIG_H_               */
 /*********************************************************************************************************
