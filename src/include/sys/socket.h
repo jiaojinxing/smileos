@@ -46,7 +46,7 @@
 /*
  * 联结 socket
  */
-int socket_attach(int sock_fd, int isatty);
+int socket_attach(int sock_fd);
 
 /*
  * 获得 socket 的私有文件描述符

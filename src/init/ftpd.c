@@ -76,7 +76,7 @@ static int ftpd_list(int pasv_fd)
         DIR *dir;
         struct dirent *entry;
 
-        data_fd = socket_attach(data_fd, FALSE);
+        data_fd = socket_attach(data_fd);
         fp      = fdopen(data_fd, "w+");
 
         dir = opendir(".");
@@ -160,7 +160,7 @@ static void ftpd_thread(void *arg)
     int  pasv_fd = -1;
 
     fclose(stdout);
-    cmd_fd = socket_attach((int)arg, FALSE);
+    cmd_fd = socket_attach((int)arg);
     stdout = fdopen(cmd_fd, "w+");
 
     printf("220 SmileOS FTP Server Ready\r\n");

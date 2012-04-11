@@ -118,7 +118,7 @@ static int do_socket(int domain, int type, int protocol)
 {
     int sock_fd = lwip_socket(domain, type, protocol);
     if (sock_fd >= 0) {
-        int fd = socket_attach(sock_fd, FALSE);
+        int fd = socket_attach(sock_fd);
         if (fd < 0) {
             lwip_close(sock_fd);
             return -1;
@@ -151,7 +151,7 @@ static int do_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
     if (sock_fd >= 0) {
         int new_sock_fd = lwip_accept(sock_fd, addr, addrlen);
         if (new_sock_fd >= 0) {
-            int fd = socket_attach(new_sock_fd, FALSE);
+            int fd = socket_attach(new_sock_fd);
             if (fd < 0) {
                 lwip_close(new_sock_fd);
                 return -1;

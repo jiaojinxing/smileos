@@ -683,6 +683,10 @@ int32_t kthread_create(const char *name, void (*func)(void *), void *arg, uint32
         strcpy(task->name, "???");
     }
 
+    if (running) {
+        yield();
+    }
+
     interrupt_resume(reg);
 
     return tid;

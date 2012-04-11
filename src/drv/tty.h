@@ -122,6 +122,11 @@ int tty_read(struct tty *tp, char *buf, size_t *nbyte);
 int tty_readable(struct tty *tp);
 
 /*
+ * A tty device writeable?
+ */
+int tty_writeable(struct tty *tp);
+
+/*
  * Process input of a single character received on a tty.
  * echo if required.
  * This may be called with interrupt level.

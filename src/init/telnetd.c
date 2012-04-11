@@ -249,9 +249,7 @@ static void telnetd_thread(void *arg)
 
     fclose(stdout);
 
-    while ((stdout = fopen("/dev/pty0", "w+")) == NULL) {
-        usleep(1000);
-    }
+    stdout = fopen("/dev/pty0", "w+");
 
     printf(logo);
 
