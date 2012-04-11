@@ -119,6 +119,7 @@ static sys_do_t sys_do_table[1];
 #define SYS_CALL_LSEEK      26
 #define SYS_CALL_CLOSE      27
 #define SYS_CALL_IOCTL      28
+#define SYS_CALL_SELECT     29
 #define SYS_CALL_RENAME     30
 #define SYS_CALL_UNLINK     31
 #define SYS_CALL_LINK       32
@@ -905,15 +906,22 @@ char *getcwd(char *buf, size_t size)
  */
 int select(int maxfdp1, fd_set *readset, fd_set *writeset, fd_set *exceptset, struct timeval *timeout)
 {
-#ifdef SMILEOS_KERNEL
-    printk("can't call %s()!, kill kthread %s tid=%d abort\n", __func__, current->name, current->tid);
+    int ret;
+    int syscall = SYS_CALL_SELECT;
+    sysdo_args_t args = {(void *)maxfdp1, readset, writeset, exceptset, timeout};
 
-    abort();
-#else
-    printf("can't call %s()!, kill process %d\n", __func__, getpid());
-
-    abort();
-#endif
+    debug("%s\n", __func__);
+    if (in_kernel()) {
+        ret = (sys_do_table[syscall])(&args);
+    } else {
+        __asm__ __volatile__("mov    r0,  %0": :"r"(&args));
+        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
+        __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
+        __asm__ __volatile__("swi    0");
+        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
+        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
+    }
+    return ret;
 }
 
 #ifndef SMILEOS_KERNEL

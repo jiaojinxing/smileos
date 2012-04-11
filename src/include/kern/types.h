@@ -123,6 +123,11 @@ typedef uint32_t                    mem_ptr_t;
 #define MEM_ALIGN_SIZE_LESS(size)   (((size) & ~(MEM_ALIGNMENT - 1)))
 #define MEM_ALIGN(addr)             ((void *)(((uint32_t)(addr) + MEM_ALIGNMENT - 1) & ~(uint32_t)(MEM_ALIGNMENT - 1)))
 #define MEM_ALIGN_LESS(addr)        ((void *)(((uint32_t)(addr)) & ~(uint32_t)(MEM_ALIGNMENT - 1)))
+/*********************************************************************************************************
+  获得母体结构的地址
+*********************************************************************************************************/
+#define struct_addr(node, type, member) \
+    ((type *)((char *)(node) - (unsigned long)(&((type *)0)->member)))
 
 #endif                                                                  /*  KERN_TYPES_H_               */
 /*********************************************************************************************************

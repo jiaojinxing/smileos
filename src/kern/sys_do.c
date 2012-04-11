@@ -190,6 +190,19 @@ static int do_listen(int s, int backlog)
         return -1;
     }
 }
+
+/*
+ * do_select
+ */
+static int do_select(sysdo_args_t *args)
+{
+    return vfs_select(
+            (int)args->arg0,
+            args->arg1,
+            args->arg2,
+            args->arg3,
+            args->arg4);
+}
 /*********************************************************************************************************
   系统调用处理表
 *********************************************************************************************************/
@@ -232,6 +245,7 @@ sys_do_t sys_do_table[] = {
 #define SYS_CALL_LSEEK      26
 #define SYS_CALL_CLOSE      27
 #define SYS_CALL_IOCTL      28
+#define SYS_CALL_SELECT     29
         (sys_do_t)vfs_open,
         (sys_do_t)vfs_read,
         (sys_do_t)vfs_write,
@@ -241,7 +255,7 @@ sys_do_t sys_do_table[] = {
         (sys_do_t)vfs_lseek,
         (sys_do_t)vfs_close,
         (sys_do_t)vfs_ioctl,
-        NULL,
+        (sys_do_t)do_select,
 #define SYS_CALL_RENAME     30
 #define SYS_CALL_UNLINK     31
 #define SYS_CALL_LINK       32

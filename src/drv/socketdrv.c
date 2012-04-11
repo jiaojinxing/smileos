@@ -121,7 +121,7 @@ static int socket_fcntl(void *ctx, file_t *file, int cmd, int arg)
 static int socket_close(void *ctx, file_t *file)
 {
     privinfo_t *priv = ctx;
-    char buf[NAME_MAX];
+    char name[NAME_MAX];
 
     if (priv == NULL) {
         seterrno(EINVAL);
@@ -129,8 +129,8 @@ static int socket_close(void *ctx, file_t *file)
     }
 
     if (--priv->ref == 0) {
-        sprintf(buf, "/dev/socket%d", priv->sock_fd);
-        device_remove(buf);
+        sprintf(name, "/dev/socket%d", priv->sock_fd);
+        device_remove(name);
 
         lwip_close(priv->sock_fd);
 
@@ -266,18 +266,15 @@ static int socket_scan(void *ctx, file_t *file, int flags)
  */
 void smileos_socket_report(int sock_fd, int type)
 {
-    char buf[NAME_MAX];
+    char name[NAME_MAX];
     device_t *dev;
 
-    sprintf(buf, "/dev/socket%d", sock_fd);
-    dev = device_lookup(buf);
+    sprintf(name, "/dev/socket%d", sock_fd);
+    dev = device_lookup(name);
     if (dev != NULL) {
         select_report(dev->ctx, type);
     }
 }
-
-#define struct_addr(node, type, member) \
-    ((type *)((char *)(node) - (unsigned long)(&((type *)0)->member)))
 
 /*
  * Æô¶¯Êä³ö
@@ -328,7 +325,7 @@ int socket_init(void)
  */
 int socket_attach(int sock_fd, int isatty)
 {
-    char buf[NAME_MAX];
+    char name[NAME_MAX];
     int fd;
     privinfo_t *priv;
     uint32_t reg;
@@ -341,8 +338,8 @@ int socket_attach(int sock_fd, int isatty)
         priv->sock_fd = sock_fd;
         priv->ref     = 0;
 
-        sprintf(buf, "/dev/socket%d", sock_fd);
-        if (device_create(buf, "socket", priv) < 0) {
+        sprintf(name, "/dev/socket%d", sock_fd);
+        if (device_create(name, "socket", priv) < 0) {
             kfree(priv);
             seterrno(ENOMEM);
             interrupt_resume(reg);
@@ -353,9 +350,9 @@ int socket_attach(int sock_fd, int isatty)
         priv->tty.t_oproc = socket_start;
         priv->isatty = isatty;
 
-        fd = vfs_open(buf, O_RDWR, 0666);
+        fd = vfs_open(name, O_RDWR, 0666);
         if (fd < 0) {
-            device_remove(buf);
+            device_remove(name);
             kfree(priv);
             interrupt_resume(reg);
             return -1;

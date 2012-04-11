@@ -95,20 +95,25 @@ static int fatfs_open(mount_point_t *point, file_t *file, const char *path, int 
         /*
          * oflag -> FATFS mode
          */
-        if (oflag & O_WRONLY)
+        if (oflag & O_WRONLY) {
             fatfs_mode |= FA_WRITE;
+        }
 
-        if ((oflag & O_ACCMODE) & O_RDWR)
+        if ((oflag & O_ACCMODE) & O_RDWR) {
             fatfs_mode |= FA_WRITE;
+        }
 
-        if (oflag & O_CREAT)
+        if (oflag & O_CREAT) {
             fatfs_mode |= FA_OPEN_ALWAYS;
+        }
 
-        if (oflag & O_TRUNC)
+        if (oflag & O_TRUNC) {
             fatfs_mode |= FA_CREATE_ALWAYS;
+        }
 
-        if (oflag & O_EXCL)
+        if (oflag & O_EXCL) {
             fatfs_mode |= FA_CREATE_NEW;
+        }
 
         if (f_open(&priv->file, path, fatfs_mode) != FR_OK) {
             kfree(priv);

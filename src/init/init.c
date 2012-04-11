@@ -125,6 +125,9 @@ int main(void)
     extern int ttyS0_init(void);
     ttyS0_init();
 
+    extern int pty_init(void);
+    pty_init();
+
     kernel_start();
 
     kthread_create("init", init, NULL, 4 * KB, 10);
