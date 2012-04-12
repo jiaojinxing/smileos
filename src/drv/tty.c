@@ -329,6 +329,8 @@ void tty_input(int c, struct tty *tp)
     tcflag_t iflag, lflag;
     int sig = -1;
 
+    printk("%s: %d\n", __func__, c);
+
     lflag = tp->t_lflag;
     iflag = tp->t_iflag;
     cc    = tp->t_cc;
