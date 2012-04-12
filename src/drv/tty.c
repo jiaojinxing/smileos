@@ -264,8 +264,6 @@ static void tty_start(struct tty *tp)
  */
 static void tty_flush(struct tty *tp, int rw)
 {
-    task_t *task;
-
     if (rw & FREAD) {
         while (tty_getc(&tp->t_canq) != -1) {
             ;
@@ -274,10 +272,7 @@ static void tty_flush(struct tty *tp, int rw)
             ;
         }
 
-        task = tp->t_input;
-        if (task) {
-            resume_task(task, tp->t_input, TASK_RESUME_INTERRUPT);
-        }
+        sem_abort(&tp->t_input);
     }
 
     if (rw & FWRITE) {
@@ -291,19 +286,13 @@ static void tty_flush(struct tty *tp, int rw)
  */
 void tty_done(struct tty *tp)
 {
-    task_t *task;
-
     if (tp->t_outq.tq_count == 0) {
         tp->t_state &= ~TS_BUSY;
     }
 
     if (tp->t_state & TS_ASLEEP) {
         tp->t_state &= ~TS_ASLEEP;
-
-        task = tp->t_output;
-        if (task) {
-            resume_task(task, tp->t_output, TASK_RESUME_MSG_OUT);
-        }
+        sem_signal(&tp->t_output);
     }
 }
 
@@ -312,8 +301,6 @@ void tty_done(struct tty *tp)
  */
 static void tty_wait(struct tty *tp)
 {
-    int rc;
-
     if ((tp->t_outq.tq_count > 0) && tp->t_oproc) {
         tp->t_state |= TS_BUSY;
         while (1) {
@@ -323,9 +310,7 @@ static void tty_wait(struct tty *tp)
             }
             tp->t_state |= TS_ASLEEP;
 
-            wait_event_forever(tp->t_output, rc);
-
-            if (rc & TASK_RESUME_INTERRUPT || tp->t_state & TS_ISIG) {
+            if (sem_wait(&tp->t_output, 0) < 0 || tp->t_state & TS_ISIG) {
                 tp->t_state &= ~TS_ISIG;
                 return;
             }
@@ -343,7 +328,6 @@ void tty_input(int c, struct tty *tp)
     cc_t *cc;
     tcflag_t iflag, lflag;
     int sig = -1;
-    task_t *task;
 
     lflag = tp->t_lflag;
     iflag = tp->t_iflag;
@@ -453,16 +437,10 @@ void tty_input(int c, struct tty *tp)
     if (lflag & ICANON) {
         if (c == '\n' || c == cc[VEOF] || c == cc[VEOL]) {
             tty_catq(&tp->t_rawq, &tp->t_canq);
-            task = tp->t_input;
-            if (task) {
-                resume_task(task, tp->t_input, TASK_RESUME_MSG_COME);
-            }
+            sem_signal(&tp->t_input);
         }
     } else {
-        task = tp->t_input;
-        if (task) {
-            resume_task(task, tp->t_input, TASK_RESUME_MSG_COME);
-        }
+        sem_signal(&tp->t_input);
     }
 
     if (lflag & ECHO) {
@@ -523,7 +501,7 @@ int tty_read(struct tty *tp, char *buf, size_t *nbyte)
 {
     cc_t *cc;
     struct tty_queue *qp;
-    int rc, tmp;
+    int tmp;
     u_char c;
     size_t count = 0;
     tcflag_t lflag;
@@ -536,8 +514,7 @@ int tty_read(struct tty *tp, char *buf, size_t *nbyte)
      * If there is no input, wait it
      */
     while (ttyq_empty(qp)) {
-        wait_event_forever(tp->t_input, rc);
-        if (rc & TASK_RESUME_INTERRUPT || tp->t_state & TS_ISIG) {
+        if (sem_wait(&tp->t_input, 0) < 0 || tp->t_state & TS_ISIG) {
             tp->t_state &= ~TS_ISIG;
             return EINTR;
         }
@@ -576,7 +553,6 @@ int tty_write(struct tty *tp, const char *buf, size_t *nbyte)
 {
     size_t remain, count = 0;
     u_char c;
-    int rc;
 
     remain = *nbyte;
 
@@ -590,10 +566,7 @@ int tty_write(struct tty *tp, const char *buf, size_t *nbyte)
             }
 
             tp->t_state |= TS_ASLEEP;
-
-            wait_event_forever(tp->t_output, rc);
-
-            if (rc & TASK_RESUME_INTERRUPT || tp->t_state & TS_ISIG) {
+            if (sem_wait(&tp->t_output, 0) < 0 || tp->t_state & TS_ISIG) {
                 tp->t_state &= ~TS_ISIG;
                 return EINTR;
             } else {
@@ -725,6 +698,9 @@ int tty_attach(struct tty *tp)
     mutex_new(&tp->t_rawq.tq_lock);
     mutex_new(&tp->t_canq.tq_lock);
     mutex_new(&tp->t_outq.tq_lock);
+
+    sem_new(&tp->t_input,  0);
+    sem_new(&tp->t_output, 0);
 
     return 0;
 }
