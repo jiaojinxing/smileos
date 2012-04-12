@@ -161,7 +161,7 @@ static void sd_sel_desel(char sel_desel)
 
         SDICSTA = 0xa00;
 
-        if ((SDIRSP0 & 0x1e00) != 0x800) {
+        if (SDIRSP0 & 0x1e00 != 0x800) {
             goto RECMDS7;
         }
     } else {
@@ -200,7 +200,7 @@ static int sd_ocr(void)
         SDICARG = 0xff8000;
         SDICCON = (0x1 << 9) | (0x1 << 8) | 0x69;
 
-        if (((sd_cmd_end(41, 1) == 0) & SDIRSP0) == 0x80ff8000) {
+        if ((sd_cmd_end(41, 1) == 0) & SDIRSP0 == 0x80ff8000) {
             SDICSTA = 0xa00;
             return 0;
         }
@@ -219,8 +219,8 @@ static int sd_init(void)
 
     CLKCON |= 1 << 9;
 
-    GPEUP  = (GPEUP & (~(0x3f << 5))) | (0x01 << 5);
-    GPECON = (GPECON & (~(0xfff << 10))) | (0xaaa << 10);
+    GPEUP  = GPEUP & (~(0x3f << 5)) | (0x01 << 5);
+    GPECON = GPECON & (~(0xfff << 10)) | (0xaaa << 10);
 
     RCA = 0;
 
@@ -269,7 +269,7 @@ static int sd_init(void)
 
     SDIPRE = PCLK / (SDCLK) - 1;
 
-    if ((SDIRSP0 & 0x1e00) != 0x600) {
+    if (SDIRSP0 & 0x1e00 != 0x600) {
         goto RECMD3;
     }
 
