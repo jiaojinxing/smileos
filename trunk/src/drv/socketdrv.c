@@ -46,7 +46,6 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <errno.h>
-#include "tty.h"
 
 /*
  * к╫сппео╒

@@ -224,6 +224,7 @@ int vfs_task_init(pid_t tid);
  * 清理任务的文件信息
  */
 int vfs_task_cleanup(pid_t tid);
+
 /*
  * 根据文件描述符获得文件结构
  */

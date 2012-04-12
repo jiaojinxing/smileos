@@ -47,7 +47,7 @@
 #include "kern/kern.h"
 #include "kern/ipc.h"
 
-#define TTYQ_SIZE       INPUT_MAX
+#define TTYQ_SIZE       MAX_INPUT
 #define TTYQ_HIWAT      (TTYQ_SIZE - 10)
 
 /*

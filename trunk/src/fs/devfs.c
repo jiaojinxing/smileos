@@ -343,7 +343,7 @@ static int devfs_unselect(mount_point_t *point, file_t *file, int flags)
 
 static int devfs_stat(mount_point_t *point, const char *path, struct stat *buf)
 {
-    if (PATH_IS_ROOT_DIR(path)) {
+    if (VFS_PATH_IS_ROOT(path)) {
         buf->st_dev     = (dev_t)0;
         buf->st_ino     = 0;
         buf->st_mode    = S_IRWXU | S_IRWXG | S_IRWXO | S_IFDIR;
@@ -406,7 +406,7 @@ static int devfs_opendir(mount_point_t *point, file_t *file, const char *path)
 {
     privinfo_t *priv;
 
-    if (!PATH_IS_ROOT_DIR(path)) {
+    if (!VFS_PATH_IS_ROOT(path)) {
         seterrno(ENOENT);
         return -1;
     }

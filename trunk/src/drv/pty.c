@@ -240,7 +240,7 @@ static void pty_thread(void *arg)
     int on = 1;
     fd_set rfds, wfds, efds;
     int ret;
-    char buf[INPUT_MAX];
+    char buf[TTYQ_SIZE];
     int i;
     int host_fd;
     int dev_fd;
@@ -284,12 +284,12 @@ static void pty_thread(void *arg)
             }
 
             if (FD_ISSET(dev_fd, &rfds)) {
-                char c;
-
-                while (read(dev_fd, &c, 1) == 1) {
-                    tty_input((int)c, &priv->tty);
+                while ((ret = read(dev_fd, buf, TTYQ_SIZE)) > 0) {
+                    for (i = 0; i < ret; i++) {
+                        tty_input((int)buf[i], &priv->tty);
+                    }
+                    select_report(priv, VFS_FILE_READABLE);
                 }
-                select_report(priv, VFS_FILE_READABLE);
             }
 
             if (FD_ISSET(host_fd, &wfds)) {

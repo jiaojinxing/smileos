@@ -151,12 +151,12 @@
 #define EPCR_ERPRW              (1 << 1)
 #define EPCR_ERRE               (1 << 0)
 
-#define FCTR_HWOT(ot)           ((ot & 0xf) << 4)
-#define FCTR_LWOT(ot)           (ot & 0xf)
+#define FCTR_HWOT(ot)           ((ot & 0xF) << 4)
+#define FCTR_LWOT(ot)           (ot & 0xF)
 
 #define BPTR_BPHW(x)            ((x) << 4)
 #define BPTR_JPT_200US          (0x07)
-#define BPTR_JPT_600US          (0x0f)
+#define BPTR_JPT_600US          (0x0F)
 
 #define IMR_PAR                 (1 << 7)
 #define IMR_ROOM                (1 << 3)

@@ -110,7 +110,7 @@ int null_init(void)
 {
     driver_install(&null_drv);
 
-    device_create("/dev/null",  "null", NULL);
+    device_create("/dev/null", "null", NULL);
 
     return 0;
 }
