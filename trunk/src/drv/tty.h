@@ -74,8 +74,8 @@ struct tty {
     int                 t_column;                           /*  tty output column                       */
     pid_t               t_pgid;                             /*  foreground process group                */
     void (*t_oproc)(struct tty *);                          /*  routine to start output                 */
-    task_t             *t_input;                            /*  等待输入数据到达                        */
-    task_t             *t_output;                           /*  等待输出数据完成                        */
+    sem_t               t_input;
+    sem_t               t_output;
 };
 
 #define t_iflag         t_termios.c_iflag
