@@ -59,7 +59,7 @@
 
 #include "kern/kern.h"
 
-#define getpid()    gettid()
+#define getpid      gettid
 
 /*
  * printk 会使用内存分配, 不使用 printk
@@ -222,7 +222,7 @@ void *_malloc_r(struct _reent *reent, size_t size)
     /*
      * 因进程里使用非抢占的 pthread, 免锁免关中断
      */
-    ptr = heap_alloc(&uheap, size);
+    ptr = heap_alloc(&uheap, __func__, size);
     if (ptr == NULL) {
         reent->_errno = ENOMEM;
     }
@@ -234,7 +234,7 @@ void *_malloc_r(struct _reent *reent, size_t size)
  */
 void _free_r(struct _reent *reent, void *ptr)
 {
-    heap_free(&uheap, ptr);
+    heap_free(&uheap, __func__, ptr);
 }
 
 /*

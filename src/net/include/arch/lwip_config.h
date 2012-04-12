@@ -40,10 +40,10 @@
 #ifndef LWIP_CONFIG_H_
 #define LWIP_CONFIG_H_
 
-#include "lwip_fix.h"
+#include <limits.h>
 
-#define __KB                            KB
-#define __MB                            MB
+#define __KB                            (1024)
+#define __MB                            (1024 * __KB)
 
 /*********************************************************************************************************
 *                                       lwIP 设置
@@ -53,77 +53,77 @@
 *            的头部, 所以需要 PBUF_POOL_BUFSIZE 加大. (使用连续的 POOL 内存可以提高网络驱动效率, 可直接
 *            使用 DMA 操作数据包)
 *
-*            LW_CFG_LWIP_MSG_SIZE
-*            LW_CFG_LWIP_NUM_NETBUF
-*            LW_CFG_LWIP_NUM_POOLS
-*            LW_CFG_LWIP_MEM_SIZE       等配置都与网络协议栈吞吐性能息息相关.
+*            LWIP_CFG_MSG_SIZE
+*            LWIP_CFG_NUM_NETBUF
+*            LWIP_CFG_NUM_POOLS
+*            LWIP_CFG_MEM_SIZE          等配置都与网络协议栈吞吐性能息息相关.
 *
 *********************************************************************************************************/
 
 /*********************************************************************************************************
-                     lwIP 缓存配置 (以下配置决定 RAM 使用量和 lwIP 效率)
+                        lwIP 缓存配置 (以下配置决定 RAM 使用量和 lwIP 效率)
 *********************************************************************************************************/
 
-#define LW_CFG_LWIP_MEM_SIZE            (512 * __KB)                    /*  lwIP 内存大小               */
-#define LW_CFG_LWIP_MSG_SIZE            512                             /*  lwIP 内部消息队列缓冲长度   */
-#define LW_CFG_LWIP_POOL_SIZE           1600                            /*  lwIP POOL 内存块大小        */
+#define LWIP_CFG_MEM_SIZE               (512 * __KB)                    /*  lwIP 内存大小               */
+#define LWIP_CFG_MSG_SIZE               512                             /*  lwIP 内部消息队列缓冲长度   */
+#define LWIP_CFG_POOL_SIZE              1600                            /*  lwIP POOL 内存块大小        */
                                                                         /*  注意: 必须是字对齐的        */
 
-#define LW_CFG_LWIP_NUM_PBUFS           256                             /*  系统总 pbuf 数量            */
-#define LW_CFG_LWIP_NUM_NETBUF          256                             /*  缓冲网络分组 netbuf 数量    */
-#define LW_CFG_LWIP_NUM_POOLS           512                             /*  等长缓冲总数量(高速缓冲)    */
+#define LWIP_CFG_NUM_PBUFS              256                             /*  系统总 pbuf 数量            */
+#define LWIP_CFG_NUM_NETBUF             256                             /*  缓冲网络分组 netbuf 数量    */
+#define LWIP_CFG_NUM_POOLS              512                             /*  等长缓冲总数量(高速缓冲)    */
                                                                         /*  驱动程序使用                */
 
 /*********************************************************************************************************
-                                  lwIP 校验和配置 (建议使用软件生成校验和并检查)
+                            lwIP 校验和配置 (建议使用软件生成校验和并检查)
 *********************************************************************************************************/
 
-#define LW_CFG_LWIP_GEN_CHECKSUM        1                               /*  是否通过协议栈自己生成校验和*/
+#define LWIP_CFG_GEN_CHECKSUM           1                               /*  是否通过协议栈自己生成校验和*/
                                                                         /*  如果网卡可自动计算发送校验和*/
                                                                         /*  此配置可为 0                */
-#define LW_CFG_LWIP_CHECK_CHECKSUM      1                               /*  是否软件检查接收数据包校验和*/
+#define LWIP_CFG_CHECK_CHECKSUM         1                               /*  是否软件检查接收数据包校验和*/
                                                                         /*  如果网卡可自动检查接收校验和*/
                                                                         /*  此配置可为 0                */
 
 /*********************************************************************************************************
-                                  lwIP 组件配置
+                                        lwIP 组件配置
 *********************************************************************************************************/
 
-#define LW_CFG_LWIP_DEBUG               1                               /*  lwIP 运行在调试模式         */
-#define LW_CFG_LWIP_DEBUG_LEVEL         1                               /*  lwIP 调试等级               */
+#define LWIP_CFG_DEBUG                  1                               /*  lwIP 运行在调试模式         */
+#define LWIP_CFG_DEBUG_LEVEL            1                               /*  lwIP 调试等级               */
 
-#define LW_CFG_LWIP_PPP                 0                               /*  lwIP ppp 支持               */
-#define LW_CFG_LWIP_PPPOE               0                               /*  lwIP pppoe 支持             */
-#define LW_CFG_LWIP_NUM_PPP             2                               /*  lwIP ppp 最大会话数         */
+#define LWIP_CFG_PPP                    0                               /*  lwIP ppp 支持               */
+#define LWIP_CFG_PPPOE                  0                               /*  lwIP pppoe 支持             */
+#define LWIP_CFG_NUM_PPP                2                               /*  lwIP ppp 最大会话数         */
 
-#define LW_CFG_LWIP_TCP_PCB             60                              /*  允许同时的 TCP 连接数       */
-#define LW_CFG_LWIP_UDP_PCB             50                              /*  允许同时的 UDP 数量         */
-#define LW_CFG_LWIP_RAW_PCB             15                              /*  允许同时的 RAW 数量         */
+#define LWIP_CFG_TCP_PCB                60                              /*  允许同时的 TCP 连接数       */
+#define LWIP_CFG_UDP_PCB                50                              /*  允许同时的 UDP 数量         */
+#define LWIP_CFG_RAW_PCB                15                              /*  允许同时的 RAW 数量         */
 
-#define LW_CFG_LWIP_DHCP                0                               /*  是否允许 DHCP 协议          */
-#define LW_CFG_LWIP_AUTOIP              0                               /*  自动分析获取 IP (一般不需要)*/
+#define LWIP_CFG_DHCP                   0                               /*  是否允许 DHCP 协议          */
+#define LWIP_CFG_AUTOIP                 0                               /*  自动分析获取 IP (一般不需要)*/
 
 /*********************************************************************************************************
 *                                       lwIP SNMP 设置
 *********************************************************************************************************/
 
-#define LW_CFG_LWIP_SNMP                0                               /*  SNMP 代理                   */
+#define LWIP_CFG_SNMP                   0                               /*  SNMP 代理                   */
 
 /*********************************************************************************************************
 *                                       lwIP IGMP 设置
 *********************************************************************************************************/
 
-#define LW_CFG_LWIP_IGMP                0                               /*  是否使能 IGMP               */
-#define LW_CFG_LWIP_IGMP_GROUP          20                              /*  可加入的 IGMP 组最大数量    */
+#define LWIP_CFG_IGMP                   0                               /*  是否使能 IGMP               */
+#define LWIP_CFG_IGMP_GROUP             20                              /*  可加入的 IGMP 组最大数量    */
 
 /*********************************************************************************************************
 *                                       lwIP 以太网设置
 *********************************************************************************************************/
 
-#define LW_CFG_LWIP_ARP_TABLE_SIZE      30                              /*  以太网接口 ARP 表大小       */
-#define LW_CFG_LWIP_ARP_TRUST_IP_MAC    0                               /*  接收 IP 包是否更新 ARP      */
+#define LWIP_CFG_ARP_TABLE_SIZE         30                              /*  以太网接口 ARP 表大小       */
+#define LWIP_CFG_ARP_TRUST_IP_MAC       0                               /*  接收 IP 包是否更新 ARP      */
                                                                         /*  windows 不信任, 建议为 0    */
-#define LW_CFG_LWIP_ETH_PAD_SIZE        0                               /*  以太包头填充对齐数量        */
+#define LWIP_CFG_ETH_PAD_SIZE           0                               /*  以太包头填充对齐数量        */
 
 /*********************************************************************************************************
 *                                       编译器相关配置
@@ -144,10 +144,10 @@
   Memory options
 *********************************************************************************************************/
 
-#define MEM_SIZE                        LW_CFG_LWIP_MEM_SIZE            /*  malloc 堆大小               */
-#define MEMP_NUM_PBUF                   LW_CFG_LWIP_NUM_PBUFS           /*  npbufs                      */
-#define PBUF_POOL_SIZE                  LW_CFG_LWIP_NUM_POOLS           /*  pool num                    */
-#define PBUF_POOL_BUFSIZE               LW_CFG_LWIP_POOL_SIZE           /*  pool block size             */
+#define MEM_SIZE                        LWIP_CFG_MEM_SIZE               /*  malloc 堆大小               */
+#define MEMP_NUM_PBUF                   LWIP_CFG_NUM_PBUFS              /*  npbufs                      */
+#define PBUF_POOL_SIZE                  LWIP_CFG_NUM_POOLS              /*  pool num                    */
+#define PBUF_POOL_BUFSIZE               LWIP_CFG_POOL_SIZE              /*  pool block size             */
 
 #if MEM_SIZE >= (32 * __MB)
 #define MEMP_NUM_REASSDATA              150                             /*  同时进行重组的 IP 数据包    */
@@ -167,32 +167,31 @@
   ...PCB
 *********************************************************************************************************/
 
-#define MEMP_NUM_RAW_PCB                LW_CFG_LWIP_RAW_PCB
-#define MEMP_NUM_UDP_PCB                LW_CFG_LWIP_UDP_PCB
-#define MEMP_NUM_TCP_PCB                LW_CFG_LWIP_TCP_PCB
-#define MEMP_NUM_TCP_PCB_LISTEN         LW_CFG_LWIP_TCP_PCB
+#define MEMP_NUM_RAW_PCB                LWIP_CFG_RAW_PCB
+#define MEMP_NUM_UDP_PCB                LWIP_CFG_UDP_PCB
+#define MEMP_NUM_TCP_PCB                LWIP_CFG_TCP_PCB
+#define MEMP_NUM_TCP_PCB_LISTEN         LWIP_CFG_TCP_PCB
 
-#define MEMP_NUM_NETCONN                (LW_CFG_LWIP_RAW_PCB + LW_CFG_LWIP_UDP_PCB + \
-                                         LW_CFG_LWIP_TCP_PCB)
+#define MEMP_NUM_NETCONN                (LWIP_CFG_RAW_PCB + LWIP_CFG_UDP_PCB + LWIP_CFG_TCP_PCB)
 
-#define MEMP_NUM_TCPIP_MSG_API          (LW_CFG_LWIP_TCP_PCB + LW_CFG_LWIP_UDP_PCB + LW_CFG_LWIP_RAW_PCB)
-#define MEMP_NUM_TCPIP_MSG_INPKT        LW_CFG_LWIP_MSG_SIZE            /*  tcp input msgqueue use      */
+#define MEMP_NUM_TCPIP_MSG_API          (LWIP_CFG_TCP_PCB + LWIP_CFG_UDP_PCB + LWIP_CFG_RAW_PCB)
+#define MEMP_NUM_TCPIP_MSG_INPKT        LWIP_CFG_MSG_SIZE               /*  tcp input msgqueue use      */
 
 /*********************************************************************************************************
   check sum
 *********************************************************************************************************/
 
-#if LW_CFG_LWIP_GEN_CHECKSUM == 0
+#if LWIP_CFG_GEN_CHECKSUM == 0
 #define CHECKSUM_GEN_IP                 0
 #define CHECKSUM_GEN_UDP                0
 #define CHECKSUM_GEN_TCP                0
-#endif                                                                  /*  LW_CFG_LWIP_GEN_CHECKSUM    */
+#endif                                                                  /*  LWIP_CFG_GEN_CHECKSUM       */
 
-#if LW_CFG_LWIP_CHECK_CHECKSUM == 0
+#if LWIP_CFG_CHECK_CHECKSUM == 0
 #define CHECKSUM_CHECK_IP               0
 #define CHECKSUM_CHECK_UDP              0
 #define CHECKSUM_CHECK_TCP              0
-#endif                                                                  /*  LW_CFG_LWIP_CHECK_CHECKSUM  */
+#endif                                                                  /*  LWIP_CFG_CHECK_CHECKSUM     */
 
 #define LWIP_CHECKSUM_ON_COPY           1                               /*  拷贝数据包同时计算 chksum   */
 
@@ -222,26 +221,26 @@
 #define LWIP_IPV6_REASS                 1
 
 #define MEMP_NUM_MLD6_GROUP             16
-#define LWIP_ND6_NUM_NEIGHBORS          LW_CFG_LWIP_ARP_TABLE_SIZE
-#define LWIP_ND6_NUM_DESTINATIONS       LW_CFG_LWIP_ARP_TABLE_SIZE
-#define LWIP_IPV6_DHCP6                 LW_CFG_LWIP_DHCP
+#define LWIP_ND6_NUM_NEIGHBORS          LWIP_CFG_ARP_TABLE_SIZE
+#define LWIP_ND6_NUM_DESTINATIONS       LWIP_CFG_ARP_TABLE_SIZE
+#define LWIP_IPV6_DHCP6                 LWIP_CFG_DHCP
 
 /*********************************************************************************************************
   dhcp & autoip
 *********************************************************************************************************/
 
-#define LWIP_DHCP                       LW_CFG_LWIP_DHCP                /*  DHCP                        */
+#define LWIP_DHCP                       LWIP_CFG_DHCP                   /*  DHCP                        */
 #define LWIP_DHCP_BOOTP_FILE            0                               /*  not include bootp file now  */
-#define LWIP_AUTOIP                     LW_CFG_LWIP_AUTOIP
+#define LWIP_AUTOIP                     LWIP_CFG_AUTOIP
 
 #if (LWIP_DHCP > 0) && (LWIP_AUTOIP > 0)
 #define LWIP_DHCP_AUTOIP_COOP           1
 #endif                                                                  /*  (LWIP_DHCP > 0)             */
                                                                         /*  (LWIP_AUTOIP > 0)           */
-#define MEMP_NUM_SYS_TIMEOUT            (LW_CFG_LWIP_RAW_PCB + LW_CFG_LWIP_UDP_PCB + \
-                                         LW_CFG_LWIP_TCP_PCB + 20)
+#define MEMP_NUM_SYS_TIMEOUT            (LWIP_CFG_RAW_PCB + LWIP_CFG_UDP_PCB + \
+                                         LWIP_CFG_TCP_PCB + 20)
 
-#define MEMP_NUM_NETBUF                 LW_CFG_LWIP_NUM_NETBUF
+#define MEMP_NUM_NETBUF                 LWIP_CFG_NUM_NETBUF
 
 /*********************************************************************************************************
   ICMP
@@ -259,7 +258,7 @@
   SNMP
 *********************************************************************************************************/
 
-#define LWIP_SNMP                       LW_CFG_LWIP_SNMP
+#define LWIP_SNMP                       LWIP_CFG_SNMP
 #define SNMP_PRIVATE_MIB                1                               /*  support now!                */
 
 #define SNMP_GET_SYSUPTIME(sysuptime)   {                                       \
@@ -271,8 +270,8 @@
   IGMP
 *********************************************************************************************************/
 
-#define LWIP_IGMP                       LW_CFG_LWIP_IGMP
-#define MEMP_NUM_IGMP_GROUP             LW_CFG_LWIP_IGMP_GROUP
+#define LWIP_IGMP                       LWIP_CFG_IGMP
+#define MEMP_NUM_IGMP_GROUP             LWIP_CFG_IGMP_GROUP
 
 /*********************************************************************************************************
   DNS
@@ -369,10 +368,10 @@
 
 #define LWIP_ARP                        1
 #define ARP_QUEUEING                    1
-#define ARP_TABLE_SIZE                  LW_CFG_LWIP_ARP_TABLE_SIZE
-#define ETHARP_TRUST_IP_MAC             LW_CFG_LWIP_ARP_TRUST_IP_MAC
+#define ARP_TABLE_SIZE                  LWIP_CFG_ARP_TABLE_SIZE
+#define ETHARP_TRUST_IP_MAC             LWIP_CFG_ARP_TRUST_IP_MAC
 #define ETHARP_SUPPORT_VLAN             1                               /*  IEEE 802.1q VLAN            */
-#define ETH_PAD_SIZE                    LW_CFG_LWIP_ETH_PAD_SIZE
+#define ETH_PAD_SIZE                    LWIP_CFG_ETH_PAD_SIZE
 #define ETHARP_SUPPORT_STATIC_ENTRIES   1
 
 /*********************************************************************************************************
@@ -392,11 +391,11 @@
 *********************************************************************************************************/
 
 #define TCPIP_THREAD_NAME               "lwIP"
-#define TCPIP_THREAD_STACKSIZE          (4 * KB)
+#define TCPIP_THREAD_STACKSIZE          (4 * __KB)
 #define TCPIP_THREAD_PRIO               (50)
 
 #define NETIF_THREAD_NAME               "netif"
-#define NETIF_THREAD_STACKSIZE          (4 * KB)
+#define NETIF_THREAD_STACKSIZE          (4 * __KB)
 #define NETIF_THREAD_PRIO               (100)
 
 /*********************************************************************************************************
@@ -428,12 +427,12 @@
   PPP options
 *********************************************************************************************************/
 
-#define PPP_SUPPORT                     LW_CFG_LWIP_PPP
-#define PPPOE_SUPPORT                   LW_CFG_LWIP_PPPOE
+#define PPP_SUPPORT                     LWIP_CFG_PPP
+#define PPPOE_SUPPORT                   LWIP_CFG_PPPOE
 
 #if PPP_SUPPORT > 0 || PPPOE_SUPPORT > 0
-#define MEMP_NUM_PPPOE_INTERFACES       LW_CFG_LWIP_NUM_PPP
-#define NUM_PPP                         LW_CFG_LWIP_NUM_PPP
+#define MEMP_NUM_PPPOE_INTERFACES       LWIP_CFG_NUM_PPP
+#define NUM_PPP                         LWIP_CFG_NUM_PPP
 
 #define PAP_SUPPORT                     1
 #define CHAP_SUPPORT                    1
@@ -456,7 +455,7 @@
 
 #define LWIP_DBG_TYPES_ON               LWIP_DBG_ON
 
-#if LW_CFG_LWIP_DEBUG > 0
+#if LWIP_CFG_DEBUG > 0
 #define LWIP_DEBUG
 #define LWIP_DBG_MIN_LEVEL              LWIP_DBG_LEVEL_OFF              /*  允许全部主动打印信息        */
 #define TCP_DEBUG                       (LWIP_DBG_OFF | 0)              /*  仅允许 TCP UDP IP debug     */
@@ -466,7 +465,7 @@
 #define NETIF_DEBUG                     (LWIP_DBG_ON  | 0)
 #else
 #define LWIP_DBG_MIN_LEVEL              LWIP_DBG_LEVEL_SEVERE           /*  不允许主动打印信息          */
-#endif                                                                  /*  LW_CFG_LWIP_DEBUG > 0       */
+#endif                                                                  /*  LWIP_CFG_DEBUG > 0          */
 
 #endif                                                                  /*  LWIP_CONFIG_H_              */
 /*********************************************************************************************************

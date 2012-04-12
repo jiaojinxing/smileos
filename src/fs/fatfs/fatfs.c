@@ -311,7 +311,7 @@ static int fatfs_lseek(mount_point_t *point, file_t *file, off_t offset, int whe
 
 static int fatfs_stat(mount_point_t *point, const char *path, struct stat *buf)
 {
-    if (PATH_IS_ROOT_DIR(path)) {
+    if (VFS_PATH_IS_ROOT(path)) {
         buf->st_dev     = (dev_t)point->dev->devno;
         buf->st_ino     = 0;
         buf->st_mode    = S_IRWXU | S_IRWXG | S_IRWXO | S_IFDIR;

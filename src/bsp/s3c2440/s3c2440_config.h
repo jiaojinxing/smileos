@@ -40,9 +40,6 @@
 #ifndef S3C2440_CONFIG_H_
 #define S3C2440_CONFIG_H_
 
-#define PAGE_SIZE           (4 * KB)                                    /*  页面大小                    */
-#define PAGE_OFFSET         (12)                                        /*  页面大小偏移                */
-
 #define SECTION_SIZE        (1 * MB)                                    /*  段大小                      */
 #define SECTION_OFFSET      (20)                                        /*  段大小偏移                  */
 #define SECTION_NR          (4096)                                      /*  段数                        */

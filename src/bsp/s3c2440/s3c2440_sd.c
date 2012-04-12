@@ -78,22 +78,29 @@ static int sd_cmd_end(int cmd, int be_resp)
         }
 
         if (cmd == 1 || cmd == 41) {
+
             if ((finish0 & 0xf00) != 0xa00) {
                 SDICSTA = finish0;
+
                 if (((finish0 & 0x400) == 0x400)) {
                     return -1;
                 }
             }
+
             SDICSTA = finish0;
         } else {
             if ((finish0 & 0x1f00) != 0xa00) {
+
                 SDICSTA = finish0;
+
                 if (((finish0 & 0x400) == 0x400)) {
                     return -1;
                 }
             }
+
             SDICSTA = finish0;
         }
+
         return 0;
     }
 }
@@ -154,7 +161,7 @@ static void sd_sel_desel(char sel_desel)
 
         SDICSTA = 0xa00;
 
-        if (SDIRSP0 & 0x1e00 != 0x800) {
+        if ((SDIRSP0 & 0x1e00) != 0x800) {
             goto RECMDS7;
         }
     } else {
@@ -193,7 +200,7 @@ static int sd_ocr(void)
         SDICARG = 0xff8000;
         SDICCON = (0x1 << 9) | (0x1 << 8) | 0x69;
 
-        if ((sd_cmd_end(41, 1) == 0) & SDIRSP0 == 0x80ff8000) {
+        if (((sd_cmd_end(41, 1) == 0) & SDIRSP0) == 0x80ff8000) {
             SDICSTA = 0xa00;
             return 0;
         }
@@ -212,8 +219,8 @@ static int sd_init(void)
 
     CLKCON |= 1 << 9;
 
-    GPEUP  = GPEUP & (~(0x3f << 5)) | (0x01 << 5);
-    GPECON = GPECON & (~(0xfff << 10)) | (0xaaa << 10);
+    GPEUP  = (GPEUP & (~(0x3f << 5))) | (0x01 << 5);
+    GPECON = (GPECON & (~(0xfff << 10))) | (0xaaa << 10);
 
     RCA = 0;
 
@@ -237,8 +244,10 @@ static int sd_init(void)
     }
 
     RECMD2:
+
     SDICARG = 0x0;
     SDICCON = (0x1 << 10) | (0x1 << 9) | (0x1 << 8) | 0x42;
+
     if (sd_cmd_end(2, 1) == -1) {
         goto RECMD2;
     }
@@ -246,21 +255,28 @@ static int sd_init(void)
     SDICSTA = 0xa00;
 
     RECMD3:
+
     SDICARG = 0 << 16;
     SDICCON = (0x1 << 9) | (0x1 << 8) | 0x43;
+
     if (sd_cmd_end(3, 1) == -1) {
         goto RECMD3;
     }
+
     SDICSTA = 0xa00;
 
     RCA = (SDIRSP0 & 0xffff0000) >> 16;
+
     SDIPRE = PCLK / (SDCLK) - 1;
-    if (SDIRSP0 & 0x1e00 != 0x600) {
+
+    if ((SDIRSP0 & 0x1e00) != 0x600) {
         goto RECMD3;
     }
 
     sd_sel_desel(1);
+
     sd_delay(200);
+
     sd_setbus();
 
     return 0;
@@ -272,26 +288,32 @@ int sd_readblock(uint32_t address, uint8_t *buf)
     uint32_t temp;
     uint32_t read_cnt;
 
-    read_cnt = 0;
+
     SDIFSTA = SDIFSTA | (1 << 16);
 
     SDIDCON = (2 << 22) | (1 << 19) | (1 << 17) | (1 << 16) | (1 << 14) | (2 << 12) | (1 << 0);
     SDICARG = address;
 
     RERDCMD:
+
     SDICCON = (0x1 << 9) | (0x1 << 8) | 0x51;
+
     if (sd_cmd_end(17, 1) < 0) {
         goto RERDCMD;
     }
 
     SDICSTA = 0xa00;
 
+    read_cnt = 0;
+
     while (read_cnt < 128) {
         if ((SDIDSTA & 0x20) == 0x20) {
             SDIDSTA = (0x1 << 0x5);
             break;
         }
+
         status = SDIFSTA;
+
         if ((status & 0x1000) == 0x1000) {
             temp = SDIDAT;
             memcpy(buf, &temp, sizeof(uint32_t));
@@ -299,6 +321,7 @@ int sd_readblock(uint32_t address, uint8_t *buf)
             buf += 4;
         }
     }
+
     if (sd_data_end() < 0) {
         return -1;
     }
@@ -316,12 +339,12 @@ int sd_writeblock(uint32_t address, const uint8_t *buf)
     uint32_t temp;
     uint32_t write_cnt;
 
-    write_cnt = 0;
     SDIFSTA = SDIFSTA | (1 << 16);
     SDIDCON = (2 << 22) | (1 << 20) | (1 << 17) | (1 << 16) | (1 << 14) | (3 << 12) | (1 << 0);
     SDICARG = address;
 
     REWTCMD:
+
     SDICCON = (0x1 << 9) | (0x1 << 8) | 0x58;
 
     if (sd_cmd_end(24, 1) < 0) {
@@ -330,8 +353,11 @@ int sd_writeblock(uint32_t address, const uint8_t *buf)
 
     SDICSTA = 0xa00;
 
+    write_cnt = 0;
+
     while (write_cnt < 128 * 1) {
         status = SDIFSTA;
+
         if ((status & 0x2000) == 0x2000) {
             memcpy(&temp, buf, sizeof(uint32_t));
             SDIDAT = temp;
@@ -339,9 +365,11 @@ int sd_writeblock(uint32_t address, const uint8_t *buf)
             buf += 4;
         }
     }
+
     if (sd_data_end() < 0) {
         return -1;
     }
+
     SDIDCON = SDIDCON & ~(7 << 12);
     SDIDSTA = 0x10;
 

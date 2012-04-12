@@ -42,6 +42,75 @@
 #include "kern/types.h"
 #include "kern/kern.h"
 #include "kern/ipc.h"
+/*********************************************************************************************************
+  操作宏
+*********************************************************************************************************/
+/*
+ * 等待事件
+ */
+#define wait_event_forever(__wait_list, __resume_type)              \
+                    if (!__wait_list) {                             \
+                        __wait_list = current;                      \
+                    } else {                                        \
+                        task_t *end = __wait_list;                  \
+                        while (end->next) {                         \
+                            end = end->next;                        \
+                        }                                           \
+                        end->next = current;                        \
+                    }                                               \
+                    current->next = NULL;                           \
+                                                                    \
+                    current->timer = 0;                             \
+                    current->state = TASK_SUSPEND;                  \
+                    current->wait_list = &__wait_list;              \
+                    current->resume_type = TASK_RESUME_UNKNOW;      \
+                    yield();                                        \
+                    current->wait_list = NULL;                      \
+                    current->next = NULL;                           \
+                    __resume_type = current->resume_type;           \
+                    current->resume_type = TASK_RESUME_UNKNOW
+
+/*
+ * 等待事件直至超时
+ */
+#define wait_event_timeout(__wait_list, __resume_type, timeout)     \
+                    if (!__wait_list) {                             \
+                        __wait_list = current;                      \
+                    } else {                                        \
+                        task_t *end = __wait_list;                  \
+                        while (end->next) {                         \
+                            end = end->next;                        \
+                        }                                           \
+                        end->next = current;                        \
+                    }                                               \
+                    current->next = NULL;                           \
+                                                                    \
+                    current->timer = timeout;                       \
+                    current->state = TASK_SLEEPING;                 \
+                    current->wait_list = &__wait_list;              \
+                    current->resume_type = TASK_RESUME_UNKNOW;      \
+                    yield();                                        \
+                    current->wait_list = NULL;                      \
+                    current->next = NULL;                           \
+                    current->timer = 0;                             \
+                    __resume_type = current->resume_type;           \
+                    current->resume_type = TASK_RESUME_UNKNOW
+
+/*
+ * 恢复任务
+ */
+#define resume_task(task, __wait_list, __resume_type)               \
+                    task->timer = 0;                                \
+                    task->state = TASK_RUNNING;                     \
+                    __wait_list = task->next;                       \
+                    task->wait_list = NULL;                         \
+                    task->next = NULL;                              \
+                    task->resume_type = __resume_type;              \
+                    if (!in_interrupt() &&                          \
+                        task->type == TASK_TYPE_KTHREAD &&          \
+                        task->priority > current->priority) {       \
+                        yield();                                    \
+                    }
 
 /*
  * IPC 对象类型放在 IPC 对象的首位, 有效性放在次位, 保证 IPC 对象关键成员变量兼容
