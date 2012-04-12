@@ -339,6 +339,7 @@ int pty_create(const char *name, int fd)
         priv->tty.t_oproc = pty_start;
 
         priv->tty.t_lflag &= ~ECHO;
+        priv->tty.t_lflag &= ~ISIG;
         priv->tty.t_iflag &= ~ICANON;
 
         strlcpy(priv->name, name, sizeof(priv->name));
@@ -346,6 +347,7 @@ int pty_create(const char *name, int fd)
         if (kthread_create(name, pty_thread, priv, 8 * KB, 5) < 0) {
             device_remove(name);
             kfree(priv);
+            seterrno(ENOMEM);
             interrupt_resume(reg);
             return -1;
         }

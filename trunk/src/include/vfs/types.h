@@ -190,7 +190,6 @@ struct file {
     void                   *ctx1;
     mount_point_t          *point;
     unsigned int            flag;
-    struct mutex           *lock;
 };
 
 /*

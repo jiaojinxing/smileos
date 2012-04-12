@@ -234,6 +234,22 @@ const char logo[] =
         "     \\     / /  ) /   /   /___) /    /      \\\n"
         "_(____/___/_/__/_/___/___(___ _(____/___(____/___\n";
 
+
+#define IAC             255         /*  选项协商的第一个字节                                            */
+#define WILL            251         /*  发送方激活选项(接收方同意激活选项)                              */
+#define WONT            252         /*  接收方不同意                                                    */
+#define DO              253         /*  接收方同意(发送方想让接收方激活选项)                            */
+#define DONT            254         /*  接受方回应 WONT                                                 */
+
+#define SE              240         /*  子选项结束                                                      */
+#define SB              250         /*  子选项开始                                                      */
+
+#define NAWS            31
+#define TTY_RATE        32
+#define TTY_TYPE        24
+#define ECHO_TYPE       1
+#define CANCEL_GOAHEAD  3
+
 /*
  * telnetd 线程
  */
@@ -242,10 +258,12 @@ static void telnetd_thread(void *arg)
     int  ret;
     int  pos;
     char cmd[LINE_MAX];
-    char ch;
+    u_char ch;
+
+    fclose(stdin);
+    stdin = fopen((const char *)arg, "r");
 
     fclose(stdout);
-
     stdout = fopen((const char *)arg, "w+");
 
     printf(logo);
@@ -256,28 +274,96 @@ static void telnetd_thread(void *arg)
     pos = 0;
 
     while (1) {
-        ret = read(STDOUT_FILENO, &ch, 1);
+
+        ret = read(STDIN_FILENO, &ch, 1);
         if (ret <= 0) {
             fprintf(stderr, "%s: failed to read socket, errno=%d\n", __func__, errno);
-            break;
+            goto end;
         }
 
-        if (ret > 0) {
+        if (ch == IAC) {
+            ret = read(STDIN_FILENO, &ch, 1);
+            if (ret <= 0) {
+                fprintf(stderr, "%s: failed to read socket, errno=%d\n", __func__, errno);
+                goto end;
+            }
+
+            if (ch == WILL) {
+                ret = read(STDIN_FILENO, &ch, 1);
+                if (ret <= 0) {
+                    fprintf(stderr, "%s: failed to read socket, errno=%d\n", __func__, errno);
+                    goto end;
+                }
+
+                switch (ch) {
+                case NAWS:
+                    break;
+
+                case TTY_RATE:
+                    break;
+
+                case TTY_TYPE:
+                    break;
+
+                case ECHO_TYPE:
+                    break;
+
+                case CANCEL_GOAHEAD:
+                    break;
+
+                default:
+                    /*
+                     * TODO:
+                     */
+                    break;
+                }
+            } else if (ch == DO) {
+                ret = read(STDIN_FILENO, &ch, 1);
+                if (ret <= 0) {
+                    fprintf(stderr, "%s: failed to read socket, errno=%d\n", __func__, errno);
+                    goto end;
+                }
+
+                switch (ch) {
+                case CANCEL_GOAHEAD:
+                    break;
+
+                default:
+                    /*
+                     * TODO:
+                     */
+                    break;
+                }
+                break;
+            } else {
+                /*
+                 * TODO:
+                 */
+                break;
+            }
+        } else {
             if (iscntrl(ch)) {
-                if (ch == '\b') {
+                switch (ch) {
+                case '\b':
                     if (pos > 0) {
                         pos--;
                         printf(" \b \b");
                     } else {
                         putchar('#');
                     }
-                } else if (ch == '\n') {
+                    break;
+
+                case '\n':
                     if (pos > 0 && pos < LINE_MAX) {
                         cmd[pos] = '\0';
                         pos = 0;
                         exec_cmd(cmd);
                     }
                     printf("%s]#", getcwd(NULL, 0));
+                    break;
+
+                default:
+                    break;
                 }
             } else if (isprint(ch) && pos < LINE_MAX){
                 cmd[pos] = ch;
@@ -287,6 +373,7 @@ static void telnetd_thread(void *arg)
         fflush(stdout);
     }
 
+    end:
     fclose(stdout);
 }
 
