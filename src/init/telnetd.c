@@ -239,17 +239,14 @@ const char logo[] =
  */
 static void telnetd_thread(void *arg)
 {
-    int  fd = (int)arg;
     int  ret;
     int  pos;
     char cmd[LINE_MAX];
     char ch;
 
-    pty_create("/dev/pty0", fd);
-
     fclose(stdout);
 
-    stdout = fopen("/dev/pty0", "w+");
+    stdout = fopen((const char *)arg, "w+");
 
     printf(logo);
 
@@ -261,7 +258,7 @@ static void telnetd_thread(void *arg)
     while (1) {
         ret = read(STDOUT_FILENO, &ch, 1);
         if (ret <= 0) {
-            fprintf(stderr, "%s: failed to read socket\n", __func__);
+            fprintf(stderr, "%s: failed to read socket, errno=%d\n", __func__, errno);
             break;
         }
 
@@ -289,6 +286,8 @@ static void telnetd_thread(void *arg)
         }
         fflush(stdout);
     }
+
+    fclose(stdout);
 }
 
 /*
@@ -299,7 +298,8 @@ void telnetd(void *arg)
     struct sockaddr_in local_addr, remote_addr;
     socklen_t addr_len;
     int fd, client_fd;
-    char name[32];
+    char pty_name[NAME_MAX];
+    char thread_name[NAME_MAX];
 
     fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (fd < 0) {
@@ -325,9 +325,14 @@ void telnetd(void *arg)
 
         client_fd = accept(fd, (struct sockaddr *)&remote_addr, &addr_len);
         if (client_fd > 0) {
-            sprintf(name, "%s%d", __func__, client_fd);
 
-            kthread_create(name, telnetd_thread, (void *)client_fd, 8 * KB, 10);
+            sprintf(pty_name, "/dev/pty%d", client_fd);
+
+            pty_create(pty_name, client_fd);
+
+            sprintf(thread_name, "%s%d", __func__, client_fd);
+
+            kthread_create(thread_name, telnetd_thread, pty_name, 8 * KB, 10);
         } else {
             fprintf(stderr, "%s: failed to accept connect\n", __func__);
         }

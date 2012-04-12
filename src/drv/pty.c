@@ -55,7 +55,8 @@ typedef struct {
     VFS_SELECT_MEMBERS
     struct tty      tty;
     int             fd;
-    char            name[PATH_MAX];
+    char            name[NAME_MAX];
+    int             ref;
 } privinfo_t;
 
 /*
@@ -233,7 +234,7 @@ static void pty_start(struct tty *tp)
 /*
  * pty 线程
  */
-void pty_thread(void *arg)
+static void pty_thread(void *arg)
 {
     privinfo_t *priv = arg;
     int on = 1;
@@ -313,7 +314,7 @@ void pty_thread(void *arg)
 }
 
 /*
- * 初始化 pty
+ * 创建 pty
  */
 int pty_create(const char *name, int fd)
 {
@@ -338,10 +339,11 @@ int pty_create(const char *name, int fd)
         priv->tty.t_oproc = pty_start;
 
         priv->tty.t_lflag &= ~ECHO;
+        priv->tty.t_iflag &= ~ICANON;
 
         strlcpy(priv->name, name, sizeof(priv->name));
 
-        if (kthread_create(name, pty_thread, priv, 8 * KB, 20) < 0) {
+        if (kthread_create(name, pty_thread, priv, 8 * KB, 5) < 0) {
             device_remove(name);
             kfree(priv);
             interrupt_resume(reg);

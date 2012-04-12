@@ -106,7 +106,7 @@ static int socket_fcntl(void *ctx, file_t *file, int cmd, int arg)
 static int socket_close(void *ctx, file_t *file)
 {
     privinfo_t *priv = ctx;
-    char name[PATH_MAX];
+    char name[NAME_MAX];
 
     if (priv == NULL) {
         seterrno(EINVAL);
@@ -227,7 +227,7 @@ static int socket_scan(void *ctx, file_t *file, int flags)
  */
 void smileos_socket_report(int sock_fd, int type)
 {
-    char name[PATH_MAX];
+    char name[NAME_MAX];
     device_t *dev;
 
     sprintf(name, "/dev/socket%d", sock_fd);
@@ -268,7 +268,7 @@ int socket_init(void)
  */
 int socket_attach(int sock_fd)
 {
-    char name[PATH_MAX];
+    char name[NAME_MAX];
     int fd;
     privinfo_t *priv;
     uint32_t reg;

@@ -711,10 +711,9 @@ int tty_attach(struct tty *tp)
         return -1;
     }
 
-    memcpy(&tp->t_termios.c_cc, ttydefchars, sizeof(ttydefchars));
+    memset(tp, 0, sizeof(struct tty));
 
-    tp->t_input  = NULL;
-    tp->t_output = NULL;
+    memcpy(&tp->t_termios.c_cc, ttydefchars, sizeof(ttydefchars));
 
     tp->t_iflag  = TTYDEF_IFLAG;
     tp->t_oflag  = TTYDEF_OFLAG;

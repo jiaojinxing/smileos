@@ -216,7 +216,7 @@ void ftpd(void *arg)
     struct sockaddr_in local_addr, remote_addr;
     socklen_t addr_len;
     int fd, client_fd;
-    char name[32];
+    char name[NAME_MAX];
 
     fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (fd < 0) {
