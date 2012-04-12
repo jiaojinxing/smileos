@@ -63,17 +63,42 @@ struct stat;
 struct tms;
 
 #ifdef SMILEOS_KERNEL
+
 #include "kern/kern.h"
+
 extern sys_do_t sys_do_table[];
+
 //#define debug        kcomplain
 #define debug(...)
+
 #else
+
 typedef int (*sys_do_t)();
+
+/*
+ * 系统调用处理参数
+ */
+typedef struct {
+    void *arg0;
+    void *arg1;
+    void *arg2;
+    void *arg3;
+    void *arg4;
+    void *arg5;
+    void *arg6;
+    void *arg7;
+    void *arg8;
+    void *arg9;
+} sysdo_args_t;
+
 static sys_do_t sys_do_table[1];
+
 #define in_kernel()     0
 #define debug(...)
+
 #include <stdio.h>
 #include <unistd.h>
+
 #endif
 
 /*
