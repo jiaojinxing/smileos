@@ -81,7 +81,7 @@ file_system_t *file_system_lookup(const char *name)
  */
 int file_system_install(file_system_t *fs)
 {
-    if (fs == NULL || fs->name == NULL) {
+    if (fs == NULL || fs->name == NULL || fs->mount == NULL) {
         return -1;
     }
 

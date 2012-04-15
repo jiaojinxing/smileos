@@ -43,6 +43,13 @@
 #include <errno.h>
 
 /*
+ * 私有信息
+ */
+typedef struct {
+    VFS_SELECT_MEMBERS
+} privinfo_t;
+
+/*
  * 打开 null
  */
 static int null_open(void *ctx, file_t *file, int oflag, mode_t mode)
@@ -91,16 +98,41 @@ static ssize_t null_write(void *ctx, file_t *file, const void *buf, size_t len)
 }
 
 /*
+ * 扫描
+ */
+static int null_scan(void *ctx, file_t *file, int flags)
+{
+    privinfo_t *priv = ctx;
+    int ret;
+
+    if (priv == NULL) {
+        seterrno(EINVAL);
+        return -1;
+    }
+
+    ret = 0;
+    if (flags & VFS_FILE_WRITEABLE) {
+        ret |= VFS_FILE_WRITEABLE;
+    }
+    return ret;
+}
+
+#include "selectdrv.h"
+
+/*
  * null 驱动
  */
 static driver_t null_drv = {
-        .name   = "null",
-        .open   = null_open,
-        .write  = null_write,
-        .read   = null_read,
-        .isatty = null_isatty,
-        .ioctl  = null_ioctl,
-        .close  = null_close,
+        .name     = "null",
+        .open     = null_open,
+        .write    = null_write,
+        .read     = null_read,
+        .isatty   = null_isatty,
+        .ioctl    = null_ioctl,
+        .close    = null_close,
+        .scan     = null_scan,
+        .select   = select_select,
+        .unselect = select_unselect,
 };
 
 /*
@@ -108,11 +140,21 @@ static driver_t null_drv = {
  */
 int null_init(void)
 {
+    privinfo_t *priv;
+
     driver_install(&null_drv);
 
-    device_create("/dev/null", "null", NULL);
-
-    return 0;
+    priv = kmalloc(sizeof(privinfo_t));
+    if (priv != NULL) {
+        select_init(priv);
+        if (device_create("/dev/null", "null", priv) < 0) {
+            kfree(priv);
+            return -1;
+        }
+        return 0;
+    } else {
+        return -1;
+    }
 }
 /*********************************************************************************************************
   END FILE

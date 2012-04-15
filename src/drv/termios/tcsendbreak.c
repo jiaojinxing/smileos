@@ -29,6 +29,7 @@
 
 #include <sys/types.h>
 #include <sys/ioctl.h>
+#include <sys/select.h>
 #include <sys/time.h>
 #include <termios.h>
 #include <unistd.h>
@@ -37,7 +38,6 @@ int
 tcsendbreak(fd, len)
 	int fd, len;
 {
-#ifndef SMILEOS
 	struct timeval sleepytime;
 
 	sleepytime.tv_sec = 0;
@@ -47,6 +47,5 @@ tcsendbreak(fd, len)
 	(void)select(0, 0, 0, 0, &sleepytime);
 	if (ioctl(fd, TIOCCBRK, 0) == -1)
 		return (-1);
-#endif
 	return (0);
 }

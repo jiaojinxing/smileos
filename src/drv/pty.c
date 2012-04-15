@@ -246,6 +246,9 @@ static void pty_thread(void *arg)
     int dev_fd;
     uint32_t reg;
 
+    /*
+     * TODO: 目前只支持 socket
+     */
     dev_fd = socket_attach(priv->fd);
     if (dev_fd < 0) {
         lwip_close(priv->fd);
@@ -340,6 +343,9 @@ int pty_create(const char *name, int fd)
 
         strlcpy(priv->name, name, sizeof(priv->name));
 
+        /*
+         * PTY 线程优先级设置为较低水平, 保证写操作一次完成
+         */
         if (kthread_create(name, pty_thread, priv, 8 * KB, 5) < 0) {
             device_remove(name);
             kfree(priv);

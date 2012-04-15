@@ -48,6 +48,11 @@
 device_t *device_lookup(const char *name);
 
 /*
+ * 获得设备
+ */
+device_t *device_get(int index);
+
+/*
  * 删除设备
  */
 int device_remove(const char *name);

@@ -31,10 +31,10 @@
 ** Descriptions:            创建文件
 **
 **--------------------------------------------------------------------------------------------------------
-** Modified by:
-** Modified date:
-** Version:
-** Descriptions:
+** Modified by:             JiaoJinXing
+** Modified date:           2012-4-15
+** Version:                 1.1.0
+** Descriptions:            FIX 多任务下可能发生的 BUG(直接访问设备链表, 而设备链表发生变化)
 **
 *********************************************************************************************************/
 #include "kern/kern.h"
@@ -49,16 +49,6 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
-
-/*
- * 设备链表
- */
-extern device_t *dev_list;
-
-/*
- * 设备管理锁
- */
-extern mutex_t devmgr_lock;
 
 static int devfs_mount(mount_point_t *point, device_t *dev, const char *dev_name)
 {
@@ -205,6 +195,7 @@ static int devfs_fstat(mount_point_t *point, file_t *file, struct stat *buf)
     if (dev->drv->fstat == NULL) {
         return 0;
     }
+
     return dev->drv->fstat(dev->ctx, file, buf);
 }
 
@@ -398,7 +389,6 @@ static int devfs_access(mount_point_t *point, const char *path, int amode)
  */
 typedef struct {
     struct dirent   entry;
-    device_t       *current;
     long            loc;
 } privinfo_t;
 
@@ -414,13 +404,7 @@ static int devfs_opendir(mount_point_t *point, file_t *file, const char *path)
     priv = kmalloc(sizeof(privinfo_t));
     if (priv != NULL) {
         file->ctx = priv;
-        /*
-         * 虽然上级有目录锁, 但仍须锁设备管理
-         */
-        mutex_lock(&devmgr_lock, 0);
-        priv->current = dev_list;
-        priv->loc     = 0;
-        mutex_unlock(&devmgr_lock);
+        priv->loc = 0;
         return 0;
     } else {
         seterrno(ENOMEM);
@@ -431,20 +415,24 @@ static int devfs_opendir(mount_point_t *point, file_t *file, const char *path)
 static struct dirent *devfs_readdir(mount_point_t *point, file_t *file)
 {
     privinfo_t *priv = file->ctx;
+    device_t   *dev;
 
     if (priv == NULL) {
         seterrno(EINVAL);
         return NULL;
     }
 
-    if (priv->current != NULL) {
-        strcpy(priv->entry.d_name, priv->current->name + 5);            /*  跳过 /dev/                  */
-        priv->entry.d_ino = priv->loc++;
-        mutex_lock(&devmgr_lock, 0);
-        priv->current = priv->current->next;
+    extern mutex_t devmgr_lock;
+
+    mutex_lock(&devmgr_lock, 0);
+    dev = device_get(priv->loc);
+    if (dev != NULL) {
+        strcpy(priv->entry.d_name, dev->name + 5);                      /*  跳过 /dev/                  */
         mutex_unlock(&devmgr_lock);
+        priv->entry.d_ino = priv->loc++;
         return &priv->entry;
     } else {
+        mutex_unlock(&devmgr_lock);
         return NULL;
     }
 }
@@ -453,68 +441,58 @@ static int devfs_rewinddir(mount_point_t *point, file_t *file)
 {
     privinfo_t *priv = file->ctx;
 
-    if (priv != NULL) {
-        mutex_lock(&devmgr_lock, 0);
-        priv->current = dev_list;
-        priv->loc     = 0;
-        mutex_unlock(&devmgr_lock);
-        return 0;
-    } else {
+    if (priv == NULL) {
         seterrno(EINVAL);
         return -1;
     }
+
+    priv->loc = 0;
+    return 0;
 }
 
 static int devfs_seekdir(mount_point_t *point, file_t *file, long loc)
 {
     privinfo_t *priv = file->ctx;
-    int ret = -1;
+    device_t *dev;
 
-    mutex_lock(&devmgr_lock, 0);
-    if (priv != NULL) {
-        device_t *dev = dev_list;
-        int i;
-
-        for (i = 0; i < loc && dev != NULL; i++) {
-            dev = dev->next;
-        }
-
-        if (point != NULL) {
-            priv->current = dev;
-            priv->loc     = loc;
-            ret           = 0;
-        }
-    }
-    mutex_unlock(&devmgr_lock);
-    if (ret < 0) {
+    if (priv == NULL) {
         seterrno(EINVAL);
+        return -1;
     }
-    return ret;
+
+    dev = device_get(priv->loc);
+    if (dev != NULL) {
+        priv->loc = loc;
+        return 0;
+    } else {
+        seterrno(EINVAL);
+        return -1;
+    }
 }
 
 static long devfs_telldir(mount_point_t *point, file_t *file)
 {
     privinfo_t *priv = file->ctx;
 
-    if (priv != NULL) {
-        return priv->loc;
-    } else {
+    if (priv == NULL) {
         seterrno(EINVAL);
         return -1;
     }
+
+    return priv->loc;
 }
 
 static int devfs_closedir(mount_point_t *point, file_t *file)
 {
     privinfo_t *priv = file->ctx;
 
-    if (priv != NULL) {
-        kfree(priv);
-        return 0;
-    } else {
+    if (priv == NULL) {
         seterrno(EINVAL);
         return -1;
     }
+
+    kfree(priv);
+    return 0;
 }
 
 file_system_t devfs = {

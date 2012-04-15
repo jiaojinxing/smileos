@@ -43,7 +43,13 @@
 #include <errno.h>
 #include "tty.h"
 
-typedef struct tty privinfo_t;
+/*
+ * 私有信息
+ */
+typedef struct {
+    VFS_SELECT_MEMBERS
+    struct tty      tty;
+} privinfo_t;
 
 /*
  * 打开 ttyS0
@@ -72,7 +78,7 @@ static int ttyS0_ioctl(void *ctx, file_t *file, int cmd, void *arg)
         return -1;
     }
 
-    ret = tty_ioctl(priv, cmd, arg);
+    ret = tty_ioctl(&priv->tty, cmd, arg);
     if (ret != 0) {
         seterrno(ret);
         return -1;
@@ -109,7 +115,7 @@ static ssize_t ttyS0_read(void *ctx, file_t *file, void *buf, size_t len)
         return -1;
     }
 
-    ret = tty_read(priv, buf, &len);
+    ret = tty_read(&priv->tty, buf, &len);
     if (ret != 0) {
         seterrno(ret);
         return -1;
@@ -131,7 +137,7 @@ static ssize_t ttyS0_write(void *ctx, file_t *file, const void *buf, size_t len)
         return -1;
     }
 
-    ret = tty_write(priv, buf, &len);
+    ret = tty_write(&priv->tty, buf, &len);
     if (ret != 0) {
         seterrno(ret);
         return -1;
@@ -153,16 +159,46 @@ static void ttyS0_start(struct tty *tp)
 }
 
 /*
+ * 扫描
+ */
+static int ttyS0_scan(void *ctx, file_t *file, int flags)
+{
+    privinfo_t *priv = ctx;
+    int ret;
+
+    if (priv == NULL) {
+        seterrno(EINVAL);
+        return -1;
+    }
+
+    ret = 0;
+    if (tty_readable(&priv->tty) && (flags & VFS_FILE_READABLE)) {
+        ret |= VFS_FILE_READABLE;
+    }
+
+    if (flags & VFS_FILE_WRITEABLE) {
+        ret |= VFS_FILE_WRITEABLE;
+    }
+
+    return ret;
+}
+
+#include "selectdrv.h"
+
+/*
  * ttyS0 驱动
  */
 static driver_t ttyS0_drv = {
-        .name   = "ttyS0",
-        .open   = ttyS0_open,
-        .write  = ttyS0_write,
-        .read   = ttyS0_read,
-        .isatty = ttyS0_isatty,
-        .ioctl  = ttyS0_ioctl,
-        .close  = ttyS0_close,
+        .name     = "ttyS0",
+        .open     = ttyS0_open,
+        .write    = ttyS0_write,
+        .read     = ttyS0_read,
+        .isatty   = ttyS0_isatty,
+        .ioctl    = ttyS0_ioctl,
+        .close    = ttyS0_close,
+        .scan     = ttyS0_scan,
+        .select   = select_select,
+        .unselect = select_unselect,
 };
 
 /*
@@ -170,17 +206,23 @@ static driver_t ttyS0_drv = {
  */
 int ttyS0_init(void)
 {
-    static privinfo_t ttyS0;
+    privinfo_t *priv;
 
     driver_install(&ttyS0_drv);
 
-    device_create("/dev/ttyS0", "ttyS0", &ttyS0);
-
-    tty_attach(&ttyS0);
-
-    ttyS0.t_oproc = ttyS0_start;
-
-    return 0;
+    priv = kmalloc(sizeof(privinfo_t));
+    if (priv != NULL) {
+        select_init(priv);
+        if (device_create("/dev/ttyS0", "ttyS0", priv) < 0) {
+            kfree(priv);
+            return -1;
+        }
+        tty_attach(&priv->tty);
+        priv->tty.t_oproc = ttyS0_start;
+        return 0;
+    } else {
+        return -1;
+    }
 }
 /*********************************************************************************************************
   END FILE

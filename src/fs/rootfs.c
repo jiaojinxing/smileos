@@ -31,42 +31,27 @@
 ** Descriptions:            创建文件
 **
 **--------------------------------------------------------------------------------------------------------
-** Modified by:
-** Modified date:
-** Version:
-** Descriptions:
+** Modified by:             JiaoJinXing
+** Modified date:           2012-4-15
+** Version:                 1.1.0
+** Descriptions:            FIX 多任务下可能发生的 BUG(直接访问挂载点链表, 而挂载点链表发生变化)
 **
 *********************************************************************************************************/
 #include "kern/kern.h"
 #include "kern/ipc.h"
 #include "vfs/config.h"
 #include "vfs/types.h"
+#include "vfs/mount.h"
 #include <dirent.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <errno.h>
 
 /*
- * 挂载点链表
- */
-extern mount_point_t *point_list;
-
-/*
- * 根文件系统挂载点
- */
-extern mount_point_t *rootfs_point;
-
-/*
- * 挂载点管理锁
- */
-extern mutex_t pointmgr_lock;
-
-/*
  * 私有信息
  */
 typedef struct {
     struct dirent   entry;
-    mount_point_t  *current;
     long            loc;
 } privinfo_t;
 
@@ -133,13 +118,7 @@ static int rootfs_opendir(mount_point_t *point, file_t *file, const char *path)
     priv = kmalloc(sizeof(privinfo_t));
     if (priv != NULL) {
         file->ctx = priv;
-        /*
-         * 虽然上级有目录锁, 但仍须锁挂载点管理
-         */
-        mutex_lock(&pointmgr_lock, 0);
-        priv->current = point_list;
-        priv->loc     = 0;
-        mutex_unlock(&pointmgr_lock);
+        priv->loc = 0;
         return 0;
     } else {
         seterrno(ENOMEM);
@@ -149,21 +128,26 @@ static int rootfs_opendir(mount_point_t *point, file_t *file, const char *path)
 
 static struct dirent *rootfs_readdir(mount_point_t *point, file_t *file)
 {
-    privinfo_t *priv = file->ctx;
+    privinfo_t    *priv = file->ctx;
+    mount_point_t *__point;
 
     if (priv == NULL) {
         seterrno(EINVAL);
         return NULL;
     }
 
-    if (priv->current != rootfs_point) {
-        strcpy(priv->entry.d_name, priv->current->name + 1);            /*  跳过 /                      */
-        priv->entry.d_ino = priv->loc++;
-        mutex_lock(&pointmgr_lock, 0);
-        priv->current = priv->current->next;
+    extern mutex_t pointmgr_lock;
+    extern mount_point_t *rootfs_point;
+
+    mutex_lock(&pointmgr_lock, 0);
+    __point = mount_point_get(priv->loc);
+    if (__point != NULL && __point != rootfs_point) {
+        strcpy(priv->entry.d_name, __point->name + 1);                  /*  跳过 /                      */
         mutex_unlock(&pointmgr_lock);
+        priv->entry.d_ino = priv->loc++;
         return &priv->entry;
     } else {
+        mutex_unlock(&pointmgr_lock);
         return NULL;
     }
 }
@@ -172,44 +156,29 @@ static int rootfs_rewinddir(mount_point_t *point, file_t *file)
 {
     privinfo_t *priv = file->ctx;
 
-    if (priv != NULL) {
-        mutex_lock(&pointmgr_lock, 0);
-        priv->current = point_list;
-        priv->loc     = 0;
-        mutex_unlock(&pointmgr_lock);
-        return 0;
-    } else {
+    if (priv == NULL) {
         seterrno(EINVAL);
         return -1;
     }
+
+    priv->loc = 0;
+    return 0;
 }
 
 static int rootfs_seekdir(mount_point_t *point, file_t *file, long loc)
 {
     privinfo_t *priv = file->ctx;
+    mount_point_t *__point;
 
-    if (priv != NULL) {
-        mount_point_t *point;
-        int i;
+    if (priv == NULL) {
+        seterrno(EINVAL);
+        return -1;
+    }
 
-        mutex_lock(&pointmgr_lock, 0);
-
-        point = point_list;
-
-        for (i = 0; i < loc && point != rootfs_point; i++) {
-            point = point->next;
-        }
-
-        if (point != rootfs_point) {
-            priv->current = point;
-            priv->loc     = loc;
-            mutex_unlock(&pointmgr_lock);
-            return 0;
-        } else {
-            mutex_unlock(&pointmgr_lock);
-            seterrno(EINVAL);
-            return -1;
-        }
+    __point = mount_point_get(priv->loc);
+    if (__point != NULL) {
+        priv->loc = loc;
+        return 0;
     } else {
         seterrno(EINVAL);
         return -1;
@@ -220,25 +189,25 @@ static long rootfs_telldir(mount_point_t *point, file_t *file)
 {
     privinfo_t *priv = file->ctx;
 
-    if (priv != NULL) {
-        return priv->loc;
-    } else {
+    if (priv == NULL) {
         seterrno(EINVAL);
         return -1;
     }
+
+    return priv->loc;
 }
 
 static int rootfs_closedir(mount_point_t *point, file_t *file)
 {
     privinfo_t *priv = file->ctx;
 
-    if (priv != NULL) {
-        kfree(priv);
-        return 0;
-    } else {
+    if (priv == NULL) {
         seterrno(EINVAL);
         return -1;
     }
+
+    kfree(priv);
+    return 0;
 }
 
 file_system_t rootfs = {
