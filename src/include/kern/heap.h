@@ -71,12 +71,12 @@ int heap_init(heap_t *heap, uint8_t *base, uint32_t size);
 /*
  * 分配内存
  */
-void *heap_alloc(heap_t *heap, const char *func, uint32_t size);
+void *heap_alloc(heap_t *heap, const char *func, int line, uint32_t size);
 
 /*
  * 释放内存
  */
-void *heap_free(heap_t *heap, const char *func, void *ptr);
+void *heap_free(heap_t *heap, const char *func, int line, void *ptr);
 
 /*
  * 打印内存堆信息到文件

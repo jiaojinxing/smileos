@@ -930,7 +930,8 @@ int vfs_select(int nfds, fd_set *readfds, fd_set *writefds,
         current->timer   = 0;
         current->state   = TASK_SUSPEND;
     } else {
-        current->timer   = timeout->tv_sec * TICK_PER_SECOND + timeout->tv_usec * TICK_PER_SECOND / 1000000;
+        current->timer   = timeout->tv_sec  * TICK_PER_SECOND +
+                           timeout->tv_usec * TICK_PER_SECOND / 1000000;
         current->state   = TASK_SLEEPING;
     }
     current->resume_type = TASK_RESUME_UNKNOW;

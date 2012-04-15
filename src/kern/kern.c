@@ -68,7 +68,6 @@
 #include "kern/mmu.h"
 #include "vfs/vfs.h"
 #include <string.h>
-#include <fcntl.h>
 /*********************************************************************************************************
   内核变量
 *********************************************************************************************************/
@@ -542,13 +541,13 @@ int32_t process_create(const char *name, uint8_t *code, uint32_t size, uint32_t 
         strcpy(task->name, "???");
     }
 
-    if (vfs_task_init(pid)) {                                           /*  初始化进程的文件信息        */
+    if (vfs_task_init(pid) < 0) {                                       /*  初始化进程的文件信息        */
         task->state = TASK_UNALLOCATE;
         interrupt_resume(reg);
         return -1;
     }
 
-    if (vmm_process_init(task, size)) {                                 /*  初始化进程的虚拟内存信息    */
+    if (vmm_process_init(task, size) < 0) {                             /*  初始化进程的虚拟内存信息    */
         vfs_task_cleanup(pid);
         task->state = TASK_UNALLOCATE;
         interrupt_resume(reg);
@@ -571,17 +570,16 @@ int32_t process_create(const char *name, uint8_t *code, uint32_t size, uint32_t 
     return pid;
 }
 
-#include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <fcntl.h>
 
 /*
  * 内核线程外壳
  */
 static void kthread_shell(task_t *task)
 {
-    vfs_task_init(task->tid);                                           /*  初始化任务的文件信息        */
-
     open("/dev/ttyS0", O_RDONLY, 0666);                                 /*  打开三个标准文件            */
     stdin  = fdopen(STDIN_FILENO,  "r");
 
@@ -633,7 +631,7 @@ int32_t kthread_create(const char *name, void (*func)(void *), void *arg, uint32
         return -1;
     }
 
-    memset((char *)task->stack_base, KTHREAD_STACK_MAGIC0, stack_size);  /*  初始化栈空间                */
+    memset((char *)task->stack_base, KTHREAD_STACK_MAGIC0, stack_size); /*  初始化栈空间                */
 
     task->pid          = current->pid;                                  /*  进程 ID 为当前任务的进程 ID */
     task->tid          = tid;                                           /*  任务 ID                     */
@@ -683,8 +681,15 @@ int32_t kthread_create(const char *name, void (*func)(void *), void *arg, uint32
         strcpy(task->name, "???");
     }
 
-    if (running) {
-        yield();
+    if (vfs_task_init(tid) < 0) {                                       /*  初始化任务的文件信息        */
+        kfree((void *)task->stack_base);
+        task->state = TASK_UNALLOCATE;
+        interrupt_resume(reg);
+        return -1;
+    }
+
+    if (running) {                                                      /*  如果内核已经启动            */
+        yield();                                                        /*  重新调度                    */
     }
 
     interrupt_resume(reg);

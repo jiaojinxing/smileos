@@ -51,16 +51,14 @@
 *********************************************************************************************************/
 #include "kern/config.h"
 #include "kern/types.h"
-#include "vfs/vfs.h"
 #include <sys/types.h>
-#include <sys/time.h>
-#include <sys/socket.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
 
 struct stat;
 struct tms;
+struct timeval;
+typedef void DIR;
 
 #ifdef SMILEOS_KERNEL
 
@@ -97,7 +95,6 @@ static sys_do_t sys_do_table[1];
 #define debug(...)
 
 #include <stdio.h>
-#include <unistd.h>
 
 #endif
 
@@ -950,6 +947,9 @@ int select(int maxfdp1, fd_set *readset, fd_set *writeset, fd_set *exceptset, st
 }
 
 #ifndef SMILEOS_KERNEL
+
+#include <sys/socket.h>
+
 /*
  * socket
  */

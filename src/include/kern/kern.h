@@ -196,20 +196,21 @@ unsigned char kgetc(void);
 /*
  * 从内核内存堆分配内存
  */
-void *__kmalloc(const char *func, uint32_t size);
+void *__kmalloc(const char *func, int line, uint32_t size);
 
 /*
  * 释放内存回内核内存堆
  */
-void __kfree(const char *func, void *ptr);
-
-#define kmalloc(a)  __kmalloc(__func__, a)
-#define kfree(a)    __kfree(__func__, a)
+void __kfree(const char *func, int line, void *ptr);
 
 /*
- * kcalloc
+ * __kcalloc
  */
-void *kcalloc(uint32_t nelem, uint32_t elsize);
+void *__kcalloc(const char *func, int line, uint32_t nelem, uint32_t elsize);
+
+#define kmalloc(a)      __kmalloc(__func__, __LINE__, a)
+#define kfree(a)        __kfree(__func__, __LINE__, a)
+#define kcalloc(a, b)   __kcalloc(__func__, __LINE__, a, b)
 
 /*
  * 打印内核内存堆信息
@@ -271,11 +272,6 @@ int in_kernel(void);
  * 释放 CPU 使用权
  */
 void yield(void);
-
-/*
- * 设置 errno
- */
-#define seterrno(err) errno = (err)
 
 #endif
 

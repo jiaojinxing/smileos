@@ -40,7 +40,7 @@
 #include "kern/config.h"
 #include "kern/arm.h"
 
-#define SYS_CALL_NR         100                                         /*  系统调用数                  */
+#define SYS_CALL_NR         100             /*  系统调用数                                              */
 /*********************************************************************************************************
   异常向量跳转表
 *********************************************************************************************************/
@@ -50,22 +50,22 @@
 
 .global _start
 _start:
-    ldr     pc, _reset                                                  // reset - _reset
-    ldr     pc, _undf                                                   // undefined - _undf
-    ldr     pc, _swi                                                    // SWI - _swi
-    ldr     pc, _pabt                                                   // program abort - _pabt
-    ldr     pc, _dabt                                                   // data abort - _dabt
-    nop                                                                 // reserved
-    ldr     pc, _irq                                                    // IRQ - _irq
-    ldr     pc, _fiq                                                    // FIQ - _fiq
+    ldr     pc, _reset                      /*  复位                                                    */
+    ldr     pc, _undf                       /*  未定义指令异常                                          */
+    ldr     pc, _swi                        /*  软件中断                                                */
+    ldr     pc, _pabt                       /*  预取指中止异常                                          */
+    ldr     pc, _dabt                       /*  数据访问中断异常                                        */
+    nop                                     /*  保留                                                    */
+    ldr     pc, _irq                        /*  IRQ 中断                                                */
+    ldr     pc, _fiq                        /*  FIQ 中断                                                */
 
-_reset:     .word reset_handler                                         // reset
-_undf:      .word undef_handler                                         // undefined
-_swi:       .word swi_handler                                           // SWI
-_pabt:      .word pabt_handler                                          // program abort
-_dabt:      .word dabt_handler                                          // data abort
-_irq:       .word irq_handler                                           // IRQ
-_fiq:       .word fiq_handler                                           // FIQ
+_reset:     .word reset_handler
+_undf:      .word undef_handler
+_swi:       .word swi_handler
+_pabt:      .word pabt_handler
+_dabt:      .word dabt_handler
+_irq:       .word irq_handler
+_fiq:       .word fiq_handler
 /*********************************************************************************************************
   复位处理程序
 *********************************************************************************************************/
@@ -73,19 +73,20 @@ _fiq:       .word fiq_handler                                           // FIQ
 .extern bsp_init
 .extern kernel_mode
 reset_handler:
-    msr     cpsr_c, #(ARM_FIQ_NO + ARM_IRQ_NO + ARM_SVC_MODE)           /*  进入 svc 模式, 关中断       */
+                                            /*  进入 svc 模式, 关中断                                   */
+    msr     cpsr_c, #(ARM_FIQ_NO + ARM_IRQ_NO + ARM_SVC_MODE)
 
-    mov     r0, #0                                                      /*  写 pid = 0                  */
+    mov     r0, #0                          /*  写 pid = 0                                              */
     mcr     p15, 0, r0, c13, c0, 0
     nop
     nop
     nop
 
-    ldr     sp, =(PROCESS0_STACK_BASE)                                  /*  设置 svc 模式的 sp          */
+    ldr     sp, =(PROCESS0_STACK_BASE)      /*  设置 svc 模式的 sp                                      */
 
-    bl      cpu_init                                                    /*  初始化 CPU                  */
+    bl      cpu_init                        /*  初始化 CPU                                              */
 
-    mov     r0, #0                                                      /*  对 bss 段进行清零           */
+    mov     r0, #0                          /*  对 bss 段进行清零                                       */
     ldr     r1, =__bss_start
     ldr     r2, =__bss_end
 
@@ -94,9 +95,9 @@ bss_loop:
     strlo   r0, [r1], #4
     blo     bss_loop
 
-    bl      bsp_init                                                    /*  初始化 BSP                  */
+    bl      bsp_init                        /*  初始化 BSP                                              */
 
-    ldr     pc, =main                                                   /*  进入 main 函数              */
+    ldr     pc, =main                       /*  进入 main 函数                                          */
 /*********************************************************************************************************
   SWI 软件中断处理程序
 *********************************************************************************************************/
