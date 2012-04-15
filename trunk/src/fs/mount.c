@@ -49,7 +49,7 @@
 /*
  * 挂载点链表
  */
-mount_point_t *point_list;
+static mount_point_t *point_list;
 
 /*
  * 根文件系统挂载点
@@ -93,6 +93,24 @@ mount_point_t *mount_point_lookup(const char *name)
         }
         point = point->next;
     }
+    mutex_unlock(&pointmgr_lock);
+
+    return point;
+}
+
+/*
+ * 获得挂载点
+ */
+mount_point_t *mount_point_get(int index)
+{
+    int i;
+    mount_point_t *point;
+
+    mutex_lock(&pointmgr_lock, 0);
+
+    for (i = 0, point = point_list; i < index && point != NULL; i++, point = point->next) {
+    }
+
     mutex_unlock(&pointmgr_lock);
 
     return point;
@@ -144,8 +162,8 @@ int mount(const char *point_name, const char *dev_name, const char *fs_name)
                     rootfs_point = point;
                 }
 
-                point->fs   = fs;
-                point->dev  = dev;
+                point->fs  = fs;
+                point->dev = dev;
 
                 /*
                  * 当设备为空时, 设备名可作挂载参数
@@ -174,7 +192,9 @@ int mount(const char *point_name, const char *dev_name, const char *fs_name)
 int mount_point_manager_init(void)
 {
     rootfs_point = NULL;
+
     point_list   = NULL;
+
     return mutex_new(&pointmgr_lock);
 }
 /*********************************************************************************************************

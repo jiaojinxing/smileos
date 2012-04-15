@@ -48,6 +48,11 @@
 mount_point_t *mount_point_lookup(const char *name);
 
 /*
+ * ªÒµ√π“‘ÿµ„
+ */
+mount_point_t *mount_point_get(int index);
+
+/*
  * π“‘ÿ
  */
 int mount(const char *point_name, const char *dev_name, const char *fs_name);
