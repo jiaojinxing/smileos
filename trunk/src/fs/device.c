@@ -206,6 +206,8 @@ int device_create(const char *dev_name, const char *drv_name, void *ctx)
  */
 int device_manager_init(void)
 {
+    dev_list = NULL;
+
     return mutex_new(&devmgr_lock);
 }
 /*********************************************************************************************************

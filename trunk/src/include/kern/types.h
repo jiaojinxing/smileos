@@ -42,6 +42,12 @@
 /*********************************************************************************************************
   系统数据类型定义
 *********************************************************************************************************/
+#include <stdint.h>
+
+/*
+ * 这些数据类型在 stdint.h 头文件已有定义, 故不再定义
+ */
+#if 0
 typedef unsigned char               uint8_t;
 typedef          char               int8_t;
 typedef unsigned short              uint16_t;
@@ -50,6 +56,7 @@ typedef unsigned int                uint32_t;
 typedef          int                int32_t;
 typedef unsigned long long          uint64_t;
 typedef          long long          int64_t;
+#endif
 
 #ifndef NULL
 #define NULL                        0
@@ -97,13 +104,6 @@ typedef uint32_t                    mem_ptr_t;
 #define SZT_F                       "u"
 #define X8_F                        "02X"
 /*********************************************************************************************************
-  编译器结构缩排
-*********************************************************************************************************/
-#define PACK_STRUCT_FIELD(x)        x
-#define PACK_STRUCT_STRUCT          __attribute__((packed))
-#define PACK_STRUCT_BEGIN                                               /*  单字节缩排结构体            */
-#define PACK_STRUCT_END                                                 /*  结束单字节缩排结构体        */
-/*********************************************************************************************************
   字节序
 *********************************************************************************************************/
 #ifndef LITTLE_ENDIAN
@@ -123,6 +123,13 @@ typedef uint32_t                    mem_ptr_t;
 #define MEM_ALIGN_SIZE_LESS(size)   (((size) & ~(MEM_ALIGNMENT - 1)))
 #define MEM_ALIGN(addr)             ((void *)(((uint32_t)(addr) + MEM_ALIGNMENT - 1) & ~(uint32_t)(MEM_ALIGNMENT - 1)))
 #define MEM_ALIGN_LESS(addr)        ((void *)(((uint32_t)(addr)) & ~(uint32_t)(MEM_ALIGNMENT - 1)))
+/*********************************************************************************************************
+  编译器结构缩排
+*********************************************************************************************************/
+#define PACK_STRUCT_FIELD(x)        x
+#define PACK_STRUCT_STRUCT          __attribute__((packed))
+#define PACK_STRUCT_BEGIN                                               /*  单字节缩排结构体            */
+#define PACK_STRUCT_END                                                 /*  结束单字节缩排结构体        */
 /*********************************************************************************************************
   获得母体结构的地址
 *********************************************************************************************************/

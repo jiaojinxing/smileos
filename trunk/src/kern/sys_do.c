@@ -41,7 +41,6 @@
 #include "kern/types.h"
 #include "kern/kern.h"
 #include "vfs/vfs.h"
-#include <sys/types.h>
 #include <sys/time.h>
 #include <sys/reent.h>
 #include <sys/socket.h>

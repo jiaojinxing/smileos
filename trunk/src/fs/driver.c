@@ -102,6 +102,8 @@ int driver_install(driver_t *drv)
  */
 int driver_manager_init(void)
 {
+    drv_list = NULL;
+
     return mutex_new(&drvmgr_lock);
 }
 /*********************************************************************************************************

@@ -195,14 +195,15 @@ struct file {
 /*
  * 判断路径是不是根目录
  */
-#define VFS_PATH_IS_ROOT(path)  (path[0] == '/' && path[1] == '\0')
+#define VFS_PATH_IS_ROOT(path)          \
+                            (path[0] == '/' && path[1] == '\0')
 
 /*
  * 文件可读, 可写, 出错, 用于 select
  */
-#define VFS_FILE_READABLE       (1 << 0)
-#define VFS_FILE_WRITEABLE      (1 << 1)
-#define VFS_FILE_ERROR          (1 << 2)
+#define VFS_FILE_READABLE   (1 << 0)
+#define VFS_FILE_WRITEABLE  (1 << 1)
+#define VFS_FILE_ERROR      (1 << 2)
 
 /*
  * select 节点
@@ -220,6 +221,12 @@ typedef struct _select_node {
 #define VFS_SELECT_MEMBERS              \
     int                     flags;      \
     select_node_t           wait_list;
+
+/*
+ * 设置 errno
+ */
+#include <errno.h>
+#define seterrno(err)       errno = (err)
 
 #endif                                                                  /*  VFS_TYPES_H_                */
 /*********************************************************************************************************

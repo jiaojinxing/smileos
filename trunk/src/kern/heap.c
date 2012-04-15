@@ -43,6 +43,12 @@
 ** Descriptions:            增加 newlib 需要的可重入版本 _malloc_r 等函数,
 **                          修改 heap_show 允许打印内存堆信息到指定的文件
 **
+**--------------------------------------------------------------------------------------------------------
+** Modified by:             JiaoJinXing
+** Modified date:           2012-4-15
+** Version:                 1.3.0
+** Descriptions:            heap_alloc 和 heap_free 增加 func 和 line 参数, 帮助发现内存使用错误!
+**
 *********************************************************************************************************/
 #include "kern/config.h"
 #include "kern/types.h"
@@ -75,14 +81,14 @@ static uint8_t kheap_mem[KERN_HEAP_SIZE];
 /*
  * 从内核内存堆分配内存
  */
-void *__kmalloc(const char *func, uint32_t size)
+void *__kmalloc(const char *func, int line, uint32_t size)
 {
     void    *ptr;
     uint32_t reg;
 
     reg = interrupt_disable();
 
-    ptr = heap_alloc(&kheap, func, size);
+    ptr = heap_alloc(&kheap, func, line, size);
 
     interrupt_resume(reg);
 
@@ -92,13 +98,13 @@ void *__kmalloc(const char *func, uint32_t size)
 /*
  * 释放内存回内核内存堆
  */
-void __kfree(const char *func, void *ptr)
+void __kfree(const char *func, int line, void *ptr)
 {
     uint32_t reg;
 
     reg = interrupt_disable();
 
-    heap_free(&kheap, func, ptr);
+    heap_free(&kheap, func, line, ptr);
 
     interrupt_resume(reg);
 }
@@ -106,11 +112,17 @@ void __kfree(const char *func, void *ptr)
 /*
  * kcalloc
  */
-void *kcalloc(uint32_t nelem, uint32_t elsize)
+void *__kcalloc(const char *func, int line, uint32_t nelem, uint32_t elsize)
 {
-    void *ptr;
+    void    *ptr;
+    uint32_t reg;
 
-    ptr = kmalloc(nelem * MEM_ALIGN_SIZE(elsize));
+    reg = interrupt_disable();
+
+    ptr = heap_alloc(&kheap, func, line, nelem * MEM_ALIGN_SIZE(elsize));
+
+    interrupt_resume(reg);
+
     if (ptr != NULL) {
         memset(ptr, 0, nelem * MEM_ALIGN_SIZE(elsize));
     }
@@ -127,12 +139,13 @@ void *_malloc_r(struct _reent *reent, size_t size)
 
     reg = interrupt_disable();
 
-    ptr = heap_alloc(&kheap, __func__, size);
+    ptr = heap_alloc(&kheap, __func__, __LINE__, size);
+
+    interrupt_resume(reg);
+
     if (ptr == NULL) {
         reent->_errno = ENOMEM;
     }
-    interrupt_resume(reg);
-
     return ptr;
 }
 
@@ -145,7 +158,7 @@ void _free_r(struct _reent *reent, void *ptr)
 
     reg = interrupt_disable();
 
-    heap_free(&kheap, __func__, ptr);
+    heap_free(&kheap, __func__, __LINE__, ptr);
 
     interrupt_resume(reg);
 }
@@ -160,15 +173,23 @@ void *_realloc_r(struct _reent *reent, void *ptr, size_t newsize)
 
     reg = interrupt_disable();
 
-    newptr = _malloc_r(reent, newsize);
+    newptr = heap_alloc(&kheap, __func__, __LINE__, newsize);
+
+    interrupt_resume(reg);
+
     if (newptr != NULL) {
         if (ptr != NULL) {
             memcpy(newptr, ptr, newsize);
-            _free_r(reent, ptr);
-        }
-    }
-    interrupt_resume(reg);
 
+            reg = interrupt_disable();
+
+            heap_free(&kheap, __func__, __LINE__, ptr);
+
+            interrupt_resume(reg);
+        }
+    } else {
+        reent->_errno = ENOMEM;
+    }
     return newptr;
 }
 
@@ -182,12 +203,15 @@ void *_calloc_r(struct _reent *reent, size_t nelem, size_t elsize)
 
     reg = interrupt_disable();
 
-    ptr = _malloc_r(reent, nelem * MEM_ALIGN_SIZE(elsize));
-    if (ptr != NULL) {
-        memset(ptr, 0, nelem * MEM_ALIGN_SIZE(elsize));
-    }
+    ptr = heap_alloc(&kheap, __func__, __LINE__, nelem * MEM_ALIGN_SIZE(elsize));
+
     interrupt_resume(reg);
 
+    if (ptr != NULL) {
+        memset(ptr, 0, nelem * MEM_ALIGN_SIZE(elsize));
+    } else {
+        reent->_errno = ENOMEM;
+    }
     return ptr;
 }
 
@@ -222,7 +246,7 @@ void *_malloc_r(struct _reent *reent, size_t size)
     /*
      * 因进程里使用非抢占的 pthread, 免锁免关中断
      */
-    ptr = heap_alloc(&uheap, __func__, size);
+    ptr = heap_alloc(&uheap, __func__, __LINE__, size);
     if (ptr == NULL) {
         reent->_errno = ENOMEM;
     }
@@ -234,7 +258,7 @@ void *_malloc_r(struct _reent *reent, size_t size)
  */
 void _free_r(struct _reent *reent, void *ptr)
 {
-    heap_free(&uheap, __func__, ptr);
+    heap_free(&uheap, __func__, __LINE__, ptr);
 }
 
 /*
@@ -244,12 +268,14 @@ void *_realloc_r(struct _reent *reent, void *ptr, size_t newsize)
 {
     void *newptr;
 
-    newptr = _malloc_r(reent, newsize);
+    newptr = heap_alloc(&uheap, __func__, __LINE__, newsize);
     if (newptr != NULL) {
         if (ptr != NULL) {
             memcpy(newptr, ptr, newsize);
-            _free_r(reent, ptr);
+            heap_free(&uheap, __func__, __LINE__, ptr);
         }
+    } else {
+        reent->_errno = ENOMEM;
     }
     return newptr;
 }
@@ -261,9 +287,11 @@ void *_calloc_r(struct _reent *reent, size_t nelem, size_t elsize)
 {
     void *ptr;
 
-    ptr = _malloc_r(reent, nelem * MEM_ALIGN_SIZE(elsize));
+    ptr = heap_alloc(&uheap, __func__, __LINE__, nelem * MEM_ALIGN_SIZE(elsize));
     if (ptr != NULL) {
         memset(ptr, 0, nelem * MEM_ALIGN_SIZE(elsize));
+    } else {
+        reent->_errno = ENOMEM;
     }
     return ptr;
 }
@@ -375,18 +403,20 @@ int heap_init(heap_t *heap, uint8_t *base, uint32_t size)
 /*
  * 分配内存
  */
-void *heap_alloc(heap_t *heap, const char *func, uint32_t size)
+void *heap_alloc(heap_t *heap, const char *func, int line, uint32_t size)
 {
     mem_block_t *blk;
     mem_block_t *new_blk;
 
     if (heap == NULL) {
-        debug("%s: process %d heap=NULL, by %s()\n", __func__, getpid(), func);
+        debug("%s: process %d heap=NULL, call by %s() line %d\n",
+                __func__, getpid(), func);
         return NULL;
     }
 
     if (heap->magic0 != MEM_BLOCK_MAGIC0) {
-        debug("%s: process %d heap magic %d != %d, by %s()\n", __func__, getpid(), heap->magic0, MEM_BLOCK_MAGIC0, func);
+        debug("%s: process %d heap magic %d != %d, call by %s() line %d\n",
+                __func__, getpid(), heap->magic0, MEM_BLOCK_MAGIC0, func);
         return NULL;
     }
 
@@ -453,7 +483,7 @@ void *heap_alloc(heap_t *heap, const char *func, uint32_t size)
     }
 
     error0:
-    debug("%s: process %d low memory, by %s()\n", __func__, getpid(), func);
+    debug("%s: process %d low memory, call by %s() line %d\n", __func__, getpid(), func);
 
     return NULL;
 }
@@ -461,42 +491,48 @@ void *heap_alloc(heap_t *heap, const char *func, uint32_t size)
 /*
  * 释放内存
  */
-void *heap_free(heap_t *heap, const char *func, void *ptr)
+void *heap_free(heap_t *heap, const char *func, int line, void *ptr)
 {
     mem_block_t *blk;
     mem_block_t *prev;
     mem_block_t *next;
 
     if (heap == NULL) {
-        debug("%s: process %d heap=NULL, by %s()\n", __func__, getpid(), func);
+        debug("%s: process %d heap=NULL, call by %s() line %d\n",
+                __func__, getpid(), func);
         return NULL;
     }
 
     if (heap->magic0 != MEM_BLOCK_MAGIC0) {
-        debug("%s: process %d heap magic %d != %d, by %s()\n", __func__, getpid(), heap->magic0, MEM_BLOCK_MAGIC0, func);
+        debug("%s: process %d heap magic %d != %d, call by %s() line %d\n",
+                __func__, getpid(), heap->magic0, MEM_BLOCK_MAGIC0, func);
         return NULL;
     }
 
     if (ptr == NULL) {
-        debug("%s: process %d memptr=NULL, by %s()\n", __func__, getpid(), func);
+        debug("%s: process %d memptr=NULL, call by %s() line %d\n",
+                __func__, getpid(), func);
         return ptr;
     }
 
     if (ptr != MEM_ALIGN(ptr)) {
-        debug("%s: process %d memptr=0x%x is not aligned, by %s()\n", __func__, getpid(), (uint32_t)ptr, func);
+        debug("%s: process %d memptr=0x%x is not aligned, call by %s() line %d\n",
+                __func__, getpid(), (uint32_t)ptr, func);
         return ptr;
     }
 
     if (((uint8_t *)ptr < (heap->base + MEM_ALIGN_SIZE(sizeof(mem_block_t)))) ||
         ((uint8_t *)ptr > heap->base + heap->size - MEM_ALIGNMENT)) {
-        debug("%s: process %d memptr=0x%x dose not belong to this heap, by %s()\n", __func__, getpid(), (uint32_t)ptr, func);
+        debug("%s: process %d memptr=0x%x dose not belong to this heap, call by %s() line %d\n",
+                __func__, getpid(), (uint32_t)ptr, func);
         return ptr;
     }
                                                                         /*  指针所在的内存块节点        */
     blk  = (mem_block_t *)((char *)ptr - MEM_ALIGN_SIZE(sizeof(mem_block_t)));
 
     if (blk->magic0 != MEM_BLOCK_MAGIC0 || blk->status != MEM_BLOCK_STATE_USED) {
-        debug("%s: process %d memptr=0x%x is invalid, by %s()\n", __func__, getpid(), (uint32_t)ptr, func);
+        debug("%s: process %d memptr=0x%x is invalid, call by %s() line %d\n",
+                __func__, getpid(), (uint32_t)ptr, func);
         return ptr;
     }
 
@@ -504,7 +540,8 @@ void *heap_free(heap_t *heap, const char *func, void *ptr)
     next = blk->next;
 
     if (next != NULL && next->magic0 != MEM_BLOCK_MAGIC0) {             /*  写缓冲区溢出                */
-        debug("%s: process %d write buffer over, memptr=0x%x, by %s()\n", __func__, getpid(), (uint32_t)ptr, func);
+        debug("%s: process %d write buffer over, memptr=0x%x, call by %s() line %d\n",
+                __func__, getpid(), (uint32_t)ptr, func);
         return ptr;
     }
 

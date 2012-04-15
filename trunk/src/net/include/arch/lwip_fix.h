@@ -43,7 +43,6 @@
   头文件
 *********************************************************************************************************/
 #include "kern/types.h"
-#include <sys/types.h>
 #include <sys/time.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -53,22 +52,20 @@
 #define LWIP_PLATFORM_BYTESWAP      0                                   /*  使用 lwip htonl() ...       */
 
 #if BYTE_ORDER == LITTLE_ENDIAN
-
-static inline u16_t __LW_HTONS(u16_t x)
+static inline u16_t __HTONS(u16_t x)
 {
     return (u16_t)((((x) & 0x00ff) << 8) |
                    (((x) & 0xff00) >> 8));
 }
-static inline u32_t __LW_HTONL(u32_t x)
+static inline u32_t __HTONL(u32_t x)
 {
     return (u32_t)((((x) & 0x000000ff) << 24) |
                    (((x) & 0x0000ff00) <<  8) |
                    (((x) & 0x00ff0000) >>  8) |
                    (((x) & 0xff000000) >> 24));
 }
-
-#define LWIP_PLATFORM_HTONS(x)      __LW_HTONS(x)
-#define LWIP_PLATFORM_HTONL(x)      __LW_HTONL(x)
+#define LWIP_PLATFORM_HTONS(x)      __HTONS(x)
+#define LWIP_PLATFORM_HTONL(x)      __HTONL(x)
 #else
 #define LWIP_PLATFORM_HTONS(x)      x
 #define LWIP_PLATFORM_HTONL(x)      x

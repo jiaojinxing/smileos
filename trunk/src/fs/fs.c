@@ -103,6 +103,8 @@ int file_system_install(file_system_t *fs)
  */
 int file_system_manager_init(void)
 {
+    fs_list = NULL;
+
     return mutex_new(&fsmgr_lock);
 }
 /*********************************************************************************************************

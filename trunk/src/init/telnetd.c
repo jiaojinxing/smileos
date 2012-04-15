@@ -212,6 +212,9 @@ static int exec_cmd(char *cmd)
         cat_main(argc, argv);
     } else if (strcmp(argv[0], "cd") == 0) {
         cd_main(argc, argv);
+    } else if (strcmp(argv[0], "vi") == 0) {
+        extern int vi_main(int argc, char *argv[]);
+        vi_main(argc, argv);
     } else if (strcmp(argv[0], "mems") == 0) {
         kheap_show(STDOUT_FILENO);
     } else if (strcmp(argv[0], "exit") == 0) {
@@ -251,6 +254,38 @@ const char logo[] =
 #define CANCEL_GOAHEAD  3
 
 /*
+ *
+tty_input: 255
+tty_input: 251
+tty_input: 31
+
+tty_input: 255
+tty_input: 251
+tty_input: 32
+
+tty_input: 255
+tty_input: 251
+tty_input: 24
+
+tty_input: 255
+tty_input: 251
+tty_input: 39
+
+tty_input: 255
+tty_input: 253
+tty_input: 1
+
+tty_input: 255
+tty_input: 251
+tty_input: 3
+
+tty_input: 255
+tty_input: 253
+tty_input: 3
+ *
+ */
+#include <termios.h>
+/*
  * telnetd Ïß³Ì
  */
 static void telnetd_thread(void *arg)
@@ -259,12 +294,22 @@ static void telnetd_thread(void *arg)
     int  pos;
     char cmd[LINE_MAX];
     u_char ch;
+    struct termios termbuf;
 
     fclose(stdin);
     stdin = fopen((const char *)arg, "r");
 
     fclose(stdout);
     stdout = fopen((const char *)arg, "w+");
+
+    tcgetattr(0, &termbuf);
+    termbuf.c_lflag |= ECHO; /* if we use readline we dont want this */
+    termbuf.c_oflag |= ONLCR | OXTABS;
+    termbuf.c_iflag |= ICRNL;
+    termbuf.c_iflag &= ~IXOFF;
+    /*termbuf.c_lflag &= ~ICANON;*/
+    tcsetattr(0, TCSANOW, &termbuf);
+
 
     printf(logo);
 
@@ -281,67 +326,67 @@ static void telnetd_thread(void *arg)
             goto end;
         }
 
-        if (ch == IAC) {
-            ret = read(STDIN_FILENO, &ch, 1);
-            if (ret <= 0) {
-                fprintf(stderr, "%s: failed to read socket, errno=%d\n", __func__, errno);
-                goto end;
-            }
-
-            if (ch == WILL) {
-                ret = read(STDIN_FILENO, &ch, 1);
-                if (ret <= 0) {
-                    fprintf(stderr, "%s: failed to read socket, errno=%d\n", __func__, errno);
-                    goto end;
-                }
-
-                switch (ch) {
-                case NAWS:
-                    break;
-
-                case TTY_RATE:
-                    break;
-
-                case TTY_TYPE:
-                    break;
-
-                case ECHO_TYPE:
-                    break;
-
-                case CANCEL_GOAHEAD:
-                    break;
-
-                default:
-                    /*
-                     * TODO:
-                     */
-                    break;
-                }
-            } else if (ch == DO) {
-                ret = read(STDIN_FILENO, &ch, 1);
-                if (ret <= 0) {
-                    fprintf(stderr, "%s: failed to read socket, errno=%d\n", __func__, errno);
-                    goto end;
-                }
-
-                switch (ch) {
-                case CANCEL_GOAHEAD:
-                    break;
-
-                default:
-                    /*
-                     * TODO:
-                     */
-                    break;
-                }
-                break;
-            } else {
-                /*
-                 * TODO:
-                 */
-                break;
-            }
-        } else {
+//        if (ch == IAC) {
+//            ret = read(STDIN_FILENO, &ch, 1);
+//            if (ret <= 0) {
+//                fprintf(stderr, "%s: failed to read socket, errno=%d\n", __func__, errno);
+//                goto end;
+//            }
+//
+//            if (ch == WILL) {
+//                ret = read(STDIN_FILENO, &ch, 1);
+//                if (ret <= 0) {
+//                    fprintf(stderr, "%s: failed to read socket, errno=%d\n", __func__, errno);
+//                    goto end;
+//                }
+//
+//                switch (ch) {
+//                case NAWS:
+//                    break;
+//
+//                case TTY_RATE:
+//                    break;
+//
+//                case TTY_TYPE:
+//                    break;
+//
+//                case ECHO_TYPE:
+//                    break;
+//
+//                case CANCEL_GOAHEAD:
+//                    break;
+//
+//                default:
+//                    /*
+//                     * TODO:
+//                     */
+//                    break;
+//                }
+//            } else if (ch == DO) {
+//                ret = read(STDIN_FILENO, &ch, 1);
+//                if (ret <= 0) {
+//                    fprintf(stderr, "%s: failed to read socket, errno=%d\n", __func__, errno);
+//                    goto end;
+//                }
+//
+//                switch (ch) {
+//                case CANCEL_GOAHEAD:
+//                    break;
+//
+//                default:
+//                    /*
+//                     * TODO:
+//                     */
+//                    break;
+//                }
+//                break;
+//            } else {
+//                /*
+//                 * TODO:
+//                 */
+//                break;
+//            }
+//        } else {
             if (iscntrl(ch)) {
                 switch (ch) {
                 case '\b':
@@ -369,7 +414,7 @@ static void telnetd_thread(void *arg)
                 cmd[pos] = ch;
                 pos++;
             }
-        }
+//        }
         fflush(stdout);
     }
 

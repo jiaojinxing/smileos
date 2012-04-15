@@ -196,7 +196,7 @@
 #define LWIP_CHECKSUM_ON_COPY           1                               /*  拷贝数据包同时计算 chksum   */
 
 /*********************************************************************************************************
-  SmileOS do not use MEMP_NUM_NETCONN, because sylixos use another socket interface.
+  SmileOS do not use MEMP_NUM_NETCONN, because SmileOS use another socket interface.
 *********************************************************************************************************/
 
 #define IP_FORWARD                      1                               /*  允许 IP 转发                */

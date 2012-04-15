@@ -338,10 +338,6 @@ int pty_create(const char *name, int fd)
         tty_attach(&priv->tty);
         priv->tty.t_oproc = pty_start;
 
-        priv->tty.t_lflag &= ~ECHO;
-        priv->tty.t_lflag &= ~ISIG;
-        priv->tty.t_iflag &= ~ICANON;
-
         strlcpy(priv->name, name, sizeof(priv->name));
 
         if (kthread_create(name, pty_thread, priv, 8 * KB, 5) < 0) {

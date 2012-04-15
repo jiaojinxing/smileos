@@ -40,8 +40,8 @@
 #ifndef SYSLIMITS_H_
 #define SYSLIMITS_H_
 
-#define PAGE_SIZE           (4 * KB)                                    /*  页面大小                    */
-#define PAGE_OFFSET         (12)                                        /*  页面大小偏移                */
+#define PAGE_SIZE                   (4096)                              /*  页面大小                    */
+#define PAGE_OFFSET                 (12)                                /*  页面大小偏移                */
 
 #define MAX_INPUT                   (128)                               /*  输入最多字节数              */
 
