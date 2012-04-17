@@ -238,37 +238,106 @@ const char logo[] =
         "     \\     / /  ) /   /   /___) /    /      \\\n"
         "_(____/___/_/__/_/___/___(___ _(____/___(____/___\n";
 
-
-#define IAC             255         /*  选项协商的第一个字节                                            */
-#define WILL            251
-#define DONT            254
-#define TELOPT_ECHO     1
-#define TELOPT_LINEMODE 34
-#define TELOPT_SGA      3
-
 #include <termios.h>
 
-/* 使客户端不要自动回显 */
+/*
+ * Special telnet characters
+ */
+#define TELNET_SE    240   // End of subnegotiation parameters
+#define TELNET_NOP   241   // No operation
+#define TELNET_MARK  242   // Data mark
+#define TELNET_BRK   243   // Break
+#define TELNET_IP    244   // Interrupt process
+#define TELNET_AO    245   // Abort output
+#define TELNET_AYT   246   // Are you there
+#define TELNET_EC    247   // Erase character
+#define TELNET_EL    248   // Erase line
+#define TELNET_GA    249   // Go ahead
+#define TELNET_SB    250   // Start of subnegotiation parameters
+#define TELNET_WILL  251   // Will option code
+#define TELNET_WONT  252   // Won't option code
+#define TELNET_DO    253   // Do option code
+#define TELNET_DONT  254   // Don't option code
+#define TELNET_IAC   255   // Interpret as command
 
-void pty_will_echo(void)
+/*
+ * Telnet options
+ */
+#define TELOPT_TRANSMIT_BINARY      0  // Binary Transmission (RFC856)
+#define TELOPT_ECHO                 1  // Echo (RFC857)
+#define TELOPT_SUPPRESS_GO_AHEAD    3  // Suppress Go Ahead (RFC858)
+#define TELOPT_STATUS               5  // Status (RFC859)
+#define TELOPT_TIMING_MARK          6  // Timing Mark (RFC860)
+#define TELOPT_NAOCRD              10  // Output Carriage-Return Disposition (RFC652)
+#define TELOPT_NAOHTS              11  // Output Horizontal Tab Stops (RFC653)
+#define TELOPT_NAOHTD              12  // Output Horizontal Tab Stop Disposition (RFC654)
+#define TELOPT_NAOFFD              13  // Output Formfeed Disposition (RFC655)
+#define TELOPT_NAOVTS              14  // Output Vertical Tabstops (RFC656)
+#define TELOPT_NAOVTD              15  // Output Vertical Tab Disposition (RFC657)
+#define TELOPT_NAOLFD              16  // Output Linefeed Disposition (RFC658)
+#define TELOPT_EXTEND_ASCII        17  // Extended ASCII (RFC698)
+#define TELOPT_TERMINAL_TYPE       24  // Terminal Type (RFC1091)
+#define TELOPT_NAWS                31  // Negotiate About Window Size (RFC1073)
+#define TELOPT_TERMINAL_SPEED      32  // Terminal Speed (RFC1079)
+#define TELOPT_TOGGLE_FLOW_CONTROL 33  // Remote Flow Control (RFC1372)
+#define TELOPT_LINEMODE            34  // Linemode (RFC1184)
+#define TELOPT_AUTHENTICATION      37  // Authentication (RFC1416)
+
+#define STATE_NORMAL 0
+#define STATE_IAC    1
+#define STATE_OPT    2
+#define STATE_SB     3
+#define STATE_OPTDAT 4
+#define STATE_SE     5
+
+static void sendopt(int code, int option)
 {
-    u_char cmd[] = { IAC, WILL, TELOPT_ECHO, '/0' };
+    unsigned char buf[3];
 
-    write(fileno(stdout), cmd, sizeof(cmd));
+    buf[0] = TELNET_IAC;
+    buf[1] = (unsigned char)code;
+    buf[2] = (unsigned char)option;
+    write(STDOUT_FILENO, buf, 3);
 }
 
-static void pty_will_suppress_go_ahead(void)
+static void parseopt(int code, int option)
 {
-    u_char cmd[] = { IAC, WILL, TELOPT_SGA, '/0' };
+    switch (option) {
+    case TELOPT_ECHO:
+    case TELOPT_SUPPRESS_GO_AHEAD:
+    case TELOPT_NAWS:
+        break;
 
-    write(fileno(stdout), cmd, sizeof(cmd));
+    case TELOPT_TERMINAL_TYPE:
+    case TELOPT_TERMINAL_SPEED:
+        sendopt(TELNET_DO, option);
+        break;
+
+    default:
+        if (code == TELNET_WILL || code == TELNET_WONT) {
+            sendopt(TELNET_DONT, option);
+        } else {
+            sendopt(TELNET_WONT, option);
+        }
+    }
 }
 
-static void pty_dont_linemode(void)
+static void parseoptdat(int option, unsigned char *data, int len)
 {
-    u_char cmd[] = { IAC, DONT, TELOPT_LINEMODE, '/0' };
+    switch (option) {
+    case TELOPT_NAWS:
+        if (len == 4) {
+            int cols  = ntohs(*(unsigned short *)data);
+            int lines = ntohs(*(unsigned short *)(data + 2));
+        }
+        break;
 
-    write(fileno(stdout), cmd, sizeof(cmd));
+    case TELOPT_TERMINAL_SPEED:
+        break;
+
+    case TELOPT_TERMINAL_TYPE:
+        break;
+    }
 }
 
 /*
@@ -276,20 +345,30 @@ static void pty_dont_linemode(void)
  */
 static void telnetd_thread(void *arg)
 {
-    int  ret;
+    int  len;
     int  pos;
     char cmd[LINE_MAX];
     char buf[LINE_MAX];
-    u_char ch;
+    unsigned char ch;
     struct termios termbuf;
     int i;
+    int state;
+    int code;
+    int optlen;
+    unsigned char optdata[32];
 
+    /*
+     * 重定向标准输入输出到 PTY
+     */
     fclose(stdin);
     stdin = fopen((const char *)arg, "r");
 
     fclose(stdout);
     stdout = fopen((const char *)arg, "w+");
 
+    /*
+     * 设置终端属性
+     */
     tcgetattr(0, &termbuf);
     termbuf.c_lflag  = ECHO | ICANON;
     termbuf.c_oflag |= ONLCR | OXTABS;
@@ -297,69 +376,136 @@ static void telnetd_thread(void *arg)
     termbuf.c_iflag &= ~IXOFF;
     tcsetattr(0, TCSANOW, &termbuf);
 
-    pty_will_echo();
+    /*
+     * 发送选项
+     */
+    sendopt(TELNET_WILL, TELOPT_ECHO);
+    sendopt(TELNET_WILL, TELOPT_SUPPRESS_GO_AHEAD);
+    sendopt(TELNET_WONT, TELOPT_LINEMODE);
+    sendopt(TELNET_WILL, TELOPT_NAWS);
 
-    pty_will_suppress_go_ahead();
-
-    pty_dont_linemode();
-
+    /*
+     * 发送 logo
+     */
     printf(logo);
 
+    /*
+     * 发送
+     */
     printf("%s]#", getcwd(NULL, 0));
-    fflush(stdout);
 
     pos = 0;
 
+    state = STATE_NORMAL;
+
+    fflush(stdout);
+
     while (1) {
 
-        ret = read(STDIN_FILENO, &buf, LINE_MAX);
-        if (ret <= 0) {
+        /*
+         * 接收数据
+         */
+        len = read(STDIN_FILENO, &buf, LINE_MAX);
+        if (len <= 0) {
             fprintf(stderr, "%s: failed to read socket, errno=%d\n", __func__, errno);
             goto end;
         }
 
         i = 0;
-        while (ret > 0) {
-            ch = buf[i];
-            ret--;
-            i++;
+        while (len-- > 0) {
+            ch = buf[i++];
 
-            if (ch == IAC) {
+            switch (state) {
+              case STATE_NORMAL:
+                if (ch == TELNET_IAC) {
+                    state = STATE_IAC;
+                } else {
+                    if (iscntrl(ch)) {
+                        switch (ch) {
+                        case '\b':
+                            if (pos > 0) {
+                                pos--;
+                                printf(" \b \b");
+                            } else {
+                                putchar('#');
+                            }
+                            fflush(stdout);
+                            break;
 
-            } else if (ch == 3) {
+                        case '\n':
+                            if (pos > 0 && pos < LINE_MAX) {
+                                cmd[pos] = '\0';
+                                pos = 0;
+                                exec_cmd(cmd);
+                            }
+                            printf("%s]#", getcwd(NULL, 0));
+                            fflush(stdout);
+                            break;
 
-            } else {
-                if (iscntrl(ch)) {
-                    switch (ch) {
-                    case '\b':
-                        if (pos > 0) {
-                            pos--;
-                            printf(" \b \b");
-                        } else {
-                            putchar('#');
+                        default:
+                            break;
                         }
-                        break;
-
-                    case '\n':
-                        if (pos > 0 && pos < LINE_MAX) {
-                            cmd[pos] = '\0';
-                            pos = 0;
-                            exec_cmd(cmd);
-                        }
-                        write(STDOUT_FILENO, getcwd(NULL, 0), strlen(getcwd(NULL, 0)));
-                        write(STDOUT_FILENO, "]#", strlen("]#"));
-                        break;
-
-                    default:
-                        break;
+                    } else if (isprint(ch) && pos < LINE_MAX){
+                        cmd[pos] = ch;
+                        pos++;
                     }
-                } else if (isprint(ch) && pos < LINE_MAX){
-                    cmd[pos] = ch;
-                    pos++;
                 }
+                break;
+
+              case STATE_IAC:
+                  switch (ch) {
+                  case TELNET_IAC:
+                      if (pos < LINE_MAX) {
+                          cmd[pos] = ch;
+                          pos++;
+                      }
+                      state = STATE_NORMAL;
+                      break;
+
+                  case TELNET_WILL:
+                  case TELNET_WONT:
+                  case TELNET_DO:
+                  case TELNET_DONT:
+                      code = ch;
+                      state = STATE_OPT;
+                      break;
+
+                  case TELNET_SB:
+                      state = STATE_SB;
+                      break;
+
+                  default:
+                      state = STATE_NORMAL;
+                  }
+                  break;
+
+            case STATE_OPT:
+                parseopt(code, ch);
+                state = STATE_NORMAL;
+                break;
+
+            case STATE_SB:
+                code = ch;
+                optlen = 0;
+                state = STATE_OPTDAT;
+                break;
+
+            case STATE_OPTDAT:
+                if (ch == TELNET_IAC) {
+                    state = STATE_SE;
+                } else if (optlen < sizeof(optdata)) {
+                    optdata[optlen++] = ch;
+                }
+                break;
+
+            case STATE_SE:
+                if (ch == TELNET_SE) {
+                    parseoptdat(code, optdata, optlen);
+                }
+                state = STATE_NORMAL;
+                break;
             }
         }
-        //fflush(stdout);
     }
 
     end:
@@ -404,7 +550,10 @@ void telnetd(void *arg)
 
             sprintf(pty_name, "/dev/pty%d", client_fd);
 
-            pty_create(pty_name, socket_attach, lwip_close, (void *)client_fd);
+            pty_create(pty_name,
+                      (int  (*)(void *))socket_attach,
+                      (void (*)(void *))lwip_close,
+                      (void  *)client_fd);
 
             sprintf(thread_name, "%s%d", __func__, client_fd);
 

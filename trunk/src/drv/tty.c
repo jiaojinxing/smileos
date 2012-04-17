@@ -318,6 +318,10 @@ static void tty_wait(struct tty *tp)
     }
 }
 
+#define NORMAL_STATE 0
+#define ESCAPE_STATE 1
+#define PARAMS_STATE 2
+
 /*
  * Process input of a single character received on a tty.
  * echo if required.
@@ -434,7 +438,46 @@ void tty_input(int c, struct tty *tp)
         goto endcase;
     }
 
-    tty_putc(c, &tp->t_rawq);
+    if (lflag & ICANON) {
+        tty_putc(c, &tp->t_rawq);
+    } else {
+        /*
+         * ANSI Escape sequences - VT100 / VT52
+         */
+        if (tp->t_vt100_state == PARAMS_STATE) {
+            if (c < 64) {
+                tp->t_cmds[tp->t_cmd_nr++] = c;
+            } else {
+                if (tp->t_cmd_nr == 0) {
+                    tty_putc(27, &tp->t_rawq);
+                    tty_putc('[', &tp->t_rawq);
+                    tty_putc(c,   &tp->t_rawq);
+                } else {
+                    tty_putc(27, &tp->t_rawq);
+                    tty_putc('[', &tp->t_rawq);
+                    tty_putc('2', &tp->t_rawq);
+                    tty_putc('~', &tp->t_rawq);
+                }
+                tp->t_vt100_state = NORMAL_STATE;
+            }
+        } else if (tp->t_vt100_state == ESCAPE_STATE) {
+            if (c == '[') {
+                tp->t_vt100_state = PARAMS_STATE;
+                tp->t_cmd_nr      = 0;
+            } else {
+                tp->t_vt100_state = NORMAL_STATE;
+                tty_putc(27, &tp->t_rawq);
+                tty_putc(c,  &tp->t_rawq);
+            }
+        } else {
+            if (c == 27) {
+                tp->t_vt100_state = ESCAPE_STATE;
+            } else {
+                tty_putc(c, &tp->t_rawq);
+            }
+        }
+    }
+
 
     if (lflag & ECHO) {
         tty_echo(c, tp);
@@ -696,6 +739,8 @@ int tty_attach(struct tty *tp)
     tp->t_lflag  = TTYDEF_LFLAG;
     tp->t_ispeed = TTYDEF_SPEED;
     tp->t_ospeed = TTYDEF_SPEED;
+
+    tp->t_vt100_state = NORMAL_STATE;
 
     mutex_new(&tp->t_rawq.tq_lock);
     mutex_new(&tp->t_canq.tq_lock);

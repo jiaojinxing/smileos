@@ -410,13 +410,13 @@ void *heap_alloc(heap_t *heap, const char *func, int line, uint32_t size)
 
     if (heap == NULL) {
         debug("%s: process %d heap=NULL, call by %s() line %d\n",
-                __func__, getpid(), func);
+                __func__, getpid(), func, line);
         return NULL;
     }
 
     if (heap->magic0 != MEM_BLOCK_MAGIC0) {
         debug("%s: process %d heap magic %d != %d, call by %s() line %d\n",
-                __func__, getpid(), heap->magic0, MEM_BLOCK_MAGIC0, func);
+                __func__, getpid(), heap->magic0, MEM_BLOCK_MAGIC0, func, line);
         return NULL;
     }
 
@@ -483,7 +483,7 @@ void *heap_alloc(heap_t *heap, const char *func, int line, uint32_t size)
     }
 
     error0:
-    debug("%s: process %d low memory, call by %s() line %d\n", __func__, getpid(), func);
+    debug("%s: process %d low memory, call by %s() line %d\n", __func__, getpid(), func, line);
 
     return NULL;
 }
@@ -499,32 +499,32 @@ void *heap_free(heap_t *heap, const char *func, int line, void *ptr)
 
     if (heap == NULL) {
         debug("%s: process %d heap=NULL, call by %s() line %d\n",
-                __func__, getpid(), func);
+                __func__, getpid(), func, line);
         return NULL;
     }
 
     if (heap->magic0 != MEM_BLOCK_MAGIC0) {
         debug("%s: process %d heap magic %d != %d, call by %s() line %d\n",
-                __func__, getpid(), heap->magic0, MEM_BLOCK_MAGIC0, func);
+                __func__, getpid(), heap->magic0, MEM_BLOCK_MAGIC0, func, line);
         return NULL;
     }
 
     if (ptr == NULL) {
         debug("%s: process %d memptr=NULL, call by %s() line %d\n",
-                __func__, getpid(), func);
+                __func__, getpid(), func, line);
         return ptr;
     }
 
     if (ptr != MEM_ALIGN(ptr)) {
         debug("%s: process %d memptr=0x%x is not aligned, call by %s() line %d\n",
-                __func__, getpid(), (uint32_t)ptr, func);
+                __func__, getpid(), (uint32_t)ptr, func, line);
         return ptr;
     }
 
     if (((uint8_t *)ptr < (heap->base + MEM_ALIGN_SIZE(sizeof(mem_block_t)))) ||
         ((uint8_t *)ptr > heap->base + heap->size - MEM_ALIGNMENT)) {
         debug("%s: process %d memptr=0x%x dose not belong to this heap, call by %s() line %d\n",
-                __func__, getpid(), (uint32_t)ptr, func);
+                __func__, getpid(), (uint32_t)ptr, func, line);
         return ptr;
     }
                                                                         /*  指针所在的内存块节点        */
@@ -532,7 +532,7 @@ void *heap_free(heap_t *heap, const char *func, int line, void *ptr)
 
     if (blk->magic0 != MEM_BLOCK_MAGIC0 || blk->status != MEM_BLOCK_STATE_USED) {
         debug("%s: process %d memptr=0x%x is invalid, call by %s() line %d\n",
-                __func__, getpid(), (uint32_t)ptr, func);
+                __func__, getpid(), (uint32_t)ptr, func, line);
         return ptr;
     }
 
@@ -541,7 +541,7 @@ void *heap_free(heap_t *heap, const char *func, int line, void *ptr)
 
     if (next != NULL && next->magic0 != MEM_BLOCK_MAGIC0) {             /*  写缓冲区溢出                */
         debug("%s: process %d write buffer over, memptr=0x%x, call by %s() line %d\n",
-                __func__, getpid(), (uint32_t)ptr, func);
+                __func__, getpid(), (uint32_t)ptr, func, line);
         return ptr;
     }
 

@@ -95,6 +95,7 @@ static sys_do_t sys_do_table[1];
 #define debug(...)
 
 #include <stdio.h>
+#include <unistd.h>
 
 #endif
 
