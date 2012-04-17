@@ -48,7 +48,7 @@ int pty_init(void);
 /*
  * ´´½¨ pty
  */
-int pty_create(const char *name, int fd);
+int pty_create(const char *name, int (*attach)(void *arg), void (*fail)(void *arg), void *arg);
 
 #endif                                                                  /*  PTY_H_                      */
 /*********************************************************************************************************

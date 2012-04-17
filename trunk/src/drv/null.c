@@ -54,6 +54,12 @@ typedef struct {
  */
 static int null_open(void *ctx, file_t *file, int oflag, mode_t mode)
 {
+    privinfo_t *priv = ctx;
+
+    if (priv == NULL) {
+        seterrno(EINVAL);
+        return -1;
+    }
     return 0;
 }
 
@@ -62,6 +68,12 @@ static int null_open(void *ctx, file_t *file, int oflag, mode_t mode)
  */
 static int null_ioctl(void *ctx, file_t *file, int cmd, void *arg)
 {
+    privinfo_t *priv = ctx;
+
+    if (priv == NULL) {
+        seterrno(EINVAL);
+        return -1;
+    }
     return 0;
 }
 
@@ -70,14 +82,26 @@ static int null_ioctl(void *ctx, file_t *file, int cmd, void *arg)
  */
 static int null_close(void *ctx, file_t *file)
 {
+    privinfo_t *priv = ctx;
+
+    if (priv == NULL) {
+        seterrno(EINVAL);
+        return -1;
+    }
     return 0;
 }
 
 /*
- * null 是不是一个 tty
+ * null 不是一个 tty
  */
 static int null_isatty(void *ctx, file_t *file)
 {
+    privinfo_t *priv = ctx;
+
+    if (priv == NULL) {
+        seterrno(EINVAL);
+        return -1;
+    }
     return 0;
 }
 
@@ -86,6 +110,12 @@ static int null_isatty(void *ctx, file_t *file)
  */
 static ssize_t null_read(void *ctx, file_t *file, void *buf, size_t len)
 {
+    privinfo_t *priv = ctx;
+
+    if (priv == NULL) {
+        seterrno(EINVAL);
+        return -1;
+    }
     return 0;
 }
 
@@ -94,6 +124,12 @@ static ssize_t null_read(void *ctx, file_t *file, void *buf, size_t len)
  */
 static ssize_t null_write(void *ctx, file_t *file, const void *buf, size_t len)
 {
+    privinfo_t *priv = ctx;
+
+    if (priv == NULL) {
+        seterrno(EINVAL);
+        return -1;
+    }
     return len;
 }
 

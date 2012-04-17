@@ -46,7 +46,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/select.h>
-#include "tty.h"
+#include "drv/tty.h"
 
 /*
  * 私有信息
@@ -57,6 +57,9 @@ typedef struct {
     int             fd;
     char            name[NAME_MAX];
     int             ref;
+    int  (*attach)(void *arg);
+    void (*fail)(void *arg);
+    void           *arg;
 } privinfo_t;
 
 /*
@@ -111,7 +114,7 @@ static int pty_close(void *ctx, file_t *file)
 }
 
 /*
- * pty 是不是一个 tty
+ * pty 是一个 tty
  */
 static int pty_isatty(void *ctx, file_t *file)
 {
@@ -185,11 +188,9 @@ static int pty_scan(void *ctx, file_t *file, int flags)
     if (tty_readable(&priv->tty) && (flags & VFS_FILE_READABLE)) {
         ret |= VFS_FILE_READABLE;
     }
-
     if (tty_writeable(&priv->tty) && (flags & VFS_FILE_WRITEABLE)) {
         ret |= VFS_FILE_WRITEABLE;
     }
-
     return ret;
 }
 
@@ -244,21 +245,16 @@ static void pty_thread(void *arg)
     int i;
     int host_fd;
     int dev_fd;
-    uint32_t reg;
 
-    /*
-     * TODO: 目前只支持 socket
-     */
-    dev_fd = socket_attach(priv->fd);
+    dev_fd = priv->attach(priv->arg);
     if (dev_fd < 0) {
-        lwip_close(priv->fd);
-        return;
+        priv->fail(priv->arg);
+        goto __exit0;
     }
 
     host_fd = open(priv->name, O_RDWR, 0666);
     if (host_fd < 0) {
-        close(dev_fd);
-        return;
+        goto __exit1;
     }
 
     ioctl(dev_fd, FIONBIO, &on);
@@ -308,28 +304,35 @@ static void pty_thread(void *arg)
         }
     }
     close(host_fd);
+
+    __exit1:
     close(dev_fd);
 
-    reg = interrupt_disable();
+    __exit0:
     device_remove(priv->name);
     kfree(priv);
-    interrupt_resume(reg);
 }
 
 /*
  * 创建 pty
  */
-int pty_create(const char *name, int fd)
+int pty_create(const char *name, int (*attach)(void *arg), void (*fail)(void *arg), void *arg)
 {
     privinfo_t *priv;
     uint32_t reg;
+
+    if (attach == NULL || fail == NULL || arg == NULL) {
+        return -1;
+    }
 
     reg = interrupt_disable();
 
     priv = kmalloc(sizeof(privinfo_t));
     if (priv != NULL) {
         select_init(priv);
-        priv->fd = fd;
+        priv->attach = attach;
+        priv->fail   = fail;
+        priv->arg    = arg;
 
         if (device_create(name, "pty", priv) < 0) {
             kfree(priv);

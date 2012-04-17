@@ -124,7 +124,7 @@ static int socket_close(void *ctx, file_t *file)
 }
 
 /*
- * socket 是不是一个 tty
+ * socket 不是一个 tty
  */
 static int socket_isatty(void *ctx, file_t *file)
 {
@@ -205,7 +205,6 @@ static int socket_scan(void *ctx, file_t *file, int flags)
     }
 
     ret = 0;
-
     if (readable && flags & VFS_FILE_READABLE) {
         ret |= VFS_FILE_READABLE;
     }

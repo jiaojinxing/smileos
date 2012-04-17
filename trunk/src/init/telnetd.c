@@ -42,6 +42,7 @@
 #include "kern/types.h"
 #include "kern/kern.h"
 #include "kern/sbin.h"
+#include "drv/pty.h"
 #include <fcntl.h>
 #include <dirent.h>
 #include <unistd.h>
@@ -239,52 +240,37 @@ const char logo[] =
 
 
 #define IAC             255         /*  选项协商的第一个字节                                            */
-#define WILL            251         /*  发送方激活选项(接收方同意激活选项)                              */
-#define WONT            252         /*  接收方不同意                                                    */
-#define DO              253         /*  接收方同意(发送方想让接收方激活选项)                            */
-#define DONT            254         /*  接受方回应 WONT                                                 */
+#define WILL            251
+#define DONT            254
+#define TELOPT_ECHO     1
+#define TELOPT_LINEMODE 34
+#define TELOPT_SGA      3
 
-#define SE              240         /*  子选项结束                                                      */
-#define SB              250         /*  子选项开始                                                      */
-
-#define NAWS            31
-#define TTY_RATE        32
-#define TTY_TYPE        24
-#define ECHO_TYPE       1
-#define CANCEL_GOAHEAD  3
-
-/*
- *
-tty_input: 255
-tty_input: 251
-tty_input: 31
-
-tty_input: 255
-tty_input: 251
-tty_input: 32
-
-tty_input: 255
-tty_input: 251
-tty_input: 24
-
-tty_input: 255
-tty_input: 251
-tty_input: 39
-
-tty_input: 255
-tty_input: 253
-tty_input: 1
-
-tty_input: 255
-tty_input: 251
-tty_input: 3
-
-tty_input: 255
-tty_input: 253
-tty_input: 3
- *
- */
 #include <termios.h>
+
+/* 使客户端不要自动回显 */
+
+void pty_will_echo(void)
+{
+    u_char cmd[] = { IAC, WILL, TELOPT_ECHO, '/0' };
+
+    write(fileno(stdout), cmd, sizeof(cmd));
+}
+
+static void pty_will_suppress_go_ahead(void)
+{
+    u_char cmd[] = { IAC, WILL, TELOPT_SGA, '/0' };
+
+    write(fileno(stdout), cmd, sizeof(cmd));
+}
+
+static void pty_dont_linemode(void)
+{
+    u_char cmd[] = { IAC, DONT, TELOPT_LINEMODE, '/0' };
+
+    write(fileno(stdout), cmd, sizeof(cmd));
+}
+
 /*
  * telnetd 线程
  */
@@ -293,8 +279,10 @@ static void telnetd_thread(void *arg)
     int  ret;
     int  pos;
     char cmd[LINE_MAX];
+    char buf[LINE_MAX];
     u_char ch;
     struct termios termbuf;
+    int i;
 
     fclose(stdin);
     stdin = fopen((const char *)arg, "r");
@@ -303,13 +291,17 @@ static void telnetd_thread(void *arg)
     stdout = fopen((const char *)arg, "w+");
 
     tcgetattr(0, &termbuf);
-    termbuf.c_lflag |= ECHO; /* if we use readline we dont want this */
+    termbuf.c_lflag  = ECHO | ICANON;
     termbuf.c_oflag |= ONLCR | OXTABS;
-    termbuf.c_iflag |= ICRNL;
+    termbuf.c_iflag |= IGNCR;
     termbuf.c_iflag &= ~IXOFF;
-    /*termbuf.c_lflag &= ~ICANON;*/
     tcsetattr(0, TCSANOW, &termbuf);
 
+    pty_will_echo();
+
+    pty_will_suppress_go_ahead();
+
+    pty_dont_linemode();
 
     printf(logo);
 
@@ -320,102 +312,54 @@ static void telnetd_thread(void *arg)
 
     while (1) {
 
-        ret = read(STDIN_FILENO, &ch, 1);
+        ret = read(STDIN_FILENO, &buf, LINE_MAX);
         if (ret <= 0) {
             fprintf(stderr, "%s: failed to read socket, errno=%d\n", __func__, errno);
             goto end;
         }
 
-//        if (ch == IAC) {
-//            ret = read(STDIN_FILENO, &ch, 1);
-//            if (ret <= 0) {
-//                fprintf(stderr, "%s: failed to read socket, errno=%d\n", __func__, errno);
-//                goto end;
-//            }
-//
-//            if (ch == WILL) {
-//                ret = read(STDIN_FILENO, &ch, 1);
-//                if (ret <= 0) {
-//                    fprintf(stderr, "%s: failed to read socket, errno=%d\n", __func__, errno);
-//                    goto end;
-//                }
-//
-//                switch (ch) {
-//                case NAWS:
-//                    break;
-//
-//                case TTY_RATE:
-//                    break;
-//
-//                case TTY_TYPE:
-//                    break;
-//
-//                case ECHO_TYPE:
-//                    break;
-//
-//                case CANCEL_GOAHEAD:
-//                    break;
-//
-//                default:
-//                    /*
-//                     * TODO:
-//                     */
-//                    break;
-//                }
-//            } else if (ch == DO) {
-//                ret = read(STDIN_FILENO, &ch, 1);
-//                if (ret <= 0) {
-//                    fprintf(stderr, "%s: failed to read socket, errno=%d\n", __func__, errno);
-//                    goto end;
-//                }
-//
-//                switch (ch) {
-//                case CANCEL_GOAHEAD:
-//                    break;
-//
-//                default:
-//                    /*
-//                     * TODO:
-//                     */
-//                    break;
-//                }
-//                break;
-//            } else {
-//                /*
-//                 * TODO:
-//                 */
-//                break;
-//            }
-//        } else {
-            if (iscntrl(ch)) {
-                switch (ch) {
-                case '\b':
-                    if (pos > 0) {
-                        pos--;
-                        printf(" \b \b");
-                    } else {
-                        putchar('#');
-                    }
-                    break;
+        i = 0;
+        while (ret > 0) {
+            ch = buf[i];
+            ret--;
+            i++;
 
-                case '\n':
-                    if (pos > 0 && pos < LINE_MAX) {
-                        cmd[pos] = '\0';
-                        pos = 0;
-                        exec_cmd(cmd);
-                    }
-                    printf("%s]#", getcwd(NULL, 0));
-                    break;
+            if (ch == IAC) {
 
-                default:
-                    break;
+            } else if (ch == 3) {
+
+            } else {
+                if (iscntrl(ch)) {
+                    switch (ch) {
+                    case '\b':
+                        if (pos > 0) {
+                            pos--;
+                            printf(" \b \b");
+                        } else {
+                            putchar('#');
+                        }
+                        break;
+
+                    case '\n':
+                        if (pos > 0 && pos < LINE_MAX) {
+                            cmd[pos] = '\0';
+                            pos = 0;
+                            exec_cmd(cmd);
+                        }
+                        write(STDOUT_FILENO, getcwd(NULL, 0), strlen(getcwd(NULL, 0)));
+                        write(STDOUT_FILENO, "]#", strlen("]#"));
+                        break;
+
+                    default:
+                        break;
+                    }
+                } else if (isprint(ch) && pos < LINE_MAX){
+                    cmd[pos] = ch;
+                    pos++;
                 }
-            } else if (isprint(ch) && pos < LINE_MAX){
-                cmd[pos] = ch;
-                pos++;
             }
-//        }
-        fflush(stdout);
+        }
+        //fflush(stdout);
     }
 
     end:
@@ -460,7 +404,7 @@ void telnetd(void *arg)
 
             sprintf(pty_name, "/dev/pty%d", client_fd);
 
-            pty_create(pty_name, client_fd);
+            pty_create(pty_name, socket_attach, lwip_close, (void *)client_fd);
 
             sprintf(thread_name, "%s%d", __func__, client_fd);
 

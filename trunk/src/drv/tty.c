@@ -41,7 +41,7 @@
 #include <string.h>
 #include <fcntl.h>
 #define KERNEL
-#include "tty.h"
+#include "drv/tty.h"
 
 /*
  * default control characters
@@ -436,6 +436,10 @@ void tty_input(int c, struct tty *tp)
 
     tty_putc(c, &tp->t_rawq);
 
+    if (lflag & ECHO) {
+        tty_echo(c, tp);
+    }
+
     if (lflag & ICANON) {
         if (c == '\n' || c == cc[VEOF] || c == cc[VEOL]) {
             tty_catq(&tp->t_rawq, &tp->t_canq);
@@ -443,10 +447,6 @@ void tty_input(int c, struct tty *tp)
         }
     } else {
         sem_signal(&tp->t_input);
-    }
-
-    if (lflag & ECHO) {
-        tty_echo(c, tp);
     }
 
 endcase:

@@ -41,7 +41,7 @@
 #include "vfs/driver.h"
 #include "kern/kern.h"
 #include <errno.h>
-#include "tty.h"
+#include "drv/tty.h"
 
 /*
  * 私有信息
@@ -91,14 +91,26 @@ static int ttyS0_ioctl(void *ctx, file_t *file, int cmd, void *arg)
  */
 static int ttyS0_close(void *ctx, file_t *file)
 {
+    privinfo_t *priv = ctx;
+
+    if (priv == NULL) {
+        seterrno(EINVAL);
+        return -1;
+    }
     return 0;
 }
 
 /*
- * ttyS0 是不是一个 tty
+ * ttyS0 是一个 tty
  */
 static int ttyS0_isatty(void *ctx, file_t *file)
 {
+    privinfo_t *priv = ctx;
+
+    if (priv == NULL) {
+        seterrno(EINVAL);
+        return -1;
+    }
     return 1;
 }
 
@@ -175,11 +187,9 @@ static int ttyS0_scan(void *ctx, file_t *file, int flags)
     if (tty_readable(&priv->tty) && (flags & VFS_FILE_READABLE)) {
         ret |= VFS_FILE_READABLE;
     }
-
     if (flags & VFS_FILE_WRITEABLE) {
         ret |= VFS_FILE_WRITEABLE;
     }
-
     return ret;
 }
 
