@@ -115,16 +115,17 @@ void kcomplain(const char *fmt, ...)
     va_list va;
     char    buf[LINE_MAX];
     int     i;
+    char    ch;
 
     va_start(va, fmt);
 
     vsnprintf(buf, sizeof(buf), fmt, va);
 
-    for (i = 0; buf[i] != '\0'; i++) {
-        if (buf[i] == '\n') {
+    for (i = 0; (ch = buf[i]) != '\0'; i++) {
+        if (ch == '\n') {
             kputc('\r');
         }
-        kputc(buf[i]);
+        kputc(ch);
     }
 
     va_end(va);

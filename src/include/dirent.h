@@ -44,6 +44,9 @@
 #include "vfs/types.h"
 #include <sys/types.h>
 
+/*
+ * ДїВјПо
+ */
 struct dirent {
     ino_t  d_ino;
     char   d_name[NAME_MAX];

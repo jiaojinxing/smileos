@@ -76,6 +76,9 @@ struct tty {
     void (*t_oproc)(struct tty *);                          /*  routine to start output                 */
     sem_t               t_input;
     sem_t               t_output;
+    int                 t_vt100_state;
+    int                 t_cmds[10];
+    int                 t_cmd_nr;
 };
 
 #define t_iflag         t_termios.c_iflag

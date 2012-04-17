@@ -53,6 +53,7 @@
   LCD_N35
 *********************************************************************************************************/
 #if LCD_PANEL == LCD_N35
+
 #define CLKVAL      (4)                                                 /*  LCD 频率                    */
 #define PNRMODE     (3)                                                 /*  显示模式: TFT LCD panel     */
 #define BPPMODE     (12)                                                /*  BPP 模式: 16 bpp for TFT    */

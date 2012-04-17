@@ -96,7 +96,7 @@ space_t bsp_resv_space[] = {
         },
         {
             0x20000000,                                                 /*  DM9000                      */
-            PAGE_SIZE
+            1 * MB
         },
         {
             0,
