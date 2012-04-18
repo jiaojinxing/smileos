@@ -438,46 +438,89 @@ void tty_input(int c, struct tty *tp)
         goto endcase;
     }
 
-    if (lflag & ICANON) {
-        tty_putc(c, &tp->t_rawq);
-    } else {
-        /*
-         * ANSI Escape sequences - VT100 / VT52
-         */
-        if (tp->t_vt100_state == PARAMS_STATE) {
-            if (c < 64) {
-                tp->t_cmds[tp->t_cmd_nr++] = c;
-            } else {
-                if (tp->t_cmd_nr == 0) {
-                    tty_putc(27, &tp->t_rawq);
+    /*
+     * ANSI Escape sequences - VT100 / VT52
+     */
+    if (tp->t_vt100_state == PARAMS_STATE) {
+        if (c < 64) {
+            tp->t_cmds[tp->t_cmd_nr++] = c;
+        } else {
+            if (tp->t_cmd_nr == 0) {
+                /*
+                {"[A"  , VI_K_UP      },   // cursor key Up
+                {"[B"  , VI_K_DOWN    },   // cursor key Down
+                {"[C"  , VI_K_RIGHT   },   // Cursor Key Right
+                {"[D"  , VI_K_LEFT    },   // cursor key Left
+                 */
+                tty_putc(27,  &tp->t_rawq);
+                tty_putc('[', &tp->t_rawq);
+                tty_putc(c,   &tp->t_rawq);
+            } else if (tp->t_cmd_nr == 1) {
+                /*
+                {"[1~" , VI_K_HOME    },   // Cursor Key Home
+                {"[2~" , VI_K_INSERT  },   // Cursor Key Insert
+                {"[3~" , VI_K_DELETE  },   // Cursor Key Delete
+                {"[4~" , VI_K_END     },   // Cursor Key End
+                {"[5~" , VI_K_PAGEUP  },   // Cursor Key Page Up
+                {"[6~" , VI_K_PAGEDOWN},   // Cursor Key Page Down
+                */
+                tty_putc(27,  &tp->t_rawq);
+                tty_putc('[', &tp->t_rawq);
+                tty_putc(tp->t_cmds[0] - 49 + '1', &tp->t_rawq);
+                tty_putc('~', &tp->t_rawq);
+            } else if (tp->t_cmd_nr == 2) {
+                /*
+                {"[11~", VI_K_FUN1    },   // Function Key F1
+                {"[12~", VI_K_FUN2    },   // Function Key F2
+                {"[13~", VI_K_FUN3    },   // Function Key F3
+                {"[14~", VI_K_FUN4    },   // Function Key F4
+                {"[15~", VI_K_FUN5    },   // Function Key F5
+                {"[17~", VI_K_FUN6    },   // Function Key F6
+                {"[18~", VI_K_FUN7    },   // Function Key F7
+                {"[19~", VI_K_FUN8    },   // Function Key F8
+                */
+                if (tp->t_cmds[0] == 49) {
+                    tty_putc(27,  &tp->t_rawq);
                     tty_putc('[', &tp->t_rawq);
-                    tty_putc(c,   &tp->t_rawq);
-                } else {
-                    tty_putc(27, &tp->t_rawq);
+                    tty_putc('1', &tp->t_rawq);
+                    tty_putc(tp->t_cmds[1] - 49 + '1', &tp->t_rawq);
+                    tty_putc('~', &tp->t_rawq);
+                } else if (tp->t_cmds[0] == 50) {
+                    /*
+                     {"[20~", VI_K_FUN9    },   // Function Key F9
+                     {"[21~", VI_K_FUN10   },   // Function Key F10
+                     {"[23~", VI_K_FUN11   },   // Function Key F11
+                     {"[24~", VI_K_FUN12   },   // Function Key F12
+                     */
+                    tty_putc(27,  &tp->t_rawq);
                     tty_putc('[', &tp->t_rawq);
                     tty_putc('2', &tp->t_rawq);
+                    tty_putc(tp->t_cmds[1] - 48 + '0', &tp->t_rawq);
                     tty_putc('~', &tp->t_rawq);
+                } else {
+
                 }
-                tp->t_vt100_state = NORMAL_STATE;
-            }
-        } else if (tp->t_vt100_state == ESCAPE_STATE) {
-            if (c == '[') {
-                tp->t_vt100_state = PARAMS_STATE;
-                tp->t_cmd_nr      = 0;
             } else {
-                tp->t_vt100_state = NORMAL_STATE;
-                tty_putc(27, &tp->t_rawq);
-                tty_putc(c,  &tp->t_rawq);
+
             }
+            tp->t_vt100_state = NORMAL_STATE;
+        }
+    } else if (tp->t_vt100_state == ESCAPE_STATE) {
+        if (c == '[') {
+            tp->t_vt100_state = PARAMS_STATE;
+            tp->t_cmd_nr      = 0;
         } else {
-            if (c == 27) {
-                tp->t_vt100_state = ESCAPE_STATE;
-            } else {
-                tty_putc(c, &tp->t_rawq);
-            }
+            tp->t_vt100_state = NORMAL_STATE;
+            tty_putc(27, &tp->t_rawq);
+            tty_putc(c,  &tp->t_rawq);
+        }
+    } else {
+        if (c == 27) {
+            tp->t_vt100_state = ESCAPE_STATE;
+        } else {
+            tty_putc(c, &tp->t_rawq);
         }
     }
-
 
     if (lflag & ECHO) {
         tty_echo(c, tp);
