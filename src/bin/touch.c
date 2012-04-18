@@ -53,6 +53,8 @@ touch_main(int argc, char *argv[])
 	unsigned int flags;
 	int ch;
 
+    optind = 0;
+
 	flags = 0;
 	while ((ch = getopt(argc, argv, "")) != -1)
 		switch(ch) {
@@ -62,26 +64,30 @@ touch_main(int argc, char *argv[])
 		case '?':
 		default:
 			usage();
+			return -1;
 		}
 	argc -= optind;
 	argv += optind;
 
-	if (argc == 0)
+	if (argc == 0) {
 		usage();
+		return -1;
+	}
 
 	do {
-		if (do_touch(*argv, flags))
-			err(1, NULL);
+		if (do_touch(*argv, flags)) {
+		    return -1;
+		}
 		++argv;
 	} while (*argv);
-	exit(1);
+
+	return -1;
 }
 
 static void
 usage(void)
 {
 	fprintf(stderr, "usage: touch [-c] file...\n");
-	exit(1);
 }
 
 static int
@@ -92,15 +98,19 @@ do_touch(char *file, unsigned int flags)
 
 	if (stat(file, &st) < 0) {
 		if (!(flags & TF_NOCREAT)) {
-			if ((fd = creat(file, 0666)) < 0)
+			if ((fd = creat(file, 0666)) < 0) {
 				return -1;
+			}
 			close(fd);
 		}
 		return 0;
 	}
-	if ((fd = open(file, 2)) < 0)
+
+	if ((fd = open(file, 2)) < 0) {
 		return -1;
-	/* utime(file, NULL) */
+	}
+
 	close(fd);
+
 	return 0;
 }

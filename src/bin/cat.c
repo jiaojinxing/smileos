@@ -53,18 +53,21 @@ cat_main(int argc, char *argv[])
 {
 	int ch, fd;
 
+    optind = 0;
+
 	while ((ch = getopt(argc, argv, "")) != -1)
 		switch(ch) {
 		case '?':
 		default:
 			fprintf(stderr, "usage: cat [-] [file ...]\n");
-			exit(1);
+			return -1;
 			/* NOTREACHED */
 		}
 	argv += optind;
 
-	if ((stdbuf = malloc(BUFSIZ)) == NULL)
-		err(1, NULL);
+	if ((stdbuf = malloc(BUFSIZ)) == NULL) {
+	    return -1;
+	}
 
 	fd = fileno(stdin);
 	filename = "stdin";
@@ -85,7 +88,7 @@ cat_main(int argc, char *argv[])
 			(void)close(fd);
 	} while (*argv);
 	free(stdbuf);
-	exit(rval);
+	return -rval;
 }
 
 static void
@@ -95,12 +98,14 @@ do_cat(int rfd)
 	struct stat sbuf;
 
 	wfd = fileno(stdout);
-	if (fstat(wfd, &sbuf))
-		err(1, "%s", filename);
+	if (fstat(wfd, &sbuf)) {
+	    return;
+	}
 	while ((nr = read(rfd, stdbuf, BUFSIZ)) > 0)
 		for (off = 0; nr; nr -= nw, off += nw)
-			if ((nw = write(wfd, stdbuf + off, (size_t)nr)) < 0)
-				err(1, "stdout");
+			if ((nw = write(wfd, stdbuf + off, (size_t)nr)) < 0) {
+		        return;
+			}
 	if (nr < 0) {
 		warn("%s @%d", filename, errno);
 		rval = 1;

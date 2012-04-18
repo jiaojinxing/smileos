@@ -48,8 +48,6 @@
 void head(FILE *, int);
 static void usage(void);
 
-int eval;
-
 int
 head_main(int argc, char *argv[])
 {
@@ -58,17 +56,21 @@ head_main(int argc, char *argv[])
 	int first, linecnt;
 	char *ep;
 
+    optind = 0;
+
 	linecnt = 10;
 	while ((ch = getopt(argc, argv, "n:")) != EOF)
 		switch(ch) {
 		case 'n':
 			linecnt = strtol(optarg, &ep, 10);
-			if (*ep || linecnt <= 0)
-				err(1, "illegal line count -- %s", optarg);
+			if (*ep || linecnt <= 0) {
+		        return -1;
+			}
 			break;
 		case '?':
 		default:
 			usage();
+			return -1;
 		}
 	argc -= optind;
 	argv += optind;
@@ -76,8 +78,7 @@ head_main(int argc, char *argv[])
 	if (*argv)
 		for (first = 1; *argv; ++argv) {
 			if ((fp = fopen(*argv, "r")) == NULL) {
-				err(0, "%s: %s", *argv, strerror(errno));
-				continue;
+			    return -1;
 			}
 			if (argc > 1) {
 				(void)printf("%s==> %s <==\n",
@@ -89,7 +90,7 @@ head_main(int argc, char *argv[])
 		}
 	else
 		head(stdin, linecnt);
-	exit(eval);
+	return 0;
 }
 
 void
@@ -99,8 +100,10 @@ head(FILE *fp, int cnt)
 
 	while (cnt--)
 		while ((ch = getc(fp)) != EOF) {
-			if (putchar(ch) == EOF)
-				err(1, "stdout: %s", strerror(errno));
+			if (putchar(ch) == EOF) {
+			    return;
+			}
+
 			if (ch == '\n')
 				break;
 		}
@@ -110,5 +113,4 @@ static void
 usage()
 {
 	(void)fprintf(stderr, "usage: head [-n lines] [file ...]\n");
-	exit(1);
 }

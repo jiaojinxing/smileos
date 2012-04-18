@@ -205,14 +205,50 @@ static int exec_cmd(char *cmd)
 
     if (strcmp(argv[0], "ts") == 0) {
         ts_main(argc, argv);
-    } else if (strcmp(argv[0], "ls") == 0) {
-        extern int ls_main(int argc, char *argv[]);
-        ls_main(argc, argv);
+    } else if (strcmp(argv[0], "cd") == 0) {
+        cd_main(argc, argv);
     } else if (strcmp(argv[0], "cat") == 0) {
         extern int cat_main(int argc, char *argv[]);
         cat_main(argc, argv);
-    } else if (strcmp(argv[0], "cd") == 0) {
-        cd_main(argc, argv);
+    } else if (strcmp(argv[0], "clear") == 0) {
+        extern int clear_main(int argc, char *argv[]);
+        clear_main(argc, argv);
+    } else if (strcmp(argv[0], "cp") == 0) {
+        extern int cp_main(int argc, char *argv[]);
+        cp_main(argc, argv);
+    } else if (strcmp(argv[0], "echo") == 0) {
+        extern int echo_main(int argc, char *argv[]);
+        echo_main(argc, argv);
+    } else if (strcmp(argv[0], "head") == 0) {
+        extern int head_main(int argc, char *argv[]);
+        head_main(argc, argv);
+    } else if (strcmp(argv[0], "ls") == 0) {
+        extern int ls_main(int argc, char *argv[]);
+        ls_main(argc, argv);
+    } else if (strcmp(argv[0], "mkdir") == 0) {
+        extern int mkdir_main(int argc, char *argv[]);
+        mkdir_main(argc, argv);
+    } else if (strcmp(argv[0], "more") == 0) {
+        extern int more_main(int argc, char *argv[]);
+        more_main(argc, argv);
+    } else if (strcmp(argv[0], "mv") == 0) {
+        extern int mv_main(int argc, char *argv[]);
+        mv_main(argc, argv);
+    } else if (strcmp(argv[0], "envs") == 0) {
+        extern int printenv_main(int argc, char *argv[]);
+        printenv_main(argc, argv);
+    } else if (strcmp(argv[0], "pwd") == 0) {
+        extern int pwd_main(int argc, char *argv[]);
+        pwd_main(argc, argv);
+    } else if (strcmp(argv[0], "rm") == 0) {
+        extern int rm_main(int argc, char *argv[]);
+        rm_main(argc, argv);
+    } else if (strcmp(argv[0], "rmdir") == 0) {
+        extern int rmdir_main(int argc, char *argv[]);
+        rmdir_main(argc, argv);
+    } else if (strcmp(argv[0], "touch") == 0) {
+        extern int touch_main(int argc, char *argv[]);
+        touch_main(argc, argv);
     } else if (strcmp(argv[0], "vi") == 0) {
         extern int vi_main(int argc, char *argv[]);
         vi_main(argc, argv);

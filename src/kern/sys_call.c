@@ -148,6 +148,7 @@ static sys_do_t sys_do_table[1];
 #define SYS_CALL_LINK       32
 #define SYS_CALL_STAT       33
 #define SYS_CALL_MKDIR      34
+#define SYS_CALL_RMDIR      35
 #define SYS_CALL_OPENDIR    40
 #define SYS_CALL_READDIR    41
 #define SYS_CALL_SEEKDIR    42
@@ -487,6 +488,28 @@ int _mkdir_r(struct _reent *reent, const char *path, int mode)
     } else {
         __asm__ __volatile__("mov    r0,  %0": :"r"(path));
         __asm__ __volatile__("mov    r1,  %0": :"r"(mode));
+        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
+        __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
+        __asm__ __volatile__("swi    0");
+        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
+        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
+    }
+    return ret;
+}
+
+/*
+ * _rmdir_r
+ */
+int _rmdir_r(struct _reent *reent, const char *path)
+{
+    int ret;
+    int syscall = SYS_CALL_RMDIR;
+
+    debug("%s\n", __func__);
+    if (in_kernel()) {
+        ret = (sys_do_table[syscall])(path);
+    } else {
+        __asm__ __volatile__("mov    r0,  %0": :"r"(path));
         __asm__ __volatile__("stmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
         __asm__ __volatile__("swi    0");

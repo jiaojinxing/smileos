@@ -45,6 +45,8 @@ mkdir_main(int argc, char *argv[])
 {
 	int ch, exitval, pflag;
 
+    optind = 0;
+
 	pflag = 0;
 	while ((ch = getopt(argc, argv, "p")) != EOF)
 		switch(ch) {
@@ -54,12 +56,15 @@ mkdir_main(int argc, char *argv[])
 		case '?':
 		default:
 			usage();
+			return -1;
 		}
 	argc -= optind;
 	argv += optind;
 
-	if (argv[0] == NULL)
+	if (argv[0] == NULL) {
 		usage();
+		return -1;
+	}
 
 	for (exitval = 0; *argv != NULL; ++argv) {
 		if (pflag && build(*argv)) {
@@ -72,7 +77,7 @@ mkdir_main(int argc, char *argv[])
 			exitval = 1;
 		}
 	}
-	exit(exitval);
+	return -exitval;
 	/* NOTREACHED */
 }
 
@@ -108,5 +113,4 @@ static void
 usage()
 {
 	(void)fprintf(stderr, "usage: mkdir [-p] directory ...\n");
-	exit (1);
 }
