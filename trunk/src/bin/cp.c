@@ -56,39 +56,51 @@ cp_main(int argc, char *argv[])
 	char *target;
 	struct stat to_stat, tmp_stat;
 
+    optind = 0;
+
 	while ((ch = getopt(argc, argv, "")) != -1)
 		switch(ch) {
 		case '?':
 		default:
 			usage();
+			return -1;
 		}
 	argc -= optind;
 	argv += optind;
 
-	if (argc < 2)
+	if (argc < 2) {
 		usage();
+		return -1;
+	}
 
-	if ((iobuf = malloc(BUFSIZ)) == NULL)
-		err(1, NULL);
+	if ((iobuf = malloc(BUFSIZ)) == NULL) {
+	    return -1;
+	}
 
 	target = argv[--argc];
 
 	r = stat(target, &to_stat);
-	if (r == -1 && errno != ENOENT)
-		err(1, "%s", target);
+	if (r == -1 && errno != ENOENT) {
+	    return -1;
+	}
+
 	if (r == -1 || !S_ISDIR(to_stat.st_mode)) {
 		/*
 		 * File to file
 		 */
-		if (argc > 1)
+		if (argc > 1) {
 			usage();
+			return -1;
+		}
 
 		if (stat(argv[0], &tmp_stat) == -1) {
 			warn("%s", argv[0]);
-			exit(1);
+			return -1;
 		}
-		if (!S_ISREG(tmp_stat.st_mode))
+		if (!S_ISREG(tmp_stat.st_mode)) {
 			usage();
+			return -1;
+		}
 
 		/* interactive mode */
 		if (r != -1 && iflag) {
@@ -97,7 +109,7 @@ cp_main(int argc, char *argv[])
 			while (ch != '\n' && ch != EOF)
 				ch = getchar();
 			if (checkch != 'y')
-				exit(0);
+			    return 0;
 		}
 		r = copy(argv[0], target, 0);
 	} else {
@@ -109,7 +121,7 @@ cp_main(int argc, char *argv[])
 			r = copy(argv[i], target, 1);
 	}
 	free(iobuf);
-	exit(r);
+	return -r;
 }
 
 static void
@@ -117,7 +129,6 @@ usage(void)
 {
 	fprintf(stderr, "usage: cp src target\n"
 		"       cp src1 ... srcN directory\n");
-	exit(1);
 	/* NOTREACHED */
 }
 

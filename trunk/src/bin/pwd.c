@@ -44,12 +44,14 @@ pwd_main(int argc, char *argv[])
 
 	if (argc > 1) {
 		fprintf(stderr, "usage: pwd\n");
-		exit(1);
+		return -1;
 	}
+
 	if ((p = getcwd(cwd, PATH_MAX)) == NULL) {
-		err(1, NULL);
-		exit(1);
+		return -1;
 	}
+
 	puts(p);
-	exit(0);
+
+	return 0;
 }

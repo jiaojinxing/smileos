@@ -48,17 +48,19 @@ mv_main(int argc, char *argv[])
 
 	if (argc != 3) {
 		fprintf(stderr, "usage: mv src dest\n");
-		exit(1);
+		return -1;
 	}
 	src = argv[1];
 	dest = argv[2];
 
 	/* Check if source exists and it's regular file. */
-	if (stat(src, &st1) < 0)
-		err(1,"mv");
+	if (stat(src, &st1) < 0) {
+	    return -1;
+	}
+
 	if (!S_ISREG(st1.st_mode)) {
 		fprintf(stderr, "mv: invalid file type\n");
-		exit(1);
+		return -1;
 	}
 
 	/* Check if target is a directory. */
@@ -72,7 +74,10 @@ mv_main(int argc, char *argv[])
 		strlcat(path, p, sizeof(path));
 		dest = path;
 	}
-	if (rename(src, dest) < 0)
-		err(1,"rename");
+
+	if (rename(src, dest) < 0) {
+	    return -1;
+	}
+
 	return 0;
 }

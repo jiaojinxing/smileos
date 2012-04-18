@@ -38,9 +38,7 @@
 static void
 usage(void)
 {
-
 	fprintf(stderr, "usage: rm file...\n");
-	exit(1);
 }
 
 int
@@ -48,28 +46,31 @@ rm_main(int argc, char *argv[])
 {
 	int ch, rc;
 
+    optind = 0;
+
 	while ((ch = getopt(argc, argv, "")) != -1)
 		switch(ch) {
 		case '?':
 		default:
 			usage();
+			return -1;
 		}
 	argc -= optind;
 	argv += optind;
 
 	if (argc == 0) {
 		usage();
-		return 0;
+		return -1;
 	}
+
 	rc = 0;
+
 	do {
-		if ((rc = unlink(*argv)) < 0)
+		if ((rc = unlink(*argv)) < 0) {
 			break;
+		}
 		++argv;
 	} while (*argv);
 
-	if (rc < 0)
-		err(1, "%s", *argv);
-
-	exit(rc);
+	return rc;
 }

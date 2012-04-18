@@ -51,35 +51,39 @@ printenv_main(int argc, char *argv[])
 	size_t len;
 	int ch;
 
+    optind = 0;
+
 	while ((ch = getopt(argc, argv, "")) != EOF)
 		switch(ch) {
 		case '?':
 		default:
 			usage();
+			return -1;
 		}
 	argc -= optind;
 	argv += optind;
 
 	if (argc == 0) {
-		for (ep = environ; *ep; ep++)
+		for (ep = environ; *ep; ep++) {
 			(void)printf("%s\n", *ep);
-		exit(0);
+		}
+		return 0;
 	}
+
 	len = strlen(*argv);
 	for (ep = environ; *ep; ep++)
 		if (!memcmp(*ep, *argv, len)) {
 			cp = *ep + len;
 			if (!*cp || *cp == '=') {
 				(void)printf("%s\n", *cp ? cp + 1 : cp);
-				exit(0);
+				return 0;
 			}
 		}
-	exit(1);
+	return -1;
 }
 
 static void
 usage(void)
 {
 	(void)fprintf(stderr, "usage: printenv [name]\n");
-	exit(1);
 }

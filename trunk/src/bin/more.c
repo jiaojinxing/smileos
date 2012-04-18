@@ -48,19 +48,22 @@ more_main(int argc, char *argv[])
 	int height = 25;
 	int rval = 0;
 
+    optind = 0;
+
 	while ((ch = getopt(argc, argv, "")) != -1)
 		switch(ch) {
 		case '?':
 		default:
 			fprintf(stderr, "usage: more [file ...]\n");
-			exit(1);
+			return -1;
 			/* NOTREACHED */
 		}
 	argc -= optind;
 	argv += optind;
 
-	if (ioctl(0, TIOCGWINSZ, &ws) == 0)
+	if (ioctl(0, TIOCGWINSZ, &ws) == 0) {
 		height = (int)ws.ws_row;
+	}
 
 	if (*argv) {
 		for (; *argv; ++argv) {
@@ -73,10 +76,11 @@ more_main(int argc, char *argv[])
 			do_more(fp, height);
 			(void)fclose(fp);
 		}
-	} else
+	} else {
 		do_more(stdin, height);
+	}
 
-	exit(rval);
+	return -rval;
 }
 
 static void

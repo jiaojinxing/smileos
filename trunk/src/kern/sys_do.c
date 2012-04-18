@@ -260,12 +260,13 @@ sys_do_t sys_do_table[] = {
 #define SYS_CALL_LINK       32
 #define SYS_CALL_STAT       33
 #define SYS_CALL_MKDIR      34
+#define SYS_CALL_RMDIR      35
         (sys_do_t)vfs_rename,
         (sys_do_t)vfs_unlink,
         (sys_do_t)vfs_link,
         (sys_do_t)vfs_stat,
         (sys_do_t)vfs_mkdir,
-        NULL,
+        (sys_do_t)vfs_rmdir,
         NULL,
         NULL,
         NULL,
