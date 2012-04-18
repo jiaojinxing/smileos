@@ -83,10 +83,54 @@ static int fatfs_mount(mount_point_t *point, device_t *dev, const char *dev_name
     }
 }
 
+static void fatfs_result_to_errno(FRESULT result)
+{
+    switch (result) {
+    case FR_OK:
+        seterrno(0);
+        break;
+
+    case FR_NO_FILE:
+    case FR_NO_PATH:
+    case FR_NO_FILESYSTEM:
+        seterrno(ENOENT);
+        break;
+
+    case FR_INVALID_NAME:
+        seterrno(EINVAL);
+        break;
+
+    case FR_EXIST:
+    case FR_INVALID_OBJECT:
+        seterrno(EEXIST);
+        break;
+
+    case FR_DISK_ERR:
+    case FR_NOT_READY:
+    case FR_INT_ERR:
+        seterrno(EIO);
+        break;
+
+    case FR_WRITE_PROTECTED:
+    case FR_DENIED:
+        seterrno(EROFS);
+        break;
+
+    case FR_MKFS_ABORTED:
+        seterrno(EINVAL);
+        break;
+
+    default:
+        seterrno(-1);
+        break;
+    }
+}
+
 static int fatfs_open(mount_point_t *point, file_t *file, const char *path, int oflag, mode_t mode)
 {
     privinfo_t *priv;
     int fatfs_mode = FA_READ;
+    FRESULT res;
 
     priv = kmalloc(sizeof(privinfo_t));
     if (priv != NULL) {
@@ -115,13 +159,16 @@ static int fatfs_open(mount_point_t *point, file_t *file, const char *path, int 
             fatfs_mode |= FA_CREATE_NEW;
         }
 
-        if (f_open(&priv->file, path, fatfs_mode) != FR_OK) {
+        res = f_open(&priv->file, path, fatfs_mode);
+        if (res != FR_OK) {
+            fatfs_result_to_errno(res);
             kfree(priv);
             return -1;
         } else {
             return 0;
         }
     } else {
+        seterrno(ENOMEM);
         return -1;
     }
 }
@@ -129,14 +176,18 @@ static int fatfs_open(mount_point_t *point, file_t *file, const char *path, int 
 static int fatfs_close(mount_point_t *point, file_t *file)
 {
     privinfo_t *priv = file->ctx;
+    FRESULT res;
 
     if (priv == NULL) {
+        seterrno(EINVAL);
         return -1;
     }
 
-    if (f_close(&priv->file) == FR_OK) {
+    res = f_close(&priv->file);
+    if (res == FR_OK) {
         return 0;
     } else {
+        fatfs_result_to_errno(res);
         return -1;
     }
 }
@@ -145,14 +196,18 @@ static ssize_t fatfs_read(mount_point_t *point, file_t *file, void *buf, size_t 
 {
     privinfo_t *priv = file->ctx;
     UINT rlen;
+    FRESULT res;
 
     if (priv == NULL) {
+        seterrno(EINVAL);
         return -1;
     }
 
-    if (f_read(&priv->file, buf, len, &rlen) == FR_OK) {
+    res = f_read(&priv->file, buf, len, &rlen);
+    if (res == FR_OK) {
         return rlen;
     } else {
+        fatfs_result_to_errno(res);
         return -1;
     }
 }
@@ -161,8 +216,10 @@ static ssize_t fatfs_write(mount_point_t *point, file_t *file, const void *buf, 
 {
     privinfo_t *priv = file->ctx;
     UINT wlen;
+    FRESULT res;
 
     if (priv == NULL) {
+        seterrno(EINVAL);
         return -1;
     }
 
@@ -170,20 +227,24 @@ static ssize_t fatfs_write(mount_point_t *point, file_t *file, const void *buf, 
         f_lseek(&priv->file, f_size(&priv->file));
     }
 
-    if (f_write(&priv->file, buf, len, &wlen) == FR_OK) {
+    res = f_write(&priv->file, buf, len, &wlen);
+    if (res == FR_OK) {
         return wlen;
     } else {
+        fatfs_result_to_errno(res);
         return -1;
     }
 }
 
 static int fatfs_ioctl(mount_point_t *point, file_t *file, int cmd, void *arg)
 {
+    seterrno(ENOSYS);
     return -1;
 }
 
 static int fatfs_fcntl(mount_point_t *point, file_t *file, int cmd, int arg)
 {
+    seterrno(ENOSYS);
     return -1;
 }
 
@@ -192,6 +253,7 @@ static int fatfs_fstat(mount_point_t *point, file_t *file, struct stat *buf)
     privinfo_t *priv = file->ctx;
 
     if (priv == NULL) {
+        seterrno(EINVAL);
         return -1;
     }
 
@@ -229,14 +291,18 @@ static int fatfs_fstat(mount_point_t *point, file_t *file, struct stat *buf)
 static int fatfs_fsync(mount_point_t *point, file_t *file)
 {
     privinfo_t *priv = file->ctx;
+    FRESULT res;
 
     if (priv == NULL) {
+        seterrno(EINVAL);
         return -1;
     }
 
-    if (f_sync(&priv->file) == FR_OK) {
+    res = f_sync(&priv->file);
+    if (res == FR_OK) {
         return 0;
     } else {
+        fatfs_result_to_errno(res);
         return -1;
     }
 }
@@ -244,14 +310,18 @@ static int fatfs_fsync(mount_point_t *point, file_t *file)
 static int fatfs_fdatasync(mount_point_t *point, file_t *file)
 {
     privinfo_t *priv = file->ctx;
+    FRESULT res;
 
     if (priv == NULL) {
+        seterrno(EINVAL);
         return -1;
     }
 
-    if (f_sync(&priv->file) == FR_OK) {
+    res = f_sync(&priv->file);
+    if (res == FR_OK) {
         return 0;
     } else {
+        fatfs_result_to_errno(res);
         return -1;
     }
 }
@@ -259,15 +329,19 @@ static int fatfs_fdatasync(mount_point_t *point, file_t *file)
 static int fatfs_ftruncate(mount_point_t *point, file_t *file, off_t len)
 {
     privinfo_t *priv = file->ctx;
+    FRESULT res;
 
     if (priv == NULL) {
+        seterrno(EINVAL);
         return -1;
     }
 
     if (len == 0) {
-        if (f_truncate(&priv->file) == FR_OK) {
+        res = f_truncate(&priv->file);
+        if (res == FR_OK) {
             return 0;
         } else {
+            fatfs_result_to_errno(res);
             return -1;
         }
     } else {
@@ -285,25 +359,43 @@ static int fatfs_ftruncate(mount_point_t *point, file_t *file, off_t len)
 static int fatfs_lseek(mount_point_t *point, file_t *file, off_t offset, int whence)
 {
     privinfo_t *priv = file->ctx;
+    FRESULT res;
 
     if (priv == NULL) {
+        seterrno(EINVAL);
         return -1;
     }
 
     switch (whence) {
     case SEEK_SET:
-        f_lseek(&priv->file, offset);
-        break;
+        res = f_lseek(&priv->file, offset);
+        if (res == FR_OK) {
+            return 0;
+        } else {
+            fatfs_result_to_errno(res);
+            return -1;
+        }
 
     case SEEK_CUR:
-        f_lseek(&priv->file, f_tell(&priv->file) + offset);
-        break;
+        res = f_lseek(&priv->file, f_tell(&priv->file) + offset);
+        if (res == FR_OK) {
+            return 0;
+        } else {
+            fatfs_result_to_errno(res);
+            return -1;
+        }
 
     case SEEK_END:
-        f_lseek(&priv->file, f_size(&priv->file) + offset);
-        break;
+        res = f_lseek(&priv->file, f_size(&priv->file) + offset);
+        if (res == FR_OK) {
+            return 0;
+        } else {
+            fatfs_result_to_errno(res);
+            return -1;
+        }
 
     default:
+        seterrno(EINVAL);
         return -1;
     }
     return 0;
@@ -311,6 +403,8 @@ static int fatfs_lseek(mount_point_t *point, file_t *file, off_t offset, int whe
 
 static int fatfs_stat(mount_point_t *point, const char *path, struct stat *buf)
 {
+    FRESULT res;
+
     if (VFS_PATH_IS_ROOT(path)) {
         buf->st_dev     = (dev_t)point->dev->devno;
         buf->st_ino     = 0;
@@ -334,7 +428,8 @@ static int fatfs_stat(mount_point_t *point, const char *path, struct stat *buf)
     } else {
         FILINFO info;
 
-        if (f_stat(path, &info) == FR_OK) {
+        res = f_stat(path, &info);
+        if (res == FR_OK) {
             buf->st_dev     = (dev_t)point->dev->devno;
             buf->st_ino     = 0;
             if (info.fattrib & AM_DIR) {
@@ -364,6 +459,7 @@ static int fatfs_stat(mount_point_t *point, const char *path, struct stat *buf)
             buf->st_spare4[1] = 0;
             return 0;
         } else {
+            fatfs_result_to_errno(res);
             return -1;
         }
     }
@@ -379,6 +475,7 @@ static int fatfs_access(mount_point_t *point, const char *path, int amode)
         if ((buf.st_mode & 0700) == (amode * 8 * 8)) {
             return 0;
         } else {
+            seterrno(EACCES);
             return -1;
         }
     } else {
@@ -389,14 +486,17 @@ static int fatfs_access(mount_point_t *point, const char *path, int amode)
 static int fatfs_opendir(mount_point_t *point, file_t *file, const char *path)
 {
     privinfo_t *priv;
+    FRESULT res;
 
     priv = kmalloc(sizeof(privinfo_t));
     if (priv != NULL) {
         memset(priv, 0, sizeof(privinfo_t));
         file->ctx = priv;
-        if (f_opendir(&priv->dir, path) == FR_OK) {
+        res = f_opendir(&priv->dir, path);
+        if (res == FR_OK) {
             return 0;
         } else {
+            fatfs_result_to_errno(res);
             kfree(priv);
             return -1;
         }
@@ -408,6 +508,7 @@ static int fatfs_opendir(mount_point_t *point, file_t *file, const char *path)
 static struct dirent *fatfs_readdir(mount_point_t *point, file_t *file)
 {
     privinfo_t *priv = file->ctx;
+    FRESULT res;
 
     if (priv != NULL) {
         FILINFO info;
@@ -416,16 +517,19 @@ static struct dirent *fatfs_readdir(mount_point_t *point, file_t *file)
         info.lfname = priv->entry.d_name;
         info.lfsize = sizeof(priv->entry.d_name);
 
-        if (f_readdir(&priv->dir, &info) == FR_OK && info.fname[0] != '\0') {
+        res = f_readdir(&priv->dir, &info);
+        if (res == FR_OK && info.fname[0] != '\0') {
             if (info.lfname[0] == '\0') {
                 strlcpy(priv->entry.d_name, info.fname, sizeof(priv->entry.d_name));
             }
             priv->entry.d_ino = 0;
             return &priv->entry;
         } else {
+            fatfs_result_to_errno(res);
             return NULL;
         }
     } else {
+        seterrno(EINVAL);
         return NULL;
     }
 }
@@ -433,25 +537,31 @@ static struct dirent *fatfs_readdir(mount_point_t *point, file_t *file)
 static int fatfs_rewinddir(mount_point_t *point, file_t *file)
 {
     privinfo_t *priv = file->ctx;
+    FRESULT res;
 
     if (priv != NULL) {
-        if (f_readdir(&priv->dir, NULL) == FR_OK) {
+        res = f_readdir(&priv->dir, NULL);
+        if (res == FR_OK) {
             return 0;
         } else {
+            fatfs_result_to_errno(res);
             return -1;
         }
     } else {
+        seterrno(EINVAL);
         return -1;
     }
 }
 
 static int fatfs_seekdir(mount_point_t *point, file_t *file, long loc)
 {
+    seterrno(ENOSYS);
     return -1;
 }
 
 static long fatfs_telldir(mount_point_t *point, file_t *file)
 {
+    seterrno(ENOSYS);
     return -1;
 }
 
@@ -463,36 +573,49 @@ static int fatfs_closedir(mount_point_t *point, file_t *file)
         kfree(priv);
         return 0;
     } else {
+        seterrno(EINVAL);
         return -1;
     }
 }
 
 static int fatfs_link(mount_point_t *point, const char *path1, const char *path2)
 {
+    seterrno(ENOSYS);
     return -1;
 }
 
 static int fatfs_unlink(mount_point_t *point, const char *path)
 {
-    if (f_unlink(path) == FR_OK) {
+    FRESULT res;
+
+    res = f_unlink(path);
+    if (res == FR_OK) {
         return 0;
     } else {
+        fatfs_result_to_errno(res);
         return -1;
     }
 }
 
 static int fatfs_mkdir(mount_point_t *point, const char *path, mode_t mode)
 {
-    if (f_mkdir(path) == FR_OK) {
+    FRESULT res;
+
+    res = f_mkdir(path);
+    if (res == FR_OK) {
         return 0;
     } else {
+        fatfs_result_to_errno(res);
         return -1;
     }
 }
 
 static int fatfs_rmdir(mount_point_t *point, const char *path)
 {
-    if (f_unlink(path) == FR_OK) {
+    FRESULT res;
+
+    res = f_unlink(path);
+    if (res == FR_OK) {
         return 0;
     } else {
         return -1;
@@ -501,9 +624,13 @@ static int fatfs_rmdir(mount_point_t *point, const char *path)
 
 static int fatfs_rename(mount_point_t *point, const char *old, const char *new)
 {
-    if (f_rename(old, new) == FR_OK) {
+    FRESULT res;
+
+    res = f_rename(old, new);
+    if (res == FR_OK) {
         return 0;
     } else {
+        fatfs_result_to_errno(res);
         return -1;
     }
 }
