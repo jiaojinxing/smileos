@@ -92,7 +92,7 @@ do_more(FILE *fp, int maxlines)
 		if (c == '\n' && ++lines >= maxlines) {
 			len = printf("\n--More-- ");
 			fflush(stdout);
-			read(2, &c, 1);
+			read(1, &c, 1);
 
 			printf("\033[1A"); /* up cursor */
 			putc('\r', stdout);
