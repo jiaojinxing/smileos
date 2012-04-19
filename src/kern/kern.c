@@ -592,6 +592,22 @@ int32_t process_create(const char *path, uint32_t priority)
     }
     close(fd);
 
+    {
+        int i;
+
+        /*
+         * 清除 D-Cache
+         */
+        for (i = 0; i < (st.st_size + 31) / 32; i++) {
+            mmu_clean_dcache_mva(pid * PROCESS_SPACE_SIZE + i * 32);
+        }
+
+        /*
+         * 无效 I-Cache
+         */
+        mmu_invalidate_icache();
+    }
+
     reg = interrupt_disable();
 
     task->state = TASK_RUNNING;                                         /*  进程进入就绪态              */
