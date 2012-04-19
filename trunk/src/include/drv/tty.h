@@ -44,6 +44,7 @@
 #include <sys/signal.h>
 #include <sys/termios.h>
 #include <limits.h>
+#include "kern/kern.h"
 #include "kern/ipc.h"
 
 #define TTYQ_SIZE       MAX_INPUT
