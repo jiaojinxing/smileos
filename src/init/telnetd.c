@@ -41,7 +41,6 @@
 #include "kern/config.h"
 #include "kern/types.h"
 #include "kern/kern.h"
-#include "kern/sbin.h"
 #include "drv/pty.h"
 #include <fcntl.h>
 #include <dirent.h>
@@ -149,16 +148,14 @@ static int cd_main(int argc, char **argv)
  */
 static int exec_buildin(int argc, char **argv)
 {
-    uint8_t *code;
-    uint32_t size;
+    struct stat st;
 
-    code = sbin_lookup(argv[0], &size);
-    if (code != NULL) {
-        return process_create(argv[0], code, size, 5);
-    } else {
-        printf("unknown cmd\n");
+    if (stat(argv[0], &st) < 0) {
+        fprintf(stderr, "%s no found!\n", argv[0]);
         return -1;
     }
+
+    return process_create(argv[0], 5);
 }
 
 /*
@@ -401,6 +398,9 @@ static void telnetd_thread(void *arg)
 
     fclose(stdout);
     stdout = fopen((const char *)arg, "w+");
+
+    fclose(stderr);
+    stderr = fopen((const char *)arg, "w+");
 
     /*
      * ÉèÖÃÖÕ¶ËÊôÐÔ

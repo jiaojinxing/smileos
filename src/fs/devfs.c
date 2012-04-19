@@ -487,6 +487,8 @@ static int devfs_closedir(mount_point_t *point, file_t *file)
     privinfo_t *priv = file->ctx;
 
     if (priv == NULL) {
+        kfree(priv);
+        file->ctx = NULL;
         seterrno(EINVAL);
         return -1;
     }

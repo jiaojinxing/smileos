@@ -211,15 +211,19 @@ void schedule(void)
         current->content[0] = (uint32_t)&current->kstack[KERN_STACK_SIZE];
     }
 
+#if 0
     if (task->pid != current->pid) {                                    /*  如果需要切换进程            */
         for (i = 0; i < PROCESS_SPACE_SIZE / SECTION_SIZE; i++) {       /*  保护原进程的虚拟地址空间    */
             mmu_map_section(task->pid * PROCESS_SPACE_SIZE / SECTION_SIZE + i, 0);
         }
 
-        for (i = 0; i < PROCESS_SPACE_SIZE / SECTION_SIZE; i++) {       /*  恢复新进程的一级段表        */
-            mmu_map_section(current->pid * PROCESS_SPACE_SIZE / SECTION_SIZE + i, current->mmu_backup[i]);
+        if (current->pid != 0) {
+            for (i = 0; i < PROCESS_SPACE_SIZE / SECTION_SIZE; i++) {   /*  恢复新进程的一级段表        */
+                mmu_map_section(current->pid * PROCESS_SPACE_SIZE / SECTION_SIZE + i, current->mmu_backup[i]);
+            }
         }
     }
+#endif
 
     extern void __switch_to(register task_t *from, register task_t *to);
     __switch_to(task, current);                                         /*  任务切换                    */
@@ -450,16 +454,33 @@ static void idle_create(void)
     strcpy(task->name, "idle");
 }
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <fcntl.h>
+
 /*
  * 创建进程
  */
-int32_t process_create(const char *name, uint8_t *code, uint32_t size, uint32_t priority)
+int32_t process_create(const char *path, uint32_t priority)
 {
     int32_t  pid;
     task_t  *task;
     uint32_t reg;
+    struct stat st;
+    int fd;
+    ssize_t len;
+    size_t total;
 
-    if (code == NULL || size == 0) {
+    if (path == NULL) {
+        return -1;
+    }
+
+    if (stat(path, &st) < 0) {
+        return -1;
+    }
+
+    if (!S_ISREG(st.st_mode)) {
         return -1;
     }
 
@@ -535,23 +556,18 @@ int32_t process_create(const char *name, uint8_t *code, uint32_t size, uint32_t 
     task->content[17]  = 12;
     task->content[18]  = 0;                                             /*  pc                          */
 
-    if (name != NULL) {
-        strlcpy(task->name, name, sizeof(task->name));
+    if (path != NULL) {
+        strlcpy(task->name, path, sizeof(task->name));
     } else {
         strcpy(task->name, "???");
     }
 
     if (vfs_task_init(pid) < 0) {                                       /*  初始化进程的文件信息        */
-        task->state = TASK_UNALLOCATE;
-        interrupt_resume(reg);
-        return -1;
+        goto __exit0;
     }
 
-    if (vmm_process_init(task, size) < 0) {                             /*  初始化进程的虚拟内存信息    */
-        vfs_task_cleanup(pid);
-        task->state = TASK_UNALLOCATE;
-        interrupt_resume(reg);
-        return -1;
+    if (vmm_process_init(task, st.st_size) < 0) {                       /*  初始化进程的虚拟内存信息    */
+        goto __exit1;
     }
 
     interrupt_resume(reg);
@@ -559,7 +575,22 @@ int32_t process_create(const char *name, uint8_t *code, uint32_t size, uint32_t 
     /*
      * 拷贝代码到进程的虚拟地址空间
      */
-    memcpy((char *)(pid * PROCESS_SPACE_SIZE), code, size);
+    fd = open(path, O_RDONLY, 0666);
+    if (fd < 0) {
+        goto __exit2;
+    }
+
+    total = 0;
+
+    while (st.st_size - total > 0) {
+        len = read(fd, (char *)(pid * PROCESS_SPACE_SIZE) + total, st.st_size - total);
+        if (len < 0) {
+            close(fd);
+            goto __exit2;
+        }
+        total += len;
+    }
+    close(fd);
 
     reg = interrupt_disable();
 
@@ -568,12 +599,18 @@ int32_t process_create(const char *name, uint8_t *code, uint32_t size, uint32_t 
     interrupt_resume(reg);
 
     return pid;
-}
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <fcntl.h>
+    __exit2:
+    vmm_process_cleanup(task);
+
+    __exit1:
+    vfs_task_cleanup(pid);
+
+    __exit0:
+    task->state = TASK_UNALLOCATE;
+    interrupt_resume(reg);
+    return -1;
+}
 
 /*
  * 内核线程外壳

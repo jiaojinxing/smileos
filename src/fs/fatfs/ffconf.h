@@ -79,7 +79,7 @@
 
 #define _FS_REENTRANT	1                                               /*  可重入                      */
 
-#define _FS_TIMEOUT		2000                                            /*  超时 TICK 数                */
+#define _FS_TIMEOUT		200                                             /*  超时 TICK 数                */
 
 struct mutex;
 #define	_SYNC_t			struct mutex *                                  /*  同步对象类型                */

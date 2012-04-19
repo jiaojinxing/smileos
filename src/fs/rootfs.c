@@ -207,6 +207,7 @@ static int rootfs_closedir(mount_point_t *point, file_t *file)
     }
 
     kfree(priv);
+    file->ctx = NULL;
     return 0;
 }
 

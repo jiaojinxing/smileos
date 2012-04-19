@@ -164,7 +164,7 @@ void kernel_timer(void);
 /*
  * 创建进程
  */
-int32_t process_create(const char *name, uint8_t *code, uint32_t size, uint32_t priority);
+int32_t process_create(const char *path, uint32_t priority);
 
 /*
  * 创建内核线程
