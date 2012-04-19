@@ -44,7 +44,6 @@
 #include <sys/signal.h>
 #include <sys/termios.h>
 #include <limits.h>
-#include "kern/kern.h"
 #include "kern/ipc.h"
 
 #define TTYQ_SIZE       MAX_INPUT
@@ -77,7 +76,7 @@ struct tty {
     sem_t               t_input;
     sem_t               t_output;
     int                 t_vt100_state;
-    int                 t_cmds[10];
+    unsigned char       t_cmds[5];
     int                 t_cmd_nr;
 };
 
@@ -100,9 +99,14 @@ struct tty {
 #define TS_ISIG         0x00400                             /*  Input is interrupted by signal.         */
 
 /*
- * Attach a tty to the tty list.
+ * Attach a tty.
  */
 int tty_attach(struct tty *tp);
+
+/*
+ * Detach a tty.
+ */
+int tty_detach(struct tty *tp);
 
 /*
  * Ioctls for all tty devices.

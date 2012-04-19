@@ -271,19 +271,19 @@ void kernel_timer(void)
                      *
                      * THREAD_STACK_MAGIC0 = 0xAA, 必须要用 uint8_t 类型, 否则...
                      */
-                    uint8_t *p   = (uint8_t *)task->stack_base;
+                    uint8_t *pos = (uint8_t *)task->stack_base;
                     uint8_t *end = (uint8_t *)(task->stack_base + task->stack_size);
 
-                    while (*p == KTHREAD_STACK_MAGIC0 && p < end) {
-                        p++;
+                    while (*pos == KTHREAD_STACK_MAGIC0 && pos < end) {
+                        pos++;
                     }
 
-                    if (p == (uint8_t *)task->stack_base) {
+                    if (pos == (uint8_t *)task->stack_base) {
                         printk("kthread %s tid=%d stack overflow!\n", task->name, task->tid);
                         task_kill(task->tid);
                         continue;
                     } else {
-                        task->stack_rate = 100 * ((uint32_t)(end - p)) / task->stack_size;
+                        task->stack_rate = 100 * ((uint32_t)(end - pos)) / task->stack_size;
                     }
                 }
             }

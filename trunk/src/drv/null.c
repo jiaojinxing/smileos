@@ -64,37 +64,9 @@ static int null_open(void *ctx, file_t *file, int oflag, mode_t mode)
 }
 
 /*
- * 控制 null
- */
-static int null_ioctl(void *ctx, file_t *file, int cmd, void *arg)
-{
-    privinfo_t *priv = ctx;
-
-    if (priv == NULL) {
-        seterrno(EINVAL);
-        return -1;
-    }
-    return 0;
-}
-
-/*
  * 关闭 null
  */
 static int null_close(void *ctx, file_t *file)
-{
-    privinfo_t *priv = ctx;
-
-    if (priv == NULL) {
-        seterrno(EINVAL);
-        return -1;
-    }
-    return 0;
-}
-
-/*
- * null 不是一个 tty
- */
-static int null_isatty(void *ctx, file_t *file)
 {
     privinfo_t *priv = ctx;
 
@@ -116,6 +88,10 @@ static ssize_t null_read(void *ctx, file_t *file, void *buf, size_t len)
         seterrno(EINVAL);
         return -1;
     }
+    if (priv->flags & VFS_FILE_ERROR) {
+        seterrno(EIO);
+        return -1;
+    }
     return 0;
 }
 
@@ -128,6 +104,10 @@ static ssize_t null_write(void *ctx, file_t *file, const void *buf, size_t len)
 
     if (priv == NULL) {
         seterrno(EINVAL);
+        return -1;
+    }
+    if (priv->flags & VFS_FILE_ERROR) {
+        seterrno(EIO);
         return -1;
     }
     return len;
@@ -163,8 +143,6 @@ static driver_t null_drv = {
         .open     = null_open,
         .write    = null_write,
         .read     = null_read,
-        .isatty   = null_isatty,
-        .ioctl    = null_ioctl,
         .close    = null_close,
         .scan     = null_scan,
         .select   = select_select,

@@ -216,7 +216,7 @@ int mutex_lock(mutex_t *mutex, uint32_t timeout)
                 } else if (m->owner == current) {
                     m->lock++;
                 } else {
-                    printk("%s(): %s lock mutex, %s wait\n", __func__, m->owner->name, current->name);
+                    printk("%s: %s lock mutex, %s wait it\n", __func__, m->owner->name, current->name);
                     if (timeout != 0) {
                         wait_event_timeout(m->wait_list, resume_type, timeout);
                     } else {

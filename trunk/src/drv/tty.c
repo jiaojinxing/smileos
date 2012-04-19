@@ -43,11 +43,6 @@
 #define KERNEL
 #include "drv/tty.h"
 
-/*
- * default control characters
- */
-static const cc_t       ttydefchars[NCCS] = TTYDEFCHARS;
-
 #define is_ctrl(c)      ((c) < 32 || (c) == 0x7f)
 
 /*
@@ -57,6 +52,11 @@ static const cc_t       ttydefchars[NCCS] = TTYDEFCHARS;
 #define ttyq_prev(i)    (((i) - 1) & (TTYQ_SIZE - 1))
 #define ttyq_full(q)    ((q)->tq_count >= TTYQ_SIZE)
 #define ttyq_empty(q)   ((q)->tq_count == 0)
+
+/*
+ * default control characters
+ */
+static const cc_t       ttydefchars[NCCS] = TTYDEFCHARS;
 
 static int copyin(const void *src, void *dst, size_t len)
 {
@@ -71,7 +71,7 @@ static int copyout(const void *src, void *dst, size_t len)
 }
 
 /*
- * Get a character from a queue.
+ * 从队列获得一个字符
  */
 int tty_getc(struct tty_queue *tq)
 {
@@ -92,7 +92,7 @@ int tty_getc(struct tty_queue *tq)
 }
 
 /*
- * Put a character into a queue.
+ * 放一个字符到队列里
  */
 static void tty_putc(int c, struct tty_queue *tq)
 {
@@ -109,7 +109,7 @@ static void tty_putc(int c, struct tty_queue *tq)
 }
 
 /*
- * Remove the last character in a queue and return it.
+ * 移除并返回队列里的最后一个字符
  */
 static int tty_unputc(struct tty_queue *tq)
 {
@@ -130,7 +130,7 @@ static int tty_unputc(struct tty_queue *tq)
 }
 
 /*
- * Put the chars in the from queue on the end of the to queue.
+ * 将队列里的所有字符追加到另一个队列
  */
 static void tty_catq(struct tty_queue *from, struct tty_queue *to)
 {
@@ -142,8 +142,7 @@ static void tty_catq(struct tty_queue *from, struct tty_queue *to)
 }
 
 /*
- * Output a single character on a tty, doing output processing
- * as needed (expanding tabs, newline processing, etc.).
+ * 输出一个字符
  */
 static void tty_output(int c, struct tty *tp)
 {
@@ -155,7 +154,7 @@ static void tty_output(int c, struct tty *tp)
     }
 
     /*
-     * Expand tab
+     * 扩展 tab
      */
     if (c == '\t' && (tp->t_oflag & OXTABS)) {
         i = 8 - (tp->t_column & 7);
@@ -167,7 +166,7 @@ static void tty_output(int c, struct tty *tp)
     }
 
     /*
-     * Translate newline into "\r\n"
+     * 转换 newline 为 "\r\n"
      */
     if (c == '\n' && (tp->t_oflag & ONLCR)) {
         tty_putc('\r', &tp->t_outq);
@@ -208,7 +207,7 @@ static void tty_output(int c, struct tty *tp)
 }
 
 /*
- * Rubout one character from the rawq of tp
+ * 擦掉一个字符
  */
 static void tty_rubout(int c, struct tty *tp)
 {
@@ -226,7 +225,7 @@ static void tty_rubout(int c, struct tty *tp)
 }
 
 /*
- * Echo char.
+ * 回显字符
  */
 static void tty_echo(int c, struct tty *tp)
 {
@@ -246,7 +245,7 @@ static void tty_echo(int c, struct tty *tp)
 }
 
 /*
- * Start output.
+ * 启动输出
  */
 static void tty_start(struct tty *tp)
 {
@@ -260,7 +259,7 @@ static void tty_start(struct tty *tp)
 }
 
 /*
- * Flush tty read and/or write queues, notifying anyone waiting.
+ * 清空读和(或)写队列, 通知任何一个等待它的任务
  */
 static void tty_flush(struct tty *tp, int rw)
 {
@@ -282,7 +281,7 @@ static void tty_flush(struct tty *tp, int rw)
 }
 
 /*
- * Output is completed.
+ * 输出完成时调用
  */
 void tty_done(struct tty *tp)
 {
@@ -297,7 +296,7 @@ void tty_done(struct tty *tp)
 }
 
 /*
- * Wait for output to drain.
+ * 等待输出完成
  */
 static void tty_wait(struct tty *tp)
 {
@@ -762,7 +761,7 @@ int tty_ioctl(struct tty *tp, u_long cmd, void *data)
 }
 
 /*
- * Attach a tty to the tty list.
+ * Attach a tty.
  */
 int tty_attach(struct tty *tp)
 {
@@ -789,6 +788,25 @@ int tty_attach(struct tty *tp)
 
     sem_new(&tp->t_input,  0);
     sem_new(&tp->t_output, 0);
+
+    return 0;
+}
+
+/*
+ * Detach a tty.
+ */
+int tty_detach(struct tty *tp)
+{
+    if (tp == NULL) {
+        return -1;
+    }
+
+    mutex_free(&tp->t_rawq.tq_lock);
+    mutex_free(&tp->t_canq.tq_lock);
+    mutex_free(&tp->t_outq.tq_lock);
+
+    sem_free(&tp->t_input);
+    sem_free(&tp->t_output);
 
     return 0;
 }

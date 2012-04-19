@@ -19,14 +19,14 @@
 ** Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 **
 **--------------------------------------------------------------------------------------------------------
-** File name:               wsIntrn.h
-** Last modified Date:      2012-2-22
+** File name:               syslimits.h
+** Last modified Date:      2012-4-11
 ** Last Version:            1.0.0
-** Descriptions:            GoAhead 头文件
+** Descriptions:            系统限制头文件
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing
-** Created date:            2012-2-22
+** Created date:            2012-4-11
 ** Version:                 1.0.0
 ** Descriptions:            创建文件
 **
@@ -37,19 +37,27 @@
 ** Descriptions:
 **
 *********************************************************************************************************/
-#ifndef WSINTRN_H_
-#define WSINTRN_H_
+#ifndef SYSLIMITS_H_
+#define SYSLIMITS_H_
 
-#define T(s)    s
+#define PAGE_SIZE                   (4096)                              /*  页面大小                    */
+#define PAGE_OFFSET                 (12)                                /*  页面大小偏移                */
 
-typedef struct {
-    char           *path;                                               /*  Web page URL path           */
-    unsigned char  *page;                                               /*  Web page data               */
-    int             size;                                               /*  Size of web page in bytes   */
-    int             pos;                                                /*  Current read position       */
-} websRomPageIndexType;
+#define MAX_INPUT                   (256)                               /*  输入最多字节数              */
 
-#endif                                                                  /*  WSINTRN_H_                  */
+#define LINE_MAX                    (256)                               /*  行大小                      */
+
+#undef  ARG_MAX
+#define ARG_MAX                     (32)                                /*  参数最多个数                */
+
+#define OPEN_MAX                    (20)                                /*  最多打开的文件数            */
+
+#define NAME_MAX                    (64)                                /*  名字最长的长度              */
+
+#undef  PATH_MAX
+#define PATH_MAX                    (256)                               /*  路径最长的长度              */
+
+#endif                                                                  /*  SYSLIMITS_H_                */
 /*********************************************************************************************************
   END FILE
 *********************************************************************************************************/

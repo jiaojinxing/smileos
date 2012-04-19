@@ -230,11 +230,6 @@ int vfs_task_cleanup(pid_t tid);
  */
 file_t *vfs_get_file(int fd);
 
-/*
- * ╧рть
- */
-int mount(const char *point_name, const char *dev_name, const char *fs_name);
-
 #endif                                                                  /*  VFS_H_                      */
 /*********************************************************************************************************
   END FILE
