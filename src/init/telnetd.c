@@ -549,7 +549,7 @@ void telnetd(void *arg)
     struct sockaddr_in local_addr, remote_addr;
     socklen_t addr_len;
     int fd, client_fd;
-    char pty_name[NAME_MAX];
+    char pty_name[PATH_MAX];
     char thread_name[NAME_MAX];
 
     fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);

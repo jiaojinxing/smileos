@@ -77,6 +77,10 @@ static int ttyS0_ioctl(void *ctx, file_t *file, int cmd, void *arg)
         seterrno(EINVAL);
         return -1;
     }
+    if (priv->flags & VFS_FILE_ERROR) {
+        seterrno(EIO);
+        return -1;
+    }
 
     ret = tty_ioctl(&priv->tty, cmd, arg);
     if (ret != 0) {
@@ -126,6 +130,10 @@ static ssize_t ttyS0_read(void *ctx, file_t *file, void *buf, size_t len)
         seterrno(EINVAL);
         return -1;
     }
+    if (priv->flags & VFS_FILE_ERROR) {
+        seterrno(EIO);
+        return -1;
+    }
 
     ret = tty_read(&priv->tty, buf, &len);
     if (ret != 0) {
@@ -146,6 +154,10 @@ static ssize_t ttyS0_write(void *ctx, file_t *file, const void *buf, size_t len)
 
     if (priv == NULL) {
         seterrno(EINVAL);
+        return -1;
+    }
+    if (priv->flags & VFS_FILE_ERROR) {
+        seterrno(EIO);
         return -1;
     }
 

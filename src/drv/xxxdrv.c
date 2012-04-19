@@ -74,6 +74,10 @@ static int xxx_ioctl(void *ctx, file_t *file, int cmd, void *arg)
         seterrno(EINVAL);
         return -1;
     }
+    if (priv->flags & VFS_FILE_ERROR) {
+        seterrno(EIO);
+        return -1;
+    }
     return 0;
 }
 
@@ -116,6 +120,10 @@ static ssize_t xxx_read(void *ctx, file_t *file, void *buf, size_t len)
         seterrno(EINVAL);
         return -1;
     }
+    if (priv->flags & VFS_FILE_ERROR) {
+        seterrno(EIO);
+        return -1;
+    }
     return 0;
 }
 
@@ -128,6 +136,10 @@ static ssize_t xxx_write(void *ctx, file_t *file, const void *buf, size_t len)
 
     if (priv == NULL) {
         seterrno(EINVAL);
+        return -1;
+    }
+    if (priv->flags & VFS_FILE_ERROR) {
+        seterrno(EIO);
         return -1;
     }
     return 0;

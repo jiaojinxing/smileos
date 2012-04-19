@@ -99,7 +99,7 @@ struct driver {
  * …Ë±∏
  */
 struct device {
-    char                    name[NAME_MAX];
+    char                    name[PATH_MAX];
     unsigned int            key;
     driver_t               *drv;
     /*

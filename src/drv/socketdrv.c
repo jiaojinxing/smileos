@@ -82,6 +82,10 @@ static int socket_ioctl(void *ctx, file_t *file, int cmd, void *arg)
         seterrno(EINVAL);
         return -1;
     }
+    if (priv->flags & VFS_FILE_ERROR) {
+        seterrno(EIO);
+        return -1;
+    }
     return lwip_ioctl(priv->sock_fd, cmd, arg);
 }
 
@@ -96,6 +100,10 @@ static int socket_fcntl(void *ctx, file_t *file, int cmd, int arg)
         seterrno(EINVAL);
         return -1;
     }
+    if (priv->flags & VFS_FILE_ERROR) {
+        seterrno(EIO);
+        return -1;
+    }
     return lwip_fcntl(priv->sock_fd, cmd, arg);
 }
 
@@ -105,7 +113,7 @@ static int socket_fcntl(void *ctx, file_t *file, int cmd, int arg)
 static int socket_close(void *ctx, file_t *file)
 {
     privinfo_t *priv = ctx;
-    char name[NAME_MAX];
+    char name[PATH_MAX];
 
     if (priv == NULL) {
         seterrno(EINVAL);
@@ -124,20 +132,6 @@ static int socket_close(void *ctx, file_t *file)
 }
 
 /*
- * socket 不是一个 tty
- */
-static int socket_isatty(void *ctx, file_t *file)
-{
-    privinfo_t *priv = ctx;
-
-    if (priv == NULL) {
-        seterrno(EINVAL);
-        return -1;
-    }
-    return 0;
-}
-
-/*
  * 读 socket
  */
 static ssize_t socket_read(void *ctx, file_t *file, void *buf, size_t len)
@@ -146,6 +140,10 @@ static ssize_t socket_read(void *ctx, file_t *file, void *buf, size_t len)
 
     if (priv == NULL) {
         seterrno(EINVAL);
+        return -1;
+    }
+    if (priv->flags & VFS_FILE_ERROR) {
+        seterrno(EIO);
         return -1;
     }
     return lwip_recv(priv->sock_fd, buf, len, 0);
@@ -160,6 +158,10 @@ static ssize_t socket_write(void *ctx, file_t *file, const void *buf, size_t len
 
     if (priv == NULL) {
         seterrno(EINVAL);
+        return -1;
+    }
+    if (priv->flags & VFS_FILE_ERROR) {
+        seterrno(EIO);
         return -1;
     }
     return lwip_send(priv->sock_fd, buf, len, 0);
@@ -225,7 +227,7 @@ static int socket_scan(void *ctx, file_t *file, int flags)
  */
 void smileos_socket_report(int sock_fd, int type)
 {
-    char name[NAME_MAX];
+    char name[PATH_MAX];
     device_t *dev;
 
     sprintf(name, "/dev/socket%d", sock_fd);
@@ -243,7 +245,6 @@ driver_t socket_drv = {
         .open     = socket_open,
         .write    = socket_write,
         .read     = socket_read,
-        .isatty   = socket_isatty,
         .ioctl    = socket_ioctl,
         .fcntl    = socket_fcntl,
         .close    = socket_close,
@@ -266,7 +267,7 @@ int socket_init(void)
  */
 int socket_attach(int sock_fd)
 {
-    char name[NAME_MAX];
+    char name[PATH_MAX];
     int fd;
     privinfo_t *priv;
     uint32_t reg;

@@ -379,6 +379,7 @@ int sd_writeblock(uint32_t address, const uint8_t *buf)
 #include "vfs/vfs.h"
 #include "vfs/device.h"
 #include <sys/stat.h>
+#include <sys/mount.h>
 
 /*
  * ´ò¿ª SD ¿¨

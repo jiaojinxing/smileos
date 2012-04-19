@@ -131,14 +131,14 @@ DSTATUS disk_initialize (
     BYTE Drive          /* Physical drive number */
 )
 {
-    return 0;
+    return RES_OK;
 }
 
 DSTATUS disk_status (
     BYTE Drive          /* Physical drive number */
 )
 {
-    return 0;
+    return RES_OK;
 }
 
 DRESULT disk_read (
@@ -155,7 +155,7 @@ DRESULT disk_read (
         sd_readblock((SectorNumber + i) * 512, Buffer + i * 512);
     }
 
-    return 0;
+    return RES_OK;
 }
 
 DRESULT disk_write (
@@ -172,7 +172,7 @@ DRESULT disk_write (
         sd_writeblock((SectorNumber + i) * 512, Buffer + i * 512);
     }
 
-    return 0;
+    return RES_OK;
 }
 
 DRESULT disk_ioctl (
@@ -181,7 +181,7 @@ DRESULT disk_ioctl (
     void* Buffer        /* Parameter and data buffer */
 )
 {
-    return 0;
+    return RES_OK;
 }
 /*********************************************************************************************************
   END FILE

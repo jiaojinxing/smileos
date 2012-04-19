@@ -55,7 +55,7 @@ typedef struct {
     VFS_SELECT_MEMBERS
     struct tty      tty;
     int             fd;
-    char            name[NAME_MAX];
+    char            name[PATH_MAX];
     int             ref;
     int  (*attach)(void *arg);
     void (*fail)(void *arg);
@@ -86,6 +86,10 @@ static int pty_ioctl(void *ctx, file_t *file, int cmd, void *arg)
 
     if (priv == NULL) {
         seterrno(EINVAL);
+        return -1;
+    }
+    if (priv->flags & VFS_FILE_ERROR) {
+        seterrno(EIO);
         return -1;
     }
 
@@ -139,6 +143,10 @@ static ssize_t pty_read(void *ctx, file_t *file, void *buf, size_t len)
         seterrno(EINVAL);
         return -1;
     }
+    if (priv->flags & VFS_FILE_ERROR) {
+        seterrno(EIO);
+        return -1;
+    }
 
     ret = tty_read(&priv->tty, buf, &len);
     if (ret != 0) {
@@ -159,6 +167,10 @@ static ssize_t pty_write(void *ctx, file_t *file, const void *buf, size_t len)
 
     if (priv == NULL) {
         seterrno(EINVAL);
+        return -1;
+    }
+    if (priv->flags & VFS_FILE_ERROR) {
+        seterrno(EIO);
         return -1;
     }
 
@@ -190,6 +202,9 @@ static int pty_scan(void *ctx, file_t *file, int flags)
     }
     if (tty_writeable(&priv->tty) && (flags & VFS_FILE_WRITEABLE)) {
         ret |= VFS_FILE_WRITEABLE;
+    }
+    if (priv->flags & flags & VFS_FILE_ERROR) {
+        ret |= VFS_FILE_ERROR;
     }
     return ret;
 }
@@ -277,7 +292,10 @@ static void pty_thread(void *arg)
         } else if (ret == 0) {
             continue;
         } else {
-            if (FD_ISSET(dev_fd, &efds) || FD_ISSET(host_fd, &efds)) {
+            if (FD_ISSET(host_fd, &efds)) {
+                break;
+            }
+            if (FD_ISSET(dev_fd, &efds)) {
                 select_report(priv, VFS_FILE_ERROR);
                 break;
             }
@@ -287,7 +305,10 @@ static void pty_thread(void *arg)
                     for (i = 0; i < ret; i++) {
                         tty_input((int)buf[i], &priv->tty);
                     }
-                    select_report(priv, VFS_FILE_READABLE);
+
+                    if (tty_readable(&priv->tty)) {
+                        select_report(priv, VFS_FILE_READABLE);
+                    }
                 }
             }
 
@@ -310,6 +331,7 @@ static void pty_thread(void *arg)
 
     __exit0:
     device_remove(priv->name);
+    tty_detach(&priv->tty);
     kfree(priv);
 }
 
