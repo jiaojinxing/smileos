@@ -185,6 +185,8 @@ static int fatfs_close(mount_point_t *point, file_t *file)
 
     res = f_close(&priv->file);
     if (res == FR_OK) {
+        kfree(priv);
+        file->ctx = NULL;
         return 0;
     } else {
         fatfs_result_to_errno(res);
@@ -571,6 +573,7 @@ static int fatfs_closedir(mount_point_t *point, file_t *file)
 
     if (priv != NULL) {
         kfree(priv);
+        file->ctx = NULL;
         return 0;
     } else {
         seterrno(EINVAL);
