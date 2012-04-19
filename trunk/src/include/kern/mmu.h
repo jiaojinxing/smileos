@@ -182,6 +182,11 @@ void mmu_invalidate_dcache(void);
 void mmu_clean_dcache_index(register uint32_t index);
 
 /*
+ * 清理指定 mva 的 D-Cache
+ */
+void mmu_clean_dcache_mva(register uint32_t mva);
+
+/*
  * 清理并无效指定 index 的 D-Cache
  */
 void mmu_clean_invalidate_dcache_index(register uint32_t index);

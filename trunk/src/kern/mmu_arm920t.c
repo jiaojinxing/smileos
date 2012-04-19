@@ -330,6 +330,16 @@ void mmu_clean_dcache_index(register uint32_t index)
 }
 
 /*
+ * 清理指定 mva 的 D-Cache
+ */
+void mmu_clean_dcache_mva(register uint32_t mva)
+{
+    // Clean DCache single entry (using index) Index format MCR p15,0,Rd,c7,c10,2
+    mva &= ~0x1Ful;
+    __asm__ __volatile__("mcr p15, 0, %0, c7, c10, 1": :"r"(mva));
+}
+
+/*
  * 清理并无效指定 index 的 D-Cache
  */
 void mmu_clean_invalidate_dcache_index(register uint32_t index)
