@@ -40,7 +40,7 @@
 #ifndef VFS_CONFIG_H_
 #define VFS_CONFIG_H_
 
-#include <limits.h>
+#include "syslimits.h"
 
 #endif                                                                  /*  VFS_CONFIG_H_               */
 /*********************************************************************************************************
