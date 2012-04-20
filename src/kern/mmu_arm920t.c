@@ -310,6 +310,18 @@ void mmu_invalidate_icache(void)
 }
 
 /*
+ * 清理并无效指定 mva 的 I-Cache
+ */
+void mmu_invalidate_icache_mva(register uint32_t mva)
+{
+    // Invalidate ICache single entry (using MVA) MVA format MCR p15,0,Rd,c7,c5,1
+
+    mva &= ~0x1Ful;
+
+    __asm__ __volatile__("mcr p15, 0, %0, c7, c5, 1": :"r"(mva));
+}
+
+/*
  * 无效 D-Cache
  */
 void mmu_invalidate_dcache(void)
@@ -330,13 +342,15 @@ void mmu_clean_dcache_index(register uint32_t index)
 }
 
 /*
- * 清理指定 mva 的 D-Cache
+ * 清理并无效指定 mva 的 D-Cache
  */
-void mmu_clean_dcache_mva(register uint32_t mva)
+void mmu_clean_invalidate_dcache_mva(register uint32_t mva)
 {
-    // Clean DCache single entry (using index) Index format MCR p15,0,Rd,c7,c10,2
+    // Clean and Invalidate DCache entry (using MVA) MVA format MCR p15,0,Rd,c7,c14,1
+
     mva &= ~0x1Ful;
-    __asm__ __volatile__("mcr p15, 0, %0, c7, c10, 1": :"r"(mva));
+
+    __asm__ __volatile__("mcr p15, 0, %0, c7, c14, 1": :"r"(mva));
 }
 
 /*
