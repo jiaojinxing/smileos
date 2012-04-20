@@ -592,20 +592,32 @@ int32_t process_create(const char *path, uint32_t priority)
     }
     close(fd);
 
+    /*
+     * 刚才拷贝的代码还在 D-Cache, 进程运行时读取 I-Cache 或主存, 它们是不一致的!
+     * 所以必须要清除 D-Cache, 清除写缓冲, 还要无效 I-Cache,
+     * 无效 D-Cache 可让出 D-Cache, 减少其它进程的 D-Cache 被换出和 D-Cache Miss, 提升运行速度
+     */
     {
         int i;
 
         /*
-         * 清除 D-Cache
+         * 清除并无效 D-Cache
          */
         for (i = 0; i < (st.st_size + 31) / 32; i++) {
-            mmu_clean_dcache_mva(pid * PROCESS_SPACE_SIZE + i * 32);
+            mmu_clean_invalidate_dcache_mva(pid * PROCESS_SPACE_SIZE + i * 32);
         }
+
+        /*
+         * 清除写缓冲
+         */
+        mmu_drain_write_buffer();
 
         /*
          * 无效 I-Cache
          */
-        mmu_invalidate_icache();
+        for (i = 0; i < (st.st_size + 31) / 32; i++) {
+            mmu_invalidate_icache_mva(pid * PROCESS_SPACE_SIZE + i * 32);
+        }
     }
 
     reg = interrupt_disable();
