@@ -98,6 +98,9 @@ static void tcpip_init_done(void *arg)
  */
 static void init(void *arg)
 {
+    putenv("PATH=/");
+    putenv("HOME=/");
+
     extern int bsp_drivers_install(void);
     bsp_drivers_install();
 

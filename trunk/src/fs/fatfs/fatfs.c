@@ -428,7 +428,7 @@ static int fatfs_stat(mount_point_t *point, const char *path, struct stat *buf)
         buf->st_spare4[1] = 0;
         return 0;
     } else {
-        FILINFO info;
+        FILINFO info = {0};
 
         res = f_stat(path, &info);
         if (res == FR_OK) {
