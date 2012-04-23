@@ -43,7 +43,7 @@
 #include <sys/cdefs.h>
 #include <sys/signal.h>
 #include <sys/termios.h>
-#include <limits.h>
+#include "syslimits.h"
 #include "kern/kern.h"
 #include "kern/ipc.h"
 

@@ -66,8 +66,10 @@ typedef void DIR;
 
 extern sys_do_t sys_do_table[];
 
+const char *last_syscall = NULL;
+
 //#define debug        kcomplain
-#define debug(...)
+#define debug(...)     last_syscall = __func__
 
 #else
 
@@ -87,7 +89,7 @@ typedef struct {
     void *arg7;
     void *arg8;
     void *arg9;
-} sysdo_args_t;
+} sys_do_args_t;
 
 static sys_do_t sys_do_table[1];
 
@@ -527,7 +529,8 @@ int _open_r(struct _reent *reent, const char *path, int oflag, int mode)
     int ret;
     int syscall = SYS_CALL_OPEN;
 
-    debug("%s %s by %d\n", __func__, path, getpid());
+    //debug("%s %s by %d\n", __func__, path, getpid());
+    debug("%s\n", __func__);
     if (in_kernel()) {
         ret = (sys_do_table[syscall])(path, oflag, mode);
     } else {
@@ -954,7 +957,7 @@ int select(int maxfdp1, fd_set *readset, fd_set *writeset, fd_set *exceptset, st
 {
     int ret;
     int syscall = SYS_CALL_SELECT;
-    sysdo_args_t args = {(void *)maxfdp1, readset, writeset, exceptset, timeout};
+    sys_do_args_t args = {(void *)maxfdp1, readset, writeset, exceptset, timeout};
 
     debug("%s\n", __func__);
     if (in_kernel()) {
