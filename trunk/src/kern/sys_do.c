@@ -193,7 +193,7 @@ static int do_listen(int s, int backlog)
 /*
  * do_select
  */
-static int do_select(sysdo_args_t *args)
+static int do_select(sys_do_args_t *args)
 {
     return vfs_select(
             (int)args->arg0,

@@ -414,6 +414,30 @@ void mmu_invalidate_dtlb(void)
 }
 
 /*
+ * 无效数据 mva 的指令转换旁路缓冲
+ */
+void mmu_invalidate_dtlb_mva(register uint32_t mva)
+{
+    // Invalidate D TLB single entry (using MVA) MVA format MCR p15,0,Rd,c8,c6,1
+
+    mva &= ~0x1Ful;
+
+    __asm__ __volatile__("mcr p15, 0, %0, c8, c6, 1": :"r"(mva));
+}
+
+/*
+ * 无效指定 mva 的指令转换旁路缓冲
+ */
+void mmu_invalidate_itlb_mva(register uint32_t mva)
+{
+    // Invalidate I TLB single entry (using MVA) MVA format MCR p15,0,Rd,c8,c5,1
+
+    mva &= ~0x1Ful;
+
+    __asm__ __volatile__("mcr p15, 0, %0, c8, c5, 1": :"r"(mva));
+}
+
+/*
  * 获得预取指错误状态
  */
 uint32_t mmu_get_prefetch_fault_status(void)
@@ -461,7 +485,7 @@ uint32_t mmu_get_fault_address(void)
 void mmu_map_section(register uint32_t section_nr,
                      register uint32_t value)
 {
-    register uint32_t *entry = (uint32_t *)MMU_TBL_BASE + section_nr;
+    volatile uint32_t *entry = (volatile uint32_t *)MMU_TBL_BASE + section_nr;
 
     *entry = value;
 }
@@ -471,7 +495,7 @@ void mmu_map_section(register uint32_t section_nr,
  */
 void mmu_unmap_section(register uint32_t section_nr)
 {
-    register uint32_t *entry = (uint32_t *)MMU_TBL_BASE + section_nr;
+    volatile uint32_t *entry = (volatile uint32_t *)MMU_TBL_BASE + section_nr;
 
     *entry = 0;
 }
@@ -482,7 +506,7 @@ void mmu_unmap_section(register uint32_t section_nr)
 uint32_t mmu_map_section_as_page(register uint32_t section_nr,
                                  register uint32_t page_tbl_base)
 {
-    register uint32_t *entry = (uint32_t *)MMU_TBL_BASE + section_nr;
+    volatile uint32_t *entry = (volatile uint32_t *)MMU_TBL_BASE + section_nr;
     register uint32_t  value;
 
     value = (page_tbl_base & (~(PAGE_TBL_SIZE - 1))) |
@@ -502,7 +526,7 @@ void mmu_map_page(register uint32_t page_tbl_base,
                   register uint32_t page_nr,
                   register uint32_t frame_base)
 {
-    register uint32_t *entry = (uint32_t *)page_tbl_base + page_nr;
+    volatile uint32_t *entry = (volatile uint32_t *)page_tbl_base + page_nr;
 
     *entry = (frame_base & (~(VMM_FRAME_SIZE - 1))) |
             (AP_USER_RW << 10) |
@@ -522,10 +546,10 @@ void mmu_map_region(register uint32_t virtual_base,
                     register uint32_t size,
                     register uint32_t attr)
 {
-    register uint32_t *entry;
+    volatile uint32_t *entry;
     register int       i;
 
-    entry  = (uint32_t *)MMU_TBL_BASE + (virtual_base >> SECTION_OFFSET);
+    entry  = (volatile uint32_t *)MMU_TBL_BASE + (virtual_base >> SECTION_OFFSET);
 
     size   = (size + SECTION_SIZE - 1) / SECTION_SIZE;
 

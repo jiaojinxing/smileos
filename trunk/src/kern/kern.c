@@ -778,12 +778,12 @@ void task_kill(int32_t tid)
 
         if (task->type == TASK_TYPE_PROCESS) {                          /*  如果任务是进程              */
 
-            printk("kill process %s pid=%d!\r\n", task->name, task->pid);
+            printk("kill process %s pid=%d!\n", task->name, task->pid);
 
             vmm_process_cleanup(task);                                  /*  清理进程的虚拟内存信息      */
 
         } else {                                                        /*  如果任务是内核线程          */
-            printk("kill kthread %s tid=%d!\r\n", task->name, tid);
+            printk("kill kthread %s tid=%d!\n", task->name, tid);
 
             kfree((void *)task->stack_base);                            /*  释放内核线程的栈空间        */
         }

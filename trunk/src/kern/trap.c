@@ -42,6 +42,7 @@
 #include "kern/kern.h"
 #include "kern/mmu.h"
 #include "kern/vmm.h"
+#include "kern/arm.h"
 
 /*
  * FIQ 快速中断处理程序
@@ -68,6 +69,10 @@ void undf_c_handler(uint32_t lr, uint32_t spsr)
     printk("%s, current tid = %d name=%s\n", __func__, current->tid, current->name);
     printk("lr   = 0x%x\n", lr);
     printk("spsr = 0x%x\n", spsr);
+    if (spsr & ARM_MODE_MASK == ARM_SVC_MODE) {                         /*  如果是在 SVC 模式挂掉       */
+        extern const char *last_syscall;
+        printk("last system call = %s\n", last_syscall);
+    }
 
     task_kill(current->tid);                                            /*  杀死当前任务                */
 
@@ -86,6 +91,10 @@ void pabt_c_handler(uint32_t lr, uint32_t spsr)
     printk("fault status  = 0x%x\n", mmu_get_prefetch_fault_status());
     printk("lr   = 0x%x\n", lr);
     printk("spsr = 0x%x\n", spsr);
+    if (spsr & ARM_MODE_MASK == ARM_SVC_MODE) {                         /*  如果是在 SVC 模式挂掉       */
+        extern const char *last_syscall;
+        printk("last system call = %s\n", last_syscall);
+    }
 
     task_kill(current->tid);                                            /*  杀死当前任务                */
 
@@ -109,28 +118,34 @@ void dabt_c_handler(uint32_t lr, uint32_t spsr)
         printk("fault status  = 0x%x\n", mmu_get_data_fault_status());
         printk("lr   = 0x%x\n", lr);
         printk("spsr = 0x%x\n", spsr);
+        if (spsr & ARM_MODE_MASK == ARM_SVC_MODE) {                     /*  如果是在 SVC 模式挂掉       */
+            extern const char *last_syscall;
+            printk("last system call = %s\n", last_syscall);
+        }
         task_kill(current->tid);                                        /*  杀死当前任务                */
         break;
 
     case 5:     /* Translation */
     case 7:
-        /*
-         * qemu-system-arm.exe 的 bug..., 真实硬件使用 #if 1, qemu 使用 #if 0
-         */
-#if 0
-        mva = mmu_get_fault_address();
-#warning "you can't use qemu-system-arm.exe"
-#else
-        mva = mmu_get_fault_address() + PROCESS_SPACE_SIZE * current->pid;
-#warning "you must use qemu-system-arm.exe"
-#endif
+        if (current->pid != 0) {
+            /*
+             * qemu-system-arm.exe 的 bug..., 真实硬件使用 #if 1, qemu 使用 #if 0
+             */
+    #if 0
+            mva = mmu_get_fault_address();
+    #warning "you can't use qemu-system-arm.exe"
+    #else
+            mva = mmu_get_fault_address() + PROCESS_SPACE_SIZE * current->pid;
+    #warning "you must use qemu-system-arm.exe"
+    #endif
 
-        if (    mva >= PROCESS_SPACE_SIZE *  current->pid               /*  判断出错地址是否在当前进程  */
-             && mva <  PROCESS_SPACE_SIZE * (current->pid + 1)) {       /*  的虚拟地址空间范围内        */
-            if (vmm_page_map(current, mva) == 0) {                      /*  页面映射                    */
-                current->dabt_cnt++;                                    /*  数据访问中止次数加一        */
-                interrupt_exit_no_sched();                              /*  退出中断, 但不要调度        */
-                return;
+            if (    mva >= PROCESS_SPACE_SIZE *  current->pid           /*  判断出错地址是否在当前进程  */
+                 && mva <  PROCESS_SPACE_SIZE * (current->pid + 1)) {   /*  的虚拟地址空间范围内        */
+                if (vmm_page_map(current, mva) == 0) {                  /*  页面映射                    */
+                    current->dabt_cnt++;                                /*  数据访问中止次数加一        */
+                    interrupt_exit_no_sched();                          /*  退出中断, 但不要调度        */
+                    return;
+                }
             }
         }
         printk("%s, current tid = %d name=%s\n", __func__, current->tid, current->name);
@@ -138,6 +153,10 @@ void dabt_c_handler(uint32_t lr, uint32_t spsr)
         printk("fault status  = 0x%x\n", mmu_get_data_fault_status());
         printk("lr   = 0x%x\n", lr);
         printk("spsr = 0x%x\n", spsr);
+        if (spsr & ARM_MODE_MASK == ARM_SVC_MODE) {                     /*  如果是在 SVC 模式挂掉       */
+            extern const char *last_syscall;
+            printk("last system call = %s\n", last_syscall);
+        }
         task_kill(current->tid);                                        /*  杀死当前任务                */
         break;
 
@@ -148,6 +167,10 @@ void dabt_c_handler(uint32_t lr, uint32_t spsr)
         printk("fault status  = 0x%x\n", mmu_get_data_fault_status());
         printk("lr   = 0x%x\n", lr);
         printk("spsr = 0x%x\n", spsr);
+        if (spsr & ARM_MODE_MASK == ARM_SVC_MODE) {                     /*  如果是在 SVC 模式挂掉       */
+            extern const char *last_syscall;
+            printk("last system call = %s\n", last_syscall);
+        }
         task_kill(current->tid);                                        /*  杀死当前任务                */
         break;
 
@@ -158,6 +181,10 @@ void dabt_c_handler(uint32_t lr, uint32_t spsr)
         printk("fault status  = 0x%x\n", mmu_get_data_fault_status());
         printk("lr   = 0x%x\n", lr);
         printk("spsr = 0x%x\n", spsr);
+        if (spsr & ARM_MODE_MASK == ARM_SVC_MODE) {                     /*  如果是在 SVC 模式挂掉       */
+            extern const char *last_syscall;
+            printk("last system call = %s\n", last_syscall);
+        }
         task_kill(current->tid);                                        /*  杀死当前任务                */
         break;
 
@@ -173,6 +200,10 @@ void dabt_c_handler(uint32_t lr, uint32_t spsr)
         printk("fault status  = 0x%x\n", mmu_get_data_fault_status());
         printk("lr   = 0x%x\n", lr);
         printk("spsr = 0x%x\n", spsr);
+        if (spsr & ARM_MODE_MASK == ARM_SVC_MODE) {                     /*  如果是在 SVC 模式挂掉       */
+            extern const char *last_syscall;
+            printk("last system call = %s\n", last_syscall);
+        }
         task_kill(current->tid);                                        /*  杀死当前任务                */
         break;
 

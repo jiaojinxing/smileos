@@ -430,6 +430,9 @@ static int fatfs_stat(mount_point_t *point, const char *path, struct stat *buf)
     } else {
         FILINFO info = {0};
 
+        info.lfname = NULL;                                             /*  必须要这样做, 否则出错      */
+        info.lfsize = 0;
+
         res = f_stat(path, &info);
         if (res == FR_OK) {
             buf->st_dev     = (dev_t)point->dev->devno;

@@ -222,6 +222,16 @@ void mmu_invalidate_itlb(void);
 void mmu_invalidate_dtlb(void);
 
 /*
+ * 无效数据 mva 的指令转换旁路缓冲
+ */
+void mmu_invalidate_dtlb_mva(register uint32_t mva);
+
+/*
+ * 无效指定 mva 的指令转换旁路缓冲
+ */
+void mmu_invalidate_itlb_mva(register uint32_t mva);
+
+/*
  * 获得预取指错误状态
  */
 uint32_t mmu_get_prefetch_fault_status(void);

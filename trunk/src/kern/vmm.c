@@ -214,6 +214,7 @@ int vmm_page_map(task_t *task, uint32_t va)
 {
     vmm_frame_t *frame;
     int          flag = FALSE;
+    int          i;
 
     if (   va >= PROCESS_SPACE_SIZE *  task->pid                        /*  判断虚拟地址是否在进程      */
         && va <  PROCESS_SPACE_SIZE * (task->pid + 1)) {                /*  的虚拟地址空间范围内        */
@@ -237,6 +238,14 @@ int vmm_page_map(task_t *task, uint32_t va)
         if (frame != NULL) {                                            /*  计算虚拟地址在页表里的页号  */
             uint32_t page_nr = (va & (SECTION_SIZE - 1)) >> PAGE_OFFSET;
             mmu_map_page(tbl, page_nr, vmm_frame_addr(frame));          /*  页面映射                    */
+
+            /*
+             * 无效页面的 tlb
+             */
+            for (i = 0, va &= ~(PAGE_SIZE - 1); i < PAGE_SIZE / 32; i++, va += 32) {
+                mmu_invalidate_dtlb_mva(va);
+                mmu_invalidate_itlb_mva(va);
+            }
             return 0;
         } else {
             /*
@@ -279,6 +288,14 @@ int vmm_process_cleanup(task_t *task)
         }                                                               /*  取消映射段                  */
         mmu_unmap_section(task->pid * PROCESS_SPACE_SIZE / SECTION_SIZE + i);
         task->mmu_backup[i] = 0;
+    }
+
+    /*
+     * 无效页面的 tlb
+     */
+    for (i = 0; i < PROCESS_SPACE_SIZE / 32; i++) {
+        mmu_invalidate_dtlb_mva(task->pid * PROCESS_SPACE_SIZE + i * 32);
+        mmu_invalidate_itlb_mva(task->pid * PROCESS_SPACE_SIZE + i * 32);
     }
 
     return 0;
