@@ -225,7 +225,7 @@ static ssize_t fatfs_write(mount_point_t *point, file_t *file, const void *buf, 
         return -1;
     }
 
-    if (file->flag & O_APPEND) {
+    if (file->flag & O_APPEND && f_tell(&priv->file) < f_size(&priv->file)) {
         f_lseek(&priv->file, f_size(&priv->file));
     }
 
@@ -338,23 +338,14 @@ static int fatfs_ftruncate(mount_point_t *point, file_t *file, off_t len)
         return -1;
     }
 
-    if (len == 0) {
-        res = f_truncate(&priv->file);
-        if (res == FR_OK) {
-            return 0;
-        } else {
-            fatfs_result_to_errno(res);
-            return -1;
-        }
-    } else {
-        if (len > priv->file.fsize) {
-            DWORD cur = f_tell(&priv->file);
+    f_lseek(&priv->file, len);
 
-            f_lseek(&priv->file, len);
-
-            f_lseek(&priv->file, cur);
-        }
+    res = f_truncate(&priv->file);
+    if (res == FR_OK) {
         return 0;
+    } else {
+        fatfs_result_to_errno(res);
+        return -1;
     }
 }
 
