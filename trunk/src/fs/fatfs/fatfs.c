@@ -419,7 +419,7 @@ static int fatfs_stat(mount_point_t *point, const char *path, struct stat *buf)
         buf->st_spare4[1] = 0;
         return 0;
     } else {
-        FILINFO info = {0};
+        FILINFO info;
 
         info.lfname = NULL;                                             /*  必须要这样做, 否则出错      */
         info.lfsize = 0;
