@@ -654,6 +654,9 @@ static void kthread_shell(task_t *task)
     open("/dev/ttyS0", O_WRONLY, 0666);
     stderr = fdopen(STDERR_FILENO, "w");
 
+    putenv("PATH=/");
+    putenv("HOME=/");
+
     task->thread(task->arg);                                            /*  进入真正的内核线程函数      */
 
     _exit(0);                                                           /*  退出内核线程                */

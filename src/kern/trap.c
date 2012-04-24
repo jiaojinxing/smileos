@@ -69,7 +69,7 @@ void undf_c_handler(uint32_t lr, uint32_t spsr)
     printk("%s, current tid = %d name=%s\n", __func__, current->tid, current->name);
     printk("lr   = 0x%x\n", lr);
     printk("spsr = 0x%x\n", spsr);
-    if (spsr & ARM_MODE_MASK == ARM_SVC_MODE) {                         /*  如果是在 SVC 模式挂掉       */
+    if ((spsr & ARM_MODE_MASK) == ARM_SVC_MODE) {                       /*  如果是在 SVC 模式挂掉       */
         extern const char *last_syscall;
         printk("last system call = %s\n", last_syscall);
     }
@@ -91,7 +91,7 @@ void pabt_c_handler(uint32_t lr, uint32_t spsr)
     printk("fault status  = 0x%x\n", mmu_get_prefetch_fault_status());
     printk("lr   = 0x%x\n", lr);
     printk("spsr = 0x%x\n", spsr);
-    if (spsr & ARM_MODE_MASK == ARM_SVC_MODE) {                         /*  如果是在 SVC 模式挂掉       */
+    if ((spsr & ARM_MODE_MASK) == ARM_SVC_MODE) {                       /*  如果是在 SVC 模式挂掉       */
         extern const char *last_syscall;
         printk("last system call = %s\n", last_syscall);
     }
@@ -118,7 +118,7 @@ void dabt_c_handler(uint32_t lr, uint32_t spsr)
         printk("fault status  = 0x%x\n", mmu_get_data_fault_status());
         printk("lr   = 0x%x\n", lr);
         printk("spsr = 0x%x\n", spsr);
-        if (spsr & ARM_MODE_MASK == ARM_SVC_MODE) {                     /*  如果是在 SVC 模式挂掉       */
+        if ((spsr & ARM_MODE_MASK) == ARM_SVC_MODE) {                   /*  如果是在 SVC 模式挂掉       */
             extern const char *last_syscall;
             printk("last system call = %s\n", last_syscall);
         }
@@ -153,7 +153,7 @@ void dabt_c_handler(uint32_t lr, uint32_t spsr)
         printk("fault status  = 0x%x\n", mmu_get_data_fault_status());
         printk("lr   = 0x%x\n", lr);
         printk("spsr = 0x%x\n", spsr);
-        if (spsr & ARM_MODE_MASK == ARM_SVC_MODE) {                     /*  如果是在 SVC 模式挂掉       */
+        if ((spsr & ARM_MODE_MASK) == ARM_SVC_MODE) {                   /*  如果是在 SVC 模式挂掉       */
             extern const char *last_syscall;
             printk("last system call = %s\n", last_syscall);
         }
@@ -167,7 +167,7 @@ void dabt_c_handler(uint32_t lr, uint32_t spsr)
         printk("fault status  = 0x%x\n", mmu_get_data_fault_status());
         printk("lr   = 0x%x\n", lr);
         printk("spsr = 0x%x\n", spsr);
-        if (spsr & ARM_MODE_MASK == ARM_SVC_MODE) {                     /*  如果是在 SVC 模式挂掉       */
+        if ((spsr & ARM_MODE_MASK) == ARM_SVC_MODE) {                   /*  如果是在 SVC 模式挂掉       */
             extern const char *last_syscall;
             printk("last system call = %s\n", last_syscall);
         }
@@ -181,7 +181,7 @@ void dabt_c_handler(uint32_t lr, uint32_t spsr)
         printk("fault status  = 0x%x\n", mmu_get_data_fault_status());
         printk("lr   = 0x%x\n", lr);
         printk("spsr = 0x%x\n", spsr);
-        if (spsr & ARM_MODE_MASK == ARM_SVC_MODE) {                     /*  如果是在 SVC 模式挂掉       */
+        if ((spsr & ARM_MODE_MASK) == ARM_SVC_MODE) {                   /*  如果是在 SVC 模式挂掉       */
             extern const char *last_syscall;
             printk("last system call = %s\n", last_syscall);
         }
@@ -200,7 +200,7 @@ void dabt_c_handler(uint32_t lr, uint32_t spsr)
         printk("fault status  = 0x%x\n", mmu_get_data_fault_status());
         printk("lr   = 0x%x\n", lr);
         printk("spsr = 0x%x\n", spsr);
-        if (spsr & ARM_MODE_MASK == ARM_SVC_MODE) {                     /*  如果是在 SVC 模式挂掉       */
+        if ((spsr & ARM_MODE_MASK) == ARM_SVC_MODE) {                   /*  如果是在 SVC 模式挂掉       */
             extern const char *last_syscall;
             printk("last system call = %s\n", last_syscall);
         }

@@ -340,7 +340,7 @@ void libc_init(void)
 /*
  * ÄÚ´æ¿éÄ§Êý
  */
-#define MEM_BLOCK_MAGIC0            0xA71B26E5
+#define MEM_BLOCK_MAGIC0            0x001B2600
 
 /*
  * ÄÚ´æ¿é
