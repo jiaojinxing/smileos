@@ -93,14 +93,13 @@ static void tcpip_init_done(void *arg)
     netio_init();
 }
 
+#include <stdlib.h>
+
 /*
  * 初始化线程
  */
 static void init(void *arg)
 {
-    putenv("PATH=/");
-    putenv("HOME=/");
-
     extern int bsp_drivers_install(void);
     bsp_drivers_install();
 
