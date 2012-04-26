@@ -596,6 +596,9 @@ int32_t process_create(const char *path, uint32_t priority)
      * 刚才拷贝的代码还在 D-Cache, 进程运行时读取 I-Cache 或主存, 它们是不一致的!
      * 所以必须要清除 D-Cache, 清除写缓冲, 还要无效 I-Cache,
      * 无效 D-Cache 可让出 D-Cache, 减少其它进程的 D-Cache 被换出和 D-Cache Miss, 提升运行速度
+     *
+     * ARM 数据访问的基本流程图:
+     * http://www.ibm.com/developerworks/cn/linux/l-skyeye/part3/s3/index.html
      */
     {
         int i;
