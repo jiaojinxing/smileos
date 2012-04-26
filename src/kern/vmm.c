@@ -238,14 +238,6 @@ int vmm_page_map(task_t *task, uint32_t va)
         if (frame != NULL) {                                            /*  计算虚拟地址在页表里的页号  */
             uint32_t page_nr = (va & (SECTION_SIZE - 1)) >> PAGE_OFFSET;
             mmu_map_page(tbl, page_nr, vmm_frame_addr(frame));          /*  页面映射                    */
-
-            /*
-             * 无效页面的 tlb
-             */
-            for (i = 0, va &= ~(PAGE_SIZE - 1); i < PAGE_SIZE / 32; i++, va += 32) {
-                mmu_invalidate_dtlb_mva(va);
-                mmu_invalidate_itlb_mva(va);
-            }
             return 0;
         } else {
             /*
