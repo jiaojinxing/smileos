@@ -145,6 +145,7 @@ static void vmm_page_table_free(uint32_t page_tbl_base)
 struct vmm_frame;
 typedef struct vmm_frame vmm_frame_t;
 struct vmm_frame {
+    uint32_t          va;                                               /*  映射到的页面的虚拟基址      */
     struct vmm_frame *prev;                                             /*  前趋                        */
     struct vmm_frame *next;                                             /*  后趋                        */
     struct vmm_frame *process_next;                                     /*  进程后趋                    */
@@ -214,7 +215,6 @@ int vmm_page_map(task_t *task, uint32_t va)
 {
     vmm_frame_t *frame;
     int          flag = FALSE;
-    int          i;
 
     if (   va >= PROCESS_SPACE_SIZE *  task->pid                        /*  判断虚拟地址是否在进程      */
         && va <  PROCESS_SPACE_SIZE * (task->pid + 1)) {                /*  的虚拟地址空间范围内        */
@@ -237,6 +237,7 @@ int vmm_page_map(task_t *task, uint32_t va)
         frame = vmm_frame_alloc(task);                                  /*  分配一个空闲的页框          */
         if (frame != NULL) {                                            /*  计算虚拟地址在页表里的页号  */
             uint32_t page_nr = (va & (SECTION_SIZE - 1)) >> PAGE_OFFSET;
+            frame->va = va & (PAGE_SIZE - 1);
             mmu_map_page(tbl, page_nr, vmm_frame_addr(frame));          /*  页面映射                    */
             return 0;
         } else {
@@ -263,13 +264,22 @@ int vmm_page_map(task_t *task, uint32_t va)
 int vmm_process_cleanup(task_t *task)
 {
     int          i;
-    vmm_frame_t *next;
+    vmm_frame_t *frame;
     uint32_t     tbl;
+    uint32_t     va;
 
-    while (task->frame_list != NULL) {                                  /*  释放进程占用的页框          */
-        next = task->frame_list->process_next;
-        vmm_frame_free(task->frame_list);
-        task->frame_list = next;
+    while ((frame = task->frame_list) != NULL) {                        /*  释放进程占用的页框          */
+        task->frame_list = frame->process_next;
+
+        /*
+         * 无效页面的 tlb
+         */
+        for (i = 0, va = frame->va; i < PAGE_SIZE / 32; i++, va += 32) {
+            mmu_invalidate_dtlb_mva(va);
+            mmu_invalidate_itlb_mva(va);
+        }
+
+        vmm_frame_free(frame);                                          /*  释放页框                    */
     }
     task->frame_nr = 0;
 
@@ -281,15 +291,6 @@ int vmm_process_cleanup(task_t *task)
         mmu_unmap_section(task->pid * PROCESS_SPACE_SIZE / SECTION_SIZE + i);
         task->mmu_backup[i] = 0;
     }
-
-    /*
-     * 无效页面的 tlb
-     */
-    for (i = 0; i < PROCESS_SPACE_SIZE / 32; i++) {
-        mmu_invalidate_dtlb_mva(task->pid * PROCESS_SPACE_SIZE + i * 32);
-        mmu_invalidate_itlb_mva(task->pid * PROCESS_SPACE_SIZE + i * 32);
-    }
-
     return 0;
 }
 
