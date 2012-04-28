@@ -704,7 +704,7 @@ int32_t kthread_create(const char *name, void (*func)(void *), void *arg, uint32
 
     memset((char *)task->stack_base, KTHREAD_STACK_MAGIC0, stack_size); /*  初始化栈空间                */
 
-    task->pid          = current->pid;                                  /*  进程 ID 为当前任务的进程 ID */
+    task->pid          = 0;                                             /*  进程 ID 为 0                */
     task->tid          = tid;                                           /*  任务 ID                     */
     task->state        = TASK_RUNNING;
     task->counter      = priority;

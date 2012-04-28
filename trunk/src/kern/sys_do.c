@@ -202,6 +202,75 @@ static int do_select(sys_do_args_t *args)
             args->arg3,
             args->arg4);
 }
+
+/*
+ * do_recv
+ */
+static int do_recv(int s, void *mem, size_t len, int flags)
+{
+    int sock_fd = socket_priv_fd(s);
+    if (sock_fd >= 0) {
+        return lwip_recv(sock_fd, mem, len, flags);
+    } else {
+        return -1;
+    }
+}
+
+/*
+ * do_recvfrom
+ */
+static int do_recvfrom(sys_do_args_t *args)
+{
+    int sock_fd = socket_priv_fd((int)args->arg0);
+    if (sock_fd >= 0) {
+        return lwip_recvfrom(
+                sock_fd,
+                args->arg1,
+                (size_t)args->arg2,
+                (int)args->arg3,
+                (struct sockaddr *)args->arg4,
+                (socklen_t *)args->arg5);
+    } else {
+        return -1;
+    }
+}
+
+/*
+ * do_sendto
+ */
+static int do_sendto(sys_do_args_t *args)
+{
+    int sock_fd = socket_priv_fd((int)args->arg0);
+    if (sock_fd >= 0) {
+        return lwip_sendto(
+                sock_fd,
+                args->arg1,
+                (size_t)args->arg2,
+                (int)args->arg3,
+                (const struct sockaddr *)args->arg4,
+                (socklen_t)args->arg5);
+    } else {
+        return -1;
+    }
+}
+
+/*
+ * do_getsockopt
+ */
+static int do_getsockopt(sys_do_args_t *args)
+{
+    int sock_fd = socket_priv_fd((int)args->arg0);
+    if (sock_fd >= 0) {
+        return lwip_getsockopt(
+                sock_fd,
+                (int)args->arg1,
+                (int)args->arg2,
+                args->arg3,
+                (socklen_t *)args->arg4);
+    } else {
+        return -1;
+    }
+}
 /*********************************************************************************************************
   系统调用处理表
 *********************************************************************************************************/
@@ -304,11 +373,19 @@ sys_do_t sys_do_table[] = {
 #define SYS_CALL_ACCEPT     62
 #define SYS_CALL_CONNECT    63
 #define SYS_CALL_LISTEN     64
+#define SYS_CALL_RECV       65
+#define SYS_CALL_RECVFROM   66
+#define SYS_CALL_SENDTO     67
+#define SYS_CALL_GETSOCKOPT 68
         (sys_do_t)do_socket,
         (sys_do_t)do_bind,
         (sys_do_t)do_accept,
         (sys_do_t)do_connect,
         (sys_do_t)do_listen,
+        (sys_do_t)do_recv,
+        (sys_do_t)do_recvfrom,
+        (sys_do_t)do_sendto,
+        (sys_do_t)do_getsockopt,
 };
 /*********************************************************************************************************
   END FILE
