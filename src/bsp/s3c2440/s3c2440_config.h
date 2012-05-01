@@ -70,7 +70,7 @@
 
 #define KERN_LOAD_ADDR      (KERN_MEM_BASE)                             /*  内核加载地址                */
 
-#define VECTOR_V_ADDR       (0xFFFFF0000)                               /*  向量虚拟地址                */
+#define VECTOR_V_ADDR       (0xFFFF0000)                                /*  向量虚拟地址                */
 #define VECTOR_P_ADDR       (INT_MEM_BASE + 0xF0000)                    /*  向量物理地址                */
 
 #define IRQ_STACK_P_BASE    (VECTOR_P_ADDR)                             /*  IRQ 堆栈物理基址            */
