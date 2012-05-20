@@ -10,33 +10,29 @@
 #include <unistd.h>
 
 int
-_DEFUN(creat, (path, mode),
-       const char *path,
-       mode_t mode)
+creat(const char *path,
+      mode_t mode)
 {
-  return open (path, O_WRONLY | O_CREAT | O_TRUNC, mode);
+  return open(path, O_WRONLY | O_CREAT | O_TRUNC, mode);
 }
 
 int
-_DEFUN(mkdir, (path, mode),
-       const char *path,
-       mode_t mode)
+mkdir(const char *path,
+      mode_t mode)
 {
-    return _mkdir_r (_REENT, path, mode);
+    return _mkdir_r(_REENT, path, mode);
 }
 
 int
-_DEFUN(rmdir, (path),
-       const char *path)
+rmdir(const char *path)
 {
     extern int _rmdir_r(struct _reent *reent, const char *path);
 
-    return _rmdir_r (_REENT, path);
+    return _rmdir_r(_REENT, path);
 }
 
 int
-_DEFUN(isatty, (fd),
-     int fd)
+isatty(int fd)
 {
-    return _isatty_r (_REENT, fd);
+    return _isatty_r(_REENT, fd);
 }
