@@ -42,6 +42,7 @@
 #include "kern/kern.h"
 #include <errno.h>
 #include "drv/tty.h"
+#include <fcntl.h>
 
 /*
  * Ë½ÓÐÐÅÏ¢
@@ -49,6 +50,7 @@
 typedef struct {
     VFS_SELECT_MEMBERS
     struct tty      tty;
+    int             mode;
 } privinfo_t;
 
 /*
@@ -205,6 +207,29 @@ static int ttyS0_scan(void *ctx, file_t *file, int flags)
     return ret;
 }
 
+static int ttyS0_fcntl(void *ctx, file_t *file, int cmd, int arg)
+{
+    privinfo_t *priv = ctx;
+
+    if (priv == NULL) {
+        seterrno(EINVAL);
+        return -1;
+    }
+
+    switch (cmd) {
+    case F_GETFL:
+        return priv->mode;
+
+    case F_SETFL:
+        priv->mode = arg;
+        return 0;
+
+    default:
+        seterrno(EINVAL);
+        return -1;
+    }
+}
+
 #include "selectdrv.h"
 
 /*
@@ -219,6 +244,7 @@ static driver_t ttyS0_drv = {
         .ioctl    = ttyS0_ioctl,
         .close    = ttyS0_close,
         .scan     = ttyS0_scan,
+        .fcntl    = ttyS0_fcntl,
         .select   = select_select,
         .unselect = select_unselect,
 };
@@ -235,6 +261,7 @@ int ttyS0_init(void)
     priv = kmalloc(sizeof(privinfo_t));
     if (priv != NULL) {
         select_init(priv);
+        priv->mode = O_NONBLOCK;
         if (device_create("/dev/ttyS0", "ttyS0", priv) < 0) {
             kfree(priv);
             return -1;

@@ -54,6 +54,7 @@
 #include <sys/types.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdarg.h>
 
 struct stat;
 struct tms;
@@ -94,10 +95,36 @@ typedef struct {
 static sys_do_t sys_do_table[1];
 
 #define in_kernel()     0
+
 #define debug(...)
 
 #include <stdio.h>
 #include <unistd.h>
+#include <pthread.h>
+
+#define fork            syscall_fork
+#define waitpid         syscall_waitpid
+#define system          syscall_system
+#define nanosleep       syscall_nanosleep
+#define usleep          syscall_usleep
+#define sleep           syscall_sleep
+#define sigprocmask     syscall_sigmask
+#define sigwait         syscall_sigwait
+#define select          syscall_select
+#define pselect         syscall_pselect
+#define poll            syscall_poll
+#define connect         syscall_connect
+#define accept          syscall_accept
+#define read            syscall_read
+#define write           syscall_write
+#define readv           syscall_readv
+#define writev          syscall_writev
+#define recv            syscall_recv
+#define send            syscall_send
+#define recvfrom        syscall_recvfrom
+#define sendto          syscall_sendto
+#define pread           syscall_pread
+#define pwrite          syscall_pwrite
 
 #endif
 
@@ -164,6 +191,11 @@ static sys_do_t sys_do_table[1];
 #define SYS_CALL_ACCEPT     62
 #define SYS_CALL_CONNECT    63
 #define SYS_CALL_LISTEN     64
+#define SYS_CALL_RECV       65
+#define SYS_CALL_RECVFROM   66
+#define SYS_CALL_SENDTO     67
+#define SYS_CALL_GETSOCKOPT 68
+#define SYS_CALL_SEND       69
 #define SYS_CALL_NR         100                                         /*  系统调用数                  */
 
 /*
@@ -241,6 +273,13 @@ unsigned sleep(unsigned int seconds)
     sleep_tick(TICK_PER_SECOND * seconds);
     return 0;
 }
+#ifndef SMILEOS_KERNEL
+#undef sleep
+unsigned sleep(unsigned int seconds)
+{
+    return __pthread_sleep(seconds);
+}
+#endif
 
 /*
  * usleep
@@ -251,6 +290,13 @@ int usleep(useconds_t useconds)
     sleep_tick(TICK_PER_SECOND * useconds / 1000000);
     return 0;
 }
+#ifndef SMILEOS_KERNEL
+#undef usleep
+int usleep(useconds_t useconds)
+{
+    return __pthread_usleep(useconds);
+}
+#endif
 
 /*
  * yield
@@ -340,12 +386,17 @@ int ioctl(int fd, int cmd, void *arg)
 }
 
 /*
- * _fcntl_r
+ * fcntl
  */
-int _fcntl_r(struct _reent *reent, int fd, int cmd, int arg)
+int fcntl(int fd, int cmd, ...)
 {
     int ret;
     int syscall = SYS_CALL_FCNTL;
+    int arg;
+    va_list va;
+
+    va_start(va, cmd);
+    arg = va_arg(va, int);
 
     debug("%s\n", __func__);
     if (in_kernel()) {
@@ -550,6 +601,14 @@ int _open_r(struct _reent *reent, const char *path, int oflag, int mode)
  * _read_r
  */
 _ssize_t _read_r(struct _reent *reent, int fd, void *buf, size_t nbytes)
+#ifndef SMILEOS_KERNEL
+{
+    debug("%s\n", __func__);
+    return __pthread_read(fd, buf, nbytes);
+}
+
+_ssize_t read(int fd, void *buf, size_t nbytes)
+#endif
 {
     _ssize_t ret;
     int syscall = SYS_CALL_READ;
@@ -574,6 +633,19 @@ _ssize_t _read_r(struct _reent *reent, int fd, void *buf, size_t nbytes)
  * _write_r
  */
 _ssize_t _write_r(struct _reent *reent, int fd, const void *buf, size_t nbytes)
+#ifndef SMILEOS_KERNEL
+{
+    debug("%s\n", __func__);
+    if (STDERR_FILENO != fd) {
+        return __pthread_write(fd, buf, nbytes);
+    } else {
+        _ssize_t syscall_write(int fd, const void *buf, size_t nbytes);
+        return syscall_write(fd, buf, nbytes);
+    }
+}
+
+_ssize_t write(int fd, const void *buf, size_t nbytes)
+#endif
 {
     _ssize_t ret;
     int syscall = SYS_CALL_WRITE;
@@ -957,7 +1029,7 @@ int select(int maxfdp1, fd_set *readset, fd_set *writeset, fd_set *exceptset, st
 {
     int ret;
     int syscall = SYS_CALL_SELECT;
-    sys_do_args_t args = {(void *)maxfdp1, readset, writeset, exceptset, timeout};
+    sys_do_args_t args = {(void *)maxfdp1, (void *)readset, (void *)writeset, (void *)exceptset, (void *)timeout};
 
     debug("%s\n", __func__);
     if (in_kernel()) {
@@ -972,6 +1044,14 @@ int select(int maxfdp1, fd_set *readset, fd_set *writeset, fd_set *exceptset, st
     }
     return ret;
 }
+#ifndef SMILEOS_KERNEL
+#undef select
+int select(int maxfdp1, fd_set *readset, fd_set *writeset, fd_set *exceptset, struct timeval *timeout)
+{
+    debug("%s\n", __func__);
+    return __pthread_select(maxfdp1, readset, writeset, exceptset, timeout);
+}
+#endif
 
 #ifndef SMILEOS_KERNEL
 
@@ -1048,6 +1128,14 @@ int accept(int s, struct sockaddr *addr, socklen_t *addrlen)
     }
     return ret;
 }
+#ifndef SMILEOS_KERNEL
+#undef accept
+int accept(int s, struct sockaddr *addr, socklen_t *addrlen)
+{
+    debug("%s\n", __func__);
+    return __pthread_accept(s, addr, addrlen);
+}
+#endif
 
 /*
  * connect
@@ -1072,6 +1160,14 @@ int connect(int s, const struct sockaddr *name, socklen_t namelen)
     }
     return ret;
 }
+#ifndef SMILEOS_KERNEL
+#undef connect
+int connect(int s, const struct sockaddr *name, socklen_t namelen)
+{
+    debug("%s\n", __func__);
+    return __pthread_connect(s, (struct sockaddr *)name, namelen);
+}
+#endif
 
 /*
  * listen
@@ -1095,6 +1191,147 @@ int listen(int s, int backlog)
     }
     return ret;
 }
+
+int recv(int s, void *mem, size_t len, int flags)
+{
+    int ret;
+    int syscall = SYS_CALL_RECV;
+
+    debug("%s\n", __func__);
+    if (in_kernel()) {
+        ret = (sys_do_table[syscall])(s, mem, len, flags);
+    } else {
+        __asm__ __volatile__("mov    r0,  %0": :"r"(s));
+        __asm__ __volatile__("mov    r1,  %0": :"r"(mem));
+        __asm__ __volatile__("mov    r2,  %0": :"r"(len));
+        __asm__ __volatile__("mov    r3,  %0": :"r"(flags));
+        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
+        __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
+        __asm__ __volatile__("swi    0");
+        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
+        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
+    }
+    return ret;
+}
+#ifndef SMILEOS_KERNEL
+#undef recv
+int recv(int s, void *mem, size_t len, int flags)
+{
+    debug("%s\n", __func__);
+    return __pthread_recv(s, mem, len, flags);
+}
+#endif
+
+int recvfrom(int s, void *mem, size_t len, int flags,
+      struct sockaddr *from, socklen_t *fromlen)
+{
+    int ret;
+    int syscall = SYS_CALL_RECVFROM;
+    sys_do_args_t args = {(void *)s, (void *)mem, (void *)len, (void *)flags, (void *)from, (void *)fromlen};
+
+    debug("%s\n", __func__);
+    if (in_kernel()) {
+        ret = (sys_do_table[syscall])(&args);
+    } else {
+        __asm__ __volatile__("mov    r0,  %0": :"r"(&args));
+        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
+        __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
+        __asm__ __volatile__("swi    0");
+        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
+        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
+    }
+    return ret;
+}
+#ifndef SMILEOS_KERNEL
+#undef recvfrom
+int recvfrom(int s, void *mem, size_t len, int flags,
+      struct sockaddr *from, socklen_t *fromlen)
+{
+    debug("%s\n", __func__);
+    return __pthread_recvfrom(s, mem, len, flags, from, fromlen);
+}
+#endif
+
+int sendto(int s, const void *dataptr, size_t size, int flags,
+    const struct sockaddr *to, socklen_t tolen)
+{
+    int ret;
+    int syscall = SYS_CALL_SENDTO;
+    sys_do_args_t args = {(void *)s, (void *)dataptr, (void *)size, (void *)flags, (void *)to, (void *)tolen};
+
+    debug("%s\n", __func__);
+    if (in_kernel()) {
+        ret = (sys_do_table[syscall])(&args);
+    } else {
+        __asm__ __volatile__("mov    r0,  %0": :"r"(&args));
+        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
+        __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
+        __asm__ __volatile__("swi    0");
+        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
+        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
+    }
+    return ret;
+}
+#ifndef SMILEOS_KERNEL
+#undef sendto
+int sendto(int s, const void *dataptr, size_t size, int flags,
+    const struct sockaddr *to, socklen_t tolen)
+{
+    debug("%s\n", __func__);
+    return __pthread_sendto(s, dataptr, size, flags, to, tolen);
+}
+#endif
+
+int getsockopt(int s, int level, int optname, void *optval, socklen_t *optlen)
+{
+    int ret;
+    int syscall = SYS_CALL_GETSOCKOPT;
+    sys_do_args_t args = {(void *)s, (void *)level, (void *)optname, (void *)optval, (void *)optlen};
+
+    debug("%s\n", __func__);
+    if (in_kernel()) {
+        ret = (sys_do_table[syscall])(&args);
+    } else {
+        __asm__ __volatile__("mov    r0,  %0": :"r"(&args));
+        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
+        __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
+        __asm__ __volatile__("swi    0");
+        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
+        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
+    }
+    return ret;
+}
+
+int send(int s, const void *dataptr, size_t size, int flags)
+{
+    int ret;
+    int syscall = SYS_CALL_SEND;
+
+    debug("%s\n", __func__);
+    if (in_kernel()) {
+        ret = (sys_do_table[syscall])(s, dataptr, size, flags);
+    } else {
+        __asm__ __volatile__("mov    r0,  %0": :"r"(s));
+        __asm__ __volatile__("mov    r1,  %0": :"r"(dataptr));
+        __asm__ __volatile__("mov    r2,  %0": :"r"(size));
+        __asm__ __volatile__("mov    r3,  %0": :"r"(flags));
+        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
+        __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
+        __asm__ __volatile__("swi    0");
+        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
+        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
+    }
+    return ret;
+}
+#ifndef SMILEOS_KERNEL
+#undef send
+int send(int s, const void *dataptr, size_t size, int flags)
+{
+    debug("%s\n", __func__);
+    return __pthread_send(s, dataptr, size, flags);
+}
+#endif
+
 #endif
 /*********************************************************************************************************
   END FILE
