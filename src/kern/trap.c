@@ -50,7 +50,7 @@
 void fiq_c_handler(void)
 {
     /*
-     * FIQ 快速中断并不是由当前任务引起的异常, 所以只能重启 SmileOS 了:-)
+     * FIQ 快速中断并不是由当前任务引起的异常, 所以只能重启 SmileOS 了:-(
      */
     kcomplain("%s, current tid = %d name=%s\n", __func__, current->tid, current->name);
     kcomplain("reboot SmileOS...\n");
@@ -69,7 +69,7 @@ void undf_c_handler(uint32_t lr, uint32_t spsr)
     printk("%s, current tid = %d name=%s\n", __func__, current->tid, current->name);
     printk("lr   = 0x%x\n", lr);
     printk("spsr = 0x%x\n", spsr);
-    if ((spsr & ARM_MODE_MASK) == ARM_SVC_MODE) {                       /*  如果是在 SVC 模式挂掉       */
+    if ((spsr & ARM_MODE_MASK) == ARM_SVC_MODE && current->pid == 0) {  /*  如果是在 SVC 模式挂掉       */
         extern const char *last_syscall;
         printk("last system call = %s\n", last_syscall);
     }
@@ -91,7 +91,7 @@ void pabt_c_handler(uint32_t lr, uint32_t spsr)
     printk("fault status  = 0x%x\n", mmu_get_prefetch_fault_status());
     printk("lr   = 0x%x\n", lr);
     printk("spsr = 0x%x\n", spsr);
-    if ((spsr & ARM_MODE_MASK) == ARM_SVC_MODE) {                       /*  如果是在 SVC 模式挂掉       */
+    if ((spsr & ARM_MODE_MASK) == ARM_SVC_MODE && current->pid == 0) {  /*  如果是在 SVC 模式挂掉       */
         extern const char *last_syscall;
         printk("last system call = %s\n", last_syscall);
     }
@@ -118,7 +118,7 @@ void dabt_c_handler(uint32_t lr, uint32_t spsr)
         printk("fault status  = 0x%x\n", mmu_get_data_fault_status());
         printk("lr   = 0x%x\n", lr);
         printk("spsr = 0x%x\n", spsr);
-        if ((spsr & ARM_MODE_MASK) == ARM_SVC_MODE) {                   /*  如果是在 SVC 模式挂掉       */
+        if ((spsr & ARM_MODE_MASK) == ARM_SVC_MODE && current->pid == 0) {  /*  如果是在 SVC 模式挂掉   */
             extern const char *last_syscall;
             printk("last system call = %s\n", last_syscall);
         }
@@ -147,13 +147,29 @@ void dabt_c_handler(uint32_t lr, uint32_t spsr)
                     return;
                 }
             }
+        } else {
+            int32_t pid;
+
+            mva = mmu_get_fault_address();                              /*  必须就是 MVA                */
+
+            pid = mva / PROCESS_SPACE_SIZE;
+            if (pid < PROCESS_NR) {
+                task_t *task = &tasks[pid];
+                if (task->state != TASK_UNALLOCATE) {
+                    if (vmm_page_map(task, mva) == 0) {                 /*  页面映射                    */
+                        task->dabt_cnt++;                               /*  数据访问中止次数加一        */
+                        interrupt_exit_no_sched();                      /*  退出中断, 但不要调度        */
+                        return;
+                    }
+                }
+            }
         }
         printk("%s, current tid = %d name=%s\n", __func__, current->tid, current->name);
         printk("fault address = 0x%x\n", mmu_get_fault_address());
         printk("fault status  = 0x%x\n", mmu_get_data_fault_status());
         printk("lr   = 0x%x\n", lr);
         printk("spsr = 0x%x\n", spsr);
-        if ((spsr & ARM_MODE_MASK) == ARM_SVC_MODE) {                   /*  如果是在 SVC 模式挂掉       */
+        if ((spsr & ARM_MODE_MASK) == ARM_SVC_MODE && current->pid == 0) {  /*  如果是在 SVC 模式挂掉   */
             extern const char *last_syscall;
             printk("last system call = %s\n", last_syscall);
         }
@@ -167,7 +183,7 @@ void dabt_c_handler(uint32_t lr, uint32_t spsr)
         printk("fault status  = 0x%x\n", mmu_get_data_fault_status());
         printk("lr   = 0x%x\n", lr);
         printk("spsr = 0x%x\n", spsr);
-        if ((spsr & ARM_MODE_MASK) == ARM_SVC_MODE) {                   /*  如果是在 SVC 模式挂掉       */
+        if ((spsr & ARM_MODE_MASK) == ARM_SVC_MODE && current->pid == 0) {  /*  如果是在 SVC 模式挂掉   */
             extern const char *last_syscall;
             printk("last system call = %s\n", last_syscall);
         }
@@ -181,7 +197,7 @@ void dabt_c_handler(uint32_t lr, uint32_t spsr)
         printk("fault status  = 0x%x\n", mmu_get_data_fault_status());
         printk("lr   = 0x%x\n", lr);
         printk("spsr = 0x%x\n", spsr);
-        if ((spsr & ARM_MODE_MASK) == ARM_SVC_MODE) {                   /*  如果是在 SVC 模式挂掉       */
+        if ((spsr & ARM_MODE_MASK) == ARM_SVC_MODE && current->pid == 0) {  /*  如果是在 SVC 模式挂掉   */
             extern const char *last_syscall;
             printk("last system call = %s\n", last_syscall);
         }
@@ -200,7 +216,7 @@ void dabt_c_handler(uint32_t lr, uint32_t spsr)
         printk("fault status  = 0x%x\n", mmu_get_data_fault_status());
         printk("lr   = 0x%x\n", lr);
         printk("spsr = 0x%x\n", spsr);
-        if ((spsr & ARM_MODE_MASK) == ARM_SVC_MODE) {                   /*  如果是在 SVC 模式挂掉       */
+        if ((spsr & ARM_MODE_MASK) == ARM_SVC_MODE && current->pid == 0) {  /*  如果是在 SVC 模式挂掉   */
             extern const char *last_syscall;
             printk("last system call = %s\n", last_syscall);
         }

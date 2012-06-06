@@ -19,10 +19,10 @@
 ** Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 **
 **--------------------------------------------------------------------------------------------------------
-** File name:               err.c
+** File name:               libc_fix.c
 ** Last modified Date:      2012-4-18
 ** Last Version:            1.0.0
-** Descriptions:            错误信息输出
+** Descriptions:            libc 修正
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing
@@ -37,13 +37,41 @@
 ** Descriptions:
 **
 *********************************************************************************************************/
+#include <string.h>
 
 /*
- * 输出报警信息
+ * Reverse memchr()
+ * Find the last occurrence of 'c' in the buffer 's' of size 'n'.
  */
-void warn(const char *fmt, ...)
+void *
+memrchr(const void *s, int c, size_t n)
 {
+    const unsigned char *cp;
 
+    if (n != 0) {
+        cp = (unsigned char *)s + n;
+        do {
+            if (*(--cp) == (unsigned char)c) {
+                return ((void *)cp);
+            }
+        } while (--n != 0);
+    }
+    return (NULL);
+}
+
+/*
+ * Find the first occurrence of C in S or the final NUL byte.
+ */
+char *
+strchrnul(const char *s, int c_in)
+{
+    char c = c_in;
+
+    while (*s && (*s != c)) {
+        s++;
+    }
+
+    return (char *)s;
 }
 /*********************************************************************************************************
   END FILE

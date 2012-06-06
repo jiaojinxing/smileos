@@ -196,6 +196,8 @@ static sys_do_t sys_do_table[1];
 #define SYS_CALL_SENDTO     67
 #define SYS_CALL_GETSOCKOPT 68
 #define SYS_CALL_SEND       69
+#define SYS_CALL_SHUTDOWN   70
+#define SYS_CALL_SETSOCKOPT 71
 #define SYS_CALL_NR         100                                         /*  系统调用数                  */
 
 /*
@@ -1332,6 +1334,45 @@ int send(int s, const void *dataptr, size_t size, int flags)
 }
 #endif
 
+int shutdown(int s, int how)
+{
+    int ret;
+    int syscall = SYS_CALL_SHUTDOWN;
+
+    debug("%s\n", __func__);
+    if (in_kernel()) {
+        ret = (sys_do_table[syscall])(s, how);
+    } else {
+        __asm__ __volatile__("mov    r0,  %0": :"r"(s));
+        __asm__ __volatile__("mov    r1,  %0": :"r"(how));
+        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
+        __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
+        __asm__ __volatile__("swi    0");
+        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
+        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
+    }
+    return ret;
+}
+
+int setsockopt(int s, int level, int optname, const void *optval, socklen_t optlen)
+{
+    int ret;
+    int syscall = SYS_CALL_SETSOCKOPT;
+    sys_do_args_t args = {(void *)s, (void *)level, (void *)optname, (void *)optval, (void *)optlen};
+
+    debug("%s\n", __func__);
+    if (in_kernel()) {
+        ret = (sys_do_table[syscall])(&args);
+    } else {
+        __asm__ __volatile__("mov    r0,  %0": :"r"(&args));
+        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
+        __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
+        __asm__ __volatile__("swi    0");
+        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
+        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
+    }
+    return ret;
+}
 #endif
 /*********************************************************************************************************
   END FILE

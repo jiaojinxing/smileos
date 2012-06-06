@@ -50,6 +50,7 @@
 typedef struct {
     VFS_SELECT_MEMBERS
     struct tty      tty;
+    int             mode;
 } privinfo_t;
 
 /*
@@ -217,14 +218,10 @@ static int ttyS0_fcntl(void *ctx, file_t *file, int cmd, int arg)
 
     switch (cmd) {
     case F_GETFL:
-        return file->flag;
+        return priv->mode;
 
     case F_SETFL:
-        if (arg & O_NONBLOCK) {
-            file->flag |= O_NONBLOCK;
-        } else {
-            file->flag &= ~O_NONBLOCK;
-        }
+        priv->mode = arg;
         return 0;
 
     default:
@@ -264,6 +261,7 @@ int ttyS0_init(void)
     priv = kmalloc(sizeof(privinfo_t));
     if (priv != NULL) {
         select_init(priv);
+        priv->mode = O_NONBLOCK;
         if (device_create("/dev/ttyS0", "ttyS0", priv) < 0) {
             kfree(priv);
             return -1;

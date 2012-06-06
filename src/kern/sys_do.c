@@ -44,6 +44,15 @@
 #include <sys/time.h>
 #include <sys/reent.h>
 #include <sys/socket.h>
+
+static inline void *va_to_mva(void *addr)
+{
+    if ((uint32_t)addr >= PROCESS_SPACE_SIZE) {
+        return addr;
+    } else {
+        return (uint8_t *)addr + current->pid * PROCESS_SPACE_SIZE;
+    }
+}
 /*********************************************************************************************************
   系统调用处理
 *********************************************************************************************************/
@@ -135,7 +144,7 @@ static int do_bind(int s, const struct sockaddr *name, socklen_t namelen)
 {
     int sock_fd = socket_priv_fd(s);
     if (sock_fd >= 0) {
-        return lwip_bind(sock_fd, name, namelen);
+        return lwip_bind(sock_fd, va_to_mva(name), namelen);
     } else {
         return -1;
     }
@@ -148,7 +157,7 @@ static int do_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 {
     int sock_fd = socket_priv_fd(s);
     if (sock_fd >= 0) {
-        int new_sock_fd = lwip_accept(sock_fd, addr, addrlen);
+        int new_sock_fd = lwip_accept(sock_fd, va_to_mva(addr), va_to_mva(addrlen));
         if (new_sock_fd >= 0) {
             int fd = socket_attach(new_sock_fd);
             if (fd < 0) {
@@ -171,7 +180,7 @@ static int do_connect(int s, const struct sockaddr *name, socklen_t namelen)
 {
     int sock_fd = socket_priv_fd(s);
     if (sock_fd >= 0) {
-        return lwip_connect(sock_fd, name, namelen);
+        return lwip_connect(sock_fd, va_to_mva(name), namelen);
     } else {
         return -1;
     }
@@ -197,10 +206,10 @@ static int do_select(sys_do_args_t *args)
 {
     return vfs_select(
             (int)args->arg0,
-            args->arg1,
-            args->arg2,
-            args->arg3,
-            args->arg4);
+            va_to_mva(args->arg1),
+            va_to_mva(args->arg2),
+            va_to_mva(args->arg3),
+            va_to_mva(args->arg4));
 }
 
 /*
@@ -210,7 +219,7 @@ static int do_recv(int s, void *mem, size_t len, int flags)
 {
     int sock_fd = socket_priv_fd(s);
     if (sock_fd >= 0) {
-        return lwip_recv(sock_fd, mem, len, flags);
+        return lwip_recv(sock_fd, va_to_mva(mem), len, flags);
     } else {
         return -1;
     }
@@ -225,11 +234,11 @@ static int do_recvfrom(sys_do_args_t *args)
     if (sock_fd >= 0) {
         return lwip_recvfrom(
                 sock_fd,
-                args->arg1,
+                va_to_mva(args->arg1),
                 (size_t)args->arg2,
                 (int)args->arg3,
-                (struct sockaddr *)args->arg4,
-                (socklen_t *)args->arg5);
+                (struct sockaddr *)va_to_mva(args->arg4),
+                (socklen_t *)va_to_mva(args->arg5));
     } else {
         return -1;
     }
@@ -244,10 +253,10 @@ static int do_sendto(sys_do_args_t *args)
     if (sock_fd >= 0) {
         return lwip_sendto(
                 sock_fd,
-                args->arg1,
+                va_to_mva(args->arg1),
                 (size_t)args->arg2,
                 (int)args->arg3,
-                (const struct sockaddr *)args->arg4,
+                (const struct sockaddr *)va_to_mva(args->arg4),
                 (socklen_t)args->arg5);
     } else {
         return -1;
@@ -265,8 +274,52 @@ static int do_getsockopt(sys_do_args_t *args)
                 sock_fd,
                 (int)args->arg1,
                 (int)args->arg2,
-                args->arg3,
-                (socklen_t *)args->arg4);
+                va_to_mva(args->arg3),
+                (socklen_t *)va_to_mva(args->arg4));
+    } else {
+        return -1;
+    }
+}
+
+/*
+ * do_send
+ */
+static do_send(int s, const void *data, size_t size, int flags)
+{
+    int sock_fd = socket_priv_fd(s);
+    if (sock_fd >= 0) {
+        return lwip_send(sock_fd, va_to_mva(data), size, flags);
+    } else {
+        return -1;
+    }
+}
+
+/*
+ * do_setsockopt
+ */
+static int do_setsockopt(sys_do_args_t *args)
+{
+    int sock_fd = socket_priv_fd((int)args->arg0);
+    if (sock_fd >= 0) {
+        return lwip_setsockopt(
+                sock_fd,
+                (int)args->arg1,
+                (int)args->arg2,
+                va_to_mva(args->arg3),
+                (socklen_t)args->arg4);
+    } else {
+        return -1;
+    }
+}
+
+/*
+ * do_shutdown
+ */
+static int do_shutdown(int s, int how)
+{
+    int sock_fd = socket_priv_fd(s);
+    if (sock_fd >= 0) {
+        return lwip_shutdown(sock_fd, how);
     } else {
         return -1;
     }
@@ -377,6 +430,9 @@ sys_do_t sys_do_table[] = {
 #define SYS_CALL_RECVFROM   66
 #define SYS_CALL_SENDTO     67
 #define SYS_CALL_GETSOCKOPT 68
+#define SYS_CALL_SEND       69
+#define SYS_CALL_SHUTDOWN   70
+#define SYS_CALL_SETSOCKOPT 71
         (sys_do_t)do_socket,
         (sys_do_t)do_bind,
         (sys_do_t)do_accept,
@@ -386,6 +442,9 @@ sys_do_t sys_do_table[] = {
         (sys_do_t)do_recvfrom,
         (sys_do_t)do_sendto,
         (sys_do_t)do_getsockopt,
+        (sys_do_t)do_send,
+        (sys_do_t)do_shutdown,
+        (sys_do_t)do_setsockopt,
 };
 /*********************************************************************************************************
   END FILE
