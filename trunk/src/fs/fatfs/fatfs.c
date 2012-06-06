@@ -59,6 +59,7 @@ typedef struct {
         FIL         file;
     };
     struct dirent   entry;
+    int             mode;
 } privinfo_t;
 
 static int fatfs_mount(mount_point_t *point, device_t *dev, const char *dev_name)
@@ -158,6 +159,7 @@ static int fatfs_open(mount_point_t *point, file_t *file, const char *path, int 
         if (oflag & O_EXCL) {
             fatfs_mode |= FA_CREATE_NEW;
         }
+        priv->mode = 0;
 
         res = f_open(&priv->file, path, fatfs_mode);
         if (res != FR_OK) {
@@ -246,8 +248,25 @@ static int fatfs_ioctl(mount_point_t *point, file_t *file, int cmd, void *arg)
 
 static int fatfs_fcntl(mount_point_t *point, file_t *file, int cmd, int arg)
 {
-    seterrno(ENOSYS);
-    return -1;
+    privinfo_t *priv = file->ctx;
+
+    if (priv == NULL) {
+        seterrno(EINVAL);
+        return -1;
+    }
+
+    switch (cmd) {
+    case F_GETFL:
+        return priv->mode;
+
+    case F_SETFL:
+        priv->mode = arg;
+        return 0;
+
+    default:
+        seterrno(EINVAL);
+        return -1;
+    }
 }
 
 static int fatfs_fstat(mount_point_t *point, file_t *file, struct stat *buf)
@@ -392,6 +411,27 @@ static int fatfs_lseek(mount_point_t *point, file_t *file, off_t offset, int whe
         return -1;
     }
     return 0;
+}
+
+
+static int fatfs_scan(mount_point_t *point, file_t *file, int flags)
+{
+    privinfo_t *priv = file->ctx;
+    int ret;
+
+    if (priv == NULL) {
+        seterrno(EINVAL);
+        return -1;
+    }
+
+    ret = 0;
+    if (flags & VFS_FILE_READABLE) {
+        ret |= VFS_FILE_READABLE;
+    }
+    if (flags & VFS_FILE_WRITEABLE) {
+        ret |= VFS_FILE_WRITEABLE;
+    }
+    return ret;
 }
 
 static int fatfs_stat(mount_point_t *point, const char *path, struct stat *buf)
@@ -681,6 +721,8 @@ file_system_t fatfs = {
         .seekdir    = fatfs_seekdir,
         .telldir    = fatfs_telldir,
         .closedir   = fatfs_closedir,
+
+        .scan       = fatfs_scan,
 };
 /*********************************************************************************************************
   END FILE

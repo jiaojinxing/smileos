@@ -19,14 +19,14 @@
 ** Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 **
 **--------------------------------------------------------------------------------------------------------
-** File name:               err.c
-** Last modified Date:      2012-4-18
+** File name:               posix_fix.c
+** Last modified Date:      2012-5-3
 ** Last Version:            1.0.0
-** Descriptions:            错误信息输出
+** Descriptions:            posix 修正
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing
-** Created date:            2012-4-18
+** Created date:            2012-5-3
 ** Version:                 1.0.0
 ** Descriptions:            创建文件
 **
@@ -37,13 +37,48 @@
 ** Descriptions:
 **
 *********************************************************************************************************/
+#include <fcntl.h>
+#include <reent.h>
+#include <unistd.h>
 
 /*
- * 输出报警信息
+ * 创建文件
  */
-void warn(const char *fmt, ...)
+int
+creat(const char *path,
+      mode_t mode)
 {
+    return open(path, O_WRONLY | O_CREAT | O_TRUNC, mode);
+}
 
+/*
+ * 创建目录
+ */
+int
+mkdir(const char *path,
+      mode_t mode)
+{
+    return _mkdir_r(_REENT, path, mode);
+}
+
+/*
+ * 删除目录
+ */
+int
+rmdir(const char *path)
+{
+    extern int _rmdir_r(struct _reent *reent, const char *path);
+
+    return _rmdir_r(_REENT, path);
+}
+
+/*
+ * 判断文件是不是一个 TTY
+ */
+int
+isatty(int fd)
+{
+    return _isatty_r(_REENT, fd);
 }
 /*********************************************************************************************************
   END FILE
