@@ -538,7 +538,9 @@ static void telnetd_thread(void *arg)
     }
 
     end:
+    fclose(stdin);
     fclose(stdout);
+    fclose(stderr);
 }
 
 /*

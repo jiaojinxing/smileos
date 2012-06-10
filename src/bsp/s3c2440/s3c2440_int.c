@@ -69,6 +69,7 @@ void irq_c_handler(void)
     interrupt = INTOFFSET;                                              /*  »ñµÃÖÐ¶ÏºÅ                  */
 
     if (interrupt >= INTERRUPT_NR) {
+        interrupt_exit();
         return;
     }
 
