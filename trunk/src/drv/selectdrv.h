@@ -107,7 +107,7 @@ static int select_report(void *ctx, int type)
 
     reg = interrupt_disable();
 
-    priv->flags = type;
+    priv->flags |= type;
 
     node = priv->wait_list.next;
     while (node != &priv->wait_list) {

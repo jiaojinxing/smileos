@@ -60,7 +60,10 @@ typedef struct {
     int  (*attach)(void *arg);
     void (*fail)(void *arg);
     void           *arg;
+    int32_t         tid;
 } privinfo_t;
+
+#include "selectdrv.h"
 
 /*
  * 打开 pty
@@ -73,6 +76,7 @@ static int pty_open(void *ctx, file_t *file, int oflag, mode_t mode)
         seterrno(EINVAL);
         return -1;
     }
+    priv->ref++;
     return 0;
 }
 
@@ -113,6 +117,12 @@ static int pty_close(void *ctx, file_t *file)
     if (priv == NULL) {
         seterrno(EINVAL);
         return -1;
+    }
+    priv->ref--;
+    if (priv->tid == gettid()) {
+        priv->tid = -1;
+    } else if (priv->ref == 1 && priv->tid != -1) {
+        select_report(priv, VFS_FILE_ERROR);
     }
     return 0;
 }
@@ -208,8 +218,6 @@ static int pty_scan(void *ctx, file_t *file, int flags)
     }
     return ret;
 }
-
-#include "selectdrv.h"
 
 /*
  * pty 驱动
@@ -355,6 +363,7 @@ int pty_create(const char *name, int (*attach)(void *arg), void (*fail)(void *ar
         priv->attach = attach;
         priv->fail   = fail;
         priv->arg    = arg;
+        priv->ref    = 0;
 
         if (device_create(name, "pty", priv) < 0) {
             kfree(priv);
@@ -371,7 +380,7 @@ int pty_create(const char *name, int (*attach)(void *arg), void (*fail)(void *ar
         /*
          * PTY 线程优先级设置为较低水平, 保证写操作一次完成
          */
-        if (kthread_create(name, pty_thread, priv, 8 * KB, 5) < 0) {
+        if ((priv->tid = kthread_create(name, pty_thread, priv, 8 * KB, 5)) < 0) {
             device_remove(name);
             kfree(priv);
             seterrno(ENOMEM);
