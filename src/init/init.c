@@ -55,6 +55,16 @@
 #include <fcntl.h>
 
 /*
+ * HTTPD 线程
+ */
+static void httpd(void *arg)
+{
+    extern int webServerStart(char *pcAddr, char *pcWebPath, int iPort);
+
+    webServerStart("192.168.0.30", "/sd0/webs", 80);
+}
+
+/*
  * LwIP 初始化完成处理函数
  */
 static void tcpip_init_done(void *arg)
@@ -86,11 +96,10 @@ static void tcpip_init_done(void *arg)
     extern void telnetd(void *arg);
     kthread_create("telnetd", telnetd, NULL, 4 * KB, 10);
 
-    extern void ftpd(void *arg);
-    kthread_create("ftpd", ftpd, NULL, 4 * KB, 10);
-
     extern void netio_init(void);
     netio_init();
+
+    kthread_create("httpd", httpd, NULL, 4 * KB, 10);
 }
 
 #include <stdlib.h>
@@ -110,14 +119,10 @@ static void init(void *arg)
 }
 
 /*
- * 主函数
+ * 安装系统驱动
  */
-int main(void)
+static int sys_drivers_install(void)
 {
-    kernel_init();
-
-    vfs_init();
-
     extern int null_init(void);
     null_init();
 
@@ -130,7 +135,25 @@ int main(void)
     extern int pty_init(void);
     pty_init();
 
+    return 0;
+}
+
+/*
+ * 主函数
+ */
+int main(void)
+{
+    kernel_init();
+
+    vfs_init();
+
+    sys_drivers_install();
+
     kernel_start();
+
+    /*
+     * 现在已经进入了 idle 进程
+     */
 
     kthread_create("init", init, NULL, 4 * KB, 10);
 

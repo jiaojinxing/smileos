@@ -69,7 +69,7 @@ void irq_c_handler(void)
     interrupt = INTOFFSET;                                              /*  获得中断号                  */
 
     if (interrupt >= INTERRUPT_NR) {
-        interrupt_exit();
+        interrupt_exit();                                               /*  退出中断                    */
         return;
     }
 

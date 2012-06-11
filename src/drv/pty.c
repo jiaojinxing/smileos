@@ -118,12 +118,16 @@ static int pty_close(void *ctx, file_t *file)
         seterrno(EINVAL);
         return -1;
     }
+
     priv->ref--;
     if (priv->tid == gettid()) {
         priv->tid = -1;
-    } else if (priv->ref == 1 && priv->tid != -1) {
-        select_report(priv, VFS_FILE_ERROR);
+    } else if (priv->ref == 1) {
+        if (priv->tid > 0) {
+            select_report(priv, VFS_FILE_ERROR);
+        }
     }
+
     return 0;
 }
 
@@ -213,7 +217,7 @@ static int pty_scan(void *ctx, file_t *file, int flags)
     if (tty_writeable(&priv->tty) && (flags & VFS_FILE_WRITEABLE)) {
         ret |= VFS_FILE_WRITEABLE;
     }
-    if (priv->flags & flags & VFS_FILE_ERROR) {
+    if ((priv->flags & VFS_FILE_ERROR) && (flags & VFS_FILE_ERROR)) {
         ret |= VFS_FILE_ERROR;
     }
     return ret;

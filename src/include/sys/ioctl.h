@@ -53,7 +53,7 @@
 
 #define _IOW(x, y, t)   (IOC_IN  | (((unsigned long)sizeof(t) & IOCPARM_MASK) << 16) | ((x) << 8) | (y))
 
-extern int ioctl(int fd, int cmd, void *arg);
+extern int ioctl(int fd, int cmd, ...);
 
 #endif                                                                  /*  IOCTL_H_                    */
 /*********************************************************************************************************

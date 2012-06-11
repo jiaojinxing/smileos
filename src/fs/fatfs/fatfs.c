@@ -227,7 +227,7 @@ static ssize_t fatfs_write(mount_point_t *point, file_t *file, const void *buf, 
         return -1;
     }
 
-    if (file->flag & O_APPEND && f_tell(&priv->file) < f_size(&priv->file)) {
+    if (file->flag & O_APPEND && (f_tell(&priv->file) < f_size(&priv->file))) {
         f_lseek(&priv->file, f_size(&priv->file));
     }
 

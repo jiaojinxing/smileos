@@ -78,6 +78,18 @@ static uint8_t      interrupt_nest;                                     /*  中断
 static uint8_t      running;                                            /*  内核是否正在运行            */
 uint8_t             kernel_mode;                                        /*  当前是否处于内核模式        */
 
+/*
+ * logo
+ */
+const char smileos_logo[] =
+" ####                       ####   ####   \n"
+"#    #                     #    # #    #  \n"
+"#       #  #  @ #     ###  #    # #       \n"
+" ####  ##  ##   #    #   # #    #  ####   \n"
+"     # # ## # # #    ####  #    #      #  \n"
+"#    # #    # # #    #     #    # #    #  \n"
+" ####  #    # #  ###  ####  ####   ####   \n";
+
 #define KTHREAD_STACK_MAGIC0        0xAA                                /*  内核线程栈魔数              */
 
 static void idle_create(void);
@@ -868,6 +880,78 @@ int in_kernel(void)
     interrupt_resume(reg);
 
     return ret;
+}
+
+/*
+ * 获得任务信息
+ */
+int tstat(int tid, char *buf)
+{
+    const char *state;
+    task_t *task;
+    uint32_t reg;
+
+    if (tid < 0 || tid >= TASK_NR) {
+        return -1;
+    }
+
+    reg = interrupt_disable();
+
+    task = tasks + tid;
+
+    switch (task->state) {
+    case TASK_UNALLOCATE:
+        interrupt_resume(reg);
+        return -1;
+
+    case TASK_RUNNING:
+        state = "ready";
+        break;
+
+    case TASK_SLEEPING:
+        state = "sleep";
+        break;
+
+    case TASK_SUSPEND:
+        state = "wait";
+        break;
+
+    default:
+        state = "unknow";
+        break;
+    }
+
+    if (strlen(task->name) < 7) {
+        sprintf(buf, "%s\t %s\t\t %4u\t %s\t %4u\t %10u\t %4u\t %4u%%\t %4u%%\t %4u\t %4u\n",
+                task->type == TASK_TYPE_PROCESS ? "process" : "kthread",
+                task->name,
+                task->tid,
+                state,
+                task->counter,
+                task->timer,
+                task->priority,
+                task->cpu_rate,
+                task->stack_rate,
+                task->frame_nr,
+                task->dabt_cnt);
+    } else {
+        sprintf(buf, "%s\t %s\t %4u\t %s\t %4u\t %10u\t %4u\t %4u%%\t %4u%%\t %4u\t %4u\n",
+                task->type == TASK_TYPE_PROCESS ? "process" : "kthread",
+                task->name,
+                task->tid,
+                state,
+                task->counter,
+                task->timer,
+                task->priority,
+                task->cpu_rate,
+                task->stack_rate,
+                task->frame_nr,
+                task->dabt_cnt);
+    }
+
+    interrupt_resume(reg);
+
+    return 0;
 }
 /*********************************************************************************************************
   END FILE

@@ -46,7 +46,8 @@
 ** 5) 如果 select 不 OK, 那么等待 PTH_EVENT_FD|PTH_UNTIL_FD_WRITEABLE|PTH_MODE_STATIC 事件, 会进行线程调度
 ** 6) pth_scheduler 线程会在没有其它线程可运行时调用 pth_sched_eventmanager 函数
 ** 7) pth_sched_eventmanager 函数会 select 所有文件可读可写出错一个最小的等待时间
-** 8) pth_sched_eventmanager 函数会对 select 的结果进行判定, 以唤醒等待事件的线程
+** 8) pth_sched_eventmanager 函数会对 select 的结果进行判定,
+**    以唤醒等待 PTH_EVENT_FD|PTH_UNTIL_FD_WRITEABLE|PTH_MODE_STATIC 事件的线程
 **
 **--------------------------------------------------------------------------------------------------------
 ** Modified by:             JiaoJinXing
@@ -350,7 +351,7 @@ static mount_point_t *vfs_mount_point_lookup2(char pathbuf[PATH_MAX], char **ppa
  *                                          文件操作接口
  */
 
-#define vfs_file_api_begin0(tid)                                                                          \
+#define vfs_file_begin0(tid)                                                                              \
         mount_point_t *point;                                                                             \
         file_t *file;                                                                                     \
                                                                                                           \
@@ -360,15 +361,15 @@ static mount_point_t *vfs_mount_point_lookup2(char pathbuf[PATH_MAX], char **ppa
         }                                                                                                 \
         file = infos[tid].files + fd;                                   /*  获得文件结构                */
 
-#define vfs_file_api_begin(tid)                                                                           \
-        vfs_file_api_begin0(tid)                                                                          \
+#define vfs_file_begin(tid)                                                                               \
+        vfs_file_begin0(tid)                                                                              \
         if (!(file->flag & VFS_FILE_TYPE_FILE)) {                       /*  如果文件未打开或不是文件    */\
             seterrno(EFTYPE);                                                                             \
             return -1;                                                                                    \
         }                                                                                                 \
         point = file->point;                                            /*  获得挂载点                  */
 
-#define vfs_file_api_end(tid)
+#define vfs_file_end(tid)
 
 /*
  * 打开文件
@@ -426,9 +427,9 @@ int vfs_close(int fd)
 {
     int ret;
 
-    vfs_file_api_begin(gettid())
+    vfs_file_begin(gettid())
     if (point->fs->close == NULL) {
-        vfs_file_api_end(gettid())
+        vfs_file_end(gettid())
         seterrno(ENOSYS);
         return -1;
     }
@@ -437,7 +438,7 @@ int vfs_close(int fd)
     if (ret == 0) {
         file->flag = VFS_FILE_TYPE_FREE;                                /*  如果关闭成功, 释放文件结构  */
     }
-    vfs_file_api_end(gettid())
+    vfs_file_end(gettid())
     return ret;
 }
 
@@ -448,9 +449,9 @@ static int __vfs_close(pid_t tid, int fd)
 {
     int ret;
 
-    vfs_file_api_begin(tid)
+    vfs_file_begin(tid)
     if (point->fs->close == NULL) {
-        vfs_file_api_end(tid)
+        vfs_file_end(tid)
         seterrno(ENOSYS);
         return -1;
     }
@@ -459,7 +460,7 @@ static int __vfs_close(pid_t tid, int fd)
     if (ret == 0) {
         file->flag = VFS_FILE_TYPE_FREE;                                /*  如果关闭成功, 释放文件结构  */
     }
-    vfs_file_api_end(tid)
+    vfs_file_end(tid)
     return ret;
 }
 
@@ -470,15 +471,15 @@ int vfs_fcntl(int fd, int cmd, int arg)
 {
     int ret;
 
-    vfs_file_api_begin(gettid())
+    vfs_file_begin(gettid())
     if (point->fs->fcntl == NULL) {
-        vfs_file_api_end(gettid())
+        vfs_file_end(gettid())
         seterrno(ENOSYS);
         return -1;
     }
     seterrno(0);
     ret = point->fs->fcntl(point, file, cmd, arg);
-    vfs_file_api_end(gettid())
+    vfs_file_end(gettid())
     return ret;
 }
 
@@ -495,15 +496,15 @@ int vfs_fstat(int fd, struct stat *buf)
     }
 
     {
-        vfs_file_api_begin(gettid())
+        vfs_file_begin(gettid())
         if (point->fs->fstat == NULL) {
-            vfs_file_api_end(gettid())
+            vfs_file_end(gettid())
             seterrno(ENOSYS);
             return -1;
         }
         seterrno(0);
         ret = point->fs->fstat(point, file, buf);
-        vfs_file_api_end(gettid())
+        vfs_file_end(gettid())
         return ret;
     }
 }
@@ -515,15 +516,15 @@ int vfs_isatty(int fd)
 {
     int ret;
 
-    vfs_file_api_begin(gettid())
+    vfs_file_begin(gettid())
     if (point->fs->isatty == NULL) {
-        vfs_file_api_end(gettid())
+        vfs_file_end(gettid())
         seterrno(0);
         return 0;
     }
     seterrno(0);
     ret = point->fs->isatty(point, file);
-    vfs_file_api_end(gettid())
+    vfs_file_end(gettid())
     return ret;
 }
 
@@ -534,20 +535,20 @@ int vfs_fsync(int fd)
 {
     int ret;
 
-    vfs_file_api_begin(gettid())
+    vfs_file_begin(gettid())
     if (!(file->flag & FWRITE)) {
-        vfs_file_api_end(gettid())
+        vfs_file_end(gettid())
         seterrno(0);
         return 0;
     }
     if (point->fs->fsync == NULL) {
-        vfs_file_api_end(gettid())
+        vfs_file_end(gettid())
         seterrno(0);
         return 0;
     }
     seterrno(0);
     ret = point->fs->fsync(point, file);
-    vfs_file_api_end(gettid())
+    vfs_file_end(gettid())
     return ret;
 }
 
@@ -558,20 +559,20 @@ int vfs_fdatasync(int fd)
 {
     int ret;
 
-    vfs_file_api_begin(gettid())
+    vfs_file_begin(gettid())
     if (!(file->flag & FWRITE)) {
-        vfs_file_api_end(gettid())
+        vfs_file_end(gettid())
         seterrno(0);
         return 0;
     }
     if (point->fs->fdatasync == NULL) {
-        vfs_file_api_end(gettid())
+        vfs_file_end(gettid())
         seterrno(0);
         return 0;
     }
     seterrno(0);
     ret = point->fs->fdatasync(point, file);
-    vfs_file_api_end(gettid())
+    vfs_file_end(gettid())
     return ret;
 }
 
@@ -582,20 +583,20 @@ int vfs_ftruncate(int fd, off_t len)
 {
     int ret;
 
-    vfs_file_api_begin(gettid())
+    vfs_file_begin(gettid())
     if (!(file->flag & FWRITE)) {
-        vfs_file_api_end(gettid())
+        vfs_file_end(gettid())
         seterrno(EIO);
         return -1;
     }
     if (point->fs->ftruncate == NULL) {
-        vfs_file_api_end(gettid())
+        vfs_file_end(gettid())
         seterrno(ENOSYS);
         return -1;
     }
     seterrno(0);
     ret = point->fs->ftruncate(point, file, len);
-    vfs_file_api_end(gettid())
+    vfs_file_end(gettid())
     return ret;
 }
 
@@ -617,20 +618,20 @@ ssize_t vfs_read(int fd, void *buf, size_t len)
     }
 
     {
-        vfs_file_api_begin(gettid())
+        vfs_file_begin(gettid())
         if (!(file->flag & FREAD)) {
-            vfs_file_api_end(gettid())
+            vfs_file_end(gettid())
             seterrno(EIO);
             return -1;
         }
         if (point->fs->read == NULL) {
-            vfs_file_api_end(gettid())
+            vfs_file_end(gettid())
             seterrno(ENOSYS);
             return -1;
         }
         seterrno(0);
         slen = point->fs->read(point, file, buf, len);
-        vfs_file_api_end(gettid())
+        vfs_file_end(gettid())
         return slen;
     }
 }
@@ -653,20 +654,20 @@ ssize_t vfs_write(int fd, const void *buf, size_t len)
     }
 
     {
-        vfs_file_api_begin(gettid())
+        vfs_file_begin(gettid())
         if (!(file->flag & FWRITE)) {
-            vfs_file_api_end(gettid())
+            vfs_file_end(gettid())
             seterrno(EIO);
             return -1;
         }
         if (point->fs->write == NULL) {
-            vfs_file_api_end(gettid())
+            vfs_file_end(gettid())
             seterrno(ENOSYS);
             return -1;
         }
         seterrno(0);
         slen = point->fs->write(point, file, buf, len);
-        vfs_file_api_end(gettid())
+        vfs_file_end(gettid())
         return slen;
     }
 }
@@ -678,15 +679,15 @@ int vfs_ioctl(int fd, int cmd, void *arg)
 {
     int ret;
 
-    vfs_file_api_begin(gettid())
+    vfs_file_begin(gettid())
     if (point->fs->ioctl == NULL) {
-        vfs_file_api_end(gettid())
+        vfs_file_end(gettid())
         seterrno(ENOSYS);
         return -1;
     }
     seterrno(0);
     ret = point->fs->ioctl(point, file, cmd, arg);
-    vfs_file_api_end(gettid())
+    vfs_file_end(gettid())
     return ret;
 }
 
@@ -695,15 +696,15 @@ int vfs_ioctl(int fd, int cmd, void *arg)
  */
 off_t vfs_lseek(int fd, off_t offset, int whence)
 {
-    vfs_file_api_begin(gettid())
+    vfs_file_begin(gettid())
     if (point->fs->lseek == NULL) {
-        vfs_file_api_end(gettid())
+        vfs_file_end(gettid())
         seterrno(ENOSYS);
         return -1;
     }
     seterrno(0);
     offset = point->fs->lseek(point, file, offset, whence);
-    vfs_file_api_end(gettid())
+    vfs_file_end(gettid())
     return offset;
 }
 
@@ -717,15 +718,15 @@ static int vfs_scan_file(int fd, int flags)
 {
     int ret;
 
-    vfs_file_api_begin(gettid())
+    vfs_file_begin(gettid())
     if (point->fs->scan == NULL) {
-        vfs_file_api_end(gettid())
+        vfs_file_end(gettid())
         seterrno(ENOSYS);
         return -1;
     }
     seterrno(0);
     ret = point->fs->scan(point, file, flags);
-    vfs_file_api_end(gettid())
+    vfs_file_end(gettid())
     return ret;
 }
 
@@ -736,15 +737,15 @@ static int vfs_select_file(int fd, int flags)
 {
     int ret;
 
-    vfs_file_api_begin(gettid())
+    vfs_file_begin(gettid())
     if (point->fs->select == NULL) {
-        vfs_file_api_end(gettid())
+        vfs_file_end(gettid())
         seterrno(ENOSYS);
         return -1;
     }
     seterrno(0);
     ret = point->fs->select(point, file, flags);
-    vfs_file_api_end(gettid())
+    vfs_file_end(gettid())
     return ret;
 }
 
@@ -755,15 +756,15 @@ static int vfs_unselect_file(int fd, int flags)
 {
     int ret;
 
-    vfs_file_api_begin(gettid())
+    vfs_file_begin(gettid())
     if (point->fs->unselect == NULL) {
-        vfs_file_api_end(gettid())
+        vfs_file_end(gettid())
         seterrno(ENOSYS);
         return -1;
     }
     seterrno(0);
     ret = point->fs->unselect(point, file, flags);
-    vfs_file_api_end(gettid())
+    vfs_file_end(gettid())
     return ret;
 }
 
@@ -1270,7 +1271,7 @@ int vfs_sync(const char *path)
  *                                          目录操作接口
  */
 
-#define vfs_dir_api_begin0(tid)                                                                           \
+#define vfs_dir_begin0(tid)                                                                               \
         mount_point_t *point;                                                                             \
         file_t *file;                                                                                     \
                                                                                                           \
@@ -1280,15 +1281,15 @@ int vfs_sync(const char *path)
         }                                                                                                 \
         file = infos[tid].files + fd;                                   /*  获得文件结构                */
 
-#define vfs_dir_api_begin(tid)                                                                            \
-        vfs_dir_api_begin0(tid)                                                                           \
+#define vfs_dir_begin(tid)                                                                                \
+        vfs_dir_begin0(tid)                                                                               \
         if (!(file->flag & VFS_FILE_TYPE_DIR)) {                        /*  如果文件未打开或不是目录    */\
             seterrno(EFTYPE);                                                                             \
             return -1;                                                                                    \
         }                                                                                                 \
         point = file->point;                                            /*  获得挂载点                  */
 
-#define vfs_dir_api_end(tid)
+#define vfs_dir_end(tid)
 
 /*
  * 打开目录
@@ -1342,9 +1343,9 @@ int vfs_closedir(DIR *dir)
     int fd = (int)dir;
     int ret;
 
-    vfs_dir_api_begin(gettid())
+    vfs_dir_begin(gettid())
     if (point->fs->closedir == NULL) {
-        vfs_dir_api_end(gettid())
+        vfs_dir_end(gettid())
         seterrno(ENOSYS);
         return -1;
     }
@@ -1353,7 +1354,7 @@ int vfs_closedir(DIR *dir)
     if (ret == 0) {
         file->flag = VFS_FILE_TYPE_FREE;                                /*  如果关闭成功, 释放文件结构  */
     }
-    vfs_dir_api_end(gettid())
+    vfs_dir_end(gettid())
     return ret;
 }
 
@@ -1365,9 +1366,9 @@ static int __vfs_closedir(pid_t tid, DIR *dir)
     int fd = (int)dir;
     int ret;
 
-    vfs_dir_api_begin(tid)
+    vfs_dir_begin(tid)
     if (point->fs->closedir == NULL) {
-        vfs_dir_api_end(tid)
+        vfs_dir_end(tid)
         seterrno(ENOSYS);
         return -1;
     }
@@ -1376,7 +1377,7 @@ static int __vfs_closedir(pid_t tid, DIR *dir)
     if (ret == 0) {
         file->flag = VFS_FILE_TYPE_FREE;                                /*  如果关闭成功, 释放文件结构  */
     }
-    vfs_dir_api_end(tid)
+    vfs_dir_end(tid)
     return ret;
 }
 
@@ -1388,9 +1389,9 @@ static int __vfs_readdir(DIR *dir, struct dirent **entry)
     int fd = (int)dir;
     int ret;
 
-    vfs_dir_api_begin(gettid())
+    vfs_dir_begin(gettid())
     if (point->fs->readdir == NULL) {
-        vfs_dir_api_end(gettid())
+        vfs_dir_end(gettid())
         seterrno(ENOSYS);
         return -1;
     }
@@ -1401,7 +1402,7 @@ static int __vfs_readdir(DIR *dir, struct dirent **entry)
     } else {
         ret = -1;
     }
-    vfs_dir_api_end(gettid())
+    vfs_dir_end(gettid())
     return ret;
 }
 
@@ -1424,15 +1425,15 @@ int vfs_rewinddir(DIR *dir)
     int fd = (int)dir;
     int ret;
 
-    vfs_dir_api_begin(gettid())
+    vfs_dir_begin(gettid())
     if (point->fs->rewinddir == NULL) {
-        vfs_dir_api_end(gettid())
+        vfs_dir_end(gettid())
         seterrno(ENOSYS);
         return -1;
     }
     seterrno(0);
     ret = point->fs->rewinddir(point, file);
-    vfs_dir_api_end(gettid())
+    vfs_dir_end(gettid())
     return ret;
 }
 
@@ -1444,15 +1445,15 @@ int vfs_seekdir(DIR *dir, long loc)
     int fd = (int)dir;
     int ret;
 
-    vfs_dir_api_begin(gettid())
+    vfs_dir_begin(gettid())
     if (point->fs->seekdir == NULL) {
-        vfs_dir_api_end(gettid())
+        vfs_dir_end(gettid())
         seterrno(ENOSYS);
         return -1;
     }
     seterrno(0);
     ret = point->fs->seekdir(point, file, loc);
-    vfs_dir_api_end(gettid())
+    vfs_dir_end(gettid())
     return ret;
 }
 
@@ -1464,15 +1465,15 @@ long vfs_telldir(DIR *dir)
     int fd = (int)dir;
     long loc;
 
-    vfs_dir_api_begin(gettid())
+    vfs_dir_begin(gettid())
     if (point->fs->telldir == NULL) {
-        vfs_dir_api_end(gettid())
+        vfs_dir_end(gettid())
         seterrno(ENOSYS);
         return -1;
     }
     seterrno(0);
     loc = point->fs->telldir(point, file);
-    vfs_dir_api_end(gettid())
+    vfs_dir_end(gettid())
     return loc;
 }
 

@@ -45,12 +45,15 @@
 #include <sys/reent.h>
 #include <sys/socket.h>
 
+/*
+ * 将虚拟地址转换为修改后的虚拟地址
+ */
 static inline void *va_to_mva(void *addr)
 {
-    if ((uint32_t)addr >= PROCESS_SPACE_SIZE) {
-        return addr;
-    } else {
+    if ((current->pid != 0) && (uint32_t)addr < PROCESS_SPACE_SIZE) {
         return (uint8_t *)addr + current->pid * PROCESS_SPACE_SIZE;
+    } else {
+        return addr;
     }
 }
 /*********************************************************************************************************

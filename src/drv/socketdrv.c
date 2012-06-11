@@ -59,7 +59,7 @@ typedef struct {
 /*
  * 打开 socket
  */
-static int socket_open(void *ctx, file_t *file, int oflag, mode_t mode)
+static int __socket_open(void *ctx, file_t *file, int oflag, mode_t mode)
 {
     privinfo_t *priv = ctx;
 
@@ -242,7 +242,7 @@ void smileos_socket_report(int sock_fd, int type)
  */
 driver_t socket_drv = {
         .name     = "socket",
-        .open     = socket_open,
+        .open     = __socket_open,
         .write    = socket_write,
         .read     = socket_read,
         .ioctl    = socket_ioctl,
@@ -296,7 +296,6 @@ int socket_attach(int sock_fd)
             return -1;
         }
 
-        seterrno(0);
         interrupt_resume(reg);
         return fd;
     } else {
@@ -304,6 +303,29 @@ int socket_attach(int sock_fd)
         interrupt_resume(reg);
         return -1;
     }
+}
+
+/*
+ * 打开 socket
+ */
+int socket_open(int sock_fd)
+{
+    char name[PATH_MAX];
+    int fd;
+    uint32_t reg;
+
+    reg = interrupt_disable();
+
+    sprintf(name, "/dev/socket%d", sock_fd);
+
+    fd = open(name, O_RDWR, 0666);
+    if (fd < 0) {
+        interrupt_resume(reg);
+        return -1;
+    }
+
+    interrupt_resume(reg);
+    return fd;
 }
 
 /*
