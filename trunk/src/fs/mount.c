@@ -154,11 +154,6 @@ int mount(const char *point_name, const char *dev_name, const char *fs_name)
                         return -1;                                      /*  所以当作出错来处理          */
                     }
                 } else {
-                    if (rootfs_point != NULL) {                         /*  不能再次挂载根文件系统      */
-                        kfree(point);
-                        mutex_unlock(&pointmgr_lock);
-                        return -1;
-                    }
                     rootfs_point = point;
                 }
 
@@ -170,6 +165,9 @@ int mount(const char *point_name, const char *dev_name, const char *fs_name)
                  */
                 ret = fs->mount(point, dev, dev_name);                  /*  挂载                        */
                 if (ret < 0) {
+                    if (rootfs_point == point) {
+                        rootfs_point =  NULL;
+                    }
                     kfree(point);
                     mutex_unlock(&pointmgr_lock);
                     return -1;

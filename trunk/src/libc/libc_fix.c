@@ -38,40 +38,77 @@
 **
 *********************************************************************************************************/
 #include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
 
-/*
- * Reverse memchr()
- * Find the last occurrence of 'c' in the buffer 's' of size 'n'.
- */
-void *
-memrchr(const void *s, int c, size_t n)
+void *memrchr(const void *s, int c, size_t len)
 {
-    const unsigned char *cp;
+    const unsigned char *e;
 
-    if (n != 0) {
-        cp = (unsigned char *)s + n;
+    if (len != 0) {
+        e = (unsigned char *)s + len;
         do {
-            if (*(--cp) == (unsigned char)c) {
-                return ((void *)cp);
+            if (*(--e) == (unsigned char)c) {
+                return ((void *)e);
             }
-        } while (--n != 0);
+        } while (--len != 0);
     }
     return (NULL);
 }
 
-/*
- * Find the first occurrence of C in S or the final NUL byte.
- */
-char *
-strchrnul(const char *s, int c_in)
+char *strchrnul(const char *s, int c)
 {
-    char c = c_in;
+    char ch = c;
 
-    while (*s && (*s != c)) {
+    while (*s != '\0' && (*s != ch)) {
         s++;
     }
 
     return (char *)s;
+}
+
+char *xstrndup(const char *s, size_t len)
+{
+    char *ptr;
+
+    ptr = strndup(s, len);
+    if (ptr == NULL) {
+        fprintf(stderr, "%s error!\n", __func__);
+    }
+    return ptr;
+}
+
+char *xstrdup(const char *s)
+{
+    char *ptr;
+
+    ptr = strdup(s);
+    if (ptr == NULL) {
+        fprintf(stderr, "%s error!\n", __func__);
+    }
+    return ptr;
+}
+
+void *xmalloc(size_t s)
+{
+    void *ptr;
+
+    ptr = malloc(s);
+    if (ptr == NULL) {
+        fprintf(stderr, "%s error!\n", __func__);
+    }
+    return ptr;
+}
+
+void *xzalloc(size_t s)
+{
+    void *ptr;
+
+    ptr = xmalloc(s);
+    if (ptr != NULL) {
+        memset(ptr, 0, s);
+    }
+    return ptr;
 }
 /*********************************************************************************************************
   END FILE

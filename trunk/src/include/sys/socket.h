@@ -52,7 +52,13 @@ int socket_attach(int sock_fd);
  * 获得 socket 的私有文件描述符
  */
 int socket_priv_fd(int fd);
-#else
+
+/*
+ * 打开 socket
+ */
+int socket_open(int sock_fd);
+#endif
+
 int accept(int s, struct sockaddr *addr, socklen_t *addrlen);
 int bind(int s, const struct sockaddr *name, socklen_t namelen);
 int shutdown(int s, int how);
@@ -69,7 +75,6 @@ int send(int s, const void *dataptr, size_t size, int flags);
 int sendto(int s, const void *dataptr, size_t size, int flags,
     const struct sockaddr *to, socklen_t tolen);
 int socket(int domain, int type, int protocol);
-#endif
 
 #endif                                                                  /*  SOCKET_H_                   */
 /*********************************************************************************************************

@@ -44,227 +44,8 @@
 #include <ctype.h>
 #include <limits.h>
 #include <stdlib.h>
-
-/*
- * 获得任务信息
- */
-static int pstat(task_t *task, char *buf)
-{
-    const char *state;
-
-    switch (task->state) {
-    case TASK_RUNNING:
-        state = "ready";
-        break;
-
-    case TASK_SLEEPING:
-        state = "sleep";
-        break;
-
-    case TASK_SUSPEND:
-        state = "wait";
-        break;
-
-    default:
-        state = "dead";
-        break;
-    }
-
-    if (strlen(task->name) < 7) {
-        return sprintf(buf, "%s\t %s\t\t %4u\t %s\t %4u\t %10u\t %4u\t %4u%%\t %4u%%\t %4u\t %4u\n",
-                        task->type == TASK_TYPE_PROCESS ? "process" : "kthread",
-                        task->name,
-                        task->tid,
-                        state,
-                        task->counter,
-                        task->timer,
-                        task->priority,
-                        task->cpu_rate,
-                        task->stack_rate,
-                        task->frame_nr,
-                        task->dabt_cnt);
-    } else {
-        return sprintf(buf, "%s\t %s\t %4u\t %s\t %4u\t %10u\t %4u\t %4u%%\t %4u%%\t %4u\t %4u\n",
-                        task->type == TASK_TYPE_PROCESS ? "process" : "kthread",
-                        task->name,
-                        task->tid,
-                        state,
-                        task->counter,
-                        task->timer,
-                        task->priority,
-                        task->cpu_rate,
-                        task->stack_rate,
-                        task->frame_nr,
-                        task->dabt_cnt);
-    }
-}
-
-/*
- * ts 命令
- */
-static int ts_main(int argc, char **argv)
-{
-    int i;
-    uint32_t reg;
-    task_t *task;
-    char buf[LINE_MAX];
-
-    printf("type\t name\t\t pid\t state\t count\t timer\t\t prio\t cpu\t stack\t page\t dabt\n");
-
-    for (i = 0, task = tasks; i < TASK_NR; i++, task++) {
-        reg = interrupt_disable();
-        if (task->state != TASK_UNALLOCATE) {
-            pstat(task, buf);
-            interrupt_resume(reg);
-            printf(buf);
-        } else {
-            interrupt_resume(reg);
-        }
-    }
-    return 0;
-}
-
-/*
- * cd 命令
- */
-static int cd_main(int argc, char **argv)
-{
-    if (argc == 2) {
-        return chdir(argv[1]);
-    } else {
-        return 0;
-    }
-}
-
-/*
- * 执行内建的 sbin 命令
- */
-static int exec_buildin(int argc, char **argv)
-{
-    struct stat st;
-
-    if (stat(argv[0], &st) < 0) {
-        fprintf(stderr, "%s no found!\n", argv[0]);
-        return -1;
-    }
-
-    return process_create(argv[0], 5);
-}
-
-/*
- * 执行命令
- */
-static int exec_cmd(char *cmd)
-{
-    static char *argv[ARG_MAX];
-    char *p, *word = NULL;
-    int argc = 0;
-
-    if (cmd[0] != ' ' && cmd[0] != '\t') {
-        word = cmd;
-    }
-
-    p = cmd;
-    while (*p) {
-        if (word == NULL) {
-            if (*p != ' ' && *p != '\t') {
-                word = p;
-            }
-        } else {
-            if (*p == ' ' || *p == '\t') {
-                *p = '\0';
-                argv[argc++] = word;
-                word = NULL;
-                if (argc >= ARG_MAX - 1) {
-                    return -1;
-                }
-            }
-        }
-        p++;
-    }
-
-    if (argc == 0 && word == NULL) {
-        return -1;
-    }
-
-    if (word) {
-        argv[argc++] = word;
-    }
-
-    argv[argc] = NULL;
-
-    if (strcmp(argv[0], "ts") == 0) {
-        ts_main(argc, argv);
-    } else if (strcmp(argv[0], "cd") == 0) {
-        cd_main(argc, argv);
-    } else if (strcmp(argv[0], "cat") == 0) {
-        extern int cat_main(int argc, char *argv[]);
-        cat_main(argc, argv);
-    } else if (strcmp(argv[0], "clear") == 0) {
-        extern int clear_main(int argc, char *argv[]);
-        clear_main(argc, argv);
-    } else if (strcmp(argv[0], "cp") == 0) {
-        extern int cp_main(int argc, char *argv[]);
-        cp_main(argc, argv);
-    } else if (strcmp(argv[0], "echo") == 0) {
-        extern int echo_main(int argc, char *argv[]);
-        echo_main(argc, argv);
-    } else if (strcmp(argv[0], "head") == 0) {
-        extern int head_main(int argc, char *argv[]);
-        head_main(argc, argv);
-    } else if (strcmp(argv[0], "ls") == 0) {
-        extern int ls_main(int argc, char *argv[]);
-        ls_main(argc, argv);
-    } else if (strcmp(argv[0], "mkdir") == 0) {
-        extern int mkdir_main(int argc, char *argv[]);
-        mkdir_main(argc, argv);
-    } else if (strcmp(argv[0], "more") == 0) {
-        extern int more_main(int argc, char *argv[]);
-        more_main(argc, argv);
-    } else if (strcmp(argv[0], "mv") == 0) {
-        extern int mv_main(int argc, char *argv[]);
-        mv_main(argc, argv);
-    } else if (strcmp(argv[0], "envs") == 0) {
-        extern int printenv_main(int argc, char *argv[]);
-        printenv_main(argc, argv);
-    } else if (strcmp(argv[0], "pwd") == 0) {
-        extern int pwd_main(int argc, char *argv[]);
-        pwd_main(argc, argv);
-    } else if (strcmp(argv[0], "rm") == 0) {
-        extern int rm_main(int argc, char *argv[]);
-        rm_main(argc, argv);
-    } else if (strcmp(argv[0], "rmdir") == 0) {
-        extern int rmdir_main(int argc, char *argv[]);
-        rmdir_main(argc, argv);
-    } else if (strcmp(argv[0], "touch") == 0) {
-        extern int touch_main(int argc, char *argv[]);
-        touch_main(argc, argv);
-    } else if (strcmp(argv[0], "vi") == 0) {
-        extern int vi_main(int argc, char *argv[]);
-        vi_main(argc, argv);
-    } else if (strcmp(argv[0], "mems") == 0) {
-        kheap_show(STDOUT_FILENO);
-    } else if (strcmp(argv[0], "exit") == 0) {
-        _exit(0);
-    } else {
-        exec_buildin(argc, argv);
-    }
-
-    return 0;
-}
-
-/*
- * logo
- */
-const char logo[] =
-        "_________________________________________________\n"
-        "      __                            __       __\n"
-        "    /    )          ,   /         /    )   /    )\n"
-        "    \\       _--_       /   ___   /    /    \\\n"
-        "     \\     / /  ) /   /   /___) /    /      \\\n"
-        "_(____/___/_/__/_/___/___(___ _(____/___(____/___\n";
-
 #include <termios.h>
+#include "cmds.h"
 
 /*
  * Special telnet characters
@@ -316,6 +97,9 @@ const char logo[] =
 #define STATE_OPTDAT 4
 #define STATE_SE     5
 
+/*
+ * 发送选项
+ */
 static void sendopt(int code, int option)
 {
     unsigned char buf[3];
@@ -326,6 +110,9 @@ static void sendopt(int code, int option)
     write(STDOUT_FILENO, buf, 3);
 }
 
+/*
+ * 分析选项
+ */
 static void parseopt(int code, int option)
 {
     switch (option) {
@@ -345,9 +132,13 @@ static void parseopt(int code, int option)
         } else {
             sendopt(TELNET_WONT, option);
         }
+        break;
     }
 }
 
+/*
+ * 分析选项数据
+ */
 static void parseoptdat(int option, unsigned char *data, int len)
 {
     switch (option) {
@@ -362,6 +153,9 @@ static void parseoptdat(int option, unsigned char *data, int len)
         break;
 
     case TELOPT_TERMINAL_TYPE:
+        break;
+
+    default:
         break;
     }
 }
@@ -416,25 +210,24 @@ static void telnetd_thread(void *arg)
     /*
      * 发送 logo
      */
-    printf(logo);
+    printf(smileos_logo);
 
     /*
-     * 发送
+     * 发送提示符
      */
     printf("%s]#", getcwd(NULL, 0));
+
+    fflush(stdout);
 
     pos = 0;
 
     state = STATE_NORMAL;
 
-    fflush(stdout);
-
     while (1) {
-
         /*
          * 接收数据
          */
-        len = read(STDIN_FILENO, &buf, LINE_MAX);
+        len = read(STDIN_FILENO, buf, LINE_MAX);
         if (len <= 0) {
             fprintf(stderr, "%s: failed to read socket, errno=%d\n", __func__, errno);
             goto end;
@@ -443,7 +236,6 @@ static void telnetd_thread(void *arg)
         i = 0;
         while (len-- > 0) {
             ch = buf[i++];
-
             switch (state) {
               case STATE_NORMAL:
                 if (ch == TELNET_IAC) {
@@ -465,7 +257,7 @@ static void telnetd_thread(void *arg)
                             if (pos > 0 && pos < LINE_MAX) {
                                 cmd[pos] = '\0';
                                 pos = 0;
-                                exec_cmd(cmd);
+                                do_cmd(cmd);
                             }
                             printf("%s]#", getcwd(NULL, 0));
                             fflush(stdout);
@@ -495,7 +287,7 @@ static void telnetd_thread(void *arg)
                   case TELNET_WONT:
                   case TELNET_DO:
                   case TELNET_DONT:
-                      code = ch;
+                      code  = ch;
                       state = STATE_OPT;
                       break;
 
@@ -514,9 +306,9 @@ static void telnetd_thread(void *arg)
                 break;
 
             case STATE_SB:
-                code = ch;
+                code   = ch;
                 optlen = 0;
-                state = STATE_OPTDAT;
+                state  = STATE_OPTDAT;
                 break;
 
             case STATE_OPTDAT:
@@ -538,9 +330,12 @@ static void telnetd_thread(void *arg)
     }
 
     end:
-    fclose(stdin);
     fclose(stdout);
-    fclose(stderr);
+}
+
+static void null_func(void *arg)
+{
+
 }
 
 /*
@@ -556,7 +351,7 @@ void telnetd(void *arg)
 
     fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (fd < 0) {
-        fprintf(stderr, "%s: failed to create socket\n", __func__);
+        fprintf(stderr, "%s: failed to create socket, errno=%d\n", __func__, errno);
         _exit(-1);
     }
 
@@ -567,7 +362,7 @@ void telnetd(void *arg)
 
     if (bind(fd, (struct sockaddr *)&local_addr, sizeof(local_addr)) < 0) {
         fprintf(stderr, "%s: failed to bind port %d\n", __func__, ntohs(local_addr.sin_port));
-        closesocket(fd);
+        close(fd);
         _exit(-1);
     }
 
@@ -578,17 +373,24 @@ void telnetd(void *arg)
 
         client_fd = accept(fd, (struct sockaddr *)&remote_addr, &addr_len);
         if (client_fd > 0) {
+            int sock_fd;
 
-            sprintf(pty_name, "/dev/pty%d", client_fd);
+            sock_fd = socket_priv_fd(client_fd);
+
+            sprintf(pty_name, "/dev/pty%d", sock_fd);
 
             pty_create(pty_name,
-                      (int  (*)(void *))socket_attach,
-                      (void (*)(void *))lwip_close,
-                      (void  *)client_fd);
+                      (int  (*)(void *))socket_open,
+                      (void (*)(void *))null_func,
+                      (void  *)sock_fd);
 
-            sprintf(thread_name, "%s%d", __func__, client_fd);
+            sprintf(thread_name, "%s%d", __func__, sock_fd);
 
             kthread_create(thread_name, telnetd_thread, pty_name, 8 * KB, 10);
+
+            sleep(1);
+
+            close(client_fd);
         } else {
             fprintf(stderr, "%s: failed to accept connect\n", __func__);
         }

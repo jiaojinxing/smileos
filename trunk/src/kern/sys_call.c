@@ -366,10 +366,16 @@ int _close_r(struct _reent *reent, int fd)
 /*
  * ioctl
  */
-int ioctl(int fd, int cmd, void *arg)
+int ioctl(int fd, int cmd, ...)
 {
     int ret;
     int syscall = SYS_CALL_IOCTL;
+    int arg;
+    va_list va;
+
+    va_start(va, cmd);
+    arg = va_arg(va, int);
+    va_end(va);
 
     debug("%s\n", __func__);
     if (in_kernel()) {
@@ -399,6 +405,7 @@ int fcntl(int fd, int cmd, ...)
 
     va_start(va, cmd);
     arg = va_arg(va, int);
+    va_end(va);
 
     debug("%s\n", __func__);
     if (in_kernel()) {
@@ -1055,8 +1062,6 @@ int select(int maxfdp1, fd_set *readset, fd_set *writeset, fd_set *exceptset, st
 }
 #endif
 
-#ifndef SMILEOS_KERNEL
-
 #include <sys/socket.h>
 
 /*
@@ -1373,7 +1378,6 @@ int setsockopt(int s, int level, int optname, const void *optval, socklen_t optl
     }
     return ret;
 }
-#endif
 /*********************************************************************************************************
   END FILE
 *********************************************************************************************************/

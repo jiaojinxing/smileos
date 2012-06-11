@@ -44,9 +44,7 @@
 /*
  * 创建文件
  */
-int
-creat(const char *path,
-      mode_t mode)
+int creat(const char *path, mode_t mode)
 {
     return open(path, O_WRONLY | O_CREAT | O_TRUNC, mode);
 }
@@ -54,9 +52,7 @@ creat(const char *path,
 /*
  * 创建目录
  */
-int
-mkdir(const char *path,
-      mode_t mode)
+int mkdir(const char *path, mode_t mode)
 {
     return _mkdir_r(_REENT, path, mode);
 }
@@ -64,8 +60,7 @@ mkdir(const char *path,
 /*
  * 删除目录
  */
-int
-rmdir(const char *path)
+int rmdir(const char *path)
 {
     extern int _rmdir_r(struct _reent *reent, const char *path);
 
@@ -75,8 +70,7 @@ rmdir(const char *path)
 /*
  * 判断文件是不是一个 TTY
  */
-int
-isatty(int fd)
+int isatty(int fd)
 {
     return _isatty_r(_REENT, fd);
 }
