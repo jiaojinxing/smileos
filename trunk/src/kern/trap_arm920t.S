@@ -111,9 +111,6 @@ swi_handler:
                                              *  扩展阅读:
                                              *  http://www.52rd.com/Blog/Detail_RD.Blog_zjhfqq_7625.html
                                              */
-    ldr     r4, =kernel_mode                /*  进入内核模式                                            */
-    mov     r5, #1
-    strb    r5, [r4]
 
     cmp     r7, #SYS_CALL_NR                /*  根据 EABI, 系统调用号使用 r7                            */
 
@@ -126,9 +123,6 @@ swi_handler:
     mov     r0, #-1                         /*  出错, 返回 -1, r0 用于返回值                            */
 
 sys_do_return:                              /*  一定会执行                                              */
-    ldr     r4, =kernel_mode                /*  退出内核模式                                            */
-    mov     r5, #0
-    strb    r5, [r4]
     ldmfd   sp!, {r4-r12, pc}^              /*  系统调用处理返回, ^ 表示复制 spsr 到 cpsr               */
 /*********************************************************************************************************
   IRQ 中断处理程序

@@ -71,13 +71,13 @@
 .align 2
 .global __switch_to
 __switch_to:                                    /*  __switch_to 可能在 irq 和 svc 模式下调用            */
-    mrs    r2, cpsr
-    bic    r2, r2, #ARM_MODE_MASK
+    mrs     r2, cpsr
+    bic     r2, r2, #ARM_MODE_MASK
 
-    cmp    r2, #ARM_SVC_MODE                    /*  判断是否在 svc 模式下                               */
-    beq    svc_mode_save
+    cmp     r2, #ARM_SVC_MODE                   /*  判断是否在 svc 模式下                               */
+    beq     svc_mode_save
 
-    b      trap_mode_save
+    b       trap_mode_save
 /*********************************************************************************************************
   trap 模式保存任务上下文
 *********************************************************************************************************/
@@ -322,6 +322,23 @@ interrupt_disable:
 interrupt_resume:
     msr     cpsr, r0
 
+    mov     pc, lr
+/*********************************************************************************************************
+  判断是否在内核模式
+*********************************************************************************************************/
+.globl in_kernel
+in_kernel:
+    mrs     r0, cpsr
+    bic     r0, r0, #ARM_MODE_MASK
+
+    cmp     r0, #ARM_SVC_MODE                   /*  判断是否在 svc 模式下                               */
+    beq     svc_mode
+
+    mov     r0, #0
+    mov     pc, lr
+
+svc_mode:
+    mov     r0, #1
     mov     pc, lr
 /*********************************************************************************************************
   END FILE
