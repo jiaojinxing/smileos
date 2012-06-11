@@ -76,7 +76,6 @@ task_t             *current;                                            /*  指向
 static uint64_t     tick;                                               /*  TICK                        */
 static uint8_t      interrupt_nest;                                     /*  中断嵌套层次                */
 static uint8_t      running;                                            /*  内核是否正在运行            */
-uint8_t             kernel_mode;                                        /*  当前是否处于内核模式        */
 
 /*
  * logo
@@ -105,7 +104,6 @@ static void kvars_init(void)
     int     i;
 
     running        = FALSE;                                             /*  内核还没启动                */
-    kernel_mode    = FALSE;                                             /*  当前不在内核模式            */
     interrupt_nest = 0;                                                 /*  中断嵌套层次为 0            */
     tick           = 0;                                                 /*  TICK 为 0                   */
     current        = &tasks[0];                                         /*  当前任务为进程 0            */
@@ -170,8 +168,6 @@ void schedule(void)
     if (interrupt_nest > 0) {                                           /*  如果还没完全退出中断        */
         return;                                                         /*  直接返回                    */
     }
-
-    kernel_mode = FALSE;                                                /*  退出内核模式                */
 
     while (1) {
         /*
@@ -859,23 +855,6 @@ int in_interrupt(void)
     reg = interrupt_disable();
 
     ret = interrupt_nest > 0 ? TRUE : FALSE;
-
-    interrupt_resume(reg);
-
-    return ret;
-}
-
-/*
- * 判断是否在内核模式
- */
-int in_kernel(void)
-{
-    int      ret;
-    uint32_t reg;
-
-    reg = interrupt_disable();
-
-    ret = kernel_mode;
 
     interrupt_resume(reg);
 
