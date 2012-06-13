@@ -76,7 +76,7 @@
 #define IRQ_STACK_P_BASE    (VECTOR_P_ADDR)                             /*  IRQ 堆栈物理基址            */
 #define IRQ_STACK_V_BASE    (VECTOR_V_ADDR)                             /*  IRQ 堆栈虚拟基址            */
 
-#define KERN_HEAP_SIZE      (2 * MB)                                    /*  内核动态内存堆大小          */
+#define KERN_HEAP_SIZE      (1 * MB)                                    /*  内核动态内存堆大小          */
 #define KERN_STACK_SIZE     (8192)                                      /*  内核栈空间大小              */
 
 #define PROCESS_NR          (32)                                        /*  进程数, 含进程 0            */

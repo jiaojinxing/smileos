@@ -57,6 +57,8 @@
 #define IFNAME0                 'e'
 #define IFNAME1                 'n'
 
+#define HOSTNAME                "lwIP"
+
 /*
  * Helper struct to hold private data used to operate your ethernet interface.
  * Keeping the ethernet address of the MAC in this struct is not necessary
@@ -64,12 +66,12 @@
  * But this is only an example, anyway...
  */
 struct ethernetif {
-    struct eth_addr *mac_addr;
-    u8_t  tx_pkt_cnt;
-    u16_t queue_pkt_len;
-    void (*out_blk)(const void *data, int len);
-    void (*in_blk)(void *data, int len);
-    void (*dummy_in_blk)(int len);
+    struct eth_addr  *mac_addr;
+    u8_t              tx_pkt_cnt;
+    u16_t             queue_pkt_len;
+    void (*outblk)(const void *data, int len);
+    void (*inblk)(void *data, int len);
+    void (*dummy_inblk)(int len);
     void (*rx_status)(u16_t *status, u16_t *len);
 };
 
@@ -108,9 +110,9 @@ struct ethernetif {
 /*
  * 输出块 8 位模式
  */
-static void dm9000_out_blk_8bit(const void *data, int len)
+static void dm9000_outblk_8bit(const void *data, int len)
 {
-    int i;
+    int  i;
 
     for (i = 0; i < len; i++) {
         DM9000_outb(((const u8_t *)data)[i], DM9000_DATA);
@@ -120,9 +122,9 @@ static void dm9000_out_blk_8bit(const void *data, int len)
 /*
  * 输出块 16 位模式
  */
-static void dm9000_out_blk_16bit(const void *data, int len)
+static void dm9000_outblk_16bit(const void *data, int len)
 {
-    int i;
+    int  i;
 
     len = (len + 1) / 2;
 
@@ -134,9 +136,9 @@ static void dm9000_out_blk_16bit(const void *data, int len)
 /*
  * 输出块 32 位模式
  */
-static void dm9000_out_blk_32bit(const void *data, int len)
+static void dm9000_outblk_32bit(const void *data, int len)
 {
-    int i;
+    int  i;
 
     len = (len + 3) / 4;
 
@@ -148,9 +150,9 @@ static void dm9000_out_blk_32bit(const void *data, int len)
 /*
  * 输入块 8 位模式
  */
-static void dm9000_in_blk_8bit(void *data, int len)
+static void dm9000_inblk_8bit(void *data, int len)
 {
-    int i;
+    int  i;
 
     for (i = 0; i < len; i++) {
         ((u8_t *)data)[i] = DM9000_inb(DM9000_DATA);
@@ -158,11 +160,23 @@ static void dm9000_in_blk_8bit(void *data, int len)
 }
 
 /*
+ * 输入块 8 位模式
+ */
+static void dm9000_dummy_inblk_8bit(int len)
+{
+    int  i;
+
+    for (i = 0; i < len; i++) {
+        DM9000_inb(DM9000_DATA);
+    }
+}
+
+/*
  * 输入块 16 位模式
  */
-static void dm9000_in_blk_16bit(void *data, int len)
+static void dm9000_inblk_16bit(void *data, int len)
 {
-    int i;
+    int  i;
 
     len = (len + 1) / 2;
 
@@ -174,9 +188,9 @@ static void dm9000_in_blk_16bit(void *data, int len)
 /*
  * 输入块 16 位模式
  */
-static void dm9000_dummy_in_blk_16bit(int len)
+static void dm9000_dummy_inblk_16bit(int len)
 {
-    int i;
+    int  i;
 
     len = (len + 1) / 2;
 
@@ -188,9 +202,9 @@ static void dm9000_dummy_in_blk_16bit(int len)
 /*
  * 输入块 32 位模式
  */
-static void dm9000_in_blk_32bit(void *data, int len)
+static void dm9000_inblk_32bit(void *data, int len)
 {
-    int i;
+    int  i;
 
     len = (len + 3) / 4;
 
@@ -200,11 +214,25 @@ static void dm9000_in_blk_32bit(void *data, int len)
 }
 
 /*
+ * 输入块 32 位模式
+ */
+static void dm9000_dummy_inblk_32bit(int len)
+{
+    int  i;
+
+    len = (len + 3) / 4;
+
+    for (i = 0; i < len; i++) {
+        DM9000_inl(DM9000_DATA);
+    }
+}
+
+/*
  * 获得接收状态 32 位模式
  */
 static void dm9000_rx_status_32bit(u16_t *status, u16_t *len)
 {
-    u32_t temp;
+    u32_t  temp;
 
     DM9000_outb(DM9000_MRCMD, DM9000_IO);
 
@@ -245,7 +273,7 @@ static u8_t dm9000_io_read(u8_t reg)
 }
 
 /*
- * 从 IO 端口写一个字节
+ * 写一个字节到 IO 端口
  */
 static void dm9000_io_write(u8_t reg, u8_t value)
 {
@@ -258,7 +286,7 @@ static void dm9000_io_write(u8_t reg, u8_t value)
  */
 static u16_t dm9000_phy_read(u8_t reg)
 {
-    u16_t value;
+    u16_t  value;
 
     /*
      * Fill the phyxcer register into REG_0C
@@ -269,7 +297,8 @@ static u16_t dm9000_phy_read(u8_t reg)
     udelay(100);                                                        /*  Wait read complete          */
     dm9000_io_write(DM9000_EPCR, 0x00);                                 /*  Clear phyxcer read command  */
 
-    value = (dm9000_io_read(DM9000_EPDRH) << 8) | dm9000_io_read(DM9000_EPDRL);
+    value = (dm9000_io_read(DM9000_EPDRH) << 8) |
+             dm9000_io_read(DM9000_EPDRL);
 
     return value;
 }
@@ -302,7 +331,7 @@ static void dm9000_phy_write(u8_t reg, u16_t value)
  */
 static err_t dm9000_probe(void)
 {
-    u32_t id;
+    u32_t  id;
 
     id  = dm9000_io_read(DM9000_VIDL);
     id |= dm9000_io_read(DM9000_VIDH) << 8;
@@ -375,10 +404,10 @@ static err_t dm9000_reset(void)
  */
 static err_t dm9000_init(struct netif *netif)
 {
-    struct ethernetif *ethernetif = netif->state;
-    u8_t  mode, oft, link;
-    err_t ret;
-    int   i;
+    struct ethernetif  *ethif = netif->state;
+    u8_t                mode, oft, link;
+    err_t               ret;
+    int                 i;
 
     /*
      * 复位 DM9000 芯片
@@ -405,31 +434,34 @@ static err_t dm9000_init(struct netif *netif)
     switch (mode) {
     case 0x00:  /* 16-bit mode */
         LWIP_DEBUGF(NETIF_DEBUG, ("dm9000_init: running in 16 bit mode\n"));
-        ethernetif->out_blk      = dm9000_out_blk_16bit;
-        ethernetif->in_blk       = dm9000_in_blk_16bit;
-        ethernetif->rx_status    = dm9000_rx_status_16bit;
-        ethernetif->dummy_in_blk = dm9000_dummy_in_blk_16bit;
+        ethif->outblk      = dm9000_outblk_16bit;
+        ethif->inblk       = dm9000_inblk_16bit;
+        ethif->dummy_inblk = dm9000_dummy_inblk_16bit;
+        ethif->rx_status   = dm9000_rx_status_16bit;
         break;
 
     case 0x01:  /* 32-bit mode */
         LWIP_DEBUGF(NETIF_DEBUG, ("dm9000_init: running in 32 bit mode\n"));
-        ethernetif->out_blk    = dm9000_out_blk_32bit;
-        ethernetif->in_blk     = dm9000_in_blk_32bit;
-        ethernetif->rx_status  = dm9000_rx_status_32bit;
+        ethif->outblk      = dm9000_outblk_32bit;
+        ethif->inblk       = dm9000_inblk_32bit;
+        ethif->dummy_inblk = dm9000_dummy_inblk_32bit;
+        ethif->rx_status   = dm9000_rx_status_32bit;
         break;
 
     case 0x02:  /* 8 bit mode */
         LWIP_DEBUGF(NETIF_DEBUG, ("dm9000_init: running in 8 bit mode\n"));
-        ethernetif->out_blk    = dm9000_out_blk_8bit;
-        ethernetif->in_blk     = dm9000_in_blk_8bit;
-        ethernetif->rx_status  = dm9000_rx_status_8bit;
+        ethif->outblk      = dm9000_outblk_8bit;
+        ethif->inblk       = dm9000_inblk_8bit;
+        ethif->dummy_inblk = dm9000_dummy_inblk_8bit;
+        ethif->rx_status   = dm9000_rx_status_8bit;
         break;
 
     default:    /* Assume 8 bit mode, will probably not work anyway */
-        LWIP_DEBUGF(NETIF_DEBUG, ("dm9000_init: running in 0x%2x bit mode\n", mode));
-        ethernetif->out_blk    = dm9000_out_blk_8bit;
-        ethernetif->in_blk     = dm9000_in_blk_8bit;
-        ethernetif->rx_status  = dm9000_rx_status_8bit;
+        LWIP_DEBUGF(NETIF_DEBUG, ("dm9000_init: running in 0x%02x bit mode\n", mode));
+        ethif->outblk      = dm9000_outblk_8bit;
+        ethif->inblk       = dm9000_inblk_8bit;
+        ethif->dummy_inblk = dm9000_dummy_inblk_8bit;
+        ethif->rx_status   = dm9000_rx_status_8bit;
         break;
     }
 
@@ -477,7 +509,7 @@ static err_t dm9000_init(struct netif *netif)
      * Fill device MAC address registers
      */
     for (i = 0, oft = DM9000_PAR; i < 6; i++, oft++) {
-        dm9000_io_write(oft, ethernetif->mac_addr->addr[i]);
+        dm9000_io_write(oft, ethif->mac_addr->addr[i]);
     }
 
     for (i = 0, oft = DM9000_MAR; i < 8; i++, oft++) {
@@ -488,10 +520,12 @@ static err_t dm9000_init(struct netif *netif)
      * Read back MAC address
      */
     LWIP_DEBUGF(NETIF_DEBUG, ("dm9000_init: MAC="));
-    for (i = 0, oft = DM9000_PAR; i < 6; i++, oft++) {
-        LWIP_DEBUGF(NETIF_DEBUG, ("%2x:", dm9000_io_read(oft)));
-    }
-    LWIP_DEBUGF(NETIF_DEBUG, ("\n"));
+    LWIP_DEBUGF(NETIF_DEBUG, ("%02x:", dm9000_io_read(DM9000_PAR + 0)));
+    LWIP_DEBUGF(NETIF_DEBUG, ("%02x:", dm9000_io_read(DM9000_PAR + 1)));
+    LWIP_DEBUGF(NETIF_DEBUG, ("%02x:", dm9000_io_read(DM9000_PAR + 2)));
+    LWIP_DEBUGF(NETIF_DEBUG, ("%02x:", dm9000_io_read(DM9000_PAR + 3)));
+    LWIP_DEBUGF(NETIF_DEBUG, ("%02x:", dm9000_io_read(DM9000_PAR + 4)));
+    LWIP_DEBUGF(NETIF_DEBUG, ("%02x\n",dm9000_io_read(DM9000_PAR + 5)));
 
     /*
      * Activate DM9000
@@ -535,7 +569,7 @@ static err_t dm9000_init(struct netif *netif)
         break;
 
     default:
-        LWIP_DEBUGF(NETIF_DEBUG, ("dm9000_init: operating at unknown 0x%2x mode\n", link));
+        LWIP_DEBUGF(NETIF_DEBUG, ("dm9000_init: operating at unknown 0x%02x mode\n", link));
         break;
     }
 
@@ -558,17 +592,17 @@ static err_t dm9000_init(struct netif *netif)
  */
 static void ethernetif_input(struct netif *netif, struct pbuf *p)
 {
-    struct eth_hdr *ethhdr;
+    struct eth_hdr  *ethhdr;
 
     /*
-     * no packet could be read, silently ignore this
+     * No packet could be read, silently ignore this
      */
     if (p == NULL) {
         return;
     }
 
     /*
-     * points to packet payload, which starts with an Ethernet header
+     * Points to packet payload, which starts with an Ethernet header
      */
     ethhdr = p->payload;
     if (ethhdr == NULL) {
@@ -589,7 +623,7 @@ static void ethernetif_input(struct netif *netif, struct pbuf *p)
     case ETHTYPE_PPPOE:
 #endif /* PPPOE_SUPPORT */
         /*
-         * full packet send to tcpip_thread to process
+         * Full packet send to tcpip_thread to process
          */
         if (netif->input(p, netif) != ERR_OK) {
             LWIP_DEBUGF(NETIF_DEBUG, ("ethernetif_input: IP input error\n"));
@@ -615,12 +649,12 @@ static void ethernetif_input(struct netif *netif, struct pbuf *p)
  */
 static void dm9000_recv(struct netif *netif)
 {
-    struct ethernetif *ethernetif = netif->state;
-    struct pbuf *p, *q;
-    u8_t  rx_byte;
-    u16_t rx_len;
-    u16_t rx_status;
-    int good_packet;
+    struct ethernetif  *ethif = netif->state;
+    struct pbuf        *p, *q;
+    u8_t                rx_byte;
+    u16_t               rx_len;
+    u16_t               rx_status;
+    int                 good_pkt;
 
     do {
         dm9000_io_read(DM9000_MRCMDX);
@@ -637,18 +671,18 @@ static void dm9000_recv(struct netif *netif)
             return;
         }
 
-        good_packet = TRUE;
+        good_pkt = TRUE;
 
-        (ethernetif->rx_status)(&rx_status, &rx_len);
+        (ethif->rx_status)(&rx_status, &rx_len);
 
         if (rx_len < 0x40) {
             LWIP_DEBUGF(NETIF_DEBUG, ("dm9000_recv: rx len error, rx len < 0x40\n"));
-            good_packet = FALSE;
+            good_pkt = FALSE;
         }
 
         if (rx_len > DM9000_PKT_MAX) {
             LWIP_DEBUGF(NETIF_DEBUG, ("dm9000_recv: rx len error, rx len > %d\n", DM9000_PKT_MAX));
-            good_packet = FALSE;
+            good_pkt = FALSE;
         }
 
         rx_status >>= 8;
@@ -669,23 +703,20 @@ static void dm9000_recv(struct netif *netif)
                 LWIP_DEBUGF(NETIF_DEBUG, ("dm9000_recv: rx len error\n"));
             }
 
-            good_packet = FALSE;
+            good_pkt = FALSE;
         }
 
-        if (good_packet && (p = pbuf_alloc(PBUF_RAW, rx_len, PBUF_POOL)) != NULL) {
+        if (good_pkt && (p = pbuf_alloc(PBUF_RAW, rx_len, PBUF_POOL)) != NULL) {
 
             for (q = p; q != NULL; q = q->next) {
-                (ethernetif->in_blk)(q->payload, q->len);
+                (ethif->inblk)(q->payload, q->len);
             }
 
             LINK_STATS_INC(link.recv);
 
             ethernetif_input(netif, p);
         } else {
-            /*
-             * need to dump the packet's data
-             */
-            ethernetif->dummy_in_blk(rx_len);
+            ethif->dummy_inblk(rx_len);
 
             LINK_STATS_INC(link.drop);
         }
@@ -709,14 +740,17 @@ static void dm9000_recv(struct netif *netif)
  */
 static err_t low_level_output(struct netif *netif, struct pbuf *p)
 {
-    struct ethernetif *ethernetif = netif->state;
-    struct pbuf *q;
-    u8_t reg;
+    struct ethernetif  *ethif = netif->state;
+    struct pbuf        *q;
+    u8_t                reg;
 
+    /*
+     * Disable all interrupts
+     */
     reg = dm9000_io_read(DM9000_IMR);
     dm9000_io_write(DM9000_IMR, IMR_PAR);
 
-    if (ethernetif->tx_pkt_cnt > 1) {
+    if (ethif->tx_pkt_cnt > 1) {
         dm9000_io_write(DM9000_IMR, reg);
         return ERR_INPROGRESS;
     }
@@ -724,62 +758,65 @@ static err_t low_level_output(struct netif *netif, struct pbuf *p)
     DM9000_outb(DM9000_MWCMD, DM9000_IO);
 
     for (q = p; q != NULL; q = q->next) {
-        (ethernetif->out_blk)(q->payload, q->len);
+        (ethif->outblk)(q->payload, q->len);
     }
 
-    ethernetif->tx_pkt_cnt++;
+    ethif->tx_pkt_cnt++;
 
-    if (ethernetif->tx_pkt_cnt == 1) {
+    if (ethif->tx_pkt_cnt == 1) {
         dm9000_io_write(DM9000_TXPLL, (p->tot_len & 0xFF));
         dm9000_io_write(DM9000_TXPLH, (p->tot_len >> 8) & 0xFF);
         dm9000_io_write(DM9000_TCR, TCR_TXREQ);
     } else {
-        ethernetif->queue_pkt_len = p->tot_len;
+        ethif->queue_pkt_len = p->tot_len;
     }
 
+    /*
+     * Re-enable interrupt mask
+     */
     dm9000_io_write(DM9000_IMR, reg);
 
     return ERR_OK;
 }
 
 /*
- * dm9000 发送完成
+ * DM9000 发送完成
  */
 static void dm9000_send_done(struct netif *netif)
 {
-    struct ethernetif *ethernetif = netif->state;
-    u8_t tx_status;
+    struct ethernetif  *ethif = netif->state;
+    u8_t                tx_status;
 
-    tx_status = dm9000_io_read(DM9000_NSR);                             /*  Got TX status               */
+    tx_status = dm9000_io_read(DM9000_NSR);                             /*  Get TX status               */
     if (tx_status & (NSR_TX2END | NSR_TX1END)) {
         /*
          * One packet sent complete
          */
         LINK_STATS_INC(link.xmit);
-        ethernetif->tx_pkt_cnt--;
+        ethif->tx_pkt_cnt--;
 
         /*
          * Queue packet check & send
          */
-        if (ethernetif->tx_pkt_cnt > 0) {
-            dm9000_io_write(DM9000_TXPLL, (ethernetif->queue_pkt_len & 0xFF));
-            dm9000_io_write(DM9000_TXPLH, (ethernetif->queue_pkt_len >> 8) & 0xFF);
+        if (ethif->tx_pkt_cnt > 0) {
+            dm9000_io_write(DM9000_TXPLL, (ethif->queue_pkt_len & 0xFF));
+            dm9000_io_write(DM9000_TXPLH, (ethif->queue_pkt_len >> 8) & 0xFF);
             dm9000_io_write(DM9000_TCR, TCR_TXREQ);
         }
     }
 }
 
 /*
- * dm9000 中断
+ * DM9000 中断
  */
 static void dm9000_isr(struct netif *netif)
 {
-    u8_t int_status;
-    u8_t last_io;
-    u8_t reg;
+    u8_t  int_status;
+    u8_t  last_io;
+    u8_t  reg;
 
     /*
-     * Save previous register address
+     * Save previous io register
      */
     last_io = DM9000_inb(DM9000_IO);
 
@@ -790,9 +827,9 @@ static void dm9000_isr(struct netif *netif)
     dm9000_io_write(DM9000_IMR, IMR_PAR);
 
     /*
-     * Got DM9000 interrupt status
+     * Get DM9000 interrupt status
      */
-    int_status = dm9000_io_read(DM9000_ISR);                            /*  Got ISR                     */
+    int_status = dm9000_io_read(DM9000_ISR);                            /*  Get ISR status              */
     dm9000_io_write(DM9000_ISR, int_status);                            /*  Clear ISR status            */
 
     if (int_status & ISR_ROS) {
@@ -811,7 +848,7 @@ static void dm9000_isr(struct netif *netif)
     }
 
     /*
-     * Trnasmit Interrupt check
+     * Transmit Interrupt check
      */
     if (int_status & ISR_PTS) {
         dm9000_send_done(netif);
@@ -823,7 +860,7 @@ static void dm9000_isr(struct netif *netif)
     dm9000_io_write(DM9000_IMR, reg);
 
     /*
-     * Restore previous register address
+     * Restore previous io register
      */
     DM9000_outb(last_io, DM9000_IO);
 }
@@ -836,7 +873,7 @@ static void dm9000_isr(struct netif *netif)
  */
 static int eint47_isr(uint32_t interrupt, void *arg)
 {
-    uint32_t sub_interrupt;
+    uint32_t  sub_interrupt;
 
     sub_interrupt = EINTPEND;
     EINTPEND      = sub_interrupt;
@@ -857,16 +894,16 @@ static int eint47_isr(uint32_t interrupt, void *arg)
  */
 static void low_level_init(struct netif *netif)
 {
-    struct ethernetif *ethernetif = netif->state;
-    err_t ret;
+    struct ethernetif  *ethif = netif->state;
+    err_t               ret;
 
     /*
-     * set MAC hardware address length
+     * Set MAC hardware address length
      */
     netif->hwaddr_len = ETHARP_HWADDR_LEN;
 
     /*
-     * set MAC hardware address
+     * Set MAC hardware address
      */
     netif->hwaddr[0] = 0x08;
     netif->hwaddr[1] = 0x08;
@@ -876,18 +913,18 @@ static void low_level_init(struct netif *netif)
     netif->hwaddr[5] = 0x5B;
 
     /*
-     * maximum transfer unit
+     * Set Maximum transfer unit
      */
     netif->mtu = 1500;
 
     /*
-     * device capabilities
+     * Set Device capabilities
      */
     netif->flags = NETIF_FLAG_BROADCAST | NETIF_FLAG_ETHARP | NETIF_FLAG_LINK_UP | NETIF_FLAG_ETHERNET;
 
 /********************************************************************************************************/
-    ethernetif->queue_pkt_len = 0;
-    ethernetif->tx_pkt_cnt    = 0;
+    ethif->queue_pkt_len = 0;
+    ethif->tx_pkt_cnt    = 0;
 
     /*
      * mini2440 开发板上的 DM9000 芯片挂在 BANK4
@@ -959,12 +996,12 @@ static void low_level_init(struct netif *netif)
  */
 err_t ethernetif_init(struct netif *netif)
 {
-    struct ethernetif *ethernetif;
+    struct ethernetif  *ethif;
 
     LWIP_ASSERT("netif != NULL", (netif != NULL));
 
-    ethernetif = mem_malloc(sizeof(struct ethernetif));
-    if (ethernetif == NULL) {
+    ethif = mem_malloc(sizeof(struct ethernetif));
+    if (ethif == NULL) {
         LWIP_DEBUGF(NETIF_DEBUG, ("ethernetif_init: out of memory\n"));
         return ERR_MEM;
     }
@@ -973,7 +1010,7 @@ err_t ethernetif_init(struct netif *netif)
     /*
      * Initialize interface hostname
      */
-    netif->hostname = "lwIP";
+    netif->hostname = HOSTNAME;
 #endif /* LWIP_NETIF_HOSTNAME */
 
     /*
@@ -983,7 +1020,7 @@ err_t ethernetif_init(struct netif *netif)
      */
     NETIF_INIT_SNMP(netif, snmp_ifType_ethernet_csmacd, LINK_SPEED_OF_YOUR_NETIF_IN_BPS);
 
-    netif->state   = ethernetif;
+    netif->state   = ethif;
     netif->name[0] = IFNAME0;
     netif->name[1] = IFNAME1;
 
@@ -996,10 +1033,10 @@ err_t ethernetif_init(struct netif *netif)
     netif->output     = etharp_output;
     netif->linkoutput = low_level_output;
 
-    ethernetif->mac_addr = (struct eth_addr *)&(netif->hwaddr[0]);
+    ethif->mac_addr = (struct eth_addr *)&(netif->hwaddr[0]);
 
     /*
-     * initialize the hardware
+     * Initialize the hardware
      */
     low_level_init(netif);
 
