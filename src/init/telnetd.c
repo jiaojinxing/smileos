@@ -351,7 +351,7 @@ void telnetd(void *arg)
 
     fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (fd < 0) {
-        fprintf(stderr, "%s: failed to create socket, errno=%d\n", __func__, errno);
+        fprintf(stderr, "%s: failed to create socket\n", __func__);
         _exit(-1);
     }
 

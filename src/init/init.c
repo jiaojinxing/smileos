@@ -99,7 +99,7 @@ static void tcpip_init_done(void *arg)
     extern void netio_init(void);
     netio_init();
 
-    kthread_create("httpd", httpd, NULL, 4 * KB, 10);
+    kthread_create("httpd", httpd, NULL, 32 * KB, 10);
 }
 
 #include <stdlib.h>

@@ -111,7 +111,6 @@ swi_handler:
                                              *  扩展阅读:
                                              *  http://www.52rd.com/Blog/Detail_RD.Blog_zjhfqq_7625.html
                                              */
-
     cmp     r7, #SYS_CALL_NR                /*  根据 EABI, 系统调用号使用 r7                            */
 
     ldrls   r4, =sys_do_table               /*  系统调用处理跳转表                                      */
