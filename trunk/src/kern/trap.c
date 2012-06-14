@@ -127,17 +127,21 @@ void dabt_c_handler(uint32_t lr, uint32_t spsr)
 
     case 5:     /* Translation */
     case 7:
-        if (current->pid != 0) {
-            /*
-             * qemu-system-arm.exe 的 bug..., 真实硬件使用 #if 1, qemu 使用 #if 0
-             */
-    #if 0
+        if (current->pid != 0) {                                        /*  如果是在进程里发生错误      */
+
             mva = mmu_get_fault_address();
-    #warning "you can't use qemu-system-arm.exe"
-    #else
-            mva = mmu_get_fault_address() + PROCESS_SPACE_SIZE * current->pid;
-    #warning "you must use qemu-system-arm.exe"
-    #endif
+            /*
+             * 真实硬件时, mmu_get_fault_address 应该返回的是
+             *
+             * mva = va < 32 * MB ? va + PROCESS_SPACE_SIZE * current->pid : va
+             *
+             * 而 qemu-system-arm.exe 有 bug, 始终返回的是 va
+             *
+             * 所以加上下面的修正代码
+             */
+            if (mva < PROCESS_SPACE_SIZE) {
+                mva = mva + PROCESS_SPACE_SIZE * current->pid;
+            }
 
             if (    mva >= PROCESS_SPACE_SIZE *  current->pid           /*  判断出错地址是否在当前进程  */
                  && mva <  PROCESS_SPACE_SIZE * (current->pid + 1)) {   /*  的虚拟地址空间范围内        */
@@ -149,6 +153,12 @@ void dabt_c_handler(uint32_t lr, uint32_t spsr)
             }
         } else {
             int32_t pid;
+
+            /*
+             * 如果是在内核里发生错误
+             *
+             * 注意在系统调用中, 必须将指针型参数经 va_to_mva 转换方可传入内核 API
+             */
 
             mva = mmu_get_fault_address();                              /*  必须就是 MVA                */
 

@@ -329,6 +329,33 @@ void libc_init(void)
     stderr = fdopen(STDERR_FILENO, "w");
 }
 
+/*
+ * _fini
+ */
+void _fini(void)
+{
+
+}
+
+#include <stdarg.h>
+
+/*
+ * printk
+ */
+void printk(const char *fmt, ...)
+{
+    va_list va;
+    char buffer[256];
+
+    va_start(va, fmt);
+
+    vsnprintf(buffer, 256, fmt, va);
+
+    fputs(buffer, stderr);
+
+    va_end(va);
+}
+
 #endif
 
 /*

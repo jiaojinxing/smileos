@@ -1199,6 +1199,9 @@ int listen(int s, int backlog)
     return ret;
 }
 
+/*
+ * recv
+ */
 int recv(int s, void *mem, size_t len, int flags)
 {
     int ret;
@@ -1229,6 +1232,9 @@ int recv(int s, void *mem, size_t len, int flags)
 }
 #endif
 
+/*
+ * recvfrom
+ */
 int recvfrom(int s, void *mem, size_t len, int flags,
       struct sockaddr *from, socklen_t *fromlen)
 {
@@ -1259,6 +1265,9 @@ int recvfrom(int s, void *mem, size_t len, int flags,
 }
 #endif
 
+/*
+ * sendto
+ */
 int sendto(int s, const void *dataptr, size_t size, int flags,
     const struct sockaddr *to, socklen_t tolen)
 {
@@ -1289,6 +1298,9 @@ int sendto(int s, const void *dataptr, size_t size, int flags,
 }
 #endif
 
+/*
+ * getsockopt
+ */
 int getsockopt(int s, int level, int optname, void *optval, socklen_t *optlen)
 {
     int ret;
@@ -1309,6 +1321,9 @@ int getsockopt(int s, int level, int optname, void *optval, socklen_t *optlen)
     return ret;
 }
 
+/*
+ * send
+ */
 int send(int s, const void *dataptr, size_t size, int flags)
 {
     int ret;
@@ -1339,6 +1354,9 @@ int send(int s, const void *dataptr, size_t size, int flags)
 }
 #endif
 
+/*
+ * shutdown
+ */
 int shutdown(int s, int how)
 {
     int ret;
@@ -1359,6 +1377,9 @@ int shutdown(int s, int how)
     return ret;
 }
 
+/*
+ * setsockopt
+ */
 int setsockopt(int s, int level, int optname, const void *optval, socklen_t optlen)
 {
     int ret;
@@ -1377,65 +1398,6 @@ int setsockopt(int s, int level, int optname, const void *optval, socklen_t optl
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
     return ret;
-}
-
-#include <poll.h>
-
-int poll(struct pollfd *fds, nfds_t numfds, int timeout)
-{
-    fd_set read_set;
-    fd_set write_set;
-    fd_set exception_set;
-    nfds_t i;
-    int n;
-    int rc;
-
-    FD_ZERO(&read_set);
-    FD_ZERO(&write_set);
-    FD_ZERO(&exception_set);
-
-    n = -1;
-    for (i = 0; i < numfds; i++) {
-        if (fds[i].fd < 0) {
-            continue;
-        }
-
-        if (fds[i].events & POLLIN)  FD_SET(fds[i].fd, &read_set);
-        if (fds[i].events & POLLOUT) FD_SET(fds[i].fd, &write_set);
-        if (fds[i].events & POLLERR) FD_SET(fds[i].fd, &exception_set);
-
-        if (fds[i].fd > n) {
-            n = fds[i].fd;
-        }
-    }
-
-    if (n == -1) {
-        return 0;
-    }
-
-    if (timeout < 0) {
-        rc = select(n + 1, &read_set, &write_set, &exception_set, NULL);
-    } else {
-        struct timeval tv;
-
-        tv.tv_sec  = timeout / 1000;
-        tv.tv_usec = 1000 * (timeout % 1000);
-        rc = select(n + 1, &read_set, &write_set, &exception_set, &tv);
-    };
-
-    if (rc < 0) {
-        return rc;
-    }
-
-    for (i = 0; i < numfds; i++) {
-        fds[i].revents = 0;
-
-        if (FD_ISSET(fds[i].fd, &read_set))      fds[i].revents |= POLLIN;
-        if (FD_ISSET(fds[i].fd, &write_set))     fds[i].revents |= POLLOUT;
-        if (FD_ISSET(fds[i].fd, &exception_set)) fds[i].revents |= POLLERR;
-    }
-
-    return rc;
 }
 /*********************************************************************************************************
   END FILE
