@@ -36,6 +36,12 @@
 ** Version:                 1.1.0
 ** Descriptions:            处理更多的异常, 软件中断加入内核模式的设置
 **
+**--------------------------------------------------------------------------------------------------------
+** Modified by:             JiaoJinXing
+** Modified date:           2012-6-12
+** Version:                 1.1.0
+** Descriptions:            去除软件中断中内核模式的设置
+**
 *********************************************************************************************************/
 #include "kern/config.h"
 #include "kern/arm.h"
@@ -71,7 +77,7 @@ _fiq:       .word fiq_handler
 *********************************************************************************************************/
 .extern cpu_init
 .extern bsp_init
-.extern kernel_mode
+
 reset_handler:
                                             /*  进入 svc 模式, 关中断                                   */
     msr     cpsr_c, #(ARM_FIQ_NO + ARM_IRQ_NO + ARM_SVC_MODE)

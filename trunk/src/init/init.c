@@ -55,16 +55,6 @@
 #include <fcntl.h>
 
 /*
- * HTTPD 线程
- */
-static void httpd(void *arg)
-{
-    extern int webServerStart(char *pcAddr, char *pcWebPath, int iPort);
-
-    webServerStart("192.168.0.30", "/sd0/webs", 80);
-}
-
-/*
  * LwIP 初始化完成处理函数
  */
 static void tcpip_init_done(void *arg)
@@ -98,8 +88,6 @@ static void tcpip_init_done(void *arg)
 
     extern void netio_init(void);
     netio_init();
-
-    kthread_create("httpd", httpd, NULL, 32 * KB, 10);
 }
 
 #include <stdlib.h>

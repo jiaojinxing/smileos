@@ -60,12 +60,12 @@
 #define ENVID       (1)                                                 /*  开启视频输出                */
 
 #define VBPD        (1)                                                 /*  垂直同步信号后肩            */
-#define LINEVAL     (320)                                               /*  垂直尺寸                    */
+#define LINEVAL     (480)                                               /*  垂直尺寸                    */
 #define VFPD        (5)                                                 /*  垂直同步信号前肩            */
 #define VSPW        (1)                                                 /*  垂直同步信号脉宽            */
 
 #define HBPD        (39)                                                /*  水平同步信号后肩            */
-#define HOZVAL      (240)                                               /*  水平尺寸                    */
+#define HOZVAL      (640)                                               /*  水平尺寸                    */
 #define HFPD        (14)                                                /*  水平同步信号前肩            */
 #define HSPW        (5)                                                 /*  水平同步信号脉宽            */
 
@@ -160,6 +160,7 @@ void lcd_init(void)
 
 #include "vfs/device.h"
 #include <sys/stat.h>
+#include <linux/fb.h>
 
 /*
  * 打开 FrameBuffer
@@ -176,9 +177,32 @@ static int fb_open(void *ctx, file_t *file, int oflag, mode_t mode)
 static int fb_ioctl(void *ctx, file_t *file, int cmd, void *arg)
 {
     int ret = 0;
+    struct fb_var_screeninfo *var = arg;
+    struct fb_fix_screeninfo *fix = arg;
 
     switch (cmd) {
-    case 0:
+    case FBIOGET_VSCREENINFO:
+        var->xoffset        = 0;
+        var->yoffset        = 0;
+        var->xres           = LCD_WIDTH;
+        var->yres           = LCD_HEIGHT;
+        var->xres_virtual   = var->xres;
+        var->yres_virtual   = var->yres;
+        var->bits_per_pixel = LCD_BPP;
+        var->red.offset     = 11;
+        var->red.length     = 5;
+        var->green.offset   = 5;
+        var->green.length   = 6;
+        var->blue.offset    = 5;
+        var->blue.length    = 0;
+        break;
+
+    case FBIOGET_FSCREENINFO:
+        fix->smem_start     = framebuffer;
+        fix->smem_len       = sizeof(framebuffer);
+        fix->xpanstep       = 0;
+        fix->ypanstep       = 0;
+        fix->ywrapstep      = 0;
         break;
 
     default:
