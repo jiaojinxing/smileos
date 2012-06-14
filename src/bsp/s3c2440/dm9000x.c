@@ -593,6 +593,7 @@ static err_t dm9000_init(struct netif *netif)
 static void ethernetif_input(struct netif *netif, struct pbuf *p)
 {
     struct eth_hdr  *ethhdr;
+    err_t            err;
 
     /*
      * No packet could be read, silently ignore this
@@ -625,8 +626,9 @@ static void ethernetif_input(struct netif *netif, struct pbuf *p)
         /*
          * Full packet send to tcpip_thread to process
          */
-        if (netif->input(p, netif) != ERR_OK) {
-            LWIP_DEBUGF(NETIF_DEBUG, ("ethernetif_input: IP input error\n"));
+        err = netif->input(p, netif);
+        if (err != ERR_OK) {
+            LWIP_DEBUGF(NETIF_DEBUG, ("ethernetif_input: IP input error, err = %d\n", err));
             pbuf_free(p);
             p = NULL;
         }

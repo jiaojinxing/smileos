@@ -150,6 +150,71 @@ void kernel_start(void)
 }
 
 /*
+ * 进程切换
+ */
+static void process_switch(task_t *from, task_t *to)
+{
+    int     i;
+    int     j;
+    task_t *task;
+
+    if (to->pid == 0) {                                                 /*  如果准备运行内核线程        */
+        if (from->pid != 0) {                                           /*  如果上次运行的是进程        */
+            /*
+             * 开放所有有效进程的虚拟地址空间
+             */
+            for (i = 1, task = tasks + 1; i < PROCESS_NR; i++, task++) {/*  遍历所有的进程控制块        */
+                if (task->state != TASK_UNALLOCATE) {                   /*  如果进程有效                */
+                    for (j = 0; j < PROCESS_SPACE_SIZE / SECTION_SIZE; j++) {
+                        mmu_map_section(task->pid * PROCESS_SPACE_SIZE / SECTION_SIZE + j, task->mmu_backup[j]);
+                    }
+                }
+            }
+        } else {
+            /*
+             * 上次运行的是内核线程, DO NOTHING
+             */
+        }
+    } else {
+        /*
+         * 准备运行新进程
+         */
+        if (from->pid == 0) {                                           /*  如果上次运行的是内核线程    */
+            /*
+             * 屏蔽其它有效进程的虚拟地址空间
+             */
+            for (i = 1, task = tasks + 1; i < PROCESS_NR; i++, task++) {/*  遍历所有的进程控制块        */
+                if (task != to && task->state != TASK_UNALLOCATE) {     /*  如果进程有效                */
+                    for (j = 0; j < PROCESS_SPACE_SIZE / SECTION_SIZE; j++) {
+                        mmu_map_section(task->pid * PROCESS_SPACE_SIZE / SECTION_SIZE + j, 0);
+                    }
+                }
+            }
+        } else {
+            /*
+             * 上次运行的也是进程
+             */
+            /*
+             * 屏蔽上一个进程的虚拟地址空间
+             */
+            for (j = 0; j < PROCESS_SPACE_SIZE / SECTION_SIZE; j++) {
+                mmu_map_section(from->pid * PROCESS_SPACE_SIZE / SECTION_SIZE + j, 0);
+            }
+
+            /*
+             * 开放新进程的虚拟地址空间
+             */
+            for (j = 0; j < PROCESS_SPACE_SIZE / SECTION_SIZE; j++) {
+                mmu_map_section(to->pid * PROCESS_SPACE_SIZE / SECTION_SIZE + j, to->mmu_backup[j]);
+            }
+        }
+    }
+
+    extern void __switch_to(register task_t *from, register task_t *to);
+    __switch_to(from, to);                                              /*  任务切换                    */
+}
+
+/*
  * 任务调度
  * 调用之前必须关中断
  */
@@ -219,22 +284,7 @@ void schedule(void)
         current->content[0] = (uint32_t)&current->kstack[KERN_STACK_SIZE];
     }
 
-#if 0
-    if (task->pid != current->pid) {                                    /*  如果需要切换进程            */
-        for (i = 0; i < PROCESS_SPACE_SIZE / SECTION_SIZE; i++) {       /*  保护原进程的虚拟地址空间    */
-            mmu_map_section(task->pid * PROCESS_SPACE_SIZE / SECTION_SIZE + i, 0);
-        }
-
-        if (current->pid != 0) {
-            for (i = 0; i < PROCESS_SPACE_SIZE / SECTION_SIZE; i++) {   /*  恢复新进程的一级段表        */
-                mmu_map_section(current->pid * PROCESS_SPACE_SIZE / SECTION_SIZE + i, current->mmu_backup[i]);
-            }
-        }
-    }
-#endif
-
-    extern void __switch_to(register task_t *from, register task_t *to);
-    __switch_to(task, current);                                         /*  任务切换                    */
+    process_switch(task, current);                                      /*  进程切换                    */
 }
 
 /*
