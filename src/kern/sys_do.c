@@ -50,7 +50,7 @@
  */
 static inline void *va_to_mva(void *addr)
 {
-    if ((current->pid != 0) && (uint32_t)addr < PROCESS_SPACE_SIZE) {
+    if ((current->pid != 0) && (uint32_t)addr < PROCESS_SPACE_SIZE && addr != NULL) {
         return (uint8_t *)addr + current->pid * PROCESS_SPACE_SIZE;
     } else {
         return addr;
@@ -327,6 +327,71 @@ static int do_shutdown(int s, int how)
         return -1;
     }
 }
+
+static int do_open(const char *path, int oflag, mode_t mode)
+{
+    return vfs_open(va_to_mva(path), oflag, mode);
+}
+
+static ssize_t do_read(int fd, void *buf, size_t len)
+{
+    return vfs_read(fd, va_to_mva(buf), len);
+}
+
+static ssize_t do_write(int fd, const void *buf, size_t len)
+{
+    return vfs_write(fd, va_to_mva(buf), len);
+}
+
+static int do_fstat(int fd, struct stat *buf)
+{
+    return vfs_fstat(fd, va_to_mva(buf));
+}
+
+static DIR *do_opendir(const char *path)
+{
+    return vfs_opendir(va_to_mva(path));
+}
+
+static char *do_getcwd(char *buf, size_t size)
+{
+    return vfs_getcwd(va_to_mva(buf), size);
+}
+
+static int do_chdir(const char *path)
+{
+    return vfs_chdir(va_to_mva(path));
+}
+
+static int do_rename(const char *old, const char *new)
+{
+    return vfs_rename(va_to_mva(old), va_to_mva(new));
+}
+
+static int do_unlink(const char *path)
+{
+    return vfs_unlink(va_to_mva(path));
+}
+
+static int do_link(const char *path1, const char *path2)
+{
+    return vfs_link(va_to_mva(path1), va_to_mva(path2));
+}
+
+static int do_stat(const char *path, struct stat *buf)
+{
+    return vfs_stat(va_to_mva(path), va_to_mva(buf));
+}
+
+static int do_mkdir(const char *path, mode_t mode)
+{
+    return vfs_mkdir(va_to_mva(path), mode);
+}
+
+static int do_rmdir(const char *path)
+{
+    return vfs_rmdir(va_to_mva(path));
+}
 /*********************************************************************************************************
   系统调用处理表
 *********************************************************************************************************/
@@ -370,12 +435,12 @@ sys_do_t sys_do_table[] = {
 #define SYS_CALL_CLOSE      27
 #define SYS_CALL_IOCTL      28
 #define SYS_CALL_SELECT     29
-        (sys_do_t)vfs_open,
-        (sys_do_t)vfs_read,
-        (sys_do_t)vfs_write,
+        (sys_do_t)do_open,
+        (sys_do_t)do_read,
+        (sys_do_t)do_write,
         (sys_do_t)vfs_fcntl,
         (sys_do_t)vfs_isatty,
-        (sys_do_t)vfs_fstat,
+        (sys_do_t)do_fstat,
         (sys_do_t)vfs_lseek,
         (sys_do_t)vfs_close,
         (sys_do_t)vfs_ioctl,
@@ -386,12 +451,12 @@ sys_do_t sys_do_table[] = {
 #define SYS_CALL_STAT       33
 #define SYS_CALL_MKDIR      34
 #define SYS_CALL_RMDIR      35
-        (sys_do_t)vfs_rename,
-        (sys_do_t)vfs_unlink,
-        (sys_do_t)vfs_link,
-        (sys_do_t)vfs_stat,
-        (sys_do_t)vfs_mkdir,
-        (sys_do_t)vfs_rmdir,
+        (sys_do_t)do_rename,
+        (sys_do_t)do_unlink,
+        (sys_do_t)do_link,
+        (sys_do_t)do_stat,
+        (sys_do_t)do_mkdir,
+        (sys_do_t)do_rmdir,
         NULL,
         NULL,
         NULL,
@@ -402,7 +467,7 @@ sys_do_t sys_do_table[] = {
 #define SYS_CALL_REWINDDIR  43
 #define SYS_CALL_TELLDIR    44
 #define SYS_CALL_CLOSEDIR   45
-        (sys_do_t)vfs_opendir,
+        (sys_do_t)do_opendir,
         (sys_do_t)vfs_readdir,
         (sys_do_t)vfs_seekdir,
         (sys_do_t)vfs_rewinddir,
@@ -414,8 +479,8 @@ sys_do_t sys_do_table[] = {
         NULL,
 #define SYS_CALL_GETCWD     50
 #define SYS_CALL_CHDIR      51
-        (sys_do_t)vfs_getcwd,
-        (sys_do_t)vfs_chdir,
+        (sys_do_t)do_getcwd,
+        (sys_do_t)do_chdir,
         NULL,
         NULL,
         NULL,

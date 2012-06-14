@@ -40,6 +40,7 @@
 #include "kern/config.h"
 #include "kern/types.h"
 #include "s3c2440.h"
+
 /*
  * À©Õ¹ÔÄ¶Á:
  * http://hi.baidu.com/760159/blog/item/b4c408894605c49ea4c272a3.html

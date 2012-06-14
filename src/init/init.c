@@ -42,14 +42,7 @@
 #include "kern/kern.h"
 #include "kern/heap.h"
 #include "vfs/vfs.h"
-
-#include "lwip/init.h"
 #include "lwip/tcpip.h"
-#include "lwip/api.h"
-#include "lwip/sys.h"
-#include "lwip/opt.h"
-#include "lwip/sys.h"
-#include "lwip/sockets.h"
 
 #include <unistd.h>
 #include <fcntl.h>
@@ -64,7 +57,6 @@ static void tcpip_init_done(void *arg)
 
     /*
      * 如果使用 qemu, 请把 #if 1 改为 #if 0
-     * 另外 kern/trap.c 文件也有一处要修改
      */
 #if 0
     IP4_ADDR(&ip,       192, 168,   2,  30);
