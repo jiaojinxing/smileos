@@ -296,12 +296,10 @@ void *_calloc_r(struct _reent *reent, size_t nelem, size_t elsize)
     return ptr;
 }
 
-#include <fcntl.h>
-
 /*
- * 初始化 C 库
+ * 创建用户空间内存堆
  */
-void libc_init(void)
+void uheap_create(void)
 {
     extern unsigned char __bss_end;
 
@@ -309,53 +307,7 @@ void libc_init(void)
      * 在 __bss_end 后, 进程栈空间前, 建立内存堆
      */
     heap_init(&uheap, &__bss_end, PROCESS_SPACE_SIZE - (uint32_t)&__bss_end - PROCESS_STACK_SIZE);
-
-    /*
-     * 获得进程的 reent 结构, 赋于 _impure_ptr
-     */
-    extern struct _reent *getreent(void);
-    _impure_ptr = getreent();
-
-    /*
-     * 打开三个标准文件
-     */
-    open("/dev/ttyS0", O_RDONLY, 0666);
-    stdin  = fdopen(STDIN_FILENO,  "r");
-
-    open("/dev/ttyS0", O_WRONLY, 0666);
-    stdout = fdopen(STDOUT_FILENO, "w");
-
-    open("/dev/ttyS0", O_WRONLY, 0666);
-    stderr = fdopen(STDERR_FILENO, "w");
 }
-
-/*
- * _fini
- */
-void _fini(void)
-{
-
-}
-
-#include <stdarg.h>
-
-/*
- * printk
- */
-void printk(const char *fmt, ...)
-{
-    va_list va;
-    char buffer[256];
-
-    va_start(va, fmt);
-
-    vsnprintf(buffer, 256, fmt, va);
-
-    fputs(buffer, stderr);
-
-    va_end(va);
-}
-
 #endif
 
 /*

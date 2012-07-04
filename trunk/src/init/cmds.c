@@ -34,6 +34,7 @@
 #include "kern/config.h"
 #include "kern/types.h"
 #include "kern/kern.h"
+#include "kern/vmm.h"
 #include "drv/pty.h"
 #include <fcntl.h>
 #include <dirent.h>
@@ -139,8 +140,13 @@ int do_cmd(char *cmd)
     } else if (strcmp(argv[0], "vi") == 0) {
         extern int vi_main(int argc, char *argv[]);
         vi_main(argc, argv);
+    } else if (strcmp(argv[0], "kill") == 0) {
+        extern int kill_main(int argc, char **argv);
+        kill_main(argc, argv);
     } else if (strcmp(argv[0], "mems") == 0) {
         kheap_show(STDOUT_FILENO);
+    } else if (strcmp(argv[0], "vmms") == 0) {
+        vmm_show(STDOUT_FILENO);
     } else if (strcmp(argv[0], "exit") == 0) {
         _exit(0);
     } else {

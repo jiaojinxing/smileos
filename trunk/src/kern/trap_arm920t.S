@@ -174,11 +174,11 @@ dabt_handler:
 
     stmfd   sp!, {r0-r12, lr}               /*  保存寄存器和返回地址到 dabt 堆栈                        */
 
-    ldr     lr, =dabt_c_handler_return      /*  返回地址                                                */
-
     mov     r0, lr
 
     mrs     r1, spsr
+
+    ldr     lr, =dabt_c_handler_return      /*  返回地址                                                */
 
     ldr     pc, =dabt_c_handler             /*  进入 dabt c 处理程序                                    */
 
@@ -195,11 +195,11 @@ pabt_handler:
 
     stmfd   sp!, {r0-r12, lr}               /*  保存寄存器和返回地址到 pabt 堆栈                        */
 
-    ldr     lr, =pabt_c_handler_return      /*  返回地址                                                */
-
     mov     r0, lr
 
     mrs     r1, spsr
+
+    ldr     lr, =pabt_c_handler_return      /*  返回地址                                                */
 
     ldr     pc, =pabt_c_handler             /*  进入 pabt c 处理程序                                    */
 
@@ -214,11 +214,11 @@ undef_handler:
 
     stmfd   sp!, {r0-r12, lr}               /*  保存寄存器和返回地址到 undef 堆栈                       */
 
-    ldr     lr, =undf_c_handler_return      /*  返回地址                                                */
-
     mov     r0, lr
 
     mrs     r1, spsr
+
+    ldr     lr, =undf_c_handler_return      /*  返回地址                                                */
 
     ldr     pc, =undf_c_handler             /*  进入 undef c 处理程序                                   */
 

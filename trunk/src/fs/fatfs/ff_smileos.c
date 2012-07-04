@@ -148,14 +148,13 @@ DRESULT disk_read (
     BYTE SectorCount    /* Number of sectros to read */
 )
 {
-    int i;
-
-    for (i = 0; i < SectorCount; i++) {
-        extern int sd_readblock(uint32_t address, uint8_t *buf);
-        sd_readblock((SectorNumber + i) * 512, Buffer + i * 512);
+    extern int sd_read_block(uint32_t blk_nr, uint32_t blk_cnt, uint8_t *buf);
+    int ret = sd_read_block(SectorNumber, SectorCount, Buffer);
+    if (ret < 0) {
+        return RES_ERROR;
+    } else {
+        return RES_OK;
     }
-
-    return RES_OK;
 }
 
 DRESULT disk_write (
@@ -165,14 +164,13 @@ DRESULT disk_write (
     BYTE SectorCount    /* Number of sectors to write */
 )
 {
-    int i;
-
-    for (i = 0; i < SectorCount; i++) {
-        extern int sd_writeblock(uint32_t address, const uint8_t *buf);
-        sd_writeblock((SectorNumber + i) * 512, Buffer + i * 512);
+    extern int sd_write_block(uint32_t blk_nr, uint32_t blk_cnt, const uint8_t *buf);
+    int ret = sd_write_block(SectorNumber, SectorCount, Buffer);
+    if (ret < 0) {
+        return RES_ERROR;
+    } else {
+        return RES_OK;
     }
-
-    return RES_OK;
 }
 
 DRESULT disk_ioctl (

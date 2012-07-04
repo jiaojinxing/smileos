@@ -182,13 +182,17 @@ int FAST_FUNC bb_putchar(int c);
  */
 void getopt_free(void);
 
-char *xstrndup(const char *s, size_t len);
+void *memrchr(const void *ptr, int ch, size_t len);
 
-char *xstrdup(const char *s);
+char *strchrnul(const char *str, int ch);
 
-void *xmalloc(size_t s);
+char *xstrndup(const char *str, size_t len);
 
-void *xzalloc(size_t s);
+char *xstrdup(const char *str);
+
+void *xmalloc(size_t len);
+
+void *xzalloc(size_t len);
 
 #endif                                                                  /*  LIBBB_H_                    */
 /*********************************************************************************************************

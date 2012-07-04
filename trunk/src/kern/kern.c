@@ -170,6 +170,7 @@ static void process_switch(task_t *from, task_t *to)
                     }
                 }
             }
+            mmu_invalidate_itlb_dtlb();
         } else {
             /*
              * 上次运行的是内核线程, DO NOTHING
@@ -190,6 +191,7 @@ static void process_switch(task_t *from, task_t *to)
                     }
                 }
             }
+            mmu_invalidate_itlb_dtlb();
         } else {
             /*
              * 上次运行的也是进程
@@ -207,6 +209,7 @@ static void process_switch(task_t *from, task_t *to)
             for (j = 0; j < PROCESS_SPACE_SIZE / SECTION_SIZE; j++) {
                 mmu_map_section(to->pid * PROCESS_SPACE_SIZE / SECTION_SIZE + j, to->mmu_backup[j]);
             }
+            mmu_invalidate_itlb_dtlb();
         }
     }
 
@@ -338,7 +341,7 @@ void kernel_timer(void)
 
                     if (pos == (uint8_t *)task->stack_base) {
                         printk("kthread %s tid=%d stack overflow!\n", task->name, task->tid);
-                        task_kill(task->tid);
+                        task_kill(task->tid, SIGSEGV);
                         continue;
                     } else {
                         task->stack_rate = 100 * ((uint32_t)(end - pos)) / task->stack_size;
@@ -382,6 +385,14 @@ void interrupt_enter(void)
     uint32_t reg;
 
     reg = interrupt_disable();
+
+    /*
+     * TODO: 现在各种异常共用堆栈, 所以暂时不支持中断嵌套
+     */
+    if (interrupt_nest != 0) {
+        kcomplain("interrupt_nest error!\n");
+        while (1);
+    }
 
     interrupt_nest++;                                                   /*  中断嵌套层次加一            */
 
@@ -827,36 +838,47 @@ int32_t kthread_create(const char *name, void (*func)(void *), void *arg, uint32
 }
 
 /*
- * 杀死任务
- * 只能在任务出错导致进入异常处理程序或任务主动退出通过软件中断进入内核时才能调用
+ * 给任务发信号
  */
-void task_kill(int32_t tid)
+int task_kill(int32_t tid, int sig)
 {
-    task_t *task;
+    task_t  *task;
+    uint32_t reg;
 
     if (tid > 0 && tid < TASK_NR) {                                     /*  任务 ID 合法性判断          */
 
+        reg = interrupt_disable();
+
         task = &tasks[tid];                                             /*  获得任务控制块              */
 
-        vfs_task_cleanup(tid);                                          /*  清理任务的文件信息          */
+        if (task->state != TASK_UNALLOCATE) {
 
-        if (task->type == TASK_TYPE_PROCESS) {                          /*  如果任务是进程              */
+            vfs_task_cleanup(tid);                                      /*  清理任务的文件信息          */
 
-            printk("kill process %s pid=%d!\n", task->name, task->pid);
+            if (task->type == TASK_TYPE_PROCESS) {                      /*  如果任务是进程              */
 
-            vmm_process_cleanup(task);                                  /*  清理进程的虚拟内存信息      */
+                printk("process %s pid=%d exit!\n", task->name, task->pid);
 
-        } else {                                                        /*  如果任务是内核线程          */
-            printk("kill kthread %s tid=%d!\n", task->name, tid);
+                vmm_process_cleanup(task);                              /*  清理进程的虚拟内存信息      */
 
-            kfree((void *)task->stack_base);                            /*  释放内核线程的栈空间        */
+            } else {                                                    /*  如果任务是内核线程          */
+                printk("kthread %s tid=%d exit!\n", task->name, tid);
+
+                kfree((void *)task->stack_base);                        /*  释放内核线程的栈空间        */
+            }
+
+            task->state = TASK_UNALLOCATE;                              /*  释放任务的任务控制块        */
+
+            if (tid == current->tid && !in_interrupt()) {
+                yield();
+            }
         }
 
-        task->state = TASK_UNALLOCATE;                                  /*  释放任务的任务控制块        */
+        interrupt_resume(reg);
 
-        if (tid == current->tid) {                                      /*  如果杀死的是当前运行的任务  */
-            schedule();                                                 /*  任务调度                    */
-        }
+        return 0;
+    } else {
+        return -1;
     }
 }
 

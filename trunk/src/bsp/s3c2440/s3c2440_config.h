@@ -50,16 +50,8 @@
 #define KERN_MEM_SIZE       (10 * MB)                                   /*  内核内存大小                */
 #define KERN_MEM_BASE       (PHY_MEM_BASE)                              /*  内核内存基址                */
 
-#define INT_MEM_SIZE        (1 * MB)                                    /*  中断内存大小                */
-#define INT_MEM_BASE        (KERN_MEM_BASE + KERN_MEM_SIZE)             /*  中断内存基址                */
-
-#define VMM_MEM_SIZE        (PHY_MEM_SIZE - KERN_MEM_SIZE-INT_MEM_SIZE) /*  VMM 内存大小                */
-#define VMM_MEM_BASE        (INT_MEM_BASE + INT_MEM_SIZE)               /*  VMM 内存基址                */
-#define VMM_FRAME_SIZE      (PAGE_SIZE)                                 /*  页框大小                    */
-#define VMM_FRAME_NR        (VMM_MEM_SIZE / VMM_FRAME_SIZE)             /*  页框数                      */
-
 #define PAGE_TBL_SIZE       (1 * KB)                                    /*  页表大小                    */
-#define PAGE_TBL_NR         (1024)                                      /*  页表数                      */
+#define PAGE_TBL_NR         (1024 - 16)                                 /*  页表数                      */
                                                                         /*  页表数组基址                */
 #define PAGE_TBL_BASE       (KERN_MEM_BASE + KERN_MEM_SIZE - PAGE_TBL_NR * PAGE_TBL_SIZE)
 
@@ -69,6 +61,14 @@
 #define PROCESS0_STACK_BASE (MMU_TBL_BASE)                              /*  进程 0 栈空间基址           */
 
 #define KERN_LOAD_ADDR      (KERN_MEM_BASE)                             /*  内核加载地址                */
+
+#define INT_MEM_SIZE        (1 * MB)                                    /*  中断内存大小                */
+#define INT_MEM_BASE        (KERN_MEM_BASE + KERN_MEM_SIZE)             /*  中断内存基址                */
+
+#define VMM_MEM_SIZE        (PHY_MEM_SIZE - KERN_MEM_SIZE-INT_MEM_SIZE) /*  VMM 内存大小                */
+#define VMM_MEM_BASE        (INT_MEM_BASE + INT_MEM_SIZE)               /*  VMM 内存基址                */
+#define VMM_FRAME_SIZE      (PAGE_SIZE)                                 /*  页框大小                    */
+#define VMM_FRAME_NR        (VMM_MEM_SIZE / VMM_FRAME_SIZE)             /*  页框数                      */
 
 #define VECTOR_V_ADDR       (0xFFFF0000)                                /*  向量虚拟地址                */
 #define VECTOR_P_ADDR       (INT_MEM_BASE + 0xF0000)                    /*  向量物理地址                */

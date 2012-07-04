@@ -163,12 +163,17 @@ void lcd_init(void)
 #include <sys/stat.h>
 #include <linux/fb.h>
 
+static int ref = 0;
+
 /*
  * 打开 FrameBuffer
  */
 static int fb_open(void *ctx, file_t *file, int oflag, mode_t mode)
 {
-    LCDCON1 = (LCDCON1 & ~(1)) | ENVID;                                 /*  开启视频输出                */
+    if (++ref == 1) {
+        lcd_init();
+        LCDCON1 = (LCDCON1 & ~(1)) | ENVID;                             /*  开启视频输出                */
+    }
     return 0;
 }
 
@@ -218,7 +223,9 @@ static int fb_ioctl(void *ctx, file_t *file, int cmd, void *arg)
  */
 static int fb_close(void *ctx, file_t *file)
 {
-    LCDCON1 = (LCDCON1 & ~(1)) | 0;                                     /*  关闭视频输出                */
+    if (--ref == 0) {
+        LCDCON1 = (LCDCON1 & ~(1)) | 0;                                 /*  关闭视频输出                */
+    }
     return 0;
 }
 
@@ -248,11 +255,7 @@ driver_t fb_drv = {
  */
 int fb_create(void)
 {
-    lcd_init();
-
-    device_create("/dev/fb0", "fb", NULL);
-
-    return 0;
+    return device_create("/dev/fb0", "fb", NULL);
 }
 /*********************************************************************************************************
   END FILE

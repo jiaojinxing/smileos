@@ -162,6 +162,7 @@ static sys_do_t sys_do_table[1];
 #define SYS_CALL_GETTIME    10
 #define SYS_CALL_GETPID     11
 #define SYS_CALL_GETREENT   12
+#define SYS_CALL_KILL       13
 #define SYS_CALL_OPEN       20
 #define SYS_CALL_READ       21
 #define SYS_CALL_WRITE      22
@@ -289,7 +290,12 @@ unsigned sleep(unsigned int seconds)
 int usleep(useconds_t useconds)
 {
     //debug("%s\n", __func__);
-    sleep_tick(TICK_PER_SECOND * useconds / 1000000);
+    if (useconds <= 1000000 / TICK_PER_SECOND) {
+        sleep_tick(1);
+    } else {
+        sleep_tick(TICK_PER_SECOND * useconds / 1000000);
+    }
+
     return 0;
 }
 #ifndef SMILEOS_KERNEL
@@ -849,8 +855,22 @@ int _execve_r(struct _reent *reent, const char *path, char *const *argv, char *c
  */
 int _kill_r(struct _reent *reent, int pid, int sig)
 {
+    int ret;
+    int syscall = SYS_CALL_KILL;
+
     debug("%s\n", __func__);
-    _exit(0);
+    if (in_kernel()) {
+        ret = (sys_do_table[syscall])(pid, sig);
+    } else {
+        __asm__ __volatile__("mov    r0,  %0": :"r"(pid));
+        __asm__ __volatile__("mov    r1,  %0": :"r"(sig));
+        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
+        __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
+        __asm__ __volatile__("swi    0");
+        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
+        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
+    }
+    return ret;
 }
 
 /*
@@ -1034,11 +1054,11 @@ char *getcwd(char *buf, size_t size)
 /*
  * select
  */
-int select(int maxfdp1, fd_set *readset, fd_set *writeset, fd_set *exceptset, struct timeval *timeout)
+int select(int nfds, fd_set *readset, fd_set *writeset, fd_set *exceptset, struct timeval *timeout)
 {
     int ret;
     int syscall = SYS_CALL_SELECT;
-    sys_do_args_t args = {(void *)maxfdp1, (void *)readset, (void *)writeset, (void *)exceptset, (void *)timeout};
+    sys_do_args_t args = {(void *)nfds, (void *)readset, (void *)writeset, (void *)exceptset, (void *)timeout};
 
     debug("%s\n", __func__);
     if (in_kernel()) {

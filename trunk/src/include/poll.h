@@ -61,6 +61,8 @@ struct pollfd {
     short revents;              /* events found on return        */
 };
 
+int poll(struct pollfd fds[], nfds_t nfds, int timeout);
+
 #endif                                                                  /*  POLL_H_                     */
 /*********************************************************************************************************
   END FILE
