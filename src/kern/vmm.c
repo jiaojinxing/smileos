@@ -42,6 +42,22 @@
 ** Version:                 1.2.0
 ** Descriptions:            加入进程的一级段表记录, 以实现进程虚拟地址空间的保护
 **
+**--------------------------------------------------------------------------------------------------------
+** Modified by:             JiaoJinXing
+** Modified date:           2012-6-15
+** Version:                 1.2.0
+** Descriptions:            修改代码中的一处错误:
+**                          原来: frame->mva = mva & (PAGE_SIZE - 1);
+**
+**                          修正: frame->mva = mva & (~(PAGE_SIZE - 1));
+**
+**--------------------------------------------------------------------------------------------------------
+** Modified by:             JiaoJinXing
+** Modified date:           2012-7-4
+** Version:                 1.2.0
+** Descriptions:            修改代码中的一处比较严重的错误, 释放的页表应该清零! 不然下次再用这个页表时,
+**                          也不它指向了那些旧的页框, 引发不可预测的错误!
+**
 *********************************************************************************************************/
 #include "kern/config.h"
 #include "kern/types.h"
@@ -60,6 +76,7 @@ struct page_table {
 
 static struct page_table  page_tables[PAGE_TBL_NR];                     /*  页表                        */
 static struct page_table *free_page_table_list;                         /*  空闲页表链表                */
+static int                free_page_table_nr = PAGE_TBL_NR;
 
 /*
  * 页表比较函数
@@ -118,6 +135,8 @@ static uint32_t vmm_page_table_alloc(uint32_t section_nr)
         tbl->section_nr = section_nr;
         page_table_tree_RB_INSERT(&used_page_table_tree, tbl);          /*  加入到已用页表红黑树中      */
 
+        free_page_table_nr--;
+
         return (tbl - page_tables) * PAGE_TBL_SIZE + PAGE_TBL_BASE;     /*  返回页表基址                */
     } else {
         return 0;
@@ -131,12 +150,19 @@ static void vmm_page_table_free(uint32_t page_tbl_base)
 {
     struct page_table *tbl;
 
+    /*
+     * !!! 这个 BUG 找得我好苦 !!!
+     */
+    memset((void *)page_tbl_base, 0, PAGE_TBL_SIZE);
+
     tbl = page_tables + (page_tbl_base - PAGE_TBL_BASE) / PAGE_TBL_SIZE;/*  计算页表                    */
 
     page_table_tree_RB_REMOVE(&used_page_table_tree, tbl);              /*  从已用页表红黑树中移除      */
 
     tbl->node.rbe_right  = free_page_table_list;                        /*  加入到空闲页表链表中        */
     free_page_table_list = tbl;
+
+    free_page_table_nr++;
 }
 
 /*
@@ -145,7 +171,7 @@ static void vmm_page_table_free(uint32_t page_tbl_base)
 struct vmm_frame;
 typedef struct vmm_frame vmm_frame_t;
 struct vmm_frame {
-    uint32_t          va;                                               /*  映射到的页面的虚拟基址      */
+    uint32_t          mva;                                              /*  映射到的页面的虚拟基址      */
     struct vmm_frame *prev;                                             /*  前趋                        */
     struct vmm_frame *next;                                             /*  后趋                        */
     struct vmm_frame *process_next;                                     /*  进程后趋                    */
@@ -155,6 +181,7 @@ static vmm_frame_t vmm_frames[VMM_FRAME_NR];                            /*  页框
 
 static vmm_frame_t *free_frame_list;                                    /*  空闲页框链表                */
 static vmm_frame_t *used_frame_list;                                    /*  已用页框链表                */
+static int          free_frame_nr = VMM_FRAME_NR;
 
 /*
  * 分配页框
@@ -177,6 +204,8 @@ static vmm_frame_t *vmm_frame_alloc(task_t *task)
         frame->process_next = task->frame_list;                         /*  加入到进程页框链表中        */
         task->frame_list = frame;
         task->frame_nr++;
+
+        free_frame_nr--;
     }
     return frame;
 }
@@ -198,6 +227,8 @@ static void vmm_frame_free(vmm_frame_t *frame)
 
     frame->next = free_frame_list;                                      /*  加入到空闲页框链表中        */
     free_frame_list = frame;
+
+    free_frame_nr++;
 }
 
 /*
@@ -211,33 +242,33 @@ static inline uint32_t vmm_frame_addr(vmm_frame_t *frame)
 /*
  * 通过一个虚拟地址映射进程虚拟地址空间中的一个页面
  */
-int vmm_page_map(task_t *task, uint32_t va)
+int vmm_page_map(task_t *task, uint32_t mva)
 {
     vmm_frame_t *frame;
     int          flag = FALSE;
 
-    if (   va >= PROCESS_SPACE_SIZE *  task->pid                        /*  判断虚拟地址是否在进程      */
-        && va <  PROCESS_SPACE_SIZE * (task->pid + 1)) {                /*  的虚拟地址空间范围内        */
+    if (   mva >= PROCESS_SPACE_SIZE *  task->pid                       /*  判断虚拟地址是否在进程      */
+        && mva <  PROCESS_SPACE_SIZE * (task->pid + 1)) {               /*  的虚拟地址空间范围内        */
 
-        uint32_t section_nr = va >> SECTION_OFFSET;                     /*  计算虚拟地址的段号          */
+        uint32_t section_nr = mva >> SECTION_OFFSET;                    /*  计算虚拟地址的段号          */
 
         uint32_t tbl = vmm_page_table_lookup(section_nr);               /*  查找该段的页表              */
         if (tbl == 0) {                                                 /*  没找到                      */
             tbl = vmm_page_table_alloc(section_nr);                     /*  分配一个空闲的页表          */
-            if (tbl != NULL) {
+            if (tbl != 0) {
                 task->mmu_backup[section_nr % (PROCESS_SPACE_SIZE / SECTION_SIZE)] =
                         mmu_map_section_as_page(section_nr, tbl);       /*  映射该段                    */
                 flag = TRUE;
             } else {
-                printk("failed to alloc page table, mem map failed, va=0x%x, pid=%d\n", va, task->pid);
+                printk("failed to alloc page table, mem map failed, mva=0x%x, pid=%d\n", mva, task->pid);
                 return -1;
             }
         }
 
         frame = vmm_frame_alloc(task);                                  /*  分配一个空闲的页框          */
         if (frame != NULL) {                                            /*  计算虚拟地址在页表里的页号  */
-            uint32_t page_nr = (va & (SECTION_SIZE - 1)) >> PAGE_OFFSET;
-            frame->va = va & (PAGE_SIZE - 1);
+            uint32_t page_nr = (mva & (SECTION_SIZE - 1)) >> PAGE_OFFSET;
+            frame->mva = mva & (~(PAGE_SIZE - 1));
             mmu_map_page(tbl, page_nr, vmm_frame_addr(frame));          /*  页面映射                    */
             return 0;
         } else {
@@ -249,11 +280,11 @@ int vmm_page_map(task_t *task, uint32_t va)
                 task->mmu_backup[section_nr % (PROCESS_SPACE_SIZE / SECTION_SIZE)] = 0;
                 vmm_page_table_free(tbl);
             }
-            printk("failed to alloc page, mem map failed, va=0x%x, pid=%d\n", va, task->pid);
+            printk("failed to alloc page, mem map failed, mva=0x%x, pid=%d\n", mva, task->pid);
             return -1;
         }
     } else {
-        printk("invalid va=0x%x, mem map failed, pid=%d\n", va, task->pid);
+        printk("invalid mva=0x%x, mem map failed, pid=%d\n", mva, task->pid);
         return -1;
     }
 }
@@ -266,19 +297,9 @@ int vmm_process_cleanup(task_t *task)
     int          i;
     vmm_frame_t *frame;
     uint32_t     tbl;
-    uint32_t     va;
 
     while ((frame = task->frame_list) != NULL) {                        /*  释放进程占用的页框          */
         task->frame_list = frame->process_next;
-
-        /*
-         * 无效页面的 tlb
-         */
-        for (i = 0, va = frame->va; i < PAGE_SIZE / 32; i++, va += 32) {
-            mmu_invalidate_dtlb_mva(va);
-            mmu_invalidate_itlb_mva(va);
-        }
-
         vmm_frame_free(frame);                                          /*  释放页框                    */
     }
     task->frame_nr = 0;
@@ -291,6 +312,9 @@ int vmm_process_cleanup(task_t *task)
         mmu_unmap_section(task->pid * PROCESS_SPACE_SIZE / SECTION_SIZE + i);
         task->mmu_backup[i] = 0;
     }
+
+    mmu_invalidate_itlb_dtlb();
+
     return 0;
 }
 
@@ -363,6 +387,36 @@ void vmm_init(void)
      * 清除所有页表
      */
     memset((void *)PAGE_TBL_BASE, 0, PAGE_TBL_SIZE * PAGE_TBL_NR);
+}
+
+#include <stdio.h>
+#include <unistd.h>
+
+/*
+ * 打印 vmm 信息到文件
+ */
+int vmm_show(int fd)
+{
+    char   buf[LINE_MAX];
+    int    len;
+
+    if (fd < 0) {
+        return -1;
+    }
+
+    len = sprintf(buf, "********** vmm info **********\n");
+    write(fd, buf, len);
+
+    len = sprintf(buf, "free page table_nr = %d\n", free_page_table_nr);
+    write(fd, buf, len);
+
+    len = sprintf(buf, "free frame nr      = %d\n", free_frame_nr);
+    write(fd, buf, len);
+
+    len = sprintf(buf, "************* end *************\n");
+    write(fd, buf, len);
+
+    return 0;
 }
 /*********************************************************************************************************
   END FILE

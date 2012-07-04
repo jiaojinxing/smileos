@@ -119,6 +119,7 @@ void bsp_init(void)
 }
 
 #include "vfs/driver.h"
+#include "drv/sd.h"
 
 /*
  * BSP °²×°Çý¶¯
@@ -128,8 +129,8 @@ int bsp_drivers_install(void)
     extern driver_t fb_drv;
     driver_install(&fb_drv);
 
-    extern driver_t sd_drv;
-    driver_install(&sd_drv);
+    extern driver_t sdcard_drv;
+    driver_install(&sdcard_drv);
 
     return 0;
 }
@@ -142,8 +143,8 @@ int bsp_devices_create(void)
     extern int fb_create(void);
     fb_create();
 
-    extern int sd_create(void);
-    sd_create();
+    extern sdio_t s3c2440_sdio;
+    sdcard_create("/sd0", "/dev/sd0", "fatfs", &s3c2440_sdio);
 
     return 0;
 }

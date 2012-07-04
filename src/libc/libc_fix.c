@@ -40,73 +40,132 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdarg.h>
+#include <fcntl.h>
+#include <unistd.h>
 
-void *memrchr(const void *s, int c, size_t len)
+#ifndef SMILEOS_KERNEL
+/*
+ * 初始化 C 库
+ */
+void libc_init(void)
 {
-    const unsigned char *e;
+    /*
+     * 获得进程的 reent 结构, 赋于 _impure_ptr
+     */
+    extern struct _reent *getreent(void);
+    _impure_ptr = getreent();
+
+    /*
+     * 创建用户空间内存堆
+     */
+    extern void uheap_create(void);
+    uheap_create();
+
+    /*
+     * 打开三个标准文件
+     */
+    open("/dev/ttyS0", O_RDONLY, 0666);
+    stdin  = fdopen(STDIN_FILENO,  "r");
+
+    open("/dev/ttyS0", O_WRONLY, 0666);
+    stdout = fdopen(STDOUT_FILENO, "w");
+
+    open("/dev/ttyS0", O_WRONLY, 0666);
+    stderr = fdopen(STDERR_FILENO, "w");
+}
+
+/*
+ * _fini
+ */
+void _fini(void)
+{
+
+}
+
+/*
+ * printk
+ */
+void printk(const char *fmt, ...)
+{
+    va_list va;
+    char    buffer[256];
+
+    va_start(va, fmt);
+
+    vsnprintf(buffer, 256, fmt, va);
+
+    fputs(buffer, stderr);
+
+    va_end(va);
+}
+#endif
+
+void *memrchr(const void *ptr, int ch, size_t len)
+{
+    const unsigned char *end;
 
     if (len != 0) {
-        e = (unsigned char *)s + len;
+        end = (unsigned char *)ptr + len;
         do {
-            if (*(--e) == (unsigned char)c) {
-                return ((void *)e);
+            if (*(--end) == (unsigned char)ch) {
+                return ((void *)end);
             }
         } while (--len != 0);
     }
     return (NULL);
 }
 
-char *strchrnul(const char *s, int c)
+char *strchrnul(const char *str, int ch)
 {
-    char ch = c;
+    char tmp = ch;
 
-    while (*s != '\0' && (*s != ch)) {
-        s++;
+    while (*str != '\0' && (*str != tmp)) {
+        str++;
     }
-
-    return (char *)s;
+    return (char *)str;
 }
 
-char *xstrndup(const char *s, size_t len)
+char *xstrndup(const char *str, size_t len)
 {
     char *ptr;
 
-    ptr = strndup(s, len);
+    ptr = strndup(str, len);
     if (ptr == NULL) {
         fprintf(stderr, "%s error!\n", __func__);
     }
     return ptr;
 }
 
-char *xstrdup(const char *s)
+char *xstrdup(const char *str)
 {
     char *ptr;
 
-    ptr = strdup(s);
+    ptr = strdup(str);
     if (ptr == NULL) {
         fprintf(stderr, "%s error!\n", __func__);
     }
     return ptr;
 }
 
-void *xmalloc(size_t s)
+void *xmalloc(size_t len)
 {
     void *ptr;
 
-    ptr = malloc(s);
+    ptr = malloc(len);
     if (ptr == NULL) {
         fprintf(stderr, "%s error!\n", __func__);
     }
     return ptr;
 }
 
-void *xzalloc(size_t s)
+void *xzalloc(size_t len)
 {
     void *ptr;
 
-    ptr = xmalloc(s);
+    ptr = xmalloc(len);
     if (ptr != NULL) {
-        memset(ptr, 0, s);
+        memset(ptr, 0, len);
     }
     return ptr;
 }

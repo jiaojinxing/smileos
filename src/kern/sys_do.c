@@ -64,7 +64,7 @@ static inline void *va_to_mva(void *addr)
  */
 static void do_exit(int status)
 {
-    task_kill(current->tid);                                            /*  杀死当前任务                */
+    task_kill(current->tid, SIGQUIT);                                   /*  杀死当前任务                */
 }
 
 /*
@@ -120,6 +120,14 @@ static void do_yeild(void)
 static struct _reent *do_getreent(void)
 {
     return _impure_ptr;
+}
+
+/*
+ * 给进程发信号
+ */
+static int do_kill(int pid, int sig)
+{
+    return task_kill(pid, sig);
 }
 
 /*
@@ -415,10 +423,11 @@ sys_do_t sys_do_table[] = {
 #define SYS_CALL_GETTIME    10
 #define SYS_CALL_GETPID     11
 #define SYS_CALL_GETREENT   12
+#define SYS_CALL_KILL       13
         (sys_do_t)do_gettimeofday,
         (sys_do_t)do_getpid,
         (sys_do_t)do_getreent,
-        NULL,
+        (sys_do_t)do_kill,
         NULL,
         NULL,
         NULL,

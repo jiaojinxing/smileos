@@ -70,7 +70,7 @@
 .code 32
 .align 2
 .global __switch_to
-__switch_to:                                    /*  __switch_to 可能在 irq 和 svc 模式下调用            */
+__switch_to:                                    /*  __switch_to 可能在异常和 svc 模式下调用             */
     mrs     r2, cpsr
     bic     r2, r2, #ARM_MODE_MASK
 
@@ -331,14 +331,14 @@ in_kernel:
     mrs     r0, cpsr
     bic     r0, r0, #ARM_MODE_MASK
 
-    cmp     r0, #ARM_SVC_MODE                   /*  判断是否在 svc 模式下                               */
-    beq     svc_mode
+    cmp     r0, #ARM_SYS_MODE                   /*  判断是否在 sys 模式下                               */
+    beq     sys_mode
 
-    mov     r0, #0
+    mov     r0, #1
     mov     pc, lr
 
-svc_mode:
-    mov     r0, #1
+sys_mode:
+    mov     r0, #0
     mov     pc, lr
 /*********************************************************************************************************
   END FILE

@@ -45,7 +45,7 @@
 /*
  * 通过一个虚拟地址映射进程虚拟地址空间中的一个页面
  */
-int vmm_page_map(task_t *task, uint32_t va);
+int vmm_page_map(task_t *task, uint32_t mva);
 
 /*
  * 初始化进程的虚拟内存信息
@@ -61,6 +61,11 @@ void vmm_process_cleanup(task_t *task);
  * 初始化虚拟内存管理
  */
 void vmm_init(void);
+
+/*
+ * 打印 vmm 信息到文件
+ */
+int vmm_show(int fd);
 
 #endif                                                                  /*  VMM_H_                      */
 /*********************************************************************************************************

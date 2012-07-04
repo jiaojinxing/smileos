@@ -81,28 +81,28 @@ int isatty(int fd)
 #include <poll.h>
 #include <sys/select.h>
 
-int poll(struct pollfd *fds, nfds_t numfds, int timeout)
+int poll(struct pollfd fds[], nfds_t nfds, int timeout)
 {
-    fd_set read_set;
-    fd_set write_set;
-    fd_set exception_set;
+    fd_set readset;
+    fd_set writeset;
+    fd_set errorset;
     nfds_t i;
     int n;
-    int rc;
+    int ret;
 
-    FD_ZERO(&read_set);
-    FD_ZERO(&write_set);
-    FD_ZERO(&exception_set);
+    FD_ZERO(&readset);
+    FD_ZERO(&writeset);
+    FD_ZERO(&errorset);
 
     n = -1;
-    for (i = 0; i < numfds; i++) {
+    for (i = 0; i < nfds; i++) {
         if (fds[i].fd < 0) {
             continue;
         }
 
-        if (fds[i].events & POLLIN)  FD_SET(fds[i].fd, &read_set);
-        if (fds[i].events & POLLOUT) FD_SET(fds[i].fd, &write_set);
-        if (fds[i].events & POLLERR) FD_SET(fds[i].fd, &exception_set);
+        if (fds[i].events & POLLIN)  FD_SET(fds[i].fd, &readset);
+        if (fds[i].events & POLLOUT) FD_SET(fds[i].fd, &writeset);
+        if (fds[i].events & POLLERR) FD_SET(fds[i].fd, &errorset);
 
         if (fds[i].fd > n) {
             n = fds[i].fd;
@@ -114,28 +114,28 @@ int poll(struct pollfd *fds, nfds_t numfds, int timeout)
     }
 
     if (timeout < 0) {
-        rc = select(n + 1, &read_set, &write_set, &exception_set, NULL);
+        ret = select(n + 1, &readset, &writeset, &errorset, NULL);
     } else {
         struct timeval tv;
 
         tv.tv_sec  = timeout / 1000;
         tv.tv_usec = 1000 * (timeout % 1000);
-        rc = select(n + 1, &read_set, &write_set, &exception_set, &tv);
-    };
-
-    if (rc < 0) {
-        return rc;
+        ret = select(n + 1, &readset, &writeset, &errorset, &tv);
     }
 
-    for (i = 0; i < numfds; i++) {
+    if (ret < 0) {
+        return ret;
+    }
+
+    for (i = 0; i < nfds; i++) {
         fds[i].revents = 0;
 
-        if (FD_ISSET(fds[i].fd, &read_set))      fds[i].revents |= POLLIN;
-        if (FD_ISSET(fds[i].fd, &write_set))     fds[i].revents |= POLLOUT;
-        if (FD_ISSET(fds[i].fd, &exception_set)) fds[i].revents |= POLLERR;
+        if (FD_ISSET(fds[i].fd, &readset))      fds[i].revents |= POLLIN;
+        if (FD_ISSET(fds[i].fd, &writeset))     fds[i].revents |= POLLOUT;
+        if (FD_ISSET(fds[i].fd, &errorset)) fds[i].revents |= POLLERR;
     }
 
-    return rc;
+    return ret;
 }
 /*********************************************************************************************************
   END FILE

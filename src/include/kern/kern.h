@@ -254,10 +254,10 @@ uint64_t gettick(void);
 int32_t gettid(void);
 
 /*
- * 杀死任务
- * 只能在任务出错导致进入异常处理程序或任务主动退出通过软件中断进入内核时才能调用
+ * 给任务发信号
  */
-void task_kill(int32_t tid);
+#include <signal.h>
+int task_kill(int32_t tid, int sig);
 
 /*
  * 判断是否在中断处理程序中

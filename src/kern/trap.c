@@ -74,7 +74,7 @@ void undf_c_handler(uint32_t lr, uint32_t spsr)
         printk("last system call = %s\n", last_syscall);
     }
 
-    task_kill(current->tid);                                            /*  杀死当前任务                */
+    task_kill(current->tid, SIGILL);                                    /*  杀死当前任务                */
 
     interrupt_exit();                                                   /*  退出中断                    */
 }
@@ -96,7 +96,7 @@ void pabt_c_handler(uint32_t lr, uint32_t spsr)
         printk("last system call = %s\n", last_syscall);
     }
 
-    task_kill(current->tid);                                            /*  杀死当前任务                */
+    task_kill(current->tid, SIGSEGV);                                   /*  杀死当前任务                */
 
     interrupt_exit();                                                   /*  退出中断                    */
 }
@@ -122,7 +122,7 @@ void dabt_c_handler(uint32_t lr, uint32_t spsr)
             extern const char *last_syscall;
             printk("last system call = %s\n", last_syscall);
         }
-        task_kill(current->tid);                                        /*  杀死当前任务                */
+        task_kill(current->tid, SIGSEGV);                               /*  杀死当前任务                */
         break;
 
     case 5:     /* Translation */
@@ -157,13 +157,13 @@ void dabt_c_handler(uint32_t lr, uint32_t spsr)
             /*
              * 如果是在内核里发生错误
              *
-             * 注意在系统调用中, 必须将指针型参数经 va_to_mva 转换方可传入内核 API
+             * 注意在系统调用处理中, 必须将指针型参数经 va_to_mva 转换方可传入内核接口
              */
 
             mva = mmu_get_fault_address();                              /*  必须就是 MVA                */
 
             pid = mva / PROCESS_SPACE_SIZE;
-            if (pid < PROCESS_NR) {
+            if (pid != 0 && pid < PROCESS_NR) {
                 task_t *task = &tasks[pid];
                 if (task->state != TASK_UNALLOCATE) {
                     if (vmm_page_map(task, mva) == 0) {                 /*  页面映射                    */
@@ -183,7 +183,7 @@ void dabt_c_handler(uint32_t lr, uint32_t spsr)
             extern const char *last_syscall;
             printk("last system call = %s\n", last_syscall);
         }
-        task_kill(current->tid);                                        /*  杀死当前任务                */
+        task_kill(current->tid, SIGSEGV);                               /*  杀死当前任务                */
         break;
 
     case 9:     /* Domain */
@@ -197,7 +197,7 @@ void dabt_c_handler(uint32_t lr, uint32_t spsr)
             extern const char *last_syscall;
             printk("last system call = %s\n", last_syscall);
         }
-        task_kill(current->tid);                                        /*  杀死当前任务                */
+        task_kill(current->tid, SIGSEGV);                               /*  杀死当前任务                */
         break;
 
     case 13:    /* Permission */
@@ -211,7 +211,7 @@ void dabt_c_handler(uint32_t lr, uint32_t spsr)
             extern const char *last_syscall;
             printk("last system call = %s\n", last_syscall);
         }
-        task_kill(current->tid);                                        /*  杀死当前任务                */
+        task_kill(current->tid, SIGSEGV);                               /*  杀死当前任务                */
         break;
 
                 /*
@@ -230,7 +230,7 @@ void dabt_c_handler(uint32_t lr, uint32_t spsr)
             extern const char *last_syscall;
             printk("last system call = %s\n", last_syscall);
         }
-        task_kill(current->tid);                                        /*  杀死当前任务                */
+        task_kill(current->tid, SIGSEGV);                               /*  杀死当前任务                */
         break;
 
     default:
