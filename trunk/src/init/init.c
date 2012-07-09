@@ -59,9 +59,9 @@ static void tcpip_init_done(void *arg)
      * 如果使用 qemu, 请把 #if 1 改为 #if 0
      */
 #if 0
-    IP4_ADDR(&ip,       192, 168,   2,  30);
-    IP4_ADDR(&submask,  255, 255, 255,   0);
-    IP4_ADDR(&gateway,  192, 168,   2,   1);
+    IP4_ADDR(&ip,       192, 168,   27, 201);
+    IP4_ADDR(&submask,  255, 255, 255,    0);
+    IP4_ADDR(&gateway,  192, 168,   27,   1);
 #else
     IP4_ADDR(&ip,       192, 168,   0,  30);
     IP4_ADDR(&submask,  255, 255, 255,   0);

@@ -84,6 +84,12 @@ static int sd_io_send_cmd(sd_card_t *sd,
     return sd->sdio->send_cmd(sd->sdio, cmd, has_arg, arg, resp_type, resp);
 }
 
+static int sd_io_max_clk(sd_card_t *sd)
+{
+    return sd->sdio->max_clk(sd->sdio);
+}
+
+
 /*
  * 通过 SD 卡的 SDIO 接口读块
  */
@@ -214,11 +220,6 @@ static int sd_send_cmd10(sd_card_t *sd, uint32_t rca, sd_resp_t *resp)
  *
  * Switch to 1.8V bus signaling level.
  */
-static int sd_io_max_clk(sd_card_t *sd)
-{
-    return sd->sdio->max_clk(sd->sdio);
-}
-
 static int sd_send_cmd11(sd_card_t *sd, sd_resp_t *resp)
 {
     return sd_io_send_cmd(sd, 11, 0, 0, SD_R1, resp);

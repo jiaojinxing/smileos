@@ -130,8 +130,8 @@ int poll(struct pollfd fds[], nfds_t nfds, int timeout)
     for (i = 0; i < nfds; i++) {
         fds[i].revents = 0;
 
-        if (FD_ISSET(fds[i].fd, &readset))      fds[i].revents |= POLLIN;
-        if (FD_ISSET(fds[i].fd, &writeset))     fds[i].revents |= POLLOUT;
+        if (FD_ISSET(fds[i].fd, &readset))  fds[i].revents |= POLLIN;
+        if (FD_ISSET(fds[i].fd, &writeset)) fds[i].revents |= POLLOUT;
         if (FD_ISSET(fds[i].fd, &errorset)) fds[i].revents |= POLLERR;
     }
 
