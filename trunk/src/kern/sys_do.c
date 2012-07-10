@@ -295,7 +295,7 @@ static int do_getsockopt(sys_do_args_t *args)
 /*
  * do_send
  */
-static do_send(int s, const void *data, size_t size, int flags)
+static int do_send(int s, const void *data, size_t size, int flags)
 {
     int sock_fd = socket_priv_fd(s);
     if (sock_fd >= 0) {
