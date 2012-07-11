@@ -131,6 +131,14 @@ static int do_kill(int pid, int sig)
 }
 
 /*
+ * fork: 创建子进程
+ */
+static int do_fork(void)
+{
+    return process_fork();
+}
+
+/*
  * do_socket
  */
 static int do_socket(int domain, int type, int protocol)
@@ -400,6 +408,16 @@ static int do_rmdir(const char *path)
 {
     return vfs_rmdir(va_to_mva(path));
 }
+
+static int do_dup(int fd)
+{
+    return vfs_dup(fd);
+}
+
+static int do_dup2(int fd, int to)
+{
+    return vfs_dup2(fd, to);
+}
 /*********************************************************************************************************
   系统调用处理表
 *********************************************************************************************************/
@@ -424,11 +442,12 @@ sys_do_t sys_do_table[] = {
 #define SYS_CALL_GETPID     11
 #define SYS_CALL_GETREENT   12
 #define SYS_CALL_KILL       13
+#define SYS_CALL_FORK       14
         (sys_do_t)do_gettimeofday,
         (sys_do_t)do_getpid,
         (sys_do_t)do_getreent,
         (sys_do_t)do_kill,
-        NULL,
+        (sys_do_t)do_fork,
         NULL,
         NULL,
         NULL,
@@ -460,14 +479,16 @@ sys_do_t sys_do_table[] = {
 #define SYS_CALL_STAT       33
 #define SYS_CALL_MKDIR      34
 #define SYS_CALL_RMDIR      35
+#define SYS_CALL_DUP        36
+#define SYS_CALL_DUP2       37
         (sys_do_t)do_rename,
         (sys_do_t)do_unlink,
         (sys_do_t)do_link,
         (sys_do_t)do_stat,
         (sys_do_t)do_mkdir,
         (sys_do_t)do_rmdir,
-        NULL,
-        NULL,
+        (sys_do_t)do_dup,
+        (sys_do_t)do_dup2,
         NULL,
         NULL,
 #define SYS_CALL_OPENDIR    40

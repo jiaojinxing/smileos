@@ -51,7 +51,7 @@
  * к╫сппео╒
  */
 typedef struct {
-    VFS_SELECT_MEMBERS
+    VFS_SELECT_MEMBERS;
     int             sock_fd;
     int             ref;
 } privinfo_t;

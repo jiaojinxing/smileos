@@ -136,18 +136,18 @@ static struct dirent *rootfs_readdir(mount_point_t *point, file_t *file)
         return NULL;
     }
 
-    extern mutex_t pointmgr_lock;
+    extern mutex_t point_mgr_lock;
     extern mount_point_t *rootfs_point;
 
-    mutex_lock(&pointmgr_lock, 0);
+    mutex_lock(&point_mgr_lock, 0);
     __point = mount_point_get(priv->loc);
     if (__point != NULL && __point != rootfs_point) {
         strcpy(priv->entry.d_name, __point->name + 1);                  /*  Ìø¹ý /                      */
-        mutex_unlock(&pointmgr_lock);
+        mutex_unlock(&point_mgr_lock);
         priv->entry.d_ino = priv->loc++;
         return &priv->entry;
     } else {
-        mutex_unlock(&pointmgr_lock);
+        mutex_unlock(&point_mgr_lock);
         return NULL;
     }
 }

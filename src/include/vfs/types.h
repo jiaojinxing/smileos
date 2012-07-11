@@ -189,7 +189,9 @@ struct file {
     void                   *ctx;
     void                   *ctx1;
     mount_point_t          *point;
-    unsigned int            flag;
+    unsigned int            flags;
+    unsigned int            ref;
+    struct file            *next;
 };
 
 /*
@@ -220,7 +222,7 @@ typedef struct _select_node {
  */
 #define VFS_SELECT_MEMBERS              \
     int                     flags;      \
-    select_node_t           wait_list;
+    select_node_t           wait_list
 
 /*
  * …Ë÷√ errno

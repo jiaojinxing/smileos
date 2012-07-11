@@ -48,7 +48,7 @@
  * к╫сппео╒
  */
 typedef struct {
-    VFS_SELECT_MEMBERS
+    VFS_SELECT_MEMBERS;
     struct tty      tty;
     int             mode;
 } privinfo_t;

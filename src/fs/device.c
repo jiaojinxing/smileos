@@ -58,17 +58,17 @@ static device_t *dev_list;
 /*
  * 设备管理锁
  */
-mutex_t devmgr_lock;
+mutex_t dev_mgr_lock;
 
 /*
  * 安装设备
  */
 static int device_install(device_t *dev)
 {
-    mutex_lock(&devmgr_lock, 0);
+    mutex_lock(&dev_mgr_lock, 0);
     dev->next = dev_list;
     dev_list  = dev;
-    mutex_unlock(&devmgr_lock);
+    mutex_unlock(&dev_mgr_lock);
 
     return 0;
 }
@@ -81,12 +81,12 @@ device_t *device_get(int index)
     int i;
     device_t *dev;
 
-    mutex_lock(&devmgr_lock, 0);
+    mutex_lock(&dev_mgr_lock, 0);
 
     for (i = 0, dev = dev_list; i < index && dev != NULL; i++, dev = dev->next) {
     }
 
-    mutex_unlock(&devmgr_lock);
+    mutex_unlock(&dev_mgr_lock);
 
     return dev;
 }
@@ -125,7 +125,7 @@ device_t *device_lookup(const char *name)
 
     key = BKDRHash(name);
 
-    mutex_lock(&devmgr_lock, 0);
+    mutex_lock(&dev_mgr_lock, 0);
     dev = dev_list;
     while (dev != NULL) {
         if (key == dev->key) {
@@ -133,7 +133,7 @@ device_t *device_lookup(const char *name)
         }
         dev = dev->next;
     }
-    mutex_unlock(&devmgr_lock);
+    mutex_unlock(&dev_mgr_lock);
 
     return dev;
 }
@@ -152,7 +152,7 @@ int device_remove(const char *name)
 
     key = BKDRHash(name);
 
-    mutex_lock(&devmgr_lock, 0);
+    mutex_lock(&dev_mgr_lock, 0);
     prev = NULL;
     dev  = dev_list;
     while (dev != NULL) {
@@ -171,7 +171,7 @@ int device_remove(const char *name)
         }
         kfree(dev);
     }
-    mutex_unlock(&devmgr_lock);
+    mutex_unlock(&dev_mgr_lock);
 
     return 0;
 }
@@ -196,9 +196,9 @@ int device_create(const char *dev_name, const char *drv_name, void *ctx)
         return -1;
     }
 
-    mutex_lock(&devmgr_lock, 0);
+    mutex_lock(&dev_mgr_lock, 0);
     if (device_lookup(dev_name) != NULL) {
-        mutex_unlock(&devmgr_lock);
+        mutex_unlock(&dev_mgr_lock);
         return -1;
     }
 
@@ -212,11 +212,11 @@ int device_create(const char *dev_name, const char *drv_name, void *ctx)
             dev->devno  = 0;
             dev->key    = BKDRHash(dev_name);
             device_install(dev);
-            mutex_unlock(&devmgr_lock);
+            mutex_unlock(&dev_mgr_lock);
             return 0;
         }
     }
-    mutex_unlock(&devmgr_lock);
+    mutex_unlock(&dev_mgr_lock);
     return -1;
 }
 
@@ -227,7 +227,7 @@ int device_manager_init(void)
 {
     dev_list = NULL;
 
-    return mutex_new(&devmgr_lock);
+    return mutex_new(&dev_mgr_lock);
 }
 /*********************************************************************************************************
   END FILE

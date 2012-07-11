@@ -936,7 +936,7 @@ int in_interrupt(void)
 /*
  * 获得任务信息
  */
-int tstat(int tid, char *buf)
+int task_stat(int tid, char *buf)
 {
     const char *state;
     task_t *task;
@@ -1003,6 +1003,17 @@ int tstat(int tid, char *buf)
     interrupt_resume(reg);
 
     return 0;
+}
+
+/*
+ * fork 一个子进程
+ */
+int process_fork(void)
+{
+    if (current->type == TASK_TYPE_PROCESS) {
+
+    }
+    return -1;
 }
 /*********************************************************************************************************
   END FILE
