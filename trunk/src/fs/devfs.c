@@ -106,7 +106,7 @@ static ssize_t devfs_write(mount_point_t *point, file_t *file, const void *buf, 
         return -1;
     }
 
-    if (file->flag & O_APPEND) {
+    if (file->flags & O_APPEND) {
         devfs_lseek(point, file, 0, SEEK_END);
     }
 
@@ -422,17 +422,17 @@ static struct dirent *devfs_readdir(mount_point_t *point, file_t *file)
         return NULL;
     }
 
-    extern mutex_t devmgr_lock;
+    extern mutex_t dev_mgr_lock;
 
-    mutex_lock(&devmgr_lock, 0);
+    mutex_lock(&dev_mgr_lock, 0);
     dev = device_get(priv->loc);
     if (dev != NULL) {
         strcpy(priv->entry.d_name, dev->name + 5);                      /*  Ìø¹ý /dev/                  */
-        mutex_unlock(&devmgr_lock);
+        mutex_unlock(&dev_mgr_lock);
         priv->entry.d_ino = priv->loc++;
         return &priv->entry;
     } else {
-        mutex_unlock(&devmgr_lock);
+        mutex_unlock(&dev_mgr_lock);
         return NULL;
     }
 }

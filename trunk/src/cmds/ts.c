@@ -20,7 +20,7 @@ ts_main(int argc, char **argv)
     printf("type\t name\t\t pid\t state\t count\t timer\t\t prio\t cpu\t stack\t page\t dabt\n");
 
     for (i = 0; i < TASK_NR; i++) {
-        if (tstat(i, buf) == 0) {
+        if (task_stat(i, buf) == 0) {
             printf(buf);
         }
     }

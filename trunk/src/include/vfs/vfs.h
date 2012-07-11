@@ -109,6 +109,16 @@ int vfs_ioctl(int fd, int cmd, void *arg);
 off_t vfs_lseek(int fd, off_t offset, int whence);
 
 /*
+ * 复制文件描述符
+ */
+int vfs_dup(int fd);
+
+/*
+ * 复制文件描述符到指定的文件描述符
+ */
+int vfs_dup2(int fd, int to);
+
+/*
  * select
  */
 int vfs_select(int nfds, fd_set *readfds, fd_set *writefds,

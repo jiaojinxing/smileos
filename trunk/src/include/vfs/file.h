@@ -19,93 +19,44 @@
 ** Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 **
 **--------------------------------------------------------------------------------------------------------
-** File name:               driver.c
-** Last modified Date:      2012-3-20
+** File name:               file.h
+** Last modified Date:      2012-7-11
 ** Last Version:            1.0.0
-** Descriptions:            驱动管理
+** Descriptions:            文件结构管理
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing
-** Created date:            2012-3-20
+** Created date:            2012-7-11
 ** Version:                 1.0.0
 ** Descriptions:            创建文件
 **
 **--------------------------------------------------------------------------------------------------------
-** Modified by:             JiaoJinXing
-** Modified date:           2012-3-27
-** Version:                 1.1.0
-** Descriptions:            查找到安装期间必须上锁
+** Modified by:
+** Modified date:
+** Version:
+** Descriptions:
 **
 *********************************************************************************************************/
-#include "kern/ipc.h"
-#include "vfs/config.h"
+#ifndef FILE_H_
+#define FILE_H_
+
 #include "vfs/types.h"
-#include <string.h>
 
 /*
- * 驱动链表
+ * 分配空闲文件结构
  */
-static driver_t *drv_list;
+file_t *file_alloc(void);
+/*
+ * 释放文件结构
+ */
+void file_free(file_t *file);
 
 /*
- * 驱动管理锁
+ * 初始化文件结构管理
  */
-static mutex_t drv_mgr_lock;
+int file_manager_init(void);
 
-/*
- * 查找驱动
- */
-driver_t *driver_lookup(const char *name)
-{
-    driver_t *drv;
-
-    if (name == NULL) {
-        return NULL;
-    }
-
-    mutex_lock(&drv_mgr_lock, 0);
-    drv = drv_list;
-    while (drv != NULL) {
-        if (strcmp(drv->name, name) == 0) {
-            break;
-        }
-        drv = drv->next;
-    }
-    mutex_unlock(&drv_mgr_lock);
-
-    return drv;
-}
-
-/*
- * 安装驱动
- */
-int driver_install(driver_t *drv)
-{
-    if (drv == NULL || drv->name == NULL) {
-        return -1;
-    }
-
-    mutex_lock(&drv_mgr_lock, 0);
-    if (driver_lookup(drv->name) != NULL) {
-        mutex_unlock(&drv_mgr_lock);
-        return -1;
-    }
-    drv->next = drv_list;
-    drv_list  = drv;
-    mutex_unlock(&drv_mgr_lock);
-
-    return 0;
-}
-
-/*
- * 初始化驱动管理
- */
-int driver_manager_init(void)
-{
-    drv_list = NULL;
-
-    return mutex_new(&drv_mgr_lock);
-}
+#endif                                                                  /*  FILE_H_                     */
 /*********************************************************************************************************
   END FILE
 *********************************************************************************************************/

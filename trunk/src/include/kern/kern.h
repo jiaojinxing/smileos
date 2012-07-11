@@ -277,7 +277,7 @@ void yield(void);
 /*
  * 获得任务信息
  */
-int tstat(int tid, char *buf);
+int task_stat(int tid, char *buf);
 
 #endif
 

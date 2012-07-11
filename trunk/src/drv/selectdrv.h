@@ -102,7 +102,7 @@ static int select_report(void *ctx, int type)
     privinfo_t *priv = ctx;
     select_node_t *node;
     task_t *task;
-    int flags = FALSE;
+    int flag = FALSE;
     uint32_t reg;
 
     reg = interrupt_disable();
@@ -120,7 +120,7 @@ static int select_report(void *ctx, int type)
             if (!in_interrupt() &&
                 task->type == TASK_TYPE_KTHREAD &&
                 task->priority > current->priority) {
-                flags = TRUE;
+                flag = TRUE;
             }
         }
         node = node->next;
@@ -128,7 +128,7 @@ static int select_report(void *ctx, int type)
 
     interrupt_resume(reg);
 
-    if (flags) {
+    if (flag) {
         yield();
     }
     return 0;
