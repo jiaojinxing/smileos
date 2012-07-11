@@ -78,7 +78,7 @@ static int do_sleep(unsigned int ticks)
 
     current->resume_type = TASK_RESUME_UNKNOW;                          /*  设置恢复类型为未知          */
 
-    schedule();                                                         /*  任务调度                    */
+    task_schedule();                                                    /*  任务调度                    */
 
     return 0;
 }
@@ -111,15 +111,17 @@ static int do_getpid(void)
  */
 static void do_yeild(void)
 {
-    schedule();
+    task_schedule();
 }
 
 /*
- * 获得 reent 结构指针
+ * 设置 reent 结构指针
  */
-static struct _reent *do_getreent(void)
+static int do_setreent(struct _reent *reent)
 {
-    return _impure_ptr;
+    _impure_ptr = current->reent = va_to_mva(reent);
+
+    return 0;
 }
 
 /*
@@ -440,12 +442,12 @@ sys_do_t sys_do_table[] = {
         NULL,
 #define SYS_CALL_GETTIME    10
 #define SYS_CALL_GETPID     11
-#define SYS_CALL_GETREENT   12
+#define SYS_CALL_SETREENT   12
 #define SYS_CALL_KILL       13
 #define SYS_CALL_FORK       14
         (sys_do_t)do_gettimeofday,
         (sys_do_t)do_getpid,
-        (sys_do_t)do_getreent,
+        (sys_do_t)do_setreent,
         (sys_do_t)do_kill,
         (sys_do_t)do_fork,
         NULL,

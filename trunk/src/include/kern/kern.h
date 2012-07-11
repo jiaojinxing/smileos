@@ -101,6 +101,7 @@ typedef struct task {
     uint32_t                type;                                       /*  任务类型                    */
     uint32_t                resume_type;                                /*  恢复类型                    */
     uint32_t                frame_nr;                                   /*  页框数                      */
+    uint32_t                page_tbl_nr;
     uint32_t                cpu_rate;                                   /*  CPU 占用率                  */
     uint32_t                tick;                                       /*  任务被定时器中断的次数      */
     char                    name[NAME_MAX];                             /*  名字                        */
@@ -109,7 +110,8 @@ typedef struct task {
     struct vmm_frame       *frame_list;                                 /*  页框链表                    */
     uint32_t                dabt_cnt;                                   /*  数据访问中止次数            */
     uint32_t                mmu_backup[PROCESS_SPACE_SIZE / SECTION_SIZE];  /*  一级段表备份            */
-    struct _reent           reent;                                      /*  可重入结构                  */
+    struct _reent          *reent;                                      /*  可重入结构                  */
+    uint32_t                file_size;
 } task_t;
 
 /*
@@ -155,7 +157,7 @@ void kernel_start(void);
  * 任务调度
  * 调用之前必须关中断
  */
-void schedule(void);
+void task_schedule(void);
 
 /*
  * 内核定时器处理函数
@@ -166,6 +168,11 @@ void kernel_timer(void);
  * 创建进程
  */
 int32_t process_create(const char *path, uint32_t priority);
+
+/*
+ * fork 一个子进程
+ */
+int process_fork(void);
 
 /*
  * 创建内核线程

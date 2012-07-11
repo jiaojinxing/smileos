@@ -161,8 +161,9 @@ static sys_do_t sys_do_table[1];
 #define SYS_CALL_YIELD      2
 #define SYS_CALL_GETTIME    10
 #define SYS_CALL_GETPID     11
-#define SYS_CALL_GETREENT   12
+#define SYS_CALL_SETREENT   12
 #define SYS_CALL_KILL       13
+#define SYS_CALL_FORK       14
 #define SYS_CALL_OPEN       20
 #define SYS_CALL_READ       21
 #define SYS_CALL_WRITE      22
@@ -179,6 +180,8 @@ static sys_do_t sys_do_table[1];
 #define SYS_CALL_STAT       33
 #define SYS_CALL_MKDIR      34
 #define SYS_CALL_RMDIR      35
+#define SYS_CALL_DUP        36
+#define SYS_CALL_DUP2       37
 #define SYS_CALL_OPENDIR    40
 #define SYS_CALL_READDIR    41
 #define SYS_CALL_SEEKDIR    42
@@ -750,17 +753,63 @@ int _unlink_r(struct _reent *reent, const char *path)
 }
 
 /*
- * 获得 reent 结构指针
+ * dup
  */
-struct _reent *getreent(void)
+int dup(int fd)
 {
-    struct _reent *ret;
-    int syscall = SYS_CALL_GETREENT;
+    int ret;
+    int syscall = SYS_CALL_DUP;
 
     debug("%s\n", __func__);
     if (in_kernel()) {
-        ret = (struct _reent *)(sys_do_table[syscall])();
+        ret = (sys_do_table[syscall])(fd);
     } else {
+        __asm__ __volatile__("mov    r0,  %0": :"r"(fd));
+        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
+        __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
+        __asm__ __volatile__("swi    0");
+        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
+        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
+    }
+    return ret;
+}
+
+/*
+ * dup2
+ */
+int dup2(int fd, int to)
+{
+    int ret;
+    int syscall = SYS_CALL_DUP2;
+
+    debug("%s\n", __func__);
+    if (in_kernel()) {
+        ret = (sys_do_table[syscall])(fd, to);
+    } else {
+        __asm__ __volatile__("mov    r0,  %0": :"r"(fd));
+        __asm__ __volatile__("mov    r1,  %0": :"r"(to));
+        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
+        __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
+        __asm__ __volatile__("swi    0");
+        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
+        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
+    }
+    return ret;
+}
+
+/*
+ * 设置 reent 结构指针
+ */
+int setreent(struct _reent *reent)
+{
+    int ret;
+    int syscall = SYS_CALL_SETREENT;
+
+    debug("%s\n", __func__);
+    if (in_kernel()) {
+        ret = (sys_do_table[syscall])(reent);
+    } else {
+        __asm__ __volatile__("mov    r0,  %0": :"r"(reent));
         __asm__ __volatile__("stmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
         __asm__ __volatile__("swi    0");
@@ -791,15 +840,20 @@ void *_sbrk_r(struct _reent *reent, ptrdiff_t incr)
  */
 int _fork_r(struct _reent *reent)
 {
-#ifdef SMILEOS_KERNEL
-    printk("can't call %s()!, kill kthread %s tid=%d abort\n", __func__, current->name, current->tid);
+    int ret;
+    int syscall = SYS_CALL_FORK;
 
-    abort();
-#else
-    printf("can't call %s()!, kill process %d\n", __func__, getpid());
-
-    abort();
-#endif
+    debug("%s\n", __func__);
+    if (in_kernel()) {
+        ret = (struct _reent *)(sys_do_table[syscall])();
+    } else {
+        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
+        __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
+        __asm__ __volatile__("swi    0");
+        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
+        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
+    }
+    return ret;
 }
 
 /*

@@ -452,7 +452,11 @@ int vfs_close(int fd)
         return -1;
     }
     seterrno(0);
-    ret = point->fs->close(point, file);
+    if (file->ref == 1) {
+        ret = point->fs->close(point, file);
+    } else {
+        ret = 0;
+    }
     if (ret == 0) {
         info->files[fd] = NULL;
         file_free(file);                                                /*  如果关闭成功, 释放文件结构  */
@@ -475,7 +479,11 @@ static int __vfs_close(pid_t tid, int fd)
         return -1;
     }
     seterrno(0);
-    ret = point->fs->close(point, file);
+    if (file->ref == 1) {
+        ret = point->fs->close(point, file);
+    } else {
+        ret = 0;
+    }
     if (ret == 0) {
         info->files[fd] = NULL;
         file_free(file);                                                /*  如果关闭成功, 释放文件结构  */
@@ -1444,7 +1452,11 @@ int vfs_closedir(DIR *dir)
         return -1;
     }
     seterrno(0);
-    ret = point->fs->closedir(point, file);
+    if (file->ref == 1) {
+        ret = point->fs->closedir(point, file);
+    } else {
+        ret = 0;
+    }
     if (ret == 0) {
         info->files[fd] = NULL;
         file_free(file);                                                /*  如果关闭成功, 释放文件结构  */
@@ -1468,7 +1480,11 @@ static int __vfs_closedir(pid_t tid, DIR *dir)
         return -1;
     }
     seterrno(0);
-    ret = point->fs->closedir(point, file);
+    if (file->ref == 1) {
+        ret = point->fs->closedir(point, file);
+    } else {
+        ret = 0;
+    }
     if (ret == 0) {
         info->files[fd] = NULL;
         file_free(file);                                                /*  如果关闭成功, 释放文件结构  */
@@ -1696,6 +1712,39 @@ int vfs_task_cleanup(pid_t tid)
                 __vfs_close(tid, fd);
             } else if (file->flags & VFS_FILE_TYPE_DIR) {
                 __vfs_closedir(tid, (DIR *)fd);
+            }
+        }
+        return 0;
+    } else {
+        return -1;
+    }
+}
+
+/*
+ * fork 进程的文件信息
+ */
+int vfs_process_fork(pid_t pid, pid_t ppid)
+{
+    vfs_info_t *info;
+    vfs_info_t *pinfo;
+    file_t *file;
+    int fd;
+
+    if (pid < PROCESS_NR && ppid < PROCESS_NR) {
+        pinfo = infos + ppid;
+        info  = infos + pid;
+
+        strcpy(info->cwd, pinfo->cwd);
+
+        for (fd = 0, file = pinfo->files[0];
+             fd < OPEN_MAX;
+             fd++, file = pinfo->files[fd]) {
+
+            if (file == NULL || file->ref == 0) {
+                info->files[fd] = NULL;
+            } else {
+                info->files[fd] = file;
+                file->ref++;
             }
         }
         return 0;
