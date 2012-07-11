@@ -124,7 +124,7 @@ static uint32_t vmm_page_table_lookup(uint32_t section_nr)
 /*
  * 分配页表
  */
-static uint32_t vmm_page_table_alloc(uint32_t section_nr)
+static uint32_t vmm_page_table_alloc(task_t *task, uint32_t section_nr)
 {
     struct page_table *tbl;
 
@@ -137,6 +137,8 @@ static uint32_t vmm_page_table_alloc(uint32_t section_nr)
 
         free_page_table_nr--;
 
+        task->page_tbl_nr++;
+
         return (tbl - page_tables) * PAGE_TBL_SIZE + PAGE_TBL_BASE;     /*  返回页表基址                */
     } else {
         return 0;
@@ -146,7 +148,7 @@ static uint32_t vmm_page_table_alloc(uint32_t section_nr)
 /*
  * 释放页表
  */
-static void vmm_page_table_free(uint32_t page_tbl_base)
+static void vmm_page_table_free(task_t *task, uint32_t page_tbl_base)
 {
     struct page_table *tbl;
 
@@ -163,6 +165,8 @@ static void vmm_page_table_free(uint32_t page_tbl_base)
     free_page_table_list = tbl;
 
     free_page_table_nr++;
+
+    task->page_tbl_nr--;
 }
 
 /*
@@ -254,7 +258,7 @@ int vmm_page_map(task_t *task, uint32_t mva)
 
         uint32_t tbl = vmm_page_table_lookup(section_nr);               /*  查找该段的页表              */
         if (tbl == 0) {                                                 /*  没找到                      */
-            tbl = vmm_page_table_alloc(section_nr);                     /*  分配一个空闲的页表          */
+            tbl = vmm_page_table_alloc(task, section_nr);               /*  分配一个空闲的页表          */
             if (tbl != 0) {
                 task->mmu_backup[section_nr % (PROCESS_SPACE_SIZE / SECTION_SIZE)] =
                         mmu_map_section_as_page(section_nr, tbl);       /*  映射该段                    */
@@ -278,7 +282,7 @@ int vmm_page_map(task_t *task, uint32_t mva)
             if (flag) {
                 mmu_unmap_section(section_nr);
                 task->mmu_backup[section_nr % (PROCESS_SPACE_SIZE / SECTION_SIZE)] = 0;
-                vmm_page_table_free(tbl);
+                vmm_page_table_free(task, tbl);
             }
             printk("failed to alloc page, mem map failed, mva=0x%x, pid=%d\n", mva, task->pid);
             return -1;
@@ -307,7 +311,7 @@ int vmm_process_cleanup(task_t *task)
     for (i = 0; i < PROCESS_SPACE_SIZE / SECTION_SIZE; i++) {           /*  释放进程占用的页表          */
         tbl = vmm_page_table_lookup(task->pid * PROCESS_SPACE_SIZE / SECTION_SIZE + i);
         if (tbl != 0) {
-            vmm_page_table_free(tbl);                                   /*  释放页表                    */
+            vmm_page_table_free(task, tbl);                             /*  释放页表                    */
         }                                                               /*  取消映射段                  */
         mmu_unmap_section(task->pid * PROCESS_SPACE_SIZE / SECTION_SIZE + i);
         task->mmu_backup[i] = 0;
@@ -341,6 +345,35 @@ int vmm_process_init(task_t *task, uint32_t file_size)
     if (vmm_page_map(task, (task->pid + 1) * PROCESS_SPACE_SIZE - PAGE_SIZE) < 0) {
         vmm_process_cleanup(task);
         return -1;
+    }
+
+    return 0;
+}
+
+/*
+ * fork 进程的虚拟内存信息
+ */
+int vmm_process_fork(task_t *task, task_t *parent)
+{
+    vmm_frame_t *frame;
+    int i;
+    uint32_t mva;
+
+    if (parent->frame_nr > free_frame_nr) {
+        return -1;
+    }
+
+    if (parent->page_tbl_nr > free_page_table_nr) {
+        return -1;
+    }
+
+    for (frame = parent->frame_list; frame != NULL; frame = frame->process_next) {
+        mva = frame->mva % PROCESS_SPACE_SIZE + task->pid * PROCESS_SPACE_SIZE;
+        if (vmm_page_map(task, mva) < 0) {
+            vmm_process_cleanup(task);
+            return -1;
+        }
+        memcpy((void *)mva, (void *)frame->mva, PAGE_SIZE);
     }
 
     return 0;

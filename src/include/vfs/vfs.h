@@ -236,6 +236,11 @@ int vfs_task_init(pid_t tid);
 int vfs_task_cleanup(pid_t tid);
 
 /*
+ * fork 进程的文件信息
+ */
+int vfs_process_fork(pid_t pid, pid_t ppid);
+
+/*
  * 根据文件描述符获得文件结构
  */
 file_t *vfs_get_file(int fd);

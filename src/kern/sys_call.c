@@ -161,7 +161,7 @@ static sys_do_t sys_do_table[1];
 #define SYS_CALL_YIELD      2
 #define SYS_CALL_GETTIME    10
 #define SYS_CALL_GETPID     11
-#define SYS_CALL_GETREENT   12
+#define SYS_CALL_SETREENT   12
 #define SYS_CALL_KILL       13
 #define SYS_CALL_FORK       14
 #define SYS_CALL_OPEN       20
@@ -798,17 +798,18 @@ int dup2(int fd, int to)
 }
 
 /*
- * 获得 reent 结构指针
+ * 设置 reent 结构指针
  */
-struct _reent *getreent(void)
+int setreent(struct _reent *reent)
 {
-    struct _reent *ret;
-    int syscall = SYS_CALL_GETREENT;
+    int ret;
+    int syscall = SYS_CALL_SETREENT;
 
     debug("%s\n", __func__);
     if (in_kernel()) {
-        ret = (struct _reent *)(sys_do_table[syscall])();
+        ret = (sys_do_table[syscall])(reent);
     } else {
+        __asm__ __volatile__("mov    r0,  %0": :"r"(reent));
         __asm__ __volatile__("stmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
         __asm__ __volatile__("swi    0");

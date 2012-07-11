@@ -53,6 +53,11 @@ int vmm_page_map(task_t *task, uint32_t mva);
 int vmm_process_init(task_t *task, uint32_t file_size);
 
 /*
+ * fork 进程的虚拟内存信息
+ */
+int vmm_process_fork(task_t *task, task_t *parent);
+
+/*
  * 释放进程的虚拟地址空间
  */
 void vmm_process_cleanup(task_t *task);

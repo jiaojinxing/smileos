@@ -51,10 +51,10 @@
 void libc_init(void)
 {
     /*
-     * 获得进程的 reent 结构, 赋于 _impure_ptr
+     * 用 _impure_ptr 设置进程的 reent 结构指针
      */
-    extern struct _reent *getreent(void);
-    _impure_ptr = getreent();
+    extern int setreent(struct _reent *reent);
+    setreent(_impure_ptr);
 
     /*
      * 创建用户空间内存堆
