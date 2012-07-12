@@ -356,7 +356,6 @@ int vmm_process_init(task_t *task, uint32_t file_size)
 int vmm_process_fork(task_t *task, task_t *parent)
 {
     vmm_frame_t *frame;
-    int i;
     uint32_t mva;
 
     if (parent->frame_nr > free_frame_nr) {

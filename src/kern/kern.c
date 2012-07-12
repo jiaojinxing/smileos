@@ -838,7 +838,6 @@ int process_fork(void)
      * 初始化进程的 reent 结构
      */
     task->reent = (struct _reent *)(((uint32_t)current->reent) % PROCESS_SPACE_SIZE + task->pid * PROCESS_SPACE_SIZE);
-    memcpy(task->reent, current->reent, sizeof(struct _reent));
 
     task->state = TASK_RUNNING;                                         /*  进程进入就绪态              */
 
