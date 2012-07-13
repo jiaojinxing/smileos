@@ -1,0 +1,12 @@
+#Fri Mar 23 20:14:11 CST 2012
+eclipse.preferences.version=1
+environment/buildEnvironmentInclude/org.eclipse.cdt.cross.arm.gnu.yagarto.windows.elf.debug.1476399574/CPATH/delimiter=;
+environment/buildEnvironmentInclude/org.eclipse.cdt.cross.arm.gnu.yagarto.windows.elf.debug.1476399574/CPATH/operation=remove
+environment/buildEnvironmentInclude/org.eclipse.cdt.cross.arm.gnu.yagarto.windows.elf.debug.1476399574/C_INCLUDE_PATH/delimiter=;
+environment/buildEnvironmentInclude/org.eclipse.cdt.cross.arm.gnu.yagarto.windows.elf.debug.1476399574/C_INCLUDE_PATH/operation=remove
+environment/buildEnvironmentInclude/org.eclipse.cdt.cross.arm.gnu.yagarto.windows.elf.debug.1476399574/append=true
+environment/buildEnvironmentInclude/org.eclipse.cdt.cross.arm.gnu.yagarto.windows.elf.debug.1476399574/appendContributed=true
+environment/buildEnvironmentLibrary/org.eclipse.cdt.cross.arm.gnu.yagarto.windows.elf.debug.1476399574/LIBRARY_PATH/delimiter=;
+environment/buildEnvironmentLibrary/org.eclipse.cdt.cross.arm.gnu.yagarto.windows.elf.debug.1476399574/LIBRARY_PATH/operation=remove
+environment/buildEnvironmentLibrary/org.eclipse.cdt.cross.arm.gnu.yagarto.windows.elf.debug.1476399574/append=true
+environment/buildEnvironmentLibrary/org.eclipse.cdt.cross.arm.gnu.yagarto.windows.elf.debug.1476399574/appendContributed=true
