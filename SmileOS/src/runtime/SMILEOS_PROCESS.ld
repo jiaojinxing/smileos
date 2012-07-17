@@ -32,6 +32,25 @@ SECTIONS
   . = ALIGN(4);
   _etext = . ;
   PROVIDE (etext = .);
+  
+  .ctors :
+  {
+      KEEP (*runtime/cpp/cppRtBegin*.o(.ctors))
+      KEEP (*(.preinit_array))
+      KEEP (*(.init_array))
+      KEEP (*(SORT(.ctors.*)))
+      KEEP (*(.ctors))
+      KEEP (*runtime/cpp/cppRtEnd*.o(.ctors))
+  }
+
+  .dtors :
+  {
+      KEEP (*runtime/cpp/cppRtBegin*.o(.dtors))
+      KEEP (*(.fini_array))
+      KEEP (*(SORT(.dtors.*)))
+      KEEP (*(.dtors))
+      KEEP (*runtime/cpp/cppRtEnd*.o(.dtors))
+  }
 
   /* .data section which is used for initialized data */
   .data :
