@@ -368,7 +368,7 @@ static int fatfs_ftruncate(mount_point_t *point, file_t *file, off_t len)
     }
 }
 
-static int fatfs_lseek(mount_point_t *point, file_t *file, off_t offset, int whence)
+static off_t fatfs_lseek(mount_point_t *point, file_t *file, off_t offset, int whence)
 {
     privinfo_t *priv = file->ctx;
     FRESULT res;
@@ -382,7 +382,7 @@ static int fatfs_lseek(mount_point_t *point, file_t *file, off_t offset, int whe
     case SEEK_SET:
         res = f_lseek(&priv->file, offset);
         if (res == FR_OK) {
-            return 0;
+            return f_tell(&priv->file);
         } else {
             fatfs_result_to_errno(res);
             return -1;
@@ -391,7 +391,7 @@ static int fatfs_lseek(mount_point_t *point, file_t *file, off_t offset, int whe
     case SEEK_CUR:
         res = f_lseek(&priv->file, f_tell(&priv->file) + offset);
         if (res == FR_OK) {
-            return 0;
+            return f_tell(&priv->file);
         } else {
             fatfs_result_to_errno(res);
             return -1;
@@ -400,7 +400,7 @@ static int fatfs_lseek(mount_point_t *point, file_t *file, off_t offset, int whe
     case SEEK_END:
         res = f_lseek(&priv->file, f_size(&priv->file) + offset);
         if (res == FR_OK) {
-            return 0;
+            return f_tell(&priv->file);
         } else {
             fatfs_result_to_errno(res);
             return -1;

@@ -3,22 +3,25 @@
 
 #include "gal.h"
 
+/*
+ * http://kb.iu.edu/data/aetf.html
+ */
 #define COLOR_RED       	RGB(255,0,0)
 #define COLOR_GREEN     	RGB(0,255,0)
 #define COLOR_BLUE      	RGB(0,0,255)
 #define COLOR_WHITE     	RGB(255,255,255)
 #define COLOR_BLACK     	RGB(0,0,0)
-#define COLOR_GRAY      	RGB(199,199,199)
-#define COLOR_DARKGRAY 		RGB(49,79,79)
+#define COLOR_GRAY      	RGB(128,128,128)
+#define COLOR_DARKGRAY 		RGB(169,169,169)
 #define COLOR_CYAN    		RGB(0,255,255)
-#define COLOR_MAGENTA   	RGB(31,0,31)
+#define COLOR_MAGENTA   	RGB(255,0,255)
 #define COLOR_BROWN    		RGB(165,42,42)
 #define COLOR_LIGHTGRAY 	RGB(211,211,211)
 #define COLOR_LIGHTBLUE 	RGB(173,216,230)
-#define COLOR_LIGHTGREEN    RGB(124,252,0)
+#define COLOR_LIGHTGREEN    RGB(144,238,144)
 #define COLOR_LIGHTCYAN    	RGB(224,255,255)
-#define COLOR_LIGHTRED    	RGB(205,92,92)
-#define COLOR_LIGHTMAGENTA  RGB(16,0,16)
+#define COLOR_LIGHTRED    	RGB(205,102,102)
+#define COLOR_LIGHTMAGENTA  RGB(255,119,255)
 #define COLOR_YELLOW    	RGB(255,255,0)
 
 enum{

@@ -311,7 +311,7 @@ int CTaskBar::OnPaint(int wparam,int lparam)
 	CDc *pdc = this->BeginPaint(lparam);
 	
 	img = GetStockImage(IMAGE_SMALL_KB);
-	pdc->DrawMonoImage(this->rect_softkb->left,this->rect_softkb->top,img,RGB(16,16,31));
+	pdc->DrawMonoImage(this->rect_softkb->left,this->rect_softkb->top,img,RGB(128,128,255));
 
 	this->EndPaint();
 	return OK;

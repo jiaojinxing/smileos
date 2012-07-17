@@ -138,7 +138,7 @@ int CMouse::Draw()
 			if(this->i_img[k] != (char)-1)
         	{
             	if(this->i_img[k] == (char)15)
-			      set_pixel(this->x+i,this->y+j,RGB(31,31,31));
+			      set_pixel(this->x+i,this->y+j,RGB(255,255,255));
 			   	else
 			      set_pixel(this->x+i,this->y+j,RGB(0,0,0));
 			}			

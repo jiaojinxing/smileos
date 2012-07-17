@@ -90,7 +90,7 @@ static ssize_t devfs_read(mount_point_t *point, file_t *file, void *buf, size_t 
     return dev->drv->read(dev->ctx, file, buf, len);
 }
 
-static int devfs_lseek(mount_point_t *point, file_t *file, off_t offset, int whence);
+static off_t devfs_lseek(mount_point_t *point, file_t *file, off_t offset, int whence);
 
 static ssize_t devfs_write(mount_point_t *point, file_t *file, const void *buf, size_t len)
 {
@@ -264,7 +264,7 @@ static int devfs_ftruncate(mount_point_t *point, file_t *file, off_t len)
     return dev->drv->ftruncate(dev->ctx, file, len);
 }
 
-static int devfs_lseek(mount_point_t *point, file_t *file, off_t offset, int whence)
+static off_t devfs_lseek(mount_point_t *point, file_t *file, off_t offset, int whence)
 {
     device_t *dev = file->ctx;
 

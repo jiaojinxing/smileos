@@ -83,7 +83,7 @@ struct driver {
     int     (*fsync)(void *ctx, file_t *file);
     int     (*fdatasync)(void *ctx, file_t *file);
     int     (*ftruncate)(void *ctx, file_t *file, off_t len);
-    int     (*lseek)(void *ctx, file_t *file, off_t offset, int whence);
+    off_t   (*lseek)(void *ctx, file_t *file, off_t offset, int whence);
     int     (*scan)(void *ctx, file_t *file, int flags);
     int     (*select)(void *ctx, file_t *file, int flags);
     int     (*unselect)(void *ctx, file_t *file, int flags);
@@ -149,7 +149,7 @@ struct file_system {
     int     (*fsync)(mount_point_t *point, file_t *file);
     int     (*fdatasync)(mount_point_t *point, file_t *file);
     int     (*ftruncate)(mount_point_t *point, file_t *file, off_t len);
-    int     (*lseek)(mount_point_t *point, file_t *file, off_t offset, int whence);
+    off_t   (*lseek)(mount_point_t *point, file_t *file, off_t offset, int whence);
     int     (*scan)(mount_point_t *point, file_t *file, int flags);
     int     (*select)(mount_point_t *point, file_t *file, int flags);
     int     (*unselect)(mount_point_t *point, file_t *file, int flags);
