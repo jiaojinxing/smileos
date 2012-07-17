@@ -19,14 +19,14 @@
 ** Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 **
 **--------------------------------------------------------------------------------------------------------
-** File name:               crt0.S
-** Last modified Date:      2012-2-2
+** File name:               cppRtEnd.cpp
+** Last modified Date:      2012-7-17
 ** Last Version:            1.0.0
-** Descriptions:            C 运行时启动文件
+** Descriptions:            操作系统平台 C++ run time 全局对象构建与析构操作库.
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing
-** Created date:            2012-2-2
+** Created date:            2012-7-17
 ** Version:                 1.0.0
 ** Descriptions:            创建文件
 **
@@ -37,57 +37,30 @@
 ** Descriptions:
 **
 *********************************************************************************************************/
-.extern main
-.extern exit
-.extern libc_init
-.extern _cppRtInit
-
-/*
- * 处理器模式
- */
-#define ARM_USR_MODE    0x10
-#define ARM_FIQ_MODE    0x11
-#define ARM_IRQ_MODE    0x12
-#define ARM_SVC_MODE    0x13
-#define ARM_ABT_MODE    0x17
-#define ARM_UDF_MODE    0x1B
-#define ARM_SYS_MODE    0x1F
-#define ARM_MODE_MASK   0x1F
-
-/*
- * 中断禁能位
- */
-#define ARM_FIQ_NO      (1 << 6)
-#define ARM_FIQ_EN      (0 << 6)
-
-#define ARM_IRQ_NO      (1 << 7)
-#define ARM_IRQ_EN      (0 << 7)
+#include <stddef.h>
 /*********************************************************************************************************
-  函数: _start
+  C 环境函数
 *********************************************************************************************************/
-.text
-.code 32
-.align 2
+extern "C" {
+/*********************************************************************************************************
+** 函数名称: _cppRtInit
+** 功能描述: C++ 运行时支持初始化
+** 输　入  : NONE
+** 输　出  : NONE
+** 全局变量:
+** 调用模块:
+*********************************************************************************************************/
+int _cppRtInit(void)
+{
+    extern void __cppRtDummy(void);
+    extern void __cppRtDoCtors(void);
 
-.global _start
-_start:
+    __cppRtDummy();
+    __cppRtDoCtors();                                                   /*  运行全局对象构造函数        */
 
-    mov     r0, #0                                                      /*  对 bss 段进行清零           */
-    ldr     r1, =__bss_start
-    ldr     r2, =__bss_end
-
-bss_loop:
-    cmp     r1, r2
-    strlo   r0, [r1], #4
-    blo     bss_loop
-
-    bl      libc_init                                                   /*  初始化 C 库                 */
-
-    bl      _cppRtInit                                                  /*  初始化 C++ 运行时支持       */
-
-    bl      main                                                        /*  进入 main 函数              */
-
-    bl      exit                                                        /*  进程退出                    */
+    return 0;
+}
+}
 /*********************************************************************************************************
   END FILE
 *********************************************************************************************************/
