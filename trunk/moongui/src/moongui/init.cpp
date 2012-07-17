@@ -28,7 +28,11 @@ int init_all()
 
 	SetStockImgBuf(afx.mem_img->p);
 
+/************************************** jiaojinxing1987@gmail.com ***************************************/
+#if _NDS_
 	fill_rect(0,0,256,192,RGB(31,31,31));
+#endif
+/************************************************* end **************************************************/
 	
 	afx.wndmgr->AddWindow(CDesktop::CreateDesktop());
 	

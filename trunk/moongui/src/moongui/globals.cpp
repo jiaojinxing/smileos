@@ -80,10 +80,10 @@ int CGlobals::Init()
 	NEW(this->file_py,CFile);
 	this->file_py->Init();
 
-	ASSERT( this->mem_img->LoadFile("/moonGUI/system/stockimgs.bin") );
-	ASSERT( this->mem_asc->LoadFile("/moonGUI/system/asc.bin") );
-	ASSERT( this->mem_hz12->LoadFile("/moonGUI/system/hzk12.bin") );
-	ASSERT( this->file_py->OpenFile("/moonGUI/system/py.bin","rb") );
+	ASSERT( this->mem_img->LoadFile("/sd0/moonGUI/system/stockimgs.bin") );
+	ASSERT( this->mem_asc->LoadFile("/sd0/moonGUI/system/asc.bin") );
+	ASSERT( this->mem_hz12->LoadFile("/sd0/moonGUI/system/hzk12.bin") );
+	ASSERT( this->file_py->OpenFile("/sd0/moonGUI/system/py.bin","rb") );
 
 	this->hz12->i_buf_asc = this->mem_asc->p;
 	this->hz12->i_buf_hzk12 = this->mem_hz12->p;

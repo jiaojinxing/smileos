@@ -3,23 +3,23 @@
 
 #include "gal.h"
 
-#define COLOR_RED       	RGB(31,0,0)
-#define COLOR_GREEN     	RGB(0,31,0)
-#define COLOR_BLUE      	RGB(0,0,31)
-#define COLOR_WHITE     	RGB(31,31,31)
+#define COLOR_RED       	RGB(255,0,0)
+#define COLOR_GREEN     	RGB(0,255,0)
+#define COLOR_BLUE      	RGB(0,0,255)
+#define COLOR_WHITE     	RGB(255,255,255)
 #define COLOR_BLACK     	RGB(0,0,0)
-#define COLOR_GRAY      	RGB(24,24,24)
-#define COLOR_DARKGRAY 		RGB(16,16,16)
-#define COLOR_CYAN    		RGB(0,15,15)
+#define COLOR_GRAY      	RGB(199,199,199)
+#define COLOR_DARKGRAY 		RGB(49,79,79)
+#define COLOR_CYAN    		RGB(0,255,255)
 #define COLOR_MAGENTA   	RGB(31,0,31)
-#define COLOR_BROWN    		RGB(15,15,0)
-#define COLOR_LIGHTGRAY 	RGB(16,16,16)
-#define COLOR_LIGHTBLUE 	RGB(0,0,16)
-#define COLOR_LIGHTGREEN    RGB(0,16,0)
-#define COLOR_LIGHTCYAN    	RGB(0,16,16)
-#define COLOR_LIGHTRED    	RGB(16,0,0)
+#define COLOR_BROWN    		RGB(165,42,42)
+#define COLOR_LIGHTGRAY 	RGB(211,211,211)
+#define COLOR_LIGHTBLUE 	RGB(173,216,230)
+#define COLOR_LIGHTGREEN    RGB(124,252,0)
+#define COLOR_LIGHTCYAN    	RGB(224,255,255)
+#define COLOR_LIGHTRED    	RGB(205,92,92)
 #define COLOR_LIGHTMAGENTA  RGB(16,0,16)
-#define COLOR_YELLOW    	RGB(31,31,0)
+#define COLOR_YELLOW    	RGB(255,255,0)
 
 enum{
 	COLOR_TEXT,

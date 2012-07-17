@@ -1,6 +1,6 @@
 #include "wndbus.h"
 
-#define BUS_DATA_DIR "/moonGUI/bus"
+#define BUS_DATA_DIR "/sd0/moonGUI/bus"
 
 CWndBus::CWndBus()
 {
