@@ -40,6 +40,10 @@
 #ifndef POLL_H_
 #define POLL_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef unsigned int nfds_t;
 
 /* fake a poll(2) environment */
@@ -62,6 +66,10 @@ struct pollfd {
 };
 
 int poll(struct pollfd fds[], nfds_t nfds, int timeout);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif                                                                  /*  POLL_H_                     */
 /*********************************************************************************************************

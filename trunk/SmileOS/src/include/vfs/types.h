@@ -128,7 +128,7 @@ struct file_system {
     int     (*unlink)(mount_point_t *point, const char *path);
     int     (*mkdir)(mount_point_t *point, const char *path, mode_t mode);
     int     (*rmdir)(mount_point_t *point, const char *path);
-    int     (*rename)(mount_point_t *point, const char *old, const char *new);
+    int     (*rename)(mount_point_t *point, const char *old, const char *_new);
     int     (*sync)(mount_point_t *point);
     int     (*truncate)(mount_point_t *point, const char *path, off_t len);
 
