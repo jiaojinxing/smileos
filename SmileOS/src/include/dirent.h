@@ -40,6 +40,10 @@
 #ifndef DIRENT_H_
 #define DIRENT_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "vfs/config.h"
 #include "vfs/types.h"
 #include <sys/types.h>
@@ -81,6 +85,10 @@ int seekdir(DIR *dir, long loc);
 * 获得目录读点
 */
 long telldir(DIR *dir);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif                                                                  /*  DIRENT_H_                   */
 /*********************************************************************************************************

@@ -40,6 +40,10 @@
 #ifndef IOCTL_H_
 #define IOCTL_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define IOCPARM_MASK    0x7fU                                           /*  parameters must be < 128 bytes*/
 #define IOC_VOID        0x20000000UL                                    /*  no parameters               */
 #define IOC_OUT         0x40000000UL                                    /*  copy out parameters         */
@@ -53,7 +57,11 @@
 
 #define _IOW(x, y, t)   (IOC_IN  | (((unsigned long)sizeof(t) & IOCPARM_MASK) << 16) | ((x) << 8) | (y))
 
-extern int ioctl(int fd, int cmd, ...);
+int ioctl(int fd, int cmd, ...);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif                                                                  /*  IOCTL_H_                    */
 /*********************************************************************************************************
