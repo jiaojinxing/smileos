@@ -245,11 +245,11 @@ int CListBox::DrawText()
 			this->GetItemRect(i,&rc);
 			if(i == this->cur_sel)
 			{
-				this->can->SetBrushColor(RGB(16,16,31));
+				this->can->SetBrushColor(RGB(128,128,255));
 				this->can->FillRect(&rc);
-				this->can->SetPenColor(RGB(0,0,31));
+				this->can->SetPenColor(RGB(0,0,255));
 				this->can->DrawRect(&rc);
-				this->can->SetTextColor(RGB(31,31,31));
+				this->can->SetTextColor(RGB(255,255,255));
 				this->can->TextOut(rc.left,rc.top,pmem->p,NULL);
 			}
 			else
