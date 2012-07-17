@@ -18,6 +18,10 @@ typedef	u16 pixel_type;
 
 #elif _SMILEOS_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern unsigned int screen_width;
 extern unsigned int screen_height;
 
@@ -32,6 +36,10 @@ void set_pixel(unsigned int x, unsigned int y, pixel_type c);
 void set_pixel_xor(unsigned int x, unsigned int y);
 pixel_type get_pixel(unsigned int x, unsigned int y);
 pixel_type *map_vram(unsigned int x, unsigned int y);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 /************************************************* end **************************************************/

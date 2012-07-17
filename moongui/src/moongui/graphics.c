@@ -1,5 +1,44 @@
 #include "graphics.h"
 
+/************************************** jiaojinxing1987@gmail.com ***************************************/
+#if _SMILEOS_
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <linux/fb.h>
+
+unsigned int                screen_width;
+unsigned int                screen_height;
+struct fb_var_screeninfo    var_info;
+struct fb_fix_screeninfo    fix_info;
+int                         fb;
+u16                        *vram;
+
+void set_pixel(unsigned int x, unsigned int y, pixel_type c)
+{
+    vram[y * screen_width + x] = c;
+}
+
+void set_pixel_xor(unsigned int x, unsigned int y)
+{
+    vram[y * screen_width + x] = RGB(255, 255, 255) - vram[y * screen_width + x];
+}
+
+pixel_type get_pixel(unsigned int x, unsigned int y)
+{
+    return vram[y * screen_width + x];
+}
+
+pixel_type *map_vram(unsigned int x, unsigned int y)
+{
+    return &vram[y * screen_width + x];
+}
+
+#endif
+/************************************************* end **************************************************/
+
 int init_graph()
 {
 /************************************** jiaojinxing1987@gmail.com ***************************************/
@@ -18,6 +57,17 @@ int init_graph()
     /*
      * TODO: SmileOS ÆÁÄ»Ïà¹Ø´úÂë
      */
+    fb = open("/dev/fb0", O_RDWR, 0666);
+
+    ioctl(fb, FBIOGET_VSCREENINFO, &var_info);
+
+    ioctl(fb, FBIOGET_FSCREENINFO, &fix_info);
+
+    screen_width = var_info.xres;
+
+    screen_height = var_info.yres;
+
+    vram = fix_info.smem_start;
 #else
 
 #endif

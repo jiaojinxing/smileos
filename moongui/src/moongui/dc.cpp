@@ -13,10 +13,10 @@ int CDc::InitBasic()
 	this->i_font = NULL;
 	this->clip_rgn = NULL;
 
-	this->bkcolor = RGB(31,31,31);
+	this->bkcolor = RGB(255,255,255);
 	this->textcolor = RGB(0,0,0);
 	this->pencolor = RGB(0,0,0);
-	this->brushcolor = RGB(31,31,31);
+	this->brushcolor = RGB(255,255,255);
 
 	this->pos.x = 0;
 	this->pos.y = 0;
