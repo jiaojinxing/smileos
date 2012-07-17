@@ -41,7 +41,7 @@ SECTIONS
       KEEP (*(SORT(.ctors.*)))
       KEEP (*(.ctors))
       KEEP (*runtime/cpp/cppRtEnd*.o(.ctors))
-  }
+  } > RAM
 
   .dtors :
   {
@@ -50,7 +50,7 @@ SECTIONS
       KEEP (*(SORT(.dtors.*)))
       KEEP (*(.dtors))
       KEEP (*runtime/cpp/cppRtEnd*.o(.dtors))
-  }
+  } > RAM
 
   /* .data section which is used for initialized data */
   .data :
