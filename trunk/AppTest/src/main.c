@@ -20,13 +20,13 @@
 **
 **--------------------------------------------------------------------------------------------------------
 ** File name:               main.c
-** Last modified Date:      2012-2-2
+** Last modified Date:      2012-7-18
 ** Last Version:            1.0.0
 ** Descriptions:            主函数
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing
-** Created date:            2012-2-2
+** Created date:            2012-7-18
 ** Version:                 1.0.0
 ** Descriptions:            创建文件
 **
@@ -43,22 +43,28 @@
 
 int a = 1111;
 int b = 0;
+
 static int c = 10;
 static int d;
 
-extern int e;
-extern int f;
+int aaa(void);
+
 /*
  * main 函数
  */
 int main(int argc, char *argv[])
 {
-    extern int hello(void);
-    hello();
-    extern int hellob(void);
-    hellob();
-    e = -1;
-    f = 0xaa;
+    aaa();
+
+    printf("hello AppLoader, a=%d, b=%d, c=%d, d=%d\n", a, b, c, d);
+
+    d = d;
+
+    return 0;
+}
+
+int aaa(void)
+{
     return 0;
 }
 /*********************************************************************************************************
