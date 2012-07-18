@@ -51,11 +51,11 @@ freetype/src/winfonts/winfnt.o \
 freetype/src/base/ftsystem.o
 
 
-INCDIR  = "E:/SmileOS/SmileOS/src/include"
-INCDIR += "E:/SmileOS/SmileOS/src/net/include"
-INCDIR += "E:/SmileOS/SmileOS/src/net/include/ipv4"
-INCDIR += "E:/SmileOS/libfreetype/freetype/include"
-INCDIR += "E:/SmileOS/libfreetype/freetype/include/freetype/config"
+INCDIR  = "../SmileOS/src/include"
+INCDIR += "../SmileOS/src/net/include"
+INCDIR += "../SmileOS/src/net/include/ipv4"
+INCDIR += "./freetype/include"
+INCDIR += "./freetype/include/freetype/config"
 
 
 COMMONFLAGS = -Wall -c -fmessage-length=0 -mcpu=arm920t -g3 -gdwarf-2 -fPIC

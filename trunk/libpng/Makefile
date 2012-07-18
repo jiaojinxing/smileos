@@ -28,10 +28,10 @@ libpng/pngwtran.o \
 libpng/pngwutil.o
 
 
-INCDIR  = "E:/SmileOS/SmileOS/src/include"
-INCDIR += "E:/SmileOS/SmileOS/src/net/include"
-INCDIR += "E:/SmileOS/SmileOS/src/net/include/ipv4"
-INCDIR += "E:/SmileOS/libpng/libpng"
+INCDIR  = "../SmileOS/src/include"
+INCDIR += "../SmileOS/src/net/include"
+INCDIR += "../SmileOS/src/net/include/ipv4"
+INCDIR += "./libpng"
 
 
 COMMONFLAGS = -Wall -c -fmessage-length=0 -mcpu=arm920t -g3 -gdwarf-2 -fPIC
