@@ -533,9 +533,29 @@ static void idle_create(void)
 #include <fcntl.h>
 
 /*
+ * 初始化进程的参数
+ */
+static int process_arg_init(task_t  *task, int argc, char **argv)
+{
+    uint32_t *ptr = (uint32_t *)((task->pid + 1) * PROCESS_SPACE_SIZE - PROCESS_PARAM_SIZE);
+    char     *arg = (char *)(ptr + 1 + argc + 1);
+    int       i;
+
+    *ptr++ = argc;
+
+    for (i = 0; i < argc; i++) {
+        strcpy(arg, argv[i]);
+        *ptr++ = (uint32_t)arg % PROCESS_SPACE_SIZE;
+        arg   += strlen(argv[i]) + 1;
+    }
+    *ptr++ = 0;
+
+    return 0;
+}
+/*
  * 创建进程
  */
-int32_t process_create(const char *path, uint32_t priority)
+int32_t process_create(const char *path, uint32_t priority, int argc, char **argv)
 {
     int32_t  pid;
     task_t  *task;
@@ -613,7 +633,7 @@ int32_t process_create(const char *path, uint32_t priority)
      */
     task->content[0]   = (uint32_t)&task->kstack[KERN_STACK_SIZE];      /*  svc 模式的 sp (满堆栈递减)  */
     task->content[1]   = ARM_SYS_MODE | ARM_FIQ_NO | ARM_IRQ_EN;        /*  cpsr, sys 模式, 开 IRQ      */
-    task->content[2]   = PROCESS_SPACE_SIZE;                            /*  sys 模式的 sp               */
+    task->content[2]   = PROCESS_SPACE_SIZE - PROCESS_PARAM_SIZE;       /*  sys 模式的 sp               */
     task->content[3]   = ARM_SVC_MODE;                                  /*  spsr, svc 模式              */
     task->content[4]   = 0;                                             /*  lr                          */
     task->content[5]   = 0;                                             /*  r0 ~ r12                    */
@@ -643,6 +663,10 @@ int32_t process_create(const char *path, uint32_t priority)
 
     if (vmm_process_init(task, st.st_size) < 0) {                       /*  初始化进程的虚拟内存信息    */
         goto __exit1;
+    }
+
+    if (process_arg_init(task, argc, argv) < 0) {                       /*  初始化进程的参数            */
+        goto __exit2;
     }
 
     interrupt_resume(reg);

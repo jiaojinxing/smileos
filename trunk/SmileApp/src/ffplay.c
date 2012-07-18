@@ -50,7 +50,7 @@
 /*
  * 播放视频文件
  */
-int ffplay(char *filename)
+int ffplay(const char *filename)
 {
     AVFormatContext            *format_ctx = NULL;
     AVCodecContext             *codec_ctx = NULL;
