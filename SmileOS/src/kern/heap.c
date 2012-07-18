@@ -306,7 +306,8 @@ void uheap_create(void)
     /*
      * 在 __bss_end 后, 进程栈空间前, 建立内存堆
      */
-    heap_init(&uheap, &__bss_end, PROCESS_SPACE_SIZE - (uint32_t)&__bss_end - PROCESS_STACK_SIZE);
+    heap_init(&uheap, &__bss_end, PROCESS_SPACE_SIZE - (uint32_t)&__bss_end -
+                                  PROCESS_STACK_SIZE - PROCESS_PARAM_SIZE);
 }
 #endif
 

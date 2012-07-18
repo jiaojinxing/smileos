@@ -37,10 +37,13 @@
 ** Descriptions:
 **
 *********************************************************************************************************/
-.extern main
-.extern exit
+
+#include "kern/config.h"
+
 .extern libc_init
 .extern _cppRtInit
+.extern main
+.extern exit
 
 /*
  * 处理器模式
@@ -85,9 +88,14 @@ bss_loop:
 
     bl      _cppRtInit                                                  /*  初始化 C++ 运行时支持       */
 
+    ldr     r2, =(PROCESS_SPACE_SIZE - PROCESS_PARAM_SIZE)
+    ldr     r0, [r2]
+
+    ldr     r1, =(PROCESS_SPACE_SIZE - PROCESS_PARAM_SIZE + 4)
+
     bl      main                                                        /*  进入 main 函数              */
 
-    bl      exit                                                        /*  进程退出                    */
+    bl      exit
 /*********************************************************************************************************
   END FILE
 *********************************************************************************************************/

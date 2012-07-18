@@ -157,7 +157,7 @@ int do_cmd(char *cmd)
             return -1;
         }
 
-        process_create(argv[0], 5);
+        process_create(argv[0], 5, argc, argv);
     }
 
     return 0;

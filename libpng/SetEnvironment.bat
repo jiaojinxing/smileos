@@ -1,0 +1,1 @@
+set SO_NAME=libpng.so

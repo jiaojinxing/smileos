@@ -340,9 +340,19 @@ int vmm_process_init(task_t *task, uint32_t file_size)
     }
 
     /*
+     * 为拷贝参数到进程的参数空间, 预先映射好页面
+     */
+    for (i = 0; i < PROCESS_PARAM_SIZE / PAGE_SIZE; i++) {
+        if (vmm_page_map(task, (task->pid + 1) * PROCESS_SPACE_SIZE - PROCESS_PARAM_SIZE + i * PAGE_SIZE) < 0) {
+            vmm_process_cleanup(task);
+            return -1;
+        }
+    }
+
+    /*
      * 为进程栈空间映射一个页面
      */
-    if (vmm_page_map(task, (task->pid + 1) * PROCESS_SPACE_SIZE - PAGE_SIZE) < 0) {
+    if (vmm_page_map(task, (task->pid + 1) * PROCESS_SPACE_SIZE - PROCESS_PARAM_SIZE - PAGE_SIZE) < 0) {
         vmm_process_cleanup(task);
         return -1;
     }

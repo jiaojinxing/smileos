@@ -60,9 +60,9 @@ static void *webs_thread(void *arg)
 static void *player_thread(void *arg)
 {
     while (1) {
-        extern int ffplay(char *filename);
+        extern int ffplay(const char *filename);
 
-        ffplay("/sd0/1.avi");
+        ffplay(arg);
     }
 
     return NULL;
@@ -71,23 +71,28 @@ static void *player_thread(void *arg)
 /*
  * main º¯Êý
  */
-int main(void)
+int main(int argc, char *argv[])
 {
     pthread_t webs_tid;
     pthread_t player_tid;
     pid_t pid;
 
+    if (argc < 2) {
+        printf("Usage: %s file.avi\n", argv[0]);
+        return -1;
+    }
+
     pid = fork();
     if (pid == 0) {
         printf("in child process\n");
 
-        pthread_create(&player_tid, NULL, player_thread, NULL);
+        pthread_create(&player_tid, NULL, player_thread, argv[1]);
     } else {
         printf("in parent process, child pid=%d\n", pid);
 
         pthread_create(&webs_tid,   NULL, webs_thread,   NULL);
 
-        pthread_create(&player_tid, NULL, player_thread, NULL);
+        pthread_create(&player_tid, NULL, player_thread, argv[1]);
     }
 
     while (1) {
