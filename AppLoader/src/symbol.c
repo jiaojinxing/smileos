@@ -4,7 +4,7 @@
 **														
 **                                   嵌入式实时操作系统							
 **														
-**                                       SylixOS(TM)							
+**                                       SmileOS(TM)							
 **														
 **                               Copyright  All Rights Reserved						
 **														
@@ -16,23 +16,21 @@
 **														
 ** 文件创建日期: 2012 年 07 月 18 日						
 **														
-** 描        述: 系统 sylixos 符号表. (此文件有 makesymbol 工具自动生成, 请勿修改)				
+** 描        述: 系统 SmileOS 符号表. (此文件由 makesymbol 工具自动生成, 请勿修改)				
 *********************************************************************************************************/	
 #include  "symboltools.h"											
 														
-#define SYMBOL_TABLE_BEGIN LW_STATIC_SYMBOL   _G_symLibSylixOS[] = { 					
+#define SYMBOL_TABLE_BEGIN LW_STATIC_SYMBOL   _G_symLibSmileOS[] = { 					
   														
 #define SYMBOL_TABLE_END };										
 														
 #define SYMBOL_ITEM_FUNC(pcName)                \								
-    {   {(void *)0, (void *)0},                 \								
-        #pcName, (char *)pcName,                \								
+    {   #pcName, (char *)pcName,                \								
         LW_SYMBOL_TEXT                          \								
     },													
 														
 #define SYMBOL_ITEM_OBJ(pcName)                 \								
-    {   {(void *)0, (void *)0},                 \								
-        #pcName, (char *)&pcName,               \								
+    {   #pcName, (char *)&pcName,               \								
         LW_SYMBOL_DATA                          \								
     },													
 														
@@ -272,6 +270,7 @@ extern int  _write_r();
 extern int  abort(); 
 extern int  accept(); 
 extern int  access(); 
+extern int  arm_reloc_rel(); 
 extern int  atexit(); 
 extern int  bind(); 
 extern int  calloc(); 
@@ -593,6 +592,8 @@ extern int  strcmp();
 extern int  strdup(); 
 extern int  strlen(); 
 extern int  strndup(); 
+extern int  symbol_add(); 
+extern int  symbol_lookup(); 
 extern int  syscall_accept(); 
 extern int  syscall_connect(); 
 extern int  syscall_read(); 
@@ -888,6 +889,7 @@ SYMBOL_TABLE_BEGIN
     SYMBOL_ITEM_FUNC(abort) 
     SYMBOL_ITEM_FUNC(accept) 
     SYMBOL_ITEM_FUNC(access) 
+    SYMBOL_ITEM_FUNC(arm_reloc_rel) 
     SYMBOL_ITEM_FUNC(atexit) 
     SYMBOL_ITEM_FUNC(bind) 
     SYMBOL_ITEM_FUNC(calloc) 
@@ -1209,6 +1211,8 @@ SYMBOL_TABLE_BEGIN
     SYMBOL_ITEM_FUNC(strdup) 
     SYMBOL_ITEM_FUNC(strlen) 
     SYMBOL_ITEM_FUNC(strndup) 
+    SYMBOL_ITEM_FUNC(symbol_add) 
+    SYMBOL_ITEM_FUNC(symbol_lookup) 
     SYMBOL_ITEM_FUNC(syscall_accept) 
     SYMBOL_ITEM_FUNC(syscall_connect) 
     SYMBOL_ITEM_FUNC(syscall_read) 

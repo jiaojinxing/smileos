@@ -41,6 +41,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <string.h>
 
 #include "elf.h"
 
@@ -172,13 +173,7 @@ int arm_reloc_rel(Elf32_Rel *rel, Elf32_Addr addr, unsigned char *target)
 /*
  * 在系统里查找指定的符号
  */
-Elf32_Addr symbol_lookup(const char *name, unsigned int type)
-{
-    /*
-     * TODO: 哈希查找
-     */
-    return (Elf32_Addr)&printf;
-}
+unsigned int symbol_lookup(const char *name, unsigned int type);
 
 /*
  * 重定位 ELF 文件
@@ -454,6 +449,9 @@ int main(int argc, char *argv[])
         printf("Usage: %s file.elf\n", argv[0]);
         return -1;
     }
+
+    extern int symbol_add(void);
+    symbol_add();                                                       /*  增加系统的符号              */
 
     return load_elf(argv[1]);
 }
