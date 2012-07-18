@@ -20,13 +20,13 @@
 **
 **--------------------------------------------------------------------------------------------------------
 ** File name:               main.c
-** Last modified Date:      2012-2-2
+** Last modified Date:      2012-7-18
 ** Last Version:            1.0.0
 ** Descriptions:            主函数
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing
-** Created date:            2012-2-2
+** Created date:            2012-7-18
 ** Version:                 1.0.0
 ** Descriptions:            创建文件
 **
@@ -45,6 +45,8 @@
 #include "elf.h"
 
 /*
+ * ELF 文件格式请查看:
+ *
  * http://os.pku.edu.cn:8080/gaikuang/submission/TN05.ELF.Format.Summary.pdf
  */
 /*
@@ -129,34 +131,77 @@ int probe_elf(unsigned char *content, unsigned int size)
 }
 
 /*
+ * 对指定的 rel 条目进行重定位
+ */
+int arm_reloc_rel(Elf32_Rel *rel, Elf32_Addr addr, unsigned char *target)
+{
+    Elf32_Addr *where, tmp;
+    Elf32_Sword addend;
+
+    where = (Elf32_Addr *)(target + rel->r_offset);
+
+    switch (ELF32_R_TYPE(rel->r_info)) {
+    case R_ARM_NONE:
+        break;
+
+    case R_ARM_ABS32:
+        *where += (Elf32_Addr)addr;
+        //printf("R_ARM_ABS32: %x -> %x\n", where, *where);
+        break;
+
+    case R_ARM_PC24:
+    case R_ARM_PLT32:
+    case R_ARM_CALL:
+    case R_ARM_JUMP24:
+        addend = *where & 0x00ffffff;
+        if (addend & 0x00800000) {
+            addend |= 0xff000000;
+        }
+        tmp = addr - (Elf32_Addr)where + (addend << 2);
+        tmp >>= 2;
+        *where = (*where & 0xff000000) | (tmp & 0x00ffffff);
+        //printf("R_ARM_PC24: %x -> %x\n", where, *where);
+        break;
+
+    default:
+        return -1;
+    }
+    return 0;
+}
+
+/*
+ * 在系统里查找指定的符号
+ */
+Elf32_Addr symbol_lookup(const char *name, unsigned int type)
+{
+    /*
+     * TODO: 哈希查找
+     */
+    return (Elf32_Addr)&printf;
+}
+
+/*
  * 重定位 ELF 文件
  */
 int reloc_elf(unsigned char *content, unsigned int size)
 {
     Elf32_Ehdr *ehdr;
     Elf32_Shdr *shdr;
-    Elf32_Shdr *shstr_shdr;
     Elf32_Shdr **shdrs;
-    Elf32_Shdr *rel_shdr;
-    Elf32_Shdr *symtab_shdr;
-    Elf32_Shdr *strtab_shdr;
-    Elf32_Sym  *sym;
-    unsigned char *symtab;
-    unsigned char *rel;
-    char *str;
-    char *shstr;
+    Elf32_Shdr *shstrtab_shdr;
+    char *shstrtab;
     int i;
-    int sym_index;
+    int bss_idx;
+    int text_idx;
+    void (*entry)(void);
 
     ehdr = (Elf32_Ehdr *)content;                                       /*  ELF 首部                    */
 
     /*
      * 节区首部中的字符串的节区首部
      */
-    shstr_shdr = (Elf32_Shdr *)(content + ehdr->e_shoff + ehdr->e_shstrndx * ehdr->e_shentsize);
-    shstr      = (char *)content + shstr_shdr->sh_offset;
-
-    shdr = (Elf32_Shdr *)(content + ehdr->e_shoff);
+    shstrtab_shdr = (Elf32_Shdr *)(content + ehdr->e_shoff + ehdr->e_shstrndx * ehdr->e_shentsize);
+    shstrtab      = (char *)content + shstrtab_shdr->sh_offset;
 
     /*
      * 先装载所有节区首部到局部数组
@@ -171,21 +216,32 @@ int reloc_elf(unsigned char *content, unsigned int size)
     }
 
     /*
+     * .bss 节区不存在 ELF 文件中, 需要分配出来
+     */
+    bss_idx = SHN_UNDEF;
+    for (i = 0, shdr = shdrs[0]; i < ehdr->e_shnum; i++, shdr = shdrs[i]) {
+        if (strcmp(shdr->sh_name + shstrtab, ".bss") == 0) {
+            bss_idx = i;
+            shdr->sh_offset = (Elf32_Off)calloc(1, shdr->sh_size);
+            if (shdr->sh_offset == 0) {
+                goto error1;
+            }
+        } else if (strcmp(shdr->sh_name + shstrtab, ".text") == 0) {    /*  顺便把 .text 节区也找出来吧 */
+            text_idx = i;
+        }
+    }
+
+    /*
      * 处理所有需要重定位的节区
      */
     for (i = 0, shdr = shdrs[0]; i < ehdr->e_shnum; i++, shdr = shdrs[i]) {
 
-        printf("-------- section %d --------\n", i);
-        printf("shdr->sh_name       = %s\n",    shdr->sh_name + shstr);
-        printf("shdr->sh_type       = %d\n",    shdr->sh_type);
-        printf("shdr->sh_flags      = %d\n",    shdr->sh_flags);
-        printf("shdr->sh_addr       = %d\n",    shdr->sh_addr);
-        printf("shdr->sh_offset     = %d\n",    shdr->sh_offset);
-        printf("shdr->sh_size       = %d\n",    shdr->sh_size);
-        printf("shdr->sh_link       = %d\n",    shdr->sh_link);
-        printf("shdr->sh_info       = %d\n",    shdr->sh_info);
-        printf("shdr->sh_addralign  = %d\n",    shdr->sh_addralign);
-        printf("shdr->sh_entsize    = %d\n",    shdr->sh_entsize);
+        Elf32_Shdr *target_shdr;
+        Elf32_Shdr *symtab_shdr;
+        Elf32_Shdr *strtab_shdr;
+        char *strtab;
+        unsigned char *symtab;
+        unsigned char *target;
 
         if (shdr->sh_type == SHT_REL || shdr->sh_type == SHT_RELA) {
 
@@ -197,7 +253,7 @@ int reloc_elf(unsigned char *content, unsigned int size)
             if (shdr->sh_info == SHN_UNDEF) {
                 goto error1;
             }
-            rel_shdr = shdrs[shdr->sh_info];                            /*  作用于的节区的节区首部      */
+            target_shdr = shdrs[shdr->sh_info];                         /*  作用于的节区的节区首部      */
 
             if (symtab_shdr->sh_link == SHN_UNDEF) {
                 goto error1;
@@ -205,38 +261,110 @@ int reloc_elf(unsigned char *content, unsigned int size)
             strtab_shdr = shdrs[symtab_shdr->sh_link];                  /*  字符串表节区首部            */
 
             symtab      = content + symtab_shdr->sh_offset;
-            rel         = content + rel_shdr->sh_offset;
-            str         = (char *)content + strtab_shdr->sh_offset;
+            target      = content + target_shdr->sh_offset;
+            strtab      = (char *)content + strtab_shdr->sh_offset;
         }
 
         if (shdr->sh_type == SHT_REL) {
-            Elf32_Rel  *rel_entry;
+            Elf32_Rel *rel;
+            int j;
 
-            for (i = 0, rel_entry = (Elf32_Rel *)(content + shdr->sh_offset);
-                 i < shdr->sh_size / shdr->sh_entsize;
-                 i++,   rel_entry = (Elf32_Rel *)((char *)rel_entry + shdr->sh_entsize)) {
+            /*
+             * 处理所有的 rel 条目
+             */
+            for (j = 0, rel = (Elf32_Rel *)(content + shdr->sh_offset);
+                 j < shdr->sh_size / shdr->sh_entsize;
+                 j++,   rel = (Elf32_Rel *)((char *)rel + shdr->sh_entsize)) {
 
-                sym_index = ELF32_R_SYM(rel_entry->r_info);
-                if (STN_UNDEF != sym_index) {
-                    sym = (Elf32_Sym *)(symtab + sym_index * symtab_shdr->sh_entsize);
-                    printf("sym name=%s, type=%d, offset=%d\n",  sym->st_name + str, ELF32_R_TYPE(rel_entry->r_info), rel_entry->r_offset);
+                int sym_idx;
+
+                sym_idx = ELF32_R_SYM(rel->r_info);                     /*  这个 rel 条目的符号索引     */
+
+                if (STN_UNDEF != sym_idx) {
+                    Elf32_Sym  *sym;
+                    Elf32_Addr addr;
+                    int ret;
+                                                                        /*  这个 rel 条目的符号         */
+                    sym = (Elf32_Sym *)(symtab + sym_idx * symtab_shdr->sh_entsize);
+
+//                    printf("sym name=%s, value=%d, size=%d, shndx=%d, bind=%d, type=%d\n",
+//                            sym->st_name + strtab,
+//                            sym->st_value,
+//                            sym->st_size,
+//                            sym->st_shndx,
+//                            ELF32_ST_BIND(sym->st_info),
+//                            ELF32_ST_TYPE(sym->st_info));
+
+                    if (sym->st_shndx != SHN_UNDEF) {                   /*  如果这个符号在 ELF 文件里   */
+                        /*
+                         * 获得这个符号在 ELF 文件里地址
+                         */
+                        if (sym->st_shndx == bss_idx) {                 /*  如果这个符号在 .bss 节区    */
+                            addr = (uint32_t)(shdrs[bss_idx]->sh_offset + sym->st_value);
+                        } else {
+                            addr = (uint32_t)(content + shdrs[sym->st_shndx]->sh_offset + sym->st_value);
+                        }
+
+                        /*
+                         * 对该的 rel 条目进行重定位
+                         */
+                        ret = arm_reloc_rel(rel, addr, target);
+                        if (ret < 0) {
+                            goto error1;
+                        }
+                    } else {
+                        /*
+                         * 在系统里查找这个符号
+                         */
+                        addr = symbol_lookup(sym->st_name + strtab, ELF32_ST_TYPE(sym->st_info));
+                        if (addr == 0) {
+                            goto error1;
+                        } else {
+                            /*
+                             * 对该的 rel 条目进行重定位
+                             */
+                            ret = arm_reloc_rel(rel, addr, target);
+                            if (ret < 0) {
+                                goto error1;
+                            }
+                        }
+                    }
                 }
             }
         } else if (shdr->sh_type == SHT_RELA) {
-            Elf32_Rela *rela_entry;
-
-            for (i = 0, rela_entry = (Elf32_Rela *)(content + shdr->sh_offset);
-                 i < shdr->sh_size / shdr->sh_entsize;
-                 i++,   rela_entry = (Elf32_Rela *)((char *)rela_entry + shdr->sh_entsize)) {
-
-                sym_index = ELF32_R_SYM(rela_entry->r_info);
-                if (STN_UNDEF != sym_index) {
-                    sym = (Elf32_Sym *)(symtab + sym_index * symtab_shdr->sh_entsize);
-                    printf("sym name=%s, type=%d, offset=%d\n",  sym->st_name + str, ELF32_R_TYPE(rela_entry->r_info), rela_entry->r_offset);
-                }
-            }
+            goto error1;
         }
     }
+
+    /*
+     * TODO:
+     *
+     * 刚才拷贝的代码还在 D-Cache, 进程运行时读取 I-Cache 或主存, 它们是不一致的!
+     * 所以必须要清除 D-Cache, 清除写缓冲, 还要无效 I-Cache,
+     * 无效 D-Cache 可让出 D-Cache, 减少其它进程的 D-Cache 被换出和 D-Cache Miss, 提升运行速度
+     *
+     * ARM 数据访问的基本流程图:
+     * http://www.ibm.com/developerworks/cn/linux/l-skyeye/part3/s3/index.html
+     */
+
+    /*
+     * TODO:
+     * 执行 main 函数
+     */
+    entry = (void (*)(void))(content + shdrs[text_idx]->sh_offset + 0);
+    entry();
+
+    /*
+     * 释放掉 .bss 节区
+     */
+    if (bss_idx != SHN_UNDEF) {
+        free((void *)shdrs[bss_idx]->sh_offset);
+    }
+
+    /*
+     * 释放节区首部数组
+     */
+    free(shdrs);
 
     return 0;
 
@@ -248,7 +376,7 @@ int reloc_elf(unsigned char *content, unsigned int size)
 }
 
 /*
- * 加载 elf 文件
+ * 加载 ELF 文件
  */
 int load_elf(const char *path)
 {
@@ -258,32 +386,32 @@ int load_elf(const char *path)
     struct stat st;
     int len;
 
-    ret = access(path, R_OK);
+    ret = access(path, R_OK);                                           /*  看下这个文件能否访问        */
     if (ret < 0) {
         printf("%s: failed to access %s\n", __func__, path);
         return -1;
     }
 
-    fd = open(path, O_RDONLY);
+    fd = open(path, O_RDONLY);                                          /*  打开文件                    */
     if (fd < 0) {
         printf("%s: failed to open %s\n", __func__, path);
         return -1;
     }
 
-    ret = fstat(fd, &st);
+    ret = fstat(fd, &st);                                               /*  获得文件的大小              */
     if (ret < 0 || st.st_size == 0) {
         printf("%s: failed to stat %s or %s is empty\n", __func__, path, path);
         return -1;
     }
 
-    content = buf = malloc(st.st_size);
+    content = buf = malloc(st.st_size);                                 /*  分配缓冲                    */
     if (buf < 0) {
         printf("%s: failed to malloc %d byte\n", __func__, st.st_size);
         close(fd);
         return -1;
     }
 
-    len = 0;
+    len = 0;                                                            /*  将文件的内容读到缓冲区      */
     while (st.st_size - len > 0) {
         ret = read(fd, buf, st.st_size - len);
         if (ret < 0) {
@@ -296,24 +424,23 @@ int load_elf(const char *path)
         len += ret;
     }
 
-    ret = probe_elf(content, st.st_size);
+    close(fd);                                                          /*  关闭文件                    */
+
+    ret = probe_elf(content, st.st_size);                               /*  探测 ELF 文件               */
     if (ret < 0) {
         printf("%s: %s is not a elf file\n", __func__, path);
         free(content);
-        close(fd);
         return -1;
     }
 
-    ret = reloc_elf(content, st.st_size);
+    ret = reloc_elf(content, st.st_size);                               /*  重定位 ELF 文件             */
     if (ret < 0) {
         printf("%s: failed to parse %s\n", __func__, path);
         free(content);
-        close(fd);
         return -1;
     }
 
-    free(content);
-    close(fd);
+    free(content);                                                      /*  释放缓冲区                  */
 
     return 0;
 }
