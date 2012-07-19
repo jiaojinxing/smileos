@@ -19,7 +19,7 @@
 ** Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 **
 **--------------------------------------------------------------------------------------------------------
-** File name:               symbol_lib.c
+** File name:               symbol_tool.c
 ** Last modified Date:      2012-7-18
 ** Last Version:            1.0.0
 ** Descriptions:            符号相关库函数
@@ -40,22 +40,24 @@
 #include "symbol.h"
 #include <stddef.h>
 #include <stdlib.h>
+#include <string.h>
 
 typedef struct _NODE {
     unsigned int    key;
     void           *data;
+    void           *arg;
     struct _NODE   *next;
 } NODE;
 
 typedef struct {
     unsigned int    size;
-    NODE           *nodes[1];
+    NODE           *lists[1];
 } HASH_TBL;
 
 /*
  * 创建哈希表
  */
-static HASH_TBL *hash_tbl_create(int size)
+static HASH_TBL *hash_tbl_create(unsigned int size)
 {
     HASH_TBL *tbl = (HASH_TBL *)calloc(1, sizeof(HASH_TBL) + sizeof(NODE *) * (size - 1));
     if (tbl != NULL) {
@@ -67,7 +69,7 @@ static HASH_TBL *hash_tbl_create(int size)
 /*
  * 在哈希表中查找
  */
-static NODE *hash_tbl_lookup(HASH_TBL *tbl, unsigned int key)
+static NODE *hash_tbl_lookup(HASH_TBL *tbl, unsigned int key, int (*compare)(void *, void *), void *arg)
 {
     NODE *node;
 
@@ -75,13 +77,15 @@ static NODE *hash_tbl_lookup(HASH_TBL *tbl, unsigned int key)
         return NULL;
     }
 
-    if (NULL == (node = tbl->nodes[key % tbl->size])) {
+    if (NULL == (node = tbl->lists[key % tbl->size])) {
         return NULL;
     }
 
     while (node != NULL) {
         if (key == node->key) {
-            return node;
+            if (compare(arg, node->arg) == 0) {
+                return node;
+            }
         }
         node = node->next;
     }
@@ -91,14 +95,14 @@ static NODE *hash_tbl_lookup(HASH_TBL *tbl, unsigned int key)
 /*
  * 在哈希表中插入
  */
-static int hash_tbl_insert(HASH_TBL *tbl, unsigned int key, void *data)
+static int hash_tbl_insert(HASH_TBL *tbl, unsigned int key, void *data, int (*compare)(void *, void *), void *arg)
 {
     NODE *node, *head;
 
     if (NULL == tbl)
         return -1;
 
-    head = tbl->nodes[key % tbl->size];
+    head = tbl->lists[key % tbl->size];
     if (NULL == head){
         node = (NODE *)calloc(1, sizeof(NODE));
         if (node == NULL) {
@@ -106,10 +110,11 @@ static int hash_tbl_insert(HASH_TBL *tbl, unsigned int key, void *data)
         }
         node->key  = key;
         node->data = data;
-        tbl->nodes[key % tbl->size] = node;
+        node->arg  = arg;
+        tbl->lists[key % tbl->size] = node;
         return 0;
     } else {
-        if (NULL != hash_tbl_lookup(tbl, key)) {
+        if (NULL != hash_tbl_lookup(tbl, key, compare, arg)) {
             return -1;
         }
 
@@ -119,7 +124,8 @@ static int hash_tbl_insert(HASH_TBL *tbl, unsigned int key, void *data)
         }
         node->key  = key;
         node->data = data;
-        tbl->nodes[key % tbl->size] = node;
+        node->arg  = arg;
+        tbl->lists[key % tbl->size] = node;
 
         node->next = head;
 
@@ -144,19 +150,27 @@ static unsigned int string_hash(const char *str)
 }
 
 /*
+ * 比较字符串
+ */
+static int string_compare(void *arg1, void *arg2)
+{
+    return strcmp(arg1, arg2);
+}
+
+/*
  * 符号的哈希表
  */
-static HASH_TBL *symbol_hash_tbl;
+static HASH_TBL *smileos_symbol_hashtbl;
 
 /*
  * 查找符号
  */
 unsigned int symbol_lookup(const char *name, unsigned int type)
 {
-    NODE *node = hash_tbl_lookup(symbol_hash_tbl, string_hash(name));
+    NODE *node = hash_tbl_lookup(smileos_symbol_hashtbl, string_hash(name), string_compare, (void *)name);
     if (node != NULL) {
-        LW_STATIC_SYMBOL *symbol = node->data;
-        return (unsigned int)symbol->LWSSYMBOL_pcAddr;
+        SYMBOL *symbol = node->data;
+        return (unsigned int)symbol->addr;
     }
     return 0;
 }
@@ -167,19 +181,15 @@ unsigned int symbol_lookup(const char *name, unsigned int type)
 int symbol_add(void)
 {
     int i;
-    int ret;
-    LW_STATIC_SYMBOL *symbol;
+    SYMBOL *symbol;
 
-    symbol_hash_tbl = hash_tbl_create(128);
-    if (symbol_hash_tbl == NULL) {
+    smileos_symbol_hashtbl = hash_tbl_create(128);
+    if (smileos_symbol_hashtbl == NULL) {
         return -1;
     }
 
-    for (i = 0, symbol = _G_symLibSmileOS; i < SYM_TABLE_SIZE; i++, symbol++) {
-        ret = hash_tbl_insert(symbol_hash_tbl, string_hash(symbol->LWSSYMBOL_pcName), symbol);
-        if (ret < 0) {
-            return ret;
-        }
+    for (i = 0, symbol = smileos_symbol_table; i < SYM_TABLE_SIZE; i++, symbol++) {
+        hash_tbl_insert(smileos_symbol_hashtbl, string_hash(symbol->name), symbol, string_compare, symbol->name);
     }
 
     return 0;
