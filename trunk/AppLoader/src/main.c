@@ -373,6 +373,7 @@ int reloc_elf(unsigned char *content, unsigned int size, int argc, char *argv[])
                     if (strcmp(sym->st_name + strtab, "main") == 0) {
                         entry = (int (*)(int, char **))(content + shdrs[text_idx]->sh_offset + sym->st_value);
                         entry(argc, argv);
+                        break;
                     }
                 }
             }
