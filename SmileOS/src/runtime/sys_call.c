@@ -432,6 +432,11 @@ int fcntl(int fd, int cmd, ...)
     return ret;
 }
 
+int _fcntl(int fd, int cmd, int arg)
+{
+    return fcntl(fd, cmd, arg);
+}
+
 /*
  * _fstat_r
  */
@@ -845,7 +850,7 @@ int _fork_r(struct _reent *reent)
 
     debug("%s\n", __func__);
     if (in_kernel()) {
-        ret = (struct _reent *)(sys_do_table[syscall])();
+        ret = (sys_do_table[syscall])();
     } else {
         __asm__ __volatile__("stmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));

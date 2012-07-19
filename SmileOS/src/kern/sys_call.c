@@ -432,6 +432,11 @@ int fcntl(int fd, int cmd, ...)
     return ret;
 }
 
+int _fcntl(int fd, int cmd, int arg)
+{
+    return fcntl(fd, cmd, arg);
+}
+
 /*
  * _fstat_r
  */
