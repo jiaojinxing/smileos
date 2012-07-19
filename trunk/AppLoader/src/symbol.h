@@ -12,20 +12,19 @@
 **														
 ** 文   件   名: symbol.h											
 **														
-** 创   建   人: makesymbol 工具										
+** 创   建   人: MakeSymbol 工具										
 **														
-** 文件创建日期: 2012 年 07 月 18 日						
+** 文件创建日期: 2012 年 07 月 19 日						
 **														
-** 描        述: 系统 SmileOS 符号表. (此文件由 makesymbol 工具自动生成, 请勿修改)				
+** 描        述: SmileOS 操作系统符号表. (此文件由 MakeSymbol 工具自动生成, 请勿修改)			
 *********************************************************************************************************/	
-														
 #ifndef __SYMBOL_H												
 #define __SYMBOL_H												
 														
-#include "symboltools.h"											
+#include "symbol_tool.h"											
 														
-#define SYM_TABLE_SIZE 615										
-extern  LW_STATIC_SYMBOL  _G_symLibSmileOS[SYM_TABLE_SIZE];						
+#define SYM_TABLE_SIZE 1807										
+extern SYMBOL smileos_symbol_table[SYM_TABLE_SIZE];							
 															
 #endif                                                                  /*  __SYMBOL_H                  */	
 /*********************************************************************************************************	

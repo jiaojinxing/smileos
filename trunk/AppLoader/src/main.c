@@ -178,7 +178,7 @@ unsigned int symbol_lookup(const char *name, unsigned int type);
 /*
  * 重定位 ELF 文件
  */
-int reloc_elf(unsigned char *content, unsigned int size)
+int reloc_elf(unsigned char *content, unsigned int size, int argc, char *argv[])
 {
     Elf32_Ehdr *ehdr;
     Elf32_Shdr *shdr;
@@ -188,7 +188,8 @@ int reloc_elf(unsigned char *content, unsigned int size)
     int i;
     int bss_idx;
     int text_idx;
-    void (*entry)(void);
+    int (*entry)(int, char **);
+//    unsigned char **contents;
 
     ehdr = (Elf32_Ehdr *)content;                                       /*  ELF 首部                    */
 
@@ -206,15 +207,20 @@ int reloc_elf(unsigned char *content, unsigned int size)
         goto error0;
     }
 
-    for (i = 0; i < ehdr->e_shnum; i++) {
-        shdrs[i] = (Elf32_Shdr *)(content + ehdr->e_shoff + ehdr->e_shentsize * i);
-    }
+//    contents = malloc(ehdr->e_shnum * sizeof(unsigned char *));
+//    if (contents == NULL) {
+//        goto error1;
+//    }
 
-    /*
-     * .bss 节区不存在 ELF 文件中, 需要分配出来
-     */
-    bss_idx = SHN_UNDEF;
-    for (i = 0, shdr = shdrs[0]; i < ehdr->e_shnum; i++, shdr = shdrs[i]) {
+    bss_idx  = SHN_UNDEF;
+    text_idx = SHN_UNDEF;
+
+    for (i = 0; i < ehdr->e_shnum; i++) {
+        shdrs[i] = shdr = (Elf32_Shdr *)(content + ehdr->e_shoff + ehdr->e_shentsize * i);
+
+        /*
+         * .bss 节区不存在 ELF 文件中, 需要分配出来
+         */
         if (strcmp(shdr->sh_name + shstrtab, ".bss") == 0) {
             bss_idx = i;
             shdr->sh_offset = (Elf32_Off)calloc(1, shdr->sh_size);
@@ -277,18 +283,10 @@ int reloc_elf(unsigned char *content, unsigned int size)
 
                 if (STN_UNDEF != sym_idx) {
                     Elf32_Sym  *sym;
-                    Elf32_Addr addr;
+                    Elf32_Addr  addr;
                     int ret;
                                                                         /*  这个 rel 条目的符号         */
                     sym = (Elf32_Sym *)(symtab + sym_idx * symtab_shdr->sh_entsize);
-
-//                    printf("sym name=%s, value=%d, size=%d, shndx=%d, bind=%d, type=%d\n",
-//                            sym->st_name + strtab,
-//                            sym->st_value,
-//                            sym->st_size,
-//                            sym->st_shndx,
-//                            ELF32_ST_BIND(sym->st_info),
-//                            ELF32_ST_TYPE(sym->st_info));
 
                     if (sym->st_shndx != SHN_UNDEF) {                   /*  如果这个符号在 ELF 文件里   */
                         /*
@@ -313,6 +311,7 @@ int reloc_elf(unsigned char *content, unsigned int size)
                          */
                         addr = symbol_lookup(sym->st_name + strtab, ELF32_ST_TYPE(sym->st_info));
                         if (addr == 0) {
+                            printf("symbol %s no found\n", sym->st_name + strtab);
                             goto error1;
                         } else {
                             /*
@@ -343,11 +342,42 @@ int reloc_elf(unsigned char *content, unsigned int size)
      */
 
     /*
-     * TODO:
      * 执行 main 函数
      */
-    entry = (void (*)(void))(content + shdrs[text_idx]->sh_offset + 0);
-    entry();
+    for (i = 0, shdr = shdrs[0]; i < ehdr->e_shnum; i++, shdr = shdrs[i]) {
+
+        if (shdr->sh_type == SHT_SYMTAB) {
+            Elf32_Shdr *symtab_shdr;
+            Elf32_Shdr *strtab_shdr;
+            char *strtab;
+            unsigned char *symtab;
+            Elf32_Sym  *sym;
+            int j;
+
+            symtab_shdr = shdr;
+            symtab      = content + symtab_shdr->sh_offset;
+
+            if (symtab_shdr->sh_link == SHN_UNDEF) {
+                break;
+            }
+            strtab_shdr = shdrs[symtab_shdr->sh_link];                  /*  字符串表节区首部            */
+            strtab      = (char *)content + strtab_shdr->sh_offset;
+
+            for (j = 0,
+                 sym = (Elf32_Sym *)symtab;
+                 j < symtab_shdr->sh_size / symtab_shdr->sh_entsize;
+                 j++, sym = (Elf32_Sym *)((char *)sym + symtab_shdr->sh_entsize)) {
+
+                if (sym->st_shndx == text_idx &&
+                    ELF32_ST_TYPE(sym->st_info) == STT_FUNC) {
+                    if (strcmp(sym->st_name + strtab, "main") == 0) {
+                        entry = (int (*)(int, char **))(content + shdrs[text_idx]->sh_offset + sym->st_value);
+                        entry(argc, argv);
+                    }
+                }
+            }
+        }
+    }
 
     /*
      * 释放掉 .bss 节区
@@ -373,7 +403,7 @@ int reloc_elf(unsigned char *content, unsigned int size)
 /*
  * 加载 ELF 文件
  */
-int load_elf(const char *path)
+int load_elf(const char *path, int argc, char *argv[])
 {
     int fd;
     int ret;
@@ -428,9 +458,9 @@ int load_elf(const char *path)
         return -1;
     }
 
-    ret = reloc_elf(content, st.st_size);                               /*  重定位 ELF 文件             */
+    ret = reloc_elf(content, st.st_size, argc, argv);                   /*  重定位 ELF 文件             */
     if (ret < 0) {
-        printf("%s: failed to parse %s\n", __func__, path);
+        printf("%s: failed to reloc %s\n", __func__, path);
         free(content);
         return -1;
     }
@@ -453,7 +483,7 @@ int main(int argc, char *argv[])
     extern int symbol_add(void);
     symbol_add();                                                       /*  增加系统的符号              */
 
-    return load_elf(argv[1]);
+    return load_elf(argv[1], argc - 1, &argv[1]);
 }
 /*********************************************************************************************************
   END FILE
