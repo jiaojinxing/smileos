@@ -75,13 +75,7 @@ void libc_init(void)
     stderr = fdopen(STDERR_FILENO, "w");
 }
 
-/*
- * _fini
- */
-void _fini(void)
-{
 
-}
 
 /*
  * printk
@@ -99,6 +93,83 @@ void printk(const char *fmt, ...)
 
     va_end(va);
 }
+
+/*
+ * дк newlib-1.19.0/newlib/libc/search/hash_bigkey.c
+ */
+int MIN(int x, int y)
+{
+    return x > y ? y : x;
+}
+
+void sigprocmask(void)
+{
+
+}
+
+/*
+ * дк newlib-1.19.0/newlib/libc/misc/init.c
+ */
+#if 0
+/* These magic symbols are provided by the linker.  */
+extern void (*__preinit_array_start []) (void) __attribute__((weak));
+extern void (*__preinit_array_end []) (void) __attribute__((weak));
+extern void (*__init_array_start []) (void) __attribute__((weak));
+extern void (*__init_array_end []) (void) __attribute__((weak));
+extern void (*__fini_array_start []) (void) __attribute__((weak));
+extern void (*__fini_array_end []) (void) __attribute__((weak));
+
+extern void _init (void);
+extern void _fini (void);
+
+/* Iterate over all the init routines.  */
+void
+__libc_init_array (void)
+{
+  size_t count;
+  size_t i;
+
+  count = __preinit_array_end - __preinit_array_start;
+  for (i = 0; i < count; i++)
+    __preinit_array_start[i] ();
+
+  _init ();
+
+  count = __init_array_end - __init_array_start;
+  for (i = 0; i < count; i++)
+    __init_array_start[i] ();
+}
+
+/* Run all the cleanup routines.  */
+void
+__libc_fini_array (void)
+{
+  size_t count;
+  size_t i;
+
+  count = __fini_array_end - __fini_array_start;
+  for (i = 0; i < count; i++)
+    __fini_array_start[i] ();
+
+  _fini ();
+}
+#endif
+/*
+ * _init
+ */
+void _init(void)
+{
+
+}
+
+/*
+ * _fini
+ */
+void _fini(void)
+{
+
+}
+
 #endif
 
 void *memrchr(const void *ptr, int ch, size_t len)
