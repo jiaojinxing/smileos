@@ -490,8 +490,8 @@ void *heap_free(heap_t *heap, const char *func, int line, void *ptr)
     }
 
     if (ptr == NULL) {
-//        debug("%s: process %d memptr=NULL, call by %s() line %d\n",
-//                __func__, getpid(), func, line);
+        debug("%s: process %d memptr=NULL, call by %s() line %d\n",
+                __func__, getpid(), func, line);
         return ptr;
     }
 
@@ -536,9 +536,31 @@ void *heap_free(heap_t *heap, const char *func, int line, void *ptr)
         if (next != NULL) {
             next->prev = prev;
         }
-
         heap->block_nr--;
 
+        blk = prev;
+        if (next != NULL && next->status == MEM_BLOCK_STATE_FREE) {     /*  后一个内存块空闲, 合并之    */
+
+            blk->size += MEM_ALIGN_SIZE(sizeof(mem_block_t)) + next->size;  /*  内存块变大              */
+
+            if (next->next != NULL) {                                   /*  从内存块链表中删除后内存块  */
+                next->next->prev = blk;
+            }
+            blk->next = next->next;
+            heap->block_nr--;
+
+            if (next->next_free != NULL) {                              /*  从空闲块链表中删除后内存块  */
+                next->next_free->prev_free = next->prev_free;
+            }
+
+            if (next->prev_free != NULL) {
+                next->prev_free->next_free = next->next_free;
+            }
+
+            if (heap->free_list == next) {
+                heap->free_list = next->next_free;
+            }
+        }
     } else if (next != NULL && next->status == MEM_BLOCK_STATE_FREE) {  /*  后一个内存块空闲, 合并之    */
 
         blk->size  += MEM_ALIGN_SIZE(sizeof(mem_block_t)) + next->size; /*  内存块变大                  */
@@ -548,9 +570,7 @@ void *heap_free(heap_t *heap, const char *func, int line, void *ptr)
             next->next->prev = blk;
         }
         blk->next = next->next;
-        if (heap->block_list == next) {
-            heap->block_list = blk;
-        }
+        heap->block_nr--;
 
         if (next->next_free != NULL) {                                  /*  从空闲块链表中删除后内存块  */
             next->next_free->prev_free = blk;
@@ -565,22 +585,19 @@ void *heap_free(heap_t *heap, const char *func, int line, void *ptr)
         if (heap->free_list == next) {
             heap->free_list = blk;
         }
-
-        heap->block_nr--;
-
     } else {
         /*
          * 把内存块加入空闲内存块链表的链头, 分配时尽可能使用已经使用过的内存,
          * 因为使用过, 那么这些内存已经映射好, 即已经引入了页框,
          * 既提升了程序的运行速度, 又减少了本进程使用的页框数
          */
+        blk->status = MEM_BLOCK_STATE_FREE;                             /*  改变内存块状态为空闲        */
         blk->prev_free = NULL;
         blk->next_free = heap->free_list;
         if (heap->free_list != NULL) {
             heap->free_list->prev_free = blk;
         }
         heap->free_list = blk;
-        blk->status = MEM_BLOCK_STATE_FREE;                             /*  改变内存块状态为空闲        */
     }
 
     return NULL;
