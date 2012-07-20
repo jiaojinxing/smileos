@@ -45,7 +45,7 @@
 /*
  * 创建 SD 卡设备
  */
-int sdcard_create(const char *point_name, const char *dev_name, const char *fs_name, sdio_t *sdio);
+int sdcard_create(const char *dev_name, sdio_t *sdio);
 
 #endif                                                                  /*  SD_H_                       */
 /*********************************************************************************************************

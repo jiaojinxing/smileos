@@ -79,6 +79,8 @@ struct _sdio_t {
     int (*max_clk)(sdio_t *sdio);
     int (*preread_blk)(sdio_t *sdio, uint32_t blk_cnt);
     int (*read_blk)(sdio_t *sdio, uint32_t len, uint8_t *buf);
+    int (*prewrite_blk)(sdio_t *sdio, uint32_t blk_cnt);
+    int (*write_blk)(sdio_t *sdio, uint32_t len, const uint8_t *buf);
 };
 
 #endif                                                                  /*  SDIO_H_                     */
