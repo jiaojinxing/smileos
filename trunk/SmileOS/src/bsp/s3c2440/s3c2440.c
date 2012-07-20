@@ -135,16 +135,22 @@ int bsp_drivers_install(void)
     return 0;
 }
 
+#include <sys/mount.h>
 /*
  * BSP 创建设备
  */
 int bsp_devices_create(void)
 {
+    int ret;
+
     extern int fb_create(void);
     fb_create();
 
     extern sdio_t s3c2440_sdio;
-    sdcard_create("/sd0", "/dev/sd0", "fatfs", &s3c2440_sdio);
+    ret = sdcard_create("/dev/sd0", &s3c2440_sdio);
+    if (ret == 0) {
+        mount("/sd0", "/dev/sd0", "fatfs");
+    }
 
     return 0;
 }

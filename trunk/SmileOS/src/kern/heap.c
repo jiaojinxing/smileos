@@ -49,6 +49,13 @@
 ** Version:                 1.3.0
 ** Descriptions:            heap_alloc 和 heap_free 增加 func 和 line 参数, 帮助发现内存使用错误!
 **
+**--------------------------------------------------------------------------------------------------------
+** Modified by:             JiaoJinXing
+** Modified date:           2012-7-20
+** Version:                 1.4.0
+** Descriptions:            今天多得同事 曾波 帮我指出了内存释放函数里的内存块合并错误! 会造成内存碎片,
+**                          在此表示 THANKS!
+**
 *********************************************************************************************************/
 #include "kern/config.h"
 #include "kern/types.h"
@@ -490,8 +497,10 @@ void *heap_free(heap_t *heap, const char *func, int line, void *ptr)
     }
 
     if (ptr == NULL) {
+#ifndef SMILEOS_KERNEL
         debug("%s: process %d memptr=NULL, call by %s() line %d\n",
                 __func__, getpid(), func, line);
+#endif
         return ptr;
     }
 
@@ -543,10 +552,10 @@ void *heap_free(heap_t *heap, const char *func, int line, void *ptr)
 
             blk->size += MEM_ALIGN_SIZE(sizeof(mem_block_t)) + next->size;  /*  内存块变大              */
 
-            if (next->next != NULL) {                                   /*  从内存块链表中删除后内存块  */
+            blk->next = next->next;                                     /*  从内存块链表中删除后内存块  */
+            if (next->next != NULL) {
                 next->next->prev = blk;
             }
-            blk->next = next->next;
             heap->block_nr--;
 
             if (next->next_free != NULL) {                              /*  从空闲块链表中删除后内存块  */
@@ -566,10 +575,10 @@ void *heap_free(heap_t *heap, const char *func, int line, void *ptr)
         blk->size  += MEM_ALIGN_SIZE(sizeof(mem_block_t)) + next->size; /*  内存块变大                  */
         blk->status = MEM_BLOCK_STATE_FREE;                             /*  改变内存块状态为空闲        */
 
-        if (next->next != NULL) {                                       /*  从内存块链表中删除后内存块  */
+        blk->next = next->next;                                         /*  从内存块链表中删除后内存块  */
+        if (next->next != NULL) {
             next->next->prev = blk;
         }
-        blk->next = next->next;
         heap->block_nr--;
 
         if (next->next_free != NULL) {                                  /*  从空闲块链表中删除后内存块  */

@@ -53,15 +53,15 @@ typedef struct {
     uint16_t        rca;
     uint8_t         sdhc;
     uint8_t         multi_blk_en;
-} sd_card_t;
+} sdcard_t;
 /********************************************************************************************************/
 /*
- * SD 卡的 SDIO 接口相关
+ * SD 卡的 SDIO 接口相关操作函数
  */
 /*
  * 初始化 SD 卡的 SDIO 接口
  */
-static int sd_io_init(sd_card_t *sd, sdio_t *sdio)
+static int sdio_init(sdcard_t *sd, sdio_t *sdio)
 {
     sd->sdio = sdio;
 
@@ -71,42 +71,54 @@ static int sd_io_init(sd_card_t *sd, sdio_t *sdio)
 }
 
 /*
- * 将 SD 卡的 SDIO 接口的输出时钟设置为最大
- */
-/*
  * 通过 SD 卡的 SDIO 接口发送命令
  */
-static int sd_io_send_cmd(sd_card_t *sd,
-                          uint32_t cmd,
-                          int has_arg, uint32_t arg,
-                          sd_resp_type_t resp_type, sd_resp_t *resp)
+static int sdio_send_cmd(sdcard_t *sd,
+                         uint32_t cmd,
+                         int has_arg, uint32_t arg,
+                         sd_resp_type_t resp_type, sd_resp_t *resp)
 {
     return sd->sdio->send_cmd(sd->sdio, cmd, has_arg, arg, resp_type, resp);
 }
 
-static int sd_io_max_clk(sd_card_t *sd)
+/*
+ * 将 SD 卡的 SDIO 接口的输出时钟设置为最大
+ */
+static int sdio_max_clk(sdcard_t *sd)
 {
     return sd->sdio->max_clk(sd->sdio);
-}
-
-
-/*
- * 通过 SD 卡的 SDIO 接口读块
- */
-static int sd_io_read_blk(sd_card_t *sd,
-                          uint32_t len,
-                          uint8_t *buf)
-{
-    return sd->sdio->read_blk(sd->sdio, len, buf);
 }
 
 /*
  * 通过 SD 卡的 SDIO 接口预读块
  */
-static int sd_io_preread_blk(sd_card_t *sd,
-                             uint32_t blk_cnt)
+static int sdio_preread_blk(sdcard_t *sd, uint32_t blk_cnt)
 {
     return sd->sdio->preread_blk(sd->sdio, blk_cnt);
+}
+
+/*
+ * 通过 SD 卡的 SDIO 接口读块
+ */
+static int sdio_read_blk(sdcard_t *sd, uint32_t len, uint8_t *buf)
+{
+    return sd->sdio->read_blk(sd->sdio, len, buf);
+}
+
+/*
+ * 通过 SD 卡的 SDIO 接口预写块
+ */
+static int sdio_prewrite_blk(sdcard_t *sd, uint32_t blk_cnt)
+{
+    return sd->sdio->prewrite_blk(sd->sdio, blk_cnt);
+}
+
+/*
+ * 通过 SD 卡的 SDIO 接口写块
+ */
+static int sdio_write_blk(sdcard_t *sd, uint32_t len, const uint8_t *buf)
+{
+    return sd->sdio->write_blk(sd->sdio, len, buf);
 }
 /********************************************************************************************************/
 /*
@@ -119,9 +131,9 @@ static int sd_io_preread_blk(sd_card_t *sd,
  *
  * Resets all cards to idle state
  */
-static int sd_send_cmd0(sd_card_t *sd)
+static int sdio_send_cmd0(sdcard_t *sd)
 {
-    return sd_io_send_cmd(sd, 0, 0, 0, SD_R0, NULL);
+    return sdio_send_cmd(sd, 0, 0, 0, SD_R0, NULL);
 }
 
 /*
@@ -132,9 +144,9 @@ static int sd_send_cmd0(sd_card_t *sd)
  * Asks any card to send the CID numbers on the CMD line
  * (any card that is connected to the host will respond)
  */
-static int sd_send_cmd2(sd_card_t *sd, sd_resp_t *resp)
+static int sdio_send_cmd2(sdcard_t *sd, sd_resp_t *resp)
 {
-    return sd_io_send_cmd(sd, 2, 0, 0, SD_R2, resp);
+    return sdio_send_cmd(sd, 2, 0, 0, SD_R2, resp);
 }
 
 /*
@@ -144,9 +156,9 @@ static int sd_send_cmd2(sd_card_t *sd, sd_resp_t *resp)
  *
  * Ask the card to publish a new relative address (RCA)
  */
-static int sd_send_cmd3(sd_card_t *sd, sd_resp_t *resp)
+static int sdio_send_cmd3(sdcard_t *sd, sd_resp_t *resp)
 {
-    return sd_io_send_cmd(sd, 3, 0, 0, SD_R6, resp);
+    return sdio_send_cmd(sd, 3, 0, 0, SD_R6, resp);
 }
 
 /*
@@ -156,9 +168,9 @@ static int sd_send_cmd3(sd_card_t *sd, sd_resp_t *resp)
  *
  * Programs the DSR of all cards
  */
-static int sd_send_cmd4(sd_card_t *sd, uint32_t dsr)
+static int sdio_send_cmd4(sdcard_t *sd, uint32_t dsr)
 {
-    return sd_io_send_cmd(sd, 4, 1, dsr << 16, SD_R0, NULL);
+    return sdio_send_cmd(sd, 4, 1, dsr << 16, SD_R0, NULL);
 }
 
 /*
@@ -170,9 +182,9 @@ static int sd_send_cmd4(sd_card_t *sd, uint32_t dsr)
  * disconnect states. In both cases, the card is selected by its own relative address and
  * gets deselected by any other address; address 0 deselects all.
  */
-static int sd_send_cmd7(sd_card_t *sd, uint32_t rca, sd_resp_t *resp)
+static int sdio_send_cmd7(sdcard_t *sd, uint32_t rca, sd_resp_t *resp)
 {
-    return sd_io_send_cmd(sd, 7, 1, rca << 16, SD_R1b, resp);
+    return sdio_send_cmd(sd, 7, 1, rca << 16, SD_R1b, resp);
 }
 
 /*
@@ -184,9 +196,9 @@ static int sd_send_cmd7(sd_card_t *sd, uint32_t rca, sd_resp_t *resp)
  * which includes host supply voltage information and asks the card whether card supports voltage.
  * Reserved bits shall be set to '0'.
  */
-static int sd_send_cmd8(sd_card_t *sd, uint32_t vhs, uint32_t check_pattern, sd_resp_t *resp)
+static int sdio_send_cmd8(sdcard_t *sd, uint32_t vhs, uint32_t check_pattern, sd_resp_t *resp)
 {
-    return sd_io_send_cmd(sd, 8, 1, vhs << 8 | check_pattern, SD_R7, resp);
+    return sdio_send_cmd(sd, 8, 1, vhs << 8 | check_pattern, SD_R7, resp);
 }
 
 /*
@@ -196,9 +208,9 @@ static int sd_send_cmd8(sd_card_t *sd, uint32_t vhs, uint32_t check_pattern, sd_
  *
  * Addressed card sends its card-specific data (CSD) on the CMD line.
  */
-static int sd_send_cmd9(sd_card_t *sd, uint32_t rca, sd_resp_t *resp)
+static int sdio_send_cmd9(sdcard_t *sd, uint32_t rca, sd_resp_t *resp)
 {
-    return sd_io_send_cmd(sd, 9, 1, rca << 16, SD_R2, resp);
+    return sdio_send_cmd(sd, 9, 1, rca << 16, SD_R2, resp);
 }
 
 /*
@@ -208,9 +220,9 @@ static int sd_send_cmd9(sd_card_t *sd, uint32_t rca, sd_resp_t *resp)
  *
  * Addressed card sends its card identification (CID) on CMD the line.
  */
-static int sd_send_cmd10(sd_card_t *sd, uint32_t rca, sd_resp_t *resp)
+static int sdio_send_cmd10(sdcard_t *sd, uint32_t rca, sd_resp_t *resp)
 {
-    return sd_io_send_cmd(sd, 10, 1, rca << 16, SD_R2, resp);
+    return sdio_send_cmd(sd, 10, 1, rca << 16, SD_R2, resp);
 }
 
 /*
@@ -220,9 +232,9 @@ static int sd_send_cmd10(sd_card_t *sd, uint32_t rca, sd_resp_t *resp)
  *
  * Switch to 1.8V bus signaling level.
  */
-static int sd_send_cmd11(sd_card_t *sd, sd_resp_t *resp)
+static int sdio_send_cmd11(sdcard_t *sd, sd_resp_t *resp)
 {
-    return sd_io_send_cmd(sd, 11, 0, 0, SD_R1, resp);
+    return sdio_send_cmd(sd, 11, 0, 0, SD_R1, resp);
 }
 
 /*
@@ -232,9 +244,9 @@ static int sd_send_cmd11(sd_card_t *sd, sd_resp_t *resp)
  *
  * Forces the card to stop transmission
  */
-static int sd_send_cmd12(sd_card_t *sd, sd_resp_t *resp)
+static int sdio_send_cmd12(sdcard_t *sd, sd_resp_t *resp)
 {
-    return sd_io_send_cmd(sd, 12, 0, 0, SD_R1b, resp);
+    return sdio_send_cmd(sd, 12, 0, 0, SD_R1b, resp);
 }
 
 /*
@@ -244,9 +256,9 @@ static int sd_send_cmd12(sd_card_t *sd, sd_resp_t *resp)
  *
  * Addressed card sends its status register.
  */
-static int sd_send_cmd13(sd_card_t *sd, uint32_t rca, sd_resp_t *resp)
+static int sdio_send_cmd13(sdcard_t *sd, uint32_t rca, sd_resp_t *resp)
 {
-    return sd_io_send_cmd(sd, 13, 1, rca << 16, SD_R1, resp);
+    return sdio_send_cmd(sd, 13, 1, rca << 16, SD_R1, resp);
 }
 
 /*
@@ -256,22 +268,22 @@ static int sd_send_cmd13(sd_card_t *sd, uint32_t rca, sd_resp_t *resp)
  *
  * Sends an addressed card into the inactive State.
  */
-static int sd_send_cmd15(sd_card_t *sd, uint32_t rca)
+static int sdio_send_cmd15(sdcard_t *sd, uint32_t rca)
 {
-    return sd_io_send_cmd(sd, 15, 1, rca << 16, SD_R0, NULL);
+    return sdio_send_cmd(sd, 15, 1, rca << 16, SD_R0, NULL);
 }
 /********************************************************************************************************/
 /*
- * 读块命令
+ * 读写块命令
  */
 /*
  * 发送命令 16
  *
  * SET_BLOCKLEN
  */
-static int sd_send_cmd16(sd_card_t *sd, uint32_t blk_len, sd_resp_t *resp)
+static int sdio_send_cmd16(sdcard_t *sd, uint32_t blk_len, sd_resp_t *resp)
 {
-    return sd_io_send_cmd(sd, 16, 1, blk_len, SD_R1, resp);
+    return sdio_send_cmd(sd, 16, 1, blk_len, SD_R1, resp);
 }
 
 /*
@@ -279,9 +291,9 @@ static int sd_send_cmd16(sd_card_t *sd, uint32_t blk_len, sd_resp_t *resp)
  *
  * READ_SINGLE_BLOCK
  */
-static int sd_send_cmd17(sd_card_t *sd, uint32_t data_addr, sd_resp_t *resp)
+static int sdio_send_cmd17(sdcard_t *sd, uint32_t data_addr, sd_resp_t *resp)
 {
-    return sd_io_send_cmd(sd, 17, 1, data_addr, SD_R1, resp);
+    return sdio_send_cmd(sd, 17, 1, data_addr, SD_R1, resp);
 }
 
 /*
@@ -289,9 +301,9 @@ static int sd_send_cmd17(sd_card_t *sd, uint32_t data_addr, sd_resp_t *resp)
  *
  * READ_MULTIPLE_BLOCK
  */
-static int sd_send_cmd18(sd_card_t *sd, uint32_t data_addr, sd_resp_t *resp)
+static int sdio_send_cmd18(sdcard_t *sd, uint32_t data_addr, sd_resp_t *resp)
 {
-    return sd_io_send_cmd(sd, 18, 1, data_addr, SD_R1, resp);
+    return sdio_send_cmd(sd, 18, 1, data_addr, SD_R1, resp);
 }
 
 /*
@@ -299,9 +311,9 @@ static int sd_send_cmd18(sd_card_t *sd, uint32_t data_addr, sd_resp_t *resp)
  *
  * SEND_TUNING_BLOCK
  */
-static int sd_send_cmd19(sd_card_t *sd, sd_resp_t *resp)
+static int sdio_send_cmd19(sdcard_t *sd, sd_resp_t *resp)
 {
-    return sd_io_send_cmd(sd, 19, 0, 0, SD_R1, resp);
+    return sdio_send_cmd(sd, 19, 0, 0, SD_R1, resp);
 }
 
 /*
@@ -309,9 +321,9 @@ static int sd_send_cmd19(sd_card_t *sd, sd_resp_t *resp)
  *
  * SPEED_CLASS_CONTROL
  */
-static int sd_send_cmd20(sd_card_t *sd, uint32_t speed_class, sd_resp_t *resp)
+static int sdio_send_cmd20(sdcard_t *sd, uint32_t speed_class, sd_resp_t *resp)
 {
-    return sd_io_send_cmd(sd, 20, 1, speed_class << 28, SD_R1b, resp);
+    return sdio_send_cmd(sd, 20, 1, speed_class << 28, SD_R1b, resp);
 }
 
 /*
@@ -319,9 +331,29 @@ static int sd_send_cmd20(sd_card_t *sd, uint32_t speed_class, sd_resp_t *resp)
  *
  * SET_BLOCK_COUNT
  */
-static int sd_send_cmd23(sd_card_t *sd, uint32_t blk_cnt, sd_resp_t *resp)
+static int sdio_send_cmd23(sdcard_t *sd, uint32_t blk_cnt, sd_resp_t *resp)
 {
-    return sd_io_send_cmd(sd, 23, 1, blk_cnt, SD_R1, resp);
+    return sdio_send_cmd(sd, 23, 1, blk_cnt, SD_R1, resp);
+}
+
+/*
+ * 发送命令 24
+ *
+ * WRITE_BLOCK
+ */
+static int sdio_send_cmd24(sdcard_t *sd, uint32_t data_addr, sd_resp_t *resp)
+{
+    return sdio_send_cmd(sd, 24, 1, data_addr, SD_R1, resp);
+}
+
+/*
+ * 发送命令 25
+ *
+ * WRITE_MULTIPLE_BLOCK
+ */
+static int sdio_send_cmd25(sdcard_t *sd, uint32_t data_addr, sd_resp_t *resp)
+{
+    return sdio_send_cmd(sd, 25, 1, data_addr, SD_R1, resp);
 }
 /********************************************************************************************************/
 /*
@@ -335,9 +367,9 @@ static int sd_send_cmd23(sd_card_t *sd, uint32_t blk_cnt, sd_resp_t *resp)
  * Indicates to the card that the next command is an
  * application specific command rather than a standard command
  */
-static int sd_send_cmd55(sd_card_t *sd, uint32_t rca, sd_resp_t *resp)
+static int sdio_send_cmd55(sdcard_t *sd, uint32_t rca, sd_resp_t *resp)
 {
-    return sd_io_send_cmd(sd, 55, 1, rca << 16, SD_R1, resp);
+    return sdio_send_cmd(sd, 55, 1, rca << 16, SD_R1, resp);
 }
 
 /*
@@ -349,34 +381,34 @@ static int sd_send_cmd55(sd_card_t *sd, uint32_t rca, sd_resp_t *resp)
  * The allowed data bus widths are given in SCR register.
  *
  */
-static int sd_send_acmd6(sd_card_t *sd, uint32_t bus_width, sd_resp_t *resp)
+static int sdio_send_acmd6(sdcard_t *sd, uint32_t bus_width, sd_resp_t *resp)
 {
-    if (sd_send_cmd55(sd, sd->rca, resp) < 0) {
+    if (sdio_send_cmd55(sd, sd->rca, resp) < 0) {
         printk("%s: cmd55 failed\n", __func__);
         return -1;
     }
 
-    return sd_io_send_cmd(sd, 6, 1, bus_width << 0, SD_R1, resp);
+    return sdio_send_cmd(sd, 6, 1, bus_width << 0, SD_R1, resp);
 }
 
 /*
  * 发送应用命令 41
  *
  */
-static int sd_send_acmd41(sd_card_t *sd, uint32_t hcs, uint32_t xpc, uint32_t s18r, uint32_t vvw, sd_resp_t *resp)
+static int sdio_send_acmd41(sdcard_t *sd, uint32_t hcs, uint32_t xpc, uint32_t s18r, uint32_t vvw, sd_resp_t *resp)
 {
-    if (sd_send_cmd55(sd, sd->rca, resp) < 0) {
+    if (sdio_send_cmd55(sd, sd->rca, resp) < 0) {
         printk("%s: cmd55 failed\n", __func__);
         return -1;
     }
 
-    return sd_io_send_cmd(sd, 41, 1, hcs << 30 | xpc << 28 | s18r << 24 | vvw << 0, SD_R3, resp);
+    return sdio_send_cmd(sd, 41, 1, hcs << 30 | xpc << 28 | s18r << 24 | vvw << 0, SD_R3, resp);
 }
 /********************************************************************************************************/
 /*
- * 初始化 SD
+ * 初始化 SD 卡
  */
-static int sdcard_init(sd_card_t *sd, sdio_t *sdio)
+static int sdcard_init(sdcard_t *sd, sdio_t *sdio)
 {
     sd_resp_t  resp;
     int        ret;
@@ -385,7 +417,7 @@ static int sdcard_init(sd_card_t *sd, sdio_t *sdio)
     /*
      * 初始化 SD 卡的 SDIO 接口, SD 卡的 SDIO 接口的输出时钟不得超过 400KHz
      */
-    ret = sd_io_init(sd, sdio);
+    ret = sdio_init(sd, sdio);
     if (ret < 0) {
         printk("%s: failed to init sdio\n", __func__);
         return -1;
@@ -399,7 +431,7 @@ static int sdcard_init(sd_card_t *sd, sdio_t *sdio)
     /*
      * 发送命令 0, Resets all cards to idle state
      */
-    ret = sd_send_cmd0(sd);
+    ret = sdio_send_cmd0(sd);
     if (ret < 0) {
         printk("%s: cmd0 failed\n", __func__);
         return -1;
@@ -408,7 +440,7 @@ static int sdcard_init(sd_card_t *sd, sdio_t *sdio)
     /*
      * 发送命令 8, Sends SD Memory Card interface condition
      */
-    ret = sd_send_cmd8(sd, 1, 0xAA, &resp);
+    ret = sdio_send_cmd8(sd, 1, 0xAA, &resp);
     if (ret < 0) {
         printk("%s: cmd8 failed\n", __func__);
         return -1;
@@ -429,7 +461,7 @@ static int sdcard_init(sd_card_t *sd, sdio_t *sdio)
      * 发送应用命令 41
      */
     for (i = 0; i < 50; i++) {
-        ret = sd_send_acmd41(sd, 1, 0, 0, 0xFF80 /* 2.7-3.6V */ , &resp);
+        ret = sdio_send_acmd41(sd, 1, 0, 0, 0xFF80 /* 2.7-3.6V */ , &resp);
         if (ret < 0) {
             printk("%s: acmd41 failed, try time = %d\n", __func__, i);
         } else {
@@ -470,7 +502,7 @@ static int sdcard_init(sd_card_t *sd, sdio_t *sdio)
         /*
          * 发送命令 11
          */
-        ret = sd_send_cmd11(sd, &resp);
+        ret = sdio_send_cmd11(sd, &resp);
         if (ret < 0) {
             printk("%s: cmd11 failed\n", __func__);
             return -1;
@@ -482,7 +514,7 @@ static int sdcard_init(sd_card_t *sd, sdio_t *sdio)
     /*
      * 发送命令 2
      */
-    ret = sd_send_cmd2(sd, &resp);
+    ret = sdio_send_cmd2(sd, &resp);
     if (ret < 0) {
         printk("%s: cmd2 failed\n", __func__);
         return -1;
@@ -506,7 +538,7 @@ static int sdcard_init(sd_card_t *sd, sdio_t *sdio)
     /*
      * 发送命令 3
      */
-    ret = sd_send_cmd3(sd, &resp);
+    ret = sdio_send_cmd3(sd, &resp);
     if (ret < 0) {
         printk("%s: cmd3 failed\n", __func__);
         return -1;
@@ -521,12 +553,12 @@ static int sdcard_init(sd_card_t *sd, sdio_t *sdio)
     /*
      * 将 SD 卡的 SDIO 接口的输出时钟设置为最大
      */
-    sd_io_max_clk(sd);
+    sdio_max_clk(sd);
 
     /*
      * 发送命令 7
      */
-    ret = sd_send_cmd7(sd, sd->rca, &resp);
+    ret = sdio_send_cmd7(sd, sd->rca, &resp);
     if (ret < 0) {
         printk("%s: cmd7 failed\n", __func__);
         return -1;
@@ -537,14 +569,14 @@ static int sdcard_init(sd_card_t *sd, sdio_t *sdio)
     /*
      * 发送应用命令 6
      */
-    ret = sd_send_acmd6(sd, 2 /* 4 bits bus */, &resp);
+    ret = sdio_send_acmd6(sd, 2 /* 4 bits bus */, &resp);
     if (ret < 0) {
         printk("%s: acmd6 failed\n", __func__);
         return -1;
     }
 
     if (!sd->sdhc) {
-        ret = sd_send_cmd16(sd, 512 /* blk len */, &resp);
+        ret = sdio_send_cmd16(sd, 512 /* blk len */, &resp);
         if (ret < 0) {
             printk("%s: cmd16 failed\n", __func__);
             return -1;
@@ -556,7 +588,10 @@ static int sdcard_init(sd_card_t *sd, sdio_t *sdio)
     return 0;
 }
 
-static sd_card_t *master_sd;
+/*
+ * 对 SD 卡进行读块操作
+ */
+static sdcard_t *master_sd;
 
 int sd_read_block(uint32_t blk_nr, uint32_t blk_cnt, uint8_t *buf)
 {
@@ -578,7 +613,7 @@ int sd_read_block(uint32_t blk_nr, uint32_t blk_cnt, uint8_t *buf)
     /*
      * 通过 SD 卡的 SDIO 接口预读块
      */
-    ret = sd_io_preread_blk(master_sd, blk_cnt);
+    ret = sdio_preread_blk(master_sd, blk_cnt);
     if (ret < 0) {
         return -1;
     }
@@ -587,7 +622,7 @@ int sd_read_block(uint32_t blk_nr, uint32_t blk_cnt, uint8_t *buf)
         /*
          * 发送命令 17
          */
-        ret = sd_send_cmd17(master_sd, data_addr, &resp);
+        ret = sdio_send_cmd17(master_sd, data_addr, &resp);
         if (ret < 0) {
             printk("%s: cmd17 failed\n", __func__);
             return -1;
@@ -604,7 +639,7 @@ int sd_read_block(uint32_t blk_nr, uint32_t blk_cnt, uint8_t *buf)
         /*
          * 发送命令 23
          */
-        ret = sd_send_cmd23(master_sd, blk_cnt, &resp);
+        ret = sdio_send_cmd23(master_sd, blk_cnt, &resp);
         if (ret < 0) {
             master_sd->multi_blk_en = FALSE;
             for (i = 0; i < blk_cnt; i++) {
@@ -619,7 +654,7 @@ int sd_read_block(uint32_t blk_nr, uint32_t blk_cnt, uint8_t *buf)
         /*
          * 发送命令 18
          */
-        ret = sd_send_cmd18(master_sd, data_addr, &resp);
+        ret = sdio_send_cmd18(master_sd, data_addr, &resp);
         if (ret < 0) {
             printk("%s: cmd18 failed\n", __func__);
             return -1;
@@ -629,21 +664,96 @@ int sd_read_block(uint32_t blk_nr, uint32_t blk_cnt, uint8_t *buf)
     /*
      * 通过 SD 卡的 SDIO 接口读块
      */
-    return sd_io_read_blk(master_sd, blk_cnt * 512, buf);
+    return sdio_read_blk(master_sd, blk_cnt * 512, buf);
 }
 
+/*
+ * 对 SD 卡进行写块操作
+ */
 int sd_write_block(uint32_t blk_nr, uint32_t blk_cnt, const uint8_t *buf)
 {
-    return -1;
-}
+    sd_resp_t  resp;
+    int        ret;
+    int        i;
+    uint32_t   data_addr;
 
+    if (master_sd->sdhc) {
+        data_addr = blk_nr;
+    } else {
+        data_addr = blk_nr * 512;
+    }
+
+    if (blk_cnt == 0) {
+        return -1;
+    }
+
+    /*
+     * 通过 SD 卡的 SDIO 接口预写块
+     */
+    ret = sdio_prewrite_blk(master_sd, blk_cnt);
+    if (ret < 0) {
+        return -1;
+    }
+
+    if (blk_cnt == 1) {
+        /*
+         * 发送命令 24
+         */
+        ret = sdio_send_cmd24(master_sd, data_addr, &resp);
+        if (ret < 0) {
+            printk("%s: cmd24 failed\n", __func__);
+            return -1;
+        }
+    } else if (!master_sd->multi_blk_en) {
+        for (i = 0; i < blk_cnt; i++) {
+            ret = sd_write_block(blk_nr + i, 1, buf + 512 * i);
+            if (ret < 0) {
+                return -1;
+            }
+        }
+        return 0;
+    } else {
+        /*
+         * 发送命令 23
+         */
+        ret = sdio_send_cmd23(master_sd, blk_cnt, &resp);
+        if (ret < 0) {
+            master_sd->multi_blk_en = FALSE;
+            for (i = 0; i < blk_cnt; i++) {
+                ret = sd_write_block(blk_nr + i, 1, buf + 512 * i);
+                if (ret < 0) {
+                    return -1;
+                }
+            }
+            return 0;
+        }
+
+        /*
+         * 发送命令 25
+         */
+        ret = sdio_send_cmd25(master_sd, data_addr, &resp);
+        if (ret < 0) {
+            printk("%s: cmd25 failed\n", __func__);
+            return -1;
+        }
+    }
+
+    /*
+     * 通过 SD 卡的 SDIO 接口写块
+     */
+    return sdio_write_blk(master_sd, blk_cnt * 512, buf);
+}
+/********************************************************************************************************/
+/*
+ * SD 卡设备驱动
+ */
 #include "vfs/vfs.h"
 #include "vfs/device.h"
 #include <sys/stat.h>
 #include <sys/mount.h>
 
 /*
- * 打开 SD 卡
+ * 打开 SD 卡设备
  */
 static int sdcard_open(void *ctx, file_t *file, int oflag, mode_t mode)
 {
@@ -651,7 +761,7 @@ static int sdcard_open(void *ctx, file_t *file, int oflag, mode_t mode)
 }
 
 /*
- * 控制 SD 卡
+ * 控制 SD 卡设备
  */
 static int sdcard_ioctl(void *ctx, file_t *file, int cmd, void *arg)
 {
@@ -669,7 +779,7 @@ static int sdcard_ioctl(void *ctx, file_t *file, int cmd, void *arg)
 }
 
 /*
- * 关闭 SD 卡
+ * 关闭 SD 卡设备
  */
 static int sdcard_close(void *ctx, file_t *file)
 {
@@ -677,7 +787,7 @@ static int sdcard_close(void *ctx, file_t *file)
 }
 
 /*
- * SD 卡驱动
+ * SD 卡设备驱动
  */
 driver_t sdcard_drv = {
         .name  = "sdcard",
@@ -689,19 +799,17 @@ driver_t sdcard_drv = {
 /*
  * 创建 SD 卡设备
  */
-int sdcard_create(const char *point_name, const char *dev_name, const char *fs_name, sdio_t *sdio)
+int sdcard_create(const char *dev_name, sdio_t *sdio)
 {
-    sd_card_t *sd;
-    int        ret;
+    sdcard_t *sd;
+    int       ret;
 
-    if (point_name == NULL ||
-        dev_name   == NULL ||
-        fs_name    == NULL ||
+    if (dev_name   == NULL ||
         sdio       == NULL) {
         return -1;
     }
 
-    master_sd = sd = kmalloc(sizeof(sd_card_t));
+    master_sd = sd = kmalloc(sizeof(sdcard_t));
     if (sd == NULL) {
         return -1;
     }
@@ -709,19 +817,14 @@ int sdcard_create(const char *point_name, const char *dev_name, const char *fs_n
     ret = sdcard_init(sd, sdio);
     if (ret < 0) {
         kfree(sd);
+        master_sd = NULL;
         return ret;
     }
 
     ret = device_create(dev_name, "sdcard", sd);
     if (ret < 0) {
         kfree(sd);
-        return ret;
-    }
-
-    ret = mount(point_name, dev_name, fs_name);
-    if (ret < 0) {
-        kfree(sd);
-        device_remove(dev_name);
+        master_sd = NULL;
         return ret;
     }
 

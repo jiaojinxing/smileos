@@ -259,7 +259,6 @@ static int sdio_read_blk(sdio_t *sdio, uint32_t len, uint8_t *buf)
         }
 
         status = SDIFSTA;
-
         if ((status & 0x1000) == 0x1000) {
             temp = SDIDAT;
             memcpy(buf, &temp, sizeof(uint32_t));
@@ -280,6 +279,60 @@ static int sdio_read_blk(sdio_t *sdio, uint32_t len, uint8_t *buf)
 }
 
 /*
+ * 通过 SDIO 接口预写块
+ */
+static int sdio_prewrite_blk(sdio_t *sdio, uint32_t blk_cnt)
+{
+    SDIFSTA |= (1 << 16);                               /*  FIFO reset                                  */
+
+    SDIDCON  = (0 << 24) |                              /*  Disable burst4 mode in DMA mode             */
+               (2 << 22) |                              /*  The size of the transfer with FIFO: Word    */
+               (0 << 21) |                              /*  SDIO Interrupt period is 2 cycle            */
+               (1 << 20) |                              /*  Data transmit start after data mode set     */
+               (0 << 19) |                              /*  Data receive start after command sent       */
+               (0 << 18) |                              /*  Busy receive start after data mode set      */
+               (1 << 17) |                              /*  Block data transfer mode                    */
+               (1 << 16) |                              /*  Wide bus mode enable                        */
+               (0 << 15) |                              /*  DMA mode disable                            */
+               (1 << 14) |                              /*  Data transfer start                         */
+               (3 << 12) |                              /*  Data transmit mode                          */
+               (blk_cnt << 0);                          /*  Block Number                                */
+
+    return 0;
+}
+
+/*
+ * 通过 SDIO 接口写块
+ */
+static int sdio_write_blk(sdio_t *sdio, uint32_t len, const uint8_t *buf)
+{
+    uint32_t status;
+    uint32_t temp;
+    uint32_t write_cnt;
+
+    write_cnt = 0;
+
+    while (write_cnt < len / 4) {
+        status = SDIFSTA;
+        if ((status & 0x2000) == 0x2000) {
+            memcpy(&temp, buf, sizeof(uint32_t));
+            SDIDAT = temp;
+            write_cnt++;
+            buf += 4;
+        }
+    }
+
+    if (sdio_wait_data_end(sdio) < 0) {
+        return -1;
+    }
+
+    SDIDCON = SDIDCON & ~(7 << 12);
+    SDIDSTA = 0x10;
+
+    return 0;
+}
+
+/*
  * S3C2440 SDIO 接口驱动
  */
 sdio_t s3c2440_sdio = {
@@ -288,6 +341,8 @@ sdio_t s3c2440_sdio = {
         .max_clk        = sdio_max_clk,
         .preread_blk    = sdio_preread_blk,
         .read_blk       = sdio_read_blk,
+        .prewrite_blk   = sdio_prewrite_blk,
+        .write_blk      = sdio_write_blk,
 };
 /*********************************************************************************************************
   END FILE
