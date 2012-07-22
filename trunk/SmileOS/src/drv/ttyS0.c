@@ -230,7 +230,7 @@ static int ttyS0_fcntl(void *ctx, file_t *file, int cmd, int arg)
     }
 }
 
-#include "selectdrv.h"
+#include "drv/selectdrv.h"
 
 /*
  * ttyS0 Çý¶¯
