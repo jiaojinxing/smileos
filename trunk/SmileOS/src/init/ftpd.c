@@ -75,7 +75,7 @@ struct ftpd_session {
 /*********************************************************************************************************
   FTPD 会话链表
 *********************************************************************************************************/
-static struct ftpd_session* session_list = NULL;
+static struct ftpd_session *session_list = NULL;
 /*********************************************************************************************************
   FTPD 会话函数
 *********************************************************************************************************/
@@ -102,14 +102,14 @@ static void ftpd_close_session(struct ftpd_session *session)
 	struct ftpd_session *tmp;
 
 	if (session_list == session) {
-        session_list = session_list->next;
+        session_list  = session_list->next;
         session->next = NULL;
     } else {
         tmp = session_list;
         while (tmp->next != session) {
             tmp = tmp->next;
         }
-        tmp->next = session->next;
+        tmp->next     = session->next;
         session->next = NULL;
     }
 	free(session);
@@ -133,7 +133,6 @@ static int ftpd_get_filesize(const char *path)
 
 	ret = fstat(fd, &st);
 	if (ret < 0) {
-        printf("failed to fstat %s\n", path);
 	    close(fd);
 	    return -1;
 	}
@@ -165,7 +164,6 @@ static int ftpd_build_full_path(struct ftpd_session *session, const char *path, 
     } else {
         sprintf(full_path, "%s/%s", session->cwd, path);
     }
-
     return 0;
 }
 
@@ -176,17 +174,17 @@ static int ftpd_str_begin_with(const char *src, const char *match)
 {
     while (*match != '\0') {
         if (*src == '\0') {
-            return -1;
+            return FALSE;
         }
 
         if (*match != *src) {
-            return -1;
+            return FALSE;
         }
 
         match++;
         src++;
     }
-    return 0;
+    return TRUE;
 }
 /*********************************************************************************************************
   FTPD 请求处理函数
@@ -263,14 +261,12 @@ static int ftpd_do_list_file(const char *path, int fd)
 
         sprintf(buf, "%s/%s", path, entry->d_name);
         if (stat(buf, &st) == 0) {
-            if (st.st_mode & S_IFDIR) {
+            if (S_ISDIR(st.st_mode)) {
                 len = sprintf(buf, "drw-r--r-- 1 admin admin %d Jan 1 2000 %s\r\n", 0, entry->d_name);
             } else {
                 len = sprintf(buf, "-rw-r--r-- 1 admin admin %d Jan 1 2000 %s\r\n", st.st_size, entry->d_name);
             }
             write(fd, buf, len);
-        } else {
-            break;
         }
     }
     closedir(dir);
@@ -370,9 +366,9 @@ int ftpd_do_pasv(struct ftpd_session *session, char *param)
         goto error1;
     }
 
-    local.sin_port          = htons(session->pasv_port);
-    local.sin_family        = AF_INET;
-    local.sin_addr.s_addr   = INADDR_ANY;
+    local.sin_family      = AF_INET;
+    local.sin_addr.s_addr = INADDR_ANY;
+    local.sin_port        = htons(session->pasv_port);
 
     ret = bind(fd, (struct sockaddr *)&local, sizeof(local));
     if (ret < 0) {
@@ -411,7 +407,6 @@ int ftpd_do_pasv(struct ftpd_session *session, char *param)
             write(session->fd, buf, len);
             goto error1;
         }
-
         session->pasv_active = 1;
         close(fd);
         return 0;
@@ -476,7 +471,6 @@ int ftpd_do_retr(struct ftpd_session *session, char *param)
     if (tmp_buf != NULL) {
         while ((len = read(fd, tmp_buf, FTPD_BUFFER_SIZE)) > 0) {
             write(session->pasv_fd, tmp_buf, len);
-            session->offset += len;
         }
         free(tmp_buf);
     }
@@ -593,7 +587,6 @@ int ftpd_do_size(struct ftpd_session *session, char *param)
     if (file_size == -1) {
         len = sprintf(buf, "550 \"%s\" : is not a regular file\r\n", path);
         write(session->fd, buf, len);
-        return 0;
     } else  {
         len = sprintf(buf, "213 %d\r\n", file_size);
         write(session->fd, buf, len);
@@ -628,6 +621,7 @@ int ftpd_do_syst(struct ftpd_session *session, char *param)
     return 0;
 }
 
+extern int vfs_path_normalization(char path[PATH_MAX], int sprit_end);
 /*
  * CWD 命令
  */
@@ -639,12 +633,14 @@ int ftpd_do_cwd(struct ftpd_session *session, char *param)
 
     ftpd_build_full_path(session, param, path, PATH_MAX);
 
+    vfs_path_normalization(path, FALSE);
+
     len = sprintf(buf, "250 Changed to directory \"%s\"\r\n", path);
     write(session->fd, buf, len);
 
     strcpy(session->cwd, path);
 
-    printf("Changed to directory %s", path);
+    printf("Changed to directory %s\n", path);
 
     return 0;
 }
@@ -660,10 +656,14 @@ int ftpd_do_cdup(struct ftpd_session *session, char *param)
 
     sprintf(path, "%s/%s", session->cwd, "..");
 
+    vfs_path_normalization(path, FALSE);
+
     len = sprintf(buf, "250 Changed to directory \"%s\"\r\n", path);
     write(session->fd, buf, len);
+
     strcpy(session->cwd, path);
-    printf("Changed to directory %s", path);
+
+    printf("Changed to directory %s\n", path);
 
     return 0;
 }
@@ -700,7 +700,7 @@ int ftpd_do_mkd(struct ftpd_session *session, char *param)
         return 0;
     }
 
-    ftpd_build_full_path(session, param, path, 256);
+    ftpd_build_full_path(session, param, path, PATH_MAX);
 
     if (mkdir(path, 0) < 0) {
         len = sprintf(buf, "550 File \"%s\" exists.\r\n", path);
@@ -728,14 +728,15 @@ int ftpd_do_dele(struct ftpd_session *session, char *param)
         return 0;
     }
 
-    ftpd_build_full_path(session, param, path, 256);
+    ftpd_build_full_path(session, param, path, PATH_MAX);
 
-    if (unlink(path) == 0)
+    if (unlink(path) == 0) {
         len = sprintf(buf, "250 Successfully deleted file \"%s\".\r\n", path);
-    else {
+        write(session->fd, buf, len);
+    } else {
         len = sprintf(buf, "550 Not such file or directory: %s.\r\n", path);
+        write(session->fd, buf, len);
     }
-    write(session->fd, buf, len);
 
     return 0;
 }
@@ -755,7 +756,7 @@ int ftpd_do_rmd(struct ftpd_session *session, char *param)
         return 0;
     }
 
-    ftpd_build_full_path(session, param, path, 256);
+    ftpd_build_full_path(session, param, path, PATH_MAX);
 
     if (rmdir(path) == -1) {
         len = sprintf(buf, "550 Directory \"%s\" doesn't exist.\r\n", path);
@@ -778,6 +779,7 @@ int ftpd_do_quit(struct ftpd_session *session, char *param)
 
     len = sprintf(buf, "221 Bye!\r\n");
     write(session->fd, buf, len);
+
     return -1;
 }
 
@@ -791,6 +793,7 @@ int ftpd_do_unknow(struct ftpd_session *session, char *param)
 
     len = sprintf(buf, "502 Not Implemented.\r\n");
     len = write(session->fd, buf, len);
+
     return 0;
 }
 /*
@@ -827,66 +830,58 @@ static int ftpd_do_request(struct ftpd_session *session, char *req)
 	/*
 	 * USER 命令
 	 */
-	if (ftpd_str_begin_with(req, "USER") == 0) {
+	if (ftpd_str_begin_with(req, "USER") == TRUE) {
 		return ftpd_do_user(session, param);
-	}
 
-    /*
-     * PASS 命令
-     */
-	else if(ftpd_str_begin_with(req, "PASS") == 0) {
+	} else if(ftpd_str_begin_with(req, "PASS") == TRUE) {
         return ftpd_do_pass(session, param);
-	}
 
-	else if(ftpd_str_begin_with(req, "LIST") == 0) {
+	} else if(ftpd_str_begin_with(req, "LIST") == TRUE) {
         return ftpd_do_list(session, param);
-	}
 
-	else if(ftpd_str_begin_with(req, "PWD") == 0 || ftpd_str_begin_with(req, "XPWD") == 0) {
+	} else if(ftpd_str_begin_with(req, "PWD") == TRUE || ftpd_str_begin_with(req, "XPWD") == TRUE) {
         return ftpd_do_pwd(session, param);
-	}
 
-	else if(ftpd_str_begin_with(req, "TYPE")==0) {
+	} else if(ftpd_str_begin_with(req, "TYPE") == TRUE) {
         return ftpd_do_type(session, param);
-	}
-	
-	else if(ftpd_str_begin_with(req, "PASV")==0) {
+
+	} else if(ftpd_str_begin_with(req, "PASV") == TRUE) {
 	    return ftpd_do_pasv(session, param);
 
-	} else if (ftpd_str_begin_with(req, "RETR") == 0) {
+	} else if (ftpd_str_begin_with(req, "RETR") == TRUE) {
         return ftpd_do_retr(session, param);
 
-    } else if (ftpd_str_begin_with(req, "STOR") == 0) {
+    } else if (ftpd_str_begin_with(req, "STOR") == TRUE) {
         return ftpd_do_stor(session, param);
 
-    } else if (ftpd_str_begin_with(req, "SIZE") == 0) {
+    } else if (ftpd_str_begin_with(req, "SIZE") == TRUE) {
         return ftpd_do_size(session, param);
 
-    } else if (ftpd_str_begin_with(req, "MDTM") == 0) {
+    } else if (ftpd_str_begin_with(req, "MDTM") == TRUE) {
         return ftpd_do_mdtm(session, param);
 
-    } else if (ftpd_str_begin_with(req, "SYST") == 0) {
+    } else if (ftpd_str_begin_with(req, "SYST") == TRUE) {
         return ftpd_do_syst(session, param);
 
-    } else if (ftpd_str_begin_with(req, "CWD") == 0) {
+    } else if (ftpd_str_begin_with(req, "CWD") == TRUE) {
         return ftpd_do_cwd(session, param);
 
-    } else if (ftpd_str_begin_with(req, "CDUP") == 0) {
+    } else if (ftpd_str_begin_with(req, "CDUP") == TRUE) {
         return ftpd_do_cdup(session, param);
 
-    } else if (ftpd_str_begin_with(req, "REST") == 0) {
+    } else if (ftpd_str_begin_with(req, "REST") == TRUE) {
         return ftpd_do_rest(session, param);
 
-    } else if (ftpd_str_begin_with(req, "MKD") == 0) {
+    } else if (ftpd_str_begin_with(req, "MKD") == TRUE) {
         return ftpd_do_mkd(session, param);
 
-    } else if (ftpd_str_begin_with(req, "DELE") == 0) {
+    } else if (ftpd_str_begin_with(req, "DELE") == TRUE) {
         return ftpd_do_dele(session, param);
 
-    } else if (ftpd_str_begin_with(req, "RMD") == 0) {
+    } else if (ftpd_str_begin_with(req, "RMD") == TRUE) {
         return ftpd_do_rmd(session, param);
 
-    } else if (ftpd_str_begin_with(req, "QUIT") == 0) {
+    } else if (ftpd_str_begin_with(req, "QUIT") == TRUE) {
         return ftpd_do_quit(session, param);
 
     } else {
@@ -943,12 +938,12 @@ void ftpd(void *arg)
         FD_SET(fd, &readfds);
         FD_SET(fd, &errorfds);
 
-        max_fd  = fd + 1;
+        max_fd  = fd;
 
         session = session_list;
         while (session != NULL) {
-            if (max_fd < session->fd + 1) {
-                max_fd = session->fd + 1;
+            if (max_fd < session->fd) {
+                max_fd = session->fd;
             }
 
             FD_SET(session->fd, &readfds);
@@ -956,7 +951,7 @@ void ftpd(void *arg)
             session = session->next;
         }
 
-        if (select(max_fd, &readfds, 0, &errorfds, 0) <= 0) {
+        if (select(max_fd + 1, &readfds, 0, &errorfds, 0) <= 0) {
             continue;
         }
 
@@ -978,8 +973,6 @@ void ftpd(void *arg)
 
                 write(new_fd, FTPD_WELCOME_MSG, strlen(FTPD_WELCOME_MSG));
 
-                FD_SET(new_fd, &readfds);
-
                 session = ftpd_new_session();
                 if (session != NULL) {
                     strcpy(session->cwd, FTPD_SRV_ROOT);
@@ -998,15 +991,14 @@ void ftpd(void *arg)
                 close(session->fd);
                 ftpd_close_session(session);
             } else if (FD_ISSET(session->fd, &readfds)) {
-                len = read(session->fd, buffer, FTPD_BUFFER_SIZE);
+                len = read(session->fd, buffer, FTPD_BUFFER_SIZE - 1);
                 if (len <= 0) {
                     printf("Client %s disconnected\n", inet_ntoa(session->remote.sin_addr));
                     FD_CLR(session->fd, &readfds);
                     close(session->fd);
                     ftpd_close_session(session);
                 } else {
-                    buffer[len] = 0;
-                    puts(buffer);
+                    buffer[len] = '\0';
                     if (ftpd_do_request(session, buffer) == -1) {
                         printf("Client %s disconnected\r\n", inet_ntoa(session->remote.sin_addr));
                         FD_CLR(session->fd, &readfds);
