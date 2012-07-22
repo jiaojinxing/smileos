@@ -63,7 +63,7 @@ typedef struct {
     int32_t         tid;
 } privinfo_t;
 
-#include "selectdrv.h"
+#include "drv/selectdrv.h"
 
 /*
  * ´ò¿ª pty

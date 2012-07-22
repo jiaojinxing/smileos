@@ -171,7 +171,7 @@ static int xxx_scan(void *ctx, file_t *file, int flags)
     return ret;
 }
 
-#include "selectdrv.h"
+#include "drv/selectdrv.h"
 
 /*
  * xxx Çý¶¯
