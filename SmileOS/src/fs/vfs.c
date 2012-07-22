@@ -105,7 +105,7 @@ const char *vfs_path_add_mount_point(const char *path)
 /*
  * 正常化 PATH
  */
-static int vfs_path_normalization(char path[PATH_MAX], int sprit_end)
+int vfs_path_normalization(char path[PATH_MAX], int sprit_end)
 {
     /*
      * 文本状态机! 向李先静老师致敬!
