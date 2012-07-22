@@ -78,6 +78,9 @@ static void tcpip_init_done(void *arg)
     extern void telnetd(void *arg);
     kthread_create("telnetd", telnetd, NULL, 4 * KB, 10);
 
+    extern void ftpd(void *arg);
+    kthread_create("ftpd", ftpd, NULL, 12 * KB, 10);
+
     extern void netio_init(void);
     netio_init();
 }
