@@ -535,7 +535,7 @@ static void idle_create(void)
 /*
  * 初始化进程的参数
  */
-static int process_arg_init(task_t  *task, int argc, char **argv)
+static int process_arg_init(task_t *task, int argc, char **argv)
 {
     uint32_t *ptr = (uint32_t *)((task->pid + 1) * PROCESS_SPACE_SIZE - PROCESS_PARAM_SIZE);
     char     *arg = (char *)(ptr + 1 + argc + 1);
