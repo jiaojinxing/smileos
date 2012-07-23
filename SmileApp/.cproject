@@ -73,11 +73,13 @@
 								<option id="org.eclipse.cdt.cross.arm.gnu.cpp.link.option.libs.977620582" name="Libraries (-l)" superClass="org.eclipse.cdt.cross.arm.gnu.cpp.link.option.libs" valueType="libs">
 									<listOptionValue builtIn="false" value="ffmpeg"/>
 									<listOptionValue builtIn="false" value="z"/>
+									<listOptionValue builtIn="false" value="runtime"/>
 									<listOptionValue builtIn="false" value="m"/>
 								</option>
 								<option id="org.eclipse.cdt.cross.arm.gnu.cpp.link.option.paths.887330914" name="Library search path (-L)" superClass="org.eclipse.cdt.cross.arm.gnu.cpp.link.option.paths" valueType="libPaths">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/libffmpeg}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/libz}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/SmileOS/src/runtime}&quot;"/>
 								</option>
 								<inputType id="org.eclipse.cdt.cross.arm.gnu.cpp.linker.input.450146874" superClass="org.eclipse.cdt.cross.arm.gnu.cpp.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
