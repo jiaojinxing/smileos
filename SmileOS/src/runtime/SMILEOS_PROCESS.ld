@@ -17,7 +17,7 @@ SECTIONS
   /* first section is .text which is used for code */
   .text :
   {
-    *runtime/crt0.o (.text)            /* Startup code */
+    *crt0.o (.text)            /* Startup code */
     *(.text)                   /* remaining code */
     *(.rodata)                 /* read-only data (constants) */
     *(.rodata*)
@@ -35,21 +35,21 @@ SECTIONS
   
   .ctors :
   {
-      KEEP (*runtime/cpp/cppRtBegin*.o(.ctors))
+      KEEP (*cppRtBegin*.o(.ctors))
       KEEP (*(.preinit_array))
       KEEP (*(.init_array))
       KEEP (*(SORT(.ctors.*)))
       KEEP (*(.ctors))
-      KEEP (*runtime/cpp/cppRtEnd*.o(.ctors))
+      KEEP (*cppRtEnd*.o(.ctors))
   } > RAM
 
   .dtors :
   {
-      KEEP (*runtime/cpp/cppRtBegin*.o(.dtors))
+      KEEP (*cppRtBegin*.o(.dtors))
       KEEP (*(.fini_array))
       KEEP (*(SORT(.dtors.*)))
       KEEP (*(.dtors))
-      KEEP (*runtime/cpp/cppRtEnd*.o(.dtors))
+      KEEP (*cppRtEnd*.o(.dtors))
   } > RAM
 
   /* .data section which is used for initialized data */

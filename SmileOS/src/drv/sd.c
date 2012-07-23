@@ -804,8 +804,8 @@ int sdcard_create(const char *dev_name, sdio_t *sdio)
     sdcard_t *sd;
     int       ret;
 
-    if (dev_name   == NULL ||
-        sdio       == NULL) {
+    if (dev_name == NULL ||
+        sdio     == NULL) {
         return -1;
     }
 
