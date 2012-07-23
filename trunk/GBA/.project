@@ -10,6 +10,10 @@
 			<triggers>clean,full,incremental,</triggers>
 			<arguments>
 				<dictionary>
+					<key>?children?</key>
+					<value>?name?=outputEntries\|?children?=?name?=entry\\\\\\\|\\\|?name?=entry\\\\\\\|\\\|\||</value>
+				</dictionary>
+				<dictionary>
 					<key>?name?</key>
 					<value></value>
 				</dictionary>
@@ -80,11 +84,4 @@
 		<nature>org.eclipse.cdt.managedbuilder.core.managedBuildNature</nature>
 		<nature>org.eclipse.cdt.managedbuilder.core.ScannerConfigNature</nature>
 	</natures>
-	<linkedResources>
-		<link>
-			<name>runtime</name>
-			<type>2</type>
-			<locationURI>WORKSPACE_LOC/SmileOS/src/runtime</locationURI>
-		</link>
-	</linkedResources>
 </projectDescription>

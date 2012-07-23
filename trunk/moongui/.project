@@ -80,11 +80,4 @@
 		<nature>org.eclipse.cdt.managedbuilder.core.managedBuildNature</nature>
 		<nature>org.eclipse.cdt.managedbuilder.core.ScannerConfigNature</nature>
 	</natures>
-	<linkedResources>
-		<link>
-			<name>runtime</name>
-			<type>2</type>
-			<locationURI>WORKSPACE_LOC/SmileOS/src/runtime</locationURI>
-		</link>
-	</linkedResources>
 </projectDescription>
