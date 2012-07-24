@@ -449,7 +449,7 @@ int vmm_show(int fd)
     len = sprintf(buf, "********** vmm info **********\n");
     write(fd, buf, len);
 
-    len = sprintf(buf, "free page table_nr = %d\n", free_page_table_nr);
+    len = sprintf(buf, "free page table nr = %d\n", free_page_table_nr);
     write(fd, buf, len);
 
     len = sprintf(buf, "free frame nr      = %d\n", free_frame_nr);
