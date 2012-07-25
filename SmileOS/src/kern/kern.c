@@ -386,12 +386,13 @@ void interrupt_enter(void)
     uint32_t reg;
 
     reg = interrupt_disable();
-
+#define INTOFFSET  (*(volatile unsigned *)0x4a000014) //Interruot request source offset
     /*
      * TODO: 现在各种异常共用堆栈, 所以暂时不支持中断嵌套
      */
     if (interrupt_nest != 0) {
         kcomplain("interrupt_nest error!\n");
+        kcomplain("interrupt_nest %d!\n", INTOFFSET);
         while (1);
     }
 

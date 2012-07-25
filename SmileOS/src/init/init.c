@@ -86,12 +86,18 @@ static void tcpip_init_done(void *arg)
 }
 
 #include <stdlib.h>
+#include <stdio.h>
+#include <linux/input.h>
 
 /*
  * 初始化线程
  */
 static void init(void *arg)
 {
+    struct input_event event;
+    int fd;
+    int len;
+
     extern int bsp_drivers_install(void);
     bsp_drivers_install();
 
@@ -99,6 +105,17 @@ static void init(void *arg)
     bsp_devices_create();
 
     tcpip_init(tcpip_init_done, NULL);
+
+    fd = open("/dev/event0", O_RDONLY, 0666);
+
+    while (1) {
+        len = read(fd, &event, sizeof(event));
+        if (len == sizeof(event)) {
+            printf("/dev/event0: x=%d, y=%d, %s\n", event.x, event.y, event.press ? "press" : "release");
+        }
+    }
+
+    close(fd);
 }
 
 /*

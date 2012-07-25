@@ -152,6 +152,9 @@ int bsp_devices_create(void)
         mount("/sd0", "/dev/sd0", "fatfs");
     }
 
+    extern int touch_init(void);
+    touch_init();
+
     return 0;
 }
 /*********************************************************************************************************
