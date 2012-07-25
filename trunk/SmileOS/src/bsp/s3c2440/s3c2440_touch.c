@@ -404,14 +404,15 @@ static ssize_t touch_read(void *ctx, file_t *file, void *buf, size_t len)
             priv->down_msg_ok = FALSE;
             len -= sizeof(event);
             buf  = (char *)buf + sizeof(event);
-            if (!priv->up_msg_ok) {
-                priv->flags &= ~VFS_FILE_READABLE;
+            if (len == 0) {
+                if (!priv->up_msg_ok) {
+                    priv->flags &= ~VFS_FILE_READABLE;
+                }
+                return len_backup;
             }
-            if (len != 0) {
-                goto __again;
-            }
-            return len_backup;
-        } else if (priv->up_msg_ok) {
+        }
+
+        if (priv->up_msg_ok) {
             event.x     = priv->x;
             event.y     = priv->y;
             event.press = FALSE;
