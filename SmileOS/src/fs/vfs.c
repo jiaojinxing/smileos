@@ -37,17 +37,36 @@
 ** Descriptions:
 **
 ** 现在支持 select 了, 支持 select 主要是因为用户空间中的 GNU/pth 库的要求!
-** 因为在 pthread 里调 write 等函数, 会造成整个进程被阻塞, 从而导致别的 pthread 得不到运行的机会,
-** 为了解决这个问题, GNU/pth 库是这样做的, 以调用 write 函数为例:
-** 1) 强制将文件设置为非阻塞模式
-** 2) 如果 1 步 OK, 那么就调用 write
-** 3) 如果 2 步不 OK, 那么 select 文件可写 0 秒
-** 4) 如果 select OK, 那么就调用 write
-** 5) 如果 select 不 OK, 那么等待 PTH_EVENT_FD|PTH_UNTIL_FD_WRITEABLE|PTH_MODE_STATIC 事件, 会进行线程调度
-** 6) pth_scheduler 线程会在没有其它线程可运行时调用 pth_sched_eventmanager 函数
-** 7) pth_sched_eventmanager 函数会 select 所有文件可读可写出错一个最小的等待时间
+**
+** 因为在某 pthread 线程里调 write 等函数, 有可能会造成整个进程被挂起,
+**
+** 从而导致别的 pthread 得不到运行的机会.
+**
+** 为了解决这个问题, GNU/pth 库是这样做的, 以线程 pthread_abc 调用 write 函数为例:
+**
+** 1) 将文件设置为非阻塞模式;
+**
+** 2) 如果文件之前就是工作在非阻塞模式, 那么就调用 write, 如果因为收到 INT 信号而写入失败,
+**    则它会继续尝试调用 write, 直至写入成功或出错.
+**
+** 3) 如果文件之前工作在阻塞模式, 那么 select 文件可写 0 秒;
+**
+** 4) 如果 select 文件可写, 那么就调用 write, 如果因为收到 INT 信号而写入失败,
+**    则它会继续尝试调用 write, 直至写入成功或出错.
+**
+** 5) 如果 select 文件不可写, 那么等待一个 PTH_EVENT_FD|PTH_UNTIL_FD_WRITEABLE|PTH_MODE_STATIC 事件,
+**    会切换回 pth_scheduler 线程;
+**
+** 6) pth_scheduler 线程会在没有其它 pthread 线程可运行时调用 pth_sched_eventmanager 函数;
+**
+** 7) pth_sched_eventmanager 函数处理所有的等待事件, 最终会 select 所有需要等待的文件可读可写出错
+**    一个最小的等待时间;
+**
 ** 8) pth_sched_eventmanager 函数会对 select 的结果进行判定,
-**    以唤醒等待 PTH_EVENT_FD|PTH_UNTIL_FD_WRITEABLE|PTH_MODE_STATIC 事件的线程
+**    以决定是否唤醒等待 PTH_EVENT_FD|PTH_UNTIL_FD_WRITEABLE|PTH_MODE_STATIC 事件的那个 pthread_abc 线程;
+**
+** 9) 如果线程 pthread_abc 获得事件, 那么就调用 write, 如果因为收到 INT 信号而写入失败,
+**    则它会继续尝试调用 write, 直至写入成功或出错.
 **
 **--------------------------------------------------------------------------------------------------------
 ** Modified by:             JiaoJinXing
