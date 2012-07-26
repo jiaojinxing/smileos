@@ -404,6 +404,7 @@ static ssize_t touch_read(void *ctx, file_t *file, void *buf, size_t len)
             priv->down_msg_ok = FALSE;
             len -= sizeof(event);
             buf  = (char *)buf + sizeof(event);
+
             if (len == 0) {
                 if (!priv->up_msg_ok) {
                     priv->flags &= ~VFS_FILE_READABLE;
@@ -434,7 +435,7 @@ static ssize_t touch_read(void *ctx, file_t *file, void *buf, size_t len)
     } else {
         __select:
         if (priv->mode & O_NONBLOCK) {
-            seterrno(ENODATA);
+            seterrno(EAGAIN);
             return 0;
         } else {
             ret = select_select(priv, file, VFS_FILE_READABLE);
