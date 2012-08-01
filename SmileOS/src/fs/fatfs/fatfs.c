@@ -413,7 +413,6 @@ static off_t fatfs_lseek(mount_point_t *point, file_t *file, off_t offset, int w
     return 0;
 }
 
-
 static int fatfs_scan(mount_point_t *point, file_t *file, int flags)
 {
     privinfo_t *priv = file->ctx;
