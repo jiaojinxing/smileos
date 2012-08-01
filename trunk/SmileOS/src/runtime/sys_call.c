@@ -402,6 +402,8 @@ int ioctl(int fd, int cmd, ...)
     return ret;
 }
 
+#include <fcntl.h>
+
 /*
  * fcntl
  */
@@ -412,9 +414,13 @@ int fcntl(int fd, int cmd, ...)
     int arg;
     va_list va;
 
-    va_start(va, cmd);
-    arg = va_arg(va, int);
-    va_end(va);
+    if (cmd == F_SETFL) {
+        va_start(va, cmd);
+        arg = va_arg(va, int);
+        va_end(va);
+    } else {
+        arg = 0;
+    }
 
     debug("%s\n", __func__);
     if (in_kernel()) {
@@ -430,11 +436,6 @@ int fcntl(int fd, int cmd, ...)
         __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
     }
     return ret;
-}
-
-int _fcntl(int fd, int cmd, int arg)
-{
-    return fcntl(fd, cmd, arg);
 }
 
 /*
