@@ -159,7 +159,7 @@ static int fatfs_open(mount_point_t *point, file_t *file, const char *path, int 
         if (oflag & O_EXCL) {
             fatfs_mode |= FA_CREATE_NEW;
         }
-        priv->mode = 0;
+        priv->mode = O_NONBLOCK;
 
         res = f_open(&priv->file, path, fatfs_mode);
         if (res != FR_OK) {

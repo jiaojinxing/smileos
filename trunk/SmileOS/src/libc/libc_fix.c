@@ -75,8 +75,6 @@ void libc_init(void)
     stderr = fdopen(STDERR_FILENO, "w");
 }
 
-
-
 /*
  * printk
  */
@@ -93,6 +91,7 @@ void printk(const char *fmt, ...)
 
     va_end(va);
 }
+#endif
 
 /*
  * дк newlib-1.19.0/newlib/libc/search/hash_bigkey.c
@@ -154,6 +153,7 @@ __libc_fini_array (void)
   _fini ();
 }
 #endif
+
 /*
  * _init
  */
@@ -169,8 +169,6 @@ void _fini(void)
 {
 
 }
-
-#endif
 
 void *memrchr(const void *ptr, int ch, size_t len)
 {

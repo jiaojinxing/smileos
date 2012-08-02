@@ -48,6 +48,10 @@
 #define GB                          (1024 * MB)
 #endif
 
+#define SECTION_SIZE                (1 * MB)                            /*  段大小                      */
+#define SECTION_OFFSET              (20)                                /*  段大小偏移                  */
+#define SECTION_NR                  (4096)                              /*  段数                        */
+
 #ifdef S3C2440_BSP
 #include "../../bsp/s3c2440/s3c2440_config.h"
 #endif
@@ -55,6 +59,13 @@
 #ifndef TICK_PER_SECOND
 #define TICK_PER_SECOND             (100)                               /*  每秒 TICK 数                */
 #endif
+
+#define KERN_HEAP_SIZE              (1 * MB)                            /*  内核动态内存堆大小          */
+#define KERN_STACK_SIZE             (8192)                              /*  内核栈空间大小              */
+
+#define PROCESS_NR                  (32)                                /*  进程数, 含进程 0            */
+#define KTHREAD_NR                  (16)                                /*  内核线程数                  */
+#define TASK_NR                     (PROCESS_NR + KTHREAD_NR)           /*  任务数                      */
 
 #define PROCESS_SPACE_SIZE          (32 * MB)                           /*  进程空间大小                */
 #define PROCESS_PARAM_SIZE          (PAGE_SIZE)                         /*  进程参数空间大小            */
