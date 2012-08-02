@@ -586,7 +586,7 @@ int pth_fdmode(int fd, int newmode)
     int oldmode;
 
     /* retrieve old mode (usually a very cheap operation) */
-    if ((fdmode = fcntl(fd, F_GETFL)) == -1)
+    if ((fdmode = fcntl(fd, F_GETFL, 0)) == -1)
         oldmode = PTH_FDMODE_ERROR;
     else if (fdmode & O_NONBLOCKING)
         oldmode = PTH_FDMODE_NONBLOCK;

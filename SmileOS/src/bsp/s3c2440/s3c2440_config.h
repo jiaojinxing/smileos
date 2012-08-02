@@ -40,10 +40,6 @@
 #ifndef S3C2440_CONFIG_H_
 #define S3C2440_CONFIG_H_
 
-#define SECTION_SIZE        (1 * MB)                                    /*  段大小                      */
-#define SECTION_OFFSET      (20)                                        /*  段大小偏移                  */
-#define SECTION_NR          (4096)                                      /*  段数                        */
-
 #define PHY_MEM_SIZE        (64 * MB)                                   /*  物理内存大小                */
 #define PHY_MEM_BASE        (0x30000000)                                /*  物理内存基址                */
 
@@ -75,13 +71,6 @@
 
 #define IRQ_STACK_P_BASE    (VECTOR_P_ADDR)                             /*  IRQ 堆栈物理基址            */
 #define IRQ_STACK_V_BASE    (VECTOR_V_ADDR)                             /*  IRQ 堆栈虚拟基址            */
-
-#define KERN_HEAP_SIZE      (1 * MB)                                    /*  内核动态内存堆大小          */
-#define KERN_STACK_SIZE     (8192)                                      /*  内核栈空间大小              */
-
-#define PROCESS_NR          (32)                                        /*  进程数, 含进程 0            */
-#define KTHREAD_NR          (16)                                        /*  内核线程数                  */
-#define TASK_NR             (PROCESS_NR + KTHREAD_NR)                   /*  任务数                      */
 
 #define UART_BAUD_RATE      (115200)                                    /*  UART 波特率                 */
 

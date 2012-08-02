@@ -149,6 +149,9 @@ int do_cmd(char *cmd)
         vmm_show(STDOUT_FILENO);
     } else if (strcmp(argv[0], "exit") == 0) {
         _exit(0);
+    } else if (strcmp(argv[0], "module") == 0) {
+        extern int module_load(const char *path, int argc, char **argv);
+        module_load(argv[1], argc - 1, &argv[1]);
     } else {
         struct stat st;
 

@@ -98,7 +98,7 @@ intern int pth_util_fd_valid(int fd)
 {
     if (fd < 0 || fd >= FD_SETSIZE)
         return FALSE;
-    if (fcntl(fd, F_GETFL) == -1 && errno == EBADF)
+    if (fcntl(fd, F_GETFL, 0) == -1 && errno == EBADF)
         return FALSE;
     return TRUE;
 }

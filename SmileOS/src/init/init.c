@@ -106,6 +106,10 @@ static void init(void *arg)
 
     tcpip_init(tcpip_init_done, NULL);
 
+
+    extern int symbol_init(void);
+    symbol_init();                                                      /*  增加系统的符号              */
+
     fd = open("/dev/event0", O_RDONLY, 0666);
 
     while (1) {
