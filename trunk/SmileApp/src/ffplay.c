@@ -80,6 +80,10 @@ int ffplay(const char *filename)
         goto error1;
     }
 
+    /*
+     * TODO:
+     * 加上下面一句后, 在多进程下挂掉, 原因不明
+     */
     //av_dump_format(format_ctx, 0, filename, 0);
 
     video_stream = -1;
