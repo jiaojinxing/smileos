@@ -90,13 +90,16 @@ int main(int argc, char *argv[])
     } else {
         printf("in parent process, child pid=%d\n", pid);
 
-        pthread_create(&webs_tid,   NULL, webs_thread,   NULL);
+        /*
+         * TODO: 为什么现在不行了呢?
+         */
+        //pthread_create(&webs_tid,   NULL, webs_thread,   NULL);
 
         pthread_create(&player_tid, NULL, player_thread, argv[1]);
     }
 
     while (1) {
-        usleep(2000000);
+        pthread_yield_np();
     }
 
     return 0;
