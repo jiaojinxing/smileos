@@ -1,0 +1,275 @@
+DB: Registering database table <users>
+DB: Registering database table <groups>
+DB: Registering database table <access>
+webs: Listening for HTTP requests at address 192.168.0.30
+webs: accept request
+webs: accept request
+webs: accept request
+webs: accept request
+webs: accept request
+webs: accept request
+
+Memory Stats
+ Q  Size   Free  Bytes Inuse Bytes Allocs
+ 0    16      0      0   160  2560    255
+ 1    32      1     32   116  3712    185
+ 2    64      1     64     3   192     85
+ 3   128      0      0    12  1536     22
+ 4   256      0      0    17  4352     20
+ 5   512      0      0     1   512      1
+ 6  1024      1   1024     6  6144     10
+ 7  2048      0      0    18 36864     21
+ 8  4096      0      0     0     0      0
+ 9  8192      0      0     0     0      0
+10 16384      0      0     0     0      0
+11 32768      0      0     0     0      0
+12 65536      0      0     0     0      0
+
+Initial free list size      61440
+Max memory malloced         61440
+Max memory ever used        58536
+Max memory ever balloced    58536
+Memory currently in use     58536
+Memory currently balloced   58536
+Max blocks allocated          333
+Maximum stack used           1416
+Free memory on all queues    1120
+Free list buffer left        1760
+Total free memory            2880
+
+Memory Currently Allocated
+                      bytes, blocks in use, total times,largest,   q
+../src/init/goahead/asp.c:113,       0,             0,           1,    1032,   6
+../src/init/goahead/misc.c:617,       0,             0,          32,    1032,   6
+../src/init/goahead/default.c:452,       0,             0,           3,      40,   1
+../src/init/goahead/default.c:368,       0,             0,           3,      24,   0
+../src/init/goahead/um.c:1247,       0,             0,           6,      24,   0
+../src/init/goahead/misc.c:460,       0,             0,          57,      72,   2
+../src/init/goahead/url.c:93,       0,             0,           6,      72,   2
+../src/init/goahead/webs.c:900,       0,             0,           3,      24,   0
+../src/init/goahead/sockGen.c:748,       0,             0,          10,      24,   0
+../src/init/goahead/sockGen.c:750,       0,             0,          10,      24,   0
+../src/init/goahead/sockGen.c:752,       0,             0,          10,      24,   0
+../src/init/goahead/webs.c:889,       0,             0,           3,      40,   1
+../src/init/goahead/misc.c:638,       0,             0,          17,    1032,   6
+../src/init/goahead/webs.c:2433,       0,             0,           4,      40,   1
+../src/init/goahead/default.c:598,      24,             1,           1,      24,   0
+../src/init/goahead/emfdb.c:1039,      24,             1,           1,      24,   0
+../src/init/goahead/default.c:584,      24,             1,           1,      24,   0
+../src/init/goahead/um.c:170,      24,             1,           1,      24,   0
+../src/init/goahead/webs.c:222,      24,             1,           1,      24,   0
+../src/init/goahead/webs.c:221,      24,             1,           1,      24,   0
+../src/init/goahead/webs.c:781,      48,             2,           3,      24,   0
+../src/init/goahead/webs.c:783,      48,             2,           3,      24,   0
+../src/init/goahead/webs.c:1157,      48,             2,           3,      24,   0
+../src/init/goahead/webs.c:2358,      48,             2,           3,      24,   0
+../src/init/goahead/webs.c:929,      48,             2,           3,      24,   0
+../src/init/goahead/webs.c:928,      48,             2,           3,      24,   0
+../src/init/goahead/webs.c:916,      48,             2,           3,      24,   0
+../src/init/goahead/webs.c:784,      48,             2,           3,      24,   0
+../src/init/goahead/webs.c:780,      48,             2,           3,      24,   0
+../src/init/goahead/webs.c:782,      48,             2,           3,      24,   0
+../src/init/goahead/webs.c:769,      48,             2,           3,      24,   0
+../src/init/goahead/emfdb.c:79,      72,             3,           3,      24,   0
+../src/init/goahead/webs.c:2341,      80,             2,           3,      40,   1
+../src/init/goahead/emfdb.c:91,     104,             3,           3,      40,   1
+../src/init/goahead/emfdb.c:92,     104,             3,           3,      40,   1
+../src/init/goahead/handler.c:108,     120,             5,           5,      24,   0
+../src/init/goahead/handler.c:103,     120,             5,           5,      24,   0
+../src/init/goahead/sym.c:91,     136,             1,           1,     136,   3
+../src/init/goahead/handler.c:97,     136,             1,           3,     136,   3
+../src/init/goahead/ejparse.c:74,     136,             1,           2,     136,   3
+../src/init/goahead/sym.c:98,     192,             8,           9,      24,   0
+../src/init/goahead/ejparse.c:63,     208,             2,           4,     136,   3
+../src/init/goahead/websuemf.c:125,     256,             6,           7,     136,   3
+../src/init/goahead/emfdb.c:67,     256,             4,           4,     136,   3
+../src/init/goahead/webs.c:880,     272,             2,           3,     136,   3
+../src/init/goahead/emfdb.c:96,     336,            14,          14,      24,   0
+../src/init/goahead/sym.c:314,     480,            12,          17,      40,   1
+../src/init/goahead/webs.c:1981,    1456,             6,           7,     264,   4
+../src/init/goahead/sock.c:581,    1720,             7,           8,     264,   4
+../src/init/goahead/sym.c:328,    2600,            65,          84,      40,   1
+../src/init/goahead/sym.c:113,    3136,             8,           9,    1032,   6
+../src/init/goahead/value.c:63,    3776,           124,         174,     136,   3
+../src/init/goahead/ringq.c:92,   42168,            23,          27,    2056,   7
+
+Total allocated   58536
+
+
+Strings
+null                                               allocated by ../src/init/goahead/value.c:63
+PATH_TRANSLATED                                    allocated by ../src/init/goahead/value.c:63
+SERVER_PROTOCOL                                    allocated by ../src/init/goahead/value.c:63
+SERVER_SOFTWARE                                    allocated by ../src/init/goahead/value.c:63
+GoAhead-Webs/2.1.8                                 allocated by ../src/init/goahead/value.c:63
+HTTP/1.1                                           allocated by ../src/init/goahead/value.c:63
+SERVER_ADDR                                        allocated by ../src/init/goahead/value.c:63
+192.168.0.30                                       allocated by ../src/init/goahead/value.c:63
+SERVER_PORT                                        allocated by ../src/init/goahead/value.c:63
+80                                                 allocated by ../src/init/goahead/value.c:63
+PATH_INFO                                          allocated by ../src/init/goahead/value.c:63
+REMOTE_ADDR                                        allocated by ../src/init/goahead/value.c:63
+192.168.0.40                                       allocated by ../src/init/goahead/value.c:63
+REMOTE_HOST                                        allocated by ../src/init/goahead/value.c:63
+192.168.0.40                                       allocated by ../src/init/goahead/value.c:63
+SERVER_URL                                         allocated by ../src/init/goahead/value.c:63
+192.168.0.30                                       allocated by ../src/init/goahead/value.c:63
+SERVER_NAME                                        allocated by ../src/init/goahead/value.c:63
+192.168.0.30                                       allocated by ../src/init/goahead/value.c:63
+SERVER_HOST                                        allocated by ../src/init/goahead/value.c:63
+192.168.0.30                                       allocated by ../src/init/goahead/value.c:63
+GATEWAY_INTERFACE                                  allocated by ../src/init/goahead/value.c:63
+CGI/1.1                                            allocated by ../src/init/goahead/value.c:63
+QUERY_STRING                                       allocated by ../src/init/goahead/value.c:63
+HTTP_ACCEPT_CHARSET                                allocated by ../src/init/goahead/value.c:63
+GBK,utf-8;q=0.7,*;q=0.3                            allocated by ../src/init/goahead/value.c:63
+HTTP_ACCEPT_LANGUAGE                               allocated by ../src/init/goahead/value.c:63
+4¥(0d¤(0                                           allocated by ../src/init/goahead/sym.c:328
+zh-CN,zh;q=0.8                                     allocated by ../src/init/goahead/value.c:63
+HTTP_ACCEPT_ENCODING                               allocated by ../src/init/goahead/value.c:63
+gzip,deflate,sdch                                  allocated by ../src/init/goahead/value.c:63
+HTTP_REFERER                                       allocated by ../src/init/goahead/value.c:63
+http://192.168.0.30/home.asp                       allocated by ../src/init/goahead/value.c:63
+HTTP_ACCEPT                                        allocated by ../src/init/goahead/value.c:63
+text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8 allocated by ../src/init/goahead/value.c:63
+HTTP_USER_AGENT                                    allocated by ../src/init/goahead/value.c:63
+Mozilla/5.0 (Windows NT 5.1) AppleWebKit/535.11 (KHTML, like Gecko) Chrome/17.0.963.79 Safari/535.11 allocated by ../src/init/goahead/value.c:63
+Mozilla/5.0 (Windows NT 5.1) AppleWebKit/535.11 (KHTML, like Gecko) Chrome/17.0.963.79 Safari/535.11 allocated by ../src/init/goahead/webs.c:880
+123456                                             allocated by ../src/init/goahead/webs.c:929
+Basic YWRtaW46MTIzNDU2                             allocated by ../src/init/goahead/value.c:63
+HTTP_CONNECTION                                    allocated by ../src/init/goahead/value.c:63
+keep-alive                                         allocated by ../src/init/goahead/value.c:63
+HTTP_HOST                                          allocated by ../src/init/goahead/value.c:63
+192.168.0.30                                       allocated by ../src/init/goahead/value.c:63
+admin                                              allocated by ../src/init/goahead/webs.c:928
+HTTP_AUTHORIZATION                                 allocated by ../src/init/goahead/value.c:63
+HTTP/1.1                                           allocated by ../src/init/goahead/webs.c:784
+http                                               allocated by ../src/init/goahead/webs.c:783
+localhost                                          allocated by ../src/init/goahead/webs.c:781
+REQUEST_METHOD                                     allocated by ../src/init/goahead/value.c:63
+PATH_TRANSLATED                                    allocated by ../src/init/goahead/value.c:63
+GET                                                allocated by ../src/init/goahead/value.c:63
+Basic                                              allocated by ../src/init/goahead/webs.c:916
+SERVER_PROTOCOL                                    allocated by ../src/init/goahead/value.c:63
+SERVER_SOFTWARE                                    allocated by ../src/init/goahead/value.c:63
+GoAhead-Webs/2.1.8                                 allocated by ../src/init/goahead/value.c:63
+HTTP/1.1                                           allocated by ../src/init/goahead/value.c:63
+SERVER_ADDR                                        allocated by ../src/init/goahead/value.c:63
+192.168.0.30                                       allocated by ../src/init/goahead/value.c:63
+SERVER_PORT                                        allocated by ../src/init/goahead/value.c:63
+80                                                 allocated by ../src/init/goahead/value.c:63
+PATH_INFO                                          allocated by ../src/init/goahead/value.c:63
+REMOTE_ADDR                                        allocated by ../src/init/goahead/value.c:63
+192.168.0.40                                       allocated by ../src/init/goahead/value.c:63
+REMOTE_HOST                                        allocated by ../src/init/goahead/value.c:63
+192.168.0.40                                       allocated by ../src/init/goahead/value.c:63
+SERVER_URL                                         allocated by ../src/init/goahead/value.c:63
+192.168.0.30                                       allocated by ../src/init/goahead/value.c:63
+SERVER_NAME                                        allocated by ../src/init/goahead/value.c:63
+192.168.0.30                                       allocated by ../src/init/goahead/value.c:63
+SERVER_HOST                                        allocated by ../src/init/goahead/value.c:63
+192.168.0.30                                       allocated by ../src/init/goahead/value.c:63
+GATEWAY_INTERFACE                                  allocated by ../src/init/goahead/value.c:63
+CGI/1.1                                            allocated by ../src/init/goahead/value.c:63
+QUERY_STRING                                       allocated by ../src/init/goahead/value.c:63
+HTTP_IF_MODIFIED_SINCE                             allocated by ../src/init/goahead/value.c:63
+Thu Jan  1 00:00:00 1970                           allocated by ../src/init/goahead/value.c:63
+HTTP_ACCEPT_CHARSET                                allocated by ../src/init/goahead/value.c:63
+GBK,utf-8;q=0.7,*;q=0.3                            allocated by ../src/init/goahead/value.c:63
+HTTP_ACCEPT_LANGUAGE                               allocated by ../src/init/goahead/value.c:63
+zh-CN,zh;q=0.8                                     allocated by ../src/init/goahead/value.c:63
+HTTP_ACCEPT_ENCODING                               allocated by ../src/init/goahead/value.c:63
+gzip,deflate,sdch                                  allocated by ../src/init/goahead/value.c:63
+HTTP_REFERER                                       allocated by ../src/init/goahead/value.c:63
+http://192.168.0.30/home.asp                       allocated by ../src/init/goahead/value.c:63
+HTTP_ACCEPT                                        allocated by ../src/init/goahead/value.c:63
+text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8 allocated by ../src/init/goahead/value.c:63
+HTTP_USER_AGENT                                    allocated by ../src/init/goahead/value.c:63
+Mozilla/5.0 (Windows NT 5.1) AppleWebKit/535.11 (KHTML, like Gecko) Chrome/17.0.963.79 Safari/535.11 allocated by ../src/init/goahead/value.c:63
+Mozilla/5.0 (Windows NT 5.1) AppleWebKit/535.11 (KHTML, like Gecko) Chrome/17.0.963.79 Safari/535.11 allocated by ../src/init/goahead/webs.c:880
+123456                                             allocated by ../src/init/goahead/webs.c:929
+Basic YWRtaW46MTIzNDU2                             allocated by ../src/init/goahead/value.c:63
+HTTP_CONNECTION                                    allocated by ../src/init/goahead/value.c:63
+l (0¬Z(0                                           allocated by ../src/init/goahead/sym.c:328
+keep-alive                                         allocated by ../src/init/goahead/value.c:63
+HTTP_HOST                                          allocated by ../src/init/goahead/value.c:63
+192.168.0.30                                       allocated by ../src/init/goahead/value.c:63
+admin                                              allocated by ../src/init/goahead/webs.c:928
+HTTP_AUTHORIZATION                                 allocated by ../src/init/goahead/value.c:63
+HTTP/1.1                                           allocated by ../src/init/goahead/webs.c:784
+http                                               allocated by ../src/init/goahead/webs.c:783
+localhost                                          allocated by ../src/init/goahead/webs.c:781
+REQUEST_METHOD                                     allocated by ../src/init/goahead/value.c:63
+GET                                                allocated by ../src/init/goahead/value.c:63
+Basic                                              allocated by ../src/init/goahead/webs.c:916
+host                                               allocated by ../src/init/goahead/ringq.c:92
+GET /treeapp.asp HTTP/1.1
+Host: 192.168.0.30
+Connection: keep-alive
+Authorization: Basic YWRtaW46MTIzNDU2
+User-Agent: Mozilla/5.0 (Windows NT 5.1) AppleWebKit/535.11 (KHTML, like Gecko) Chrome/17.0.963.79 Safari/535.11
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Referer: http://192.168.0.30/home.asp
+Accept-Encoding: gzip,deflate,sdch
+Accept-Language: zh-CN,zh;q=0.8
+Accept-Charset: GBK,utf-8;q=0.7,*;q=0.3
+
+ allocated by ../src/init/goahead/ringq.c:92
+host                                               allocated by ../src/init/goahead/ringq.c:92
+t,(0t,(09.(0t0(0                                   allocated by ../src/init/goahead/webs.c:1981
+GET /title.htm HTTP/1.1
+Host: 192.168.0.30
+Connection: keep-alive
+Authorization: Basic YWRtaW46MTIzNDU2
+User-Agent: Mozilla/5.0 (Windows NT 5.1) AppleWebKit/535.11 (KHTML, like Gecko) Chrome/17.0.963.79 Safari/535.11
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Referer: http://192.168.0.30/home.asp
+Accept-Encoding: gzip,deflate,sdch
+Accept-Language: zh-CN,zh;q=0.8
+Accept-Charset: GBK,utf-8;q=0.7,*;q=0.3
+If-Modified-Since: Thu Jan  1 00:00:00 1970
+
+ allocated by ../src/init/goahead/ringq.c:92
+LoadUserManagement                                 allocated by ../src/init/goahead/value.c:63
+SaveUserManagement                                 allocated by ../src/init/goahead/value.c:63
+DeleteAccessLimit                                  allocated by ../src/init/goahead/value.c:63
+AddAccessLimit                                     allocated by ../src/init/goahead/value.c:63
+DeleteGroup                                        allocated by ../src/init/goahead/value.c:63
+AddGroup                                           allocated by ../src/init/goahead/value.c:63
+DisplayUser                                        allocated by ../src/init/goahead/value.c:63
+DeleteUser                                         allocated by ../src/init/goahead/value.c:63
+AddUser                                            allocated by ../src/init/goahead/value.c:63
+MakePrivilegeList                                  allocated by ../src/init/goahead/value.c:63
+MakeAccessMethodList                               allocated by ../src/init/goahead/value.c:63
+MakeAccessLimitList                                allocated by ../src/init/goahead/value.c:63
+MakeUserList                                       allocated by ../src/init/goahead/value.c:63
+MakeGroupList                                      allocated by ../src/init/goahead/value.c:63
+formTest                                           allocated by ../src/init/goahead/value.c:63
+aspTest                                            allocated by ../src/init/goahead/value.c:63
+192.168.0.30                                       allocated by ../src/init/goahead/webs.c:222
+192.168.0.30                                       allocated by ../src/init/goahead/webs.c:221
+write                                              allocated by ../src/init/goahead/value.c:63
+umconfig.txt                                       allocated by ../src/init/goahead/um.c:170
+group                                              allocated by ../src/init/goahead/emfdb.c:96
+secure                                             allocated by ../src/init/goahead/emfdb.c:96
+method                                             allocated by ../src/init/goahead/emfdb.c:96
+name                                               allocated by ../src/init/goahead/emfdb.c:96
+access                                             allocated by ../src/init/goahead/emfdb.c:79
+disable                                            allocated by ../src/init/goahead/emfdb.c:96
+prot                                               allocated by ../src/init/goahead/emfdb.c:96
+method                                             allocated by ../src/init/goahead/emfdb.c:96
+priv                                               allocated by ../src/init/goahead/emfdb.c:96
+name                                               allocated by ../src/init/goahead/emfdb.c:96
+TÅ'0lÅ'0„Å'0œÅ'0´Å'0                               allocated by ../src/init/goahead/emfdb.c:91
+groups                                             allocated by ../src/init/goahead/emfdb.c:79
+disable                                            allocated by ../src/init/goahead/emfdb.c:96
+prot                                               allocated by ../src/init/goahead/emfdb.c:96
+group                                              allocated by ../src/init/goahead/emfdb.c:96
+password                                           allocated by ../src/init/goahead/emfdb.c:96
+name                                               allocated by ../src/init/goahead/emfdb.c:96
+LÄ'0dÄ'0|Ä'0”Ä'0¬Ä'0                               allocated by ../src/init/goahead/emfdb.c:91
+users                                              allocated by ../src/init/goahead/emfdb.c:79
+home.asp                                           allocated by ../src/init/goahead/default.c:584
+webs: accept request
+webs: accept request
+webs: accept request
