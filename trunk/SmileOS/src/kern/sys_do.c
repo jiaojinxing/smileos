@@ -236,11 +236,15 @@ static int do_select(sys_do_args_t *args)
 /*
  * do_recv
  */
-static int do_recv(int s, void *mem, size_t len, int flags)
+static int do_recv(sys_do_args_t *args)
 {
-    int sock_fd = socket_priv_fd(s);
+    int sock_fd = socket_priv_fd((int)args->arg0);
     if (sock_fd >= 0) {
-        return lwip_recv(sock_fd, va_to_mva(mem), len, flags);
+        return lwip_recv(
+                sock_fd,
+                va_to_mva(args->arg1),
+                (size_t)args->arg2,
+                (int)args->arg3);
     } else {
         return -1;
     }
@@ -305,11 +309,15 @@ static int do_getsockopt(sys_do_args_t *args)
 /*
  * do_send
  */
-static int do_send(int s, const void *data, size_t size, int flags)
+static int do_send(sys_do_args_t *args)
 {
-    int sock_fd = socket_priv_fd(s);
+    int sock_fd = socket_priv_fd((int)args->arg0);
     if (sock_fd >= 0) {
-        return lwip_send(sock_fd, va_to_mva(data), size, flags);
+        return lwip_send(
+                sock_fd,
+                va_to_mva(args->arg1),
+                (size_t)args->arg2,
+                (int)args->arg3);
     } else {
         return -1;
     }

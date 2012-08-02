@@ -217,13 +217,12 @@ int syscall_template(void)
     int syscall = SYS_CALL_EXIT;
 
     /*
-     * 根据 APCS, 前四个参数使用 r0 - r3, 后面的参数使用堆栈
-     * 因为切换了处理器模式, sp 也切换了, 所以多于 4 个参数时会有问题
+     * 根据 APCS, 前三个参数使用 r0 - r2, 后面的参数使用堆栈
+     * 因为切换了处理器模式, sp 也切换了, 所以多于 3 个参数时会有问题
      */
     __asm__ __volatile__("mov    r0,  %0": :"r"(param1));               /*  R0 传递参数 1               */
     __asm__ __volatile__("mov    r1,  %0": :"r"(param2));               /*  R1 传递参数 2               */
     __asm__ __volatile__("mov    r2,  %0": :"r"(param3));               /*  R2 传递参数 3               */
-    __asm__ __volatile__("mov    r3,  %0": :"r"(param4));               /*  R3 传递参数 4               */
     __asm__ __volatile__("stmfd  sp!, {r7, lr}");                       /*  保存 R7, LR 到堆栈          */
     __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));              /*  R7 传递系统调用号           */
     __asm__ __volatile__("swi    0");                                   /*  软件中断                    */
@@ -1286,15 +1285,13 @@ int recv(int s, void *mem, size_t len, int flags)
 {
     int ret;
     int syscall = SYS_CALL_RECV;
+    sys_do_args_t args = {(void *)s, (void *)mem, (void *)len, (void *)flags};
 
     debug("%s\n", __func__);
     if (in_kernel()) {
-        ret = (sys_do_table[syscall])(s, mem, len, flags);
+        ret = (sys_do_table[syscall])(&args);
     } else {
-        __asm__ __volatile__("mov    r0,  %0": :"r"(s));
-        __asm__ __volatile__("mov    r1,  %0": :"r"(mem));
-        __asm__ __volatile__("mov    r2,  %0": :"r"(len));
-        __asm__ __volatile__("mov    r3,  %0": :"r"(flags));
+        __asm__ __volatile__("mov    r0,  %0": :"r"(&args));
         __asm__ __volatile__("stmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
         __asm__ __volatile__("swi    0");
@@ -1408,15 +1405,13 @@ int send(int s, const void *dataptr, size_t size, int flags)
 {
     int ret;
     int syscall = SYS_CALL_SEND;
+    sys_do_args_t args = {(void *)s, (void *)dataptr, (void *)size, (void *)flags};
 
     debug("%s\n", __func__);
     if (in_kernel()) {
-        ret = (sys_do_table[syscall])(s, dataptr, size, flags);
+        ret = (sys_do_table[syscall])(&args);
     } else {
-        __asm__ __volatile__("mov    r0,  %0": :"r"(s));
-        __asm__ __volatile__("mov    r1,  %0": :"r"(dataptr));
-        __asm__ __volatile__("mov    r2,  %0": :"r"(size));
-        __asm__ __volatile__("mov    r3,  %0": :"r"(flags));
+        __asm__ __volatile__("mov    r0,  %0": :"r"(&args));
         __asm__ __volatile__("stmfd  sp!, {r7, lr}");
         __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
         __asm__ __volatile__("swi    0");
