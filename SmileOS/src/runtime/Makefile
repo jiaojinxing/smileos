@@ -11,12 +11,13 @@ DEPEND_DLL =
 
 
 OBJS = \
-heap.o \
-libc_fix.o \
-posix_fix.o \
-sys_call.o \
-net/def.o \
-net/ip_addr.o \
+crt0.o \
+../kern/heap.o \
+../libc/libc_fix.o \
+../kern/posix_fix.o \
+../kern/sys_call.o \
+../net/core/def.o \
+../net/core/ipv4/ip_addr.o \
 pth/pthread.o \
 pth/pth_attr.o \
 pth/pth_cancel.o \
@@ -41,13 +42,12 @@ pth/pth_tcb.o \
 pth/pth_time.o \
 pth/pth_util.o \
 pth/pth_vers.o \
+pth/pth_mctx_arm920t_asm.o \
 cpp/cppEabiLib.o \
 cpp/cppMemLib.o \
 cpp/cppRtBegin.o \
 cpp/cppRtEnd.o \
-cpp/cppSupLib.o \
-crt0.o \
-pth/pth_mctx_arm920t_asm.o
+cpp/cppSupLib.o
 
 
 INCDIR  = "../include"
