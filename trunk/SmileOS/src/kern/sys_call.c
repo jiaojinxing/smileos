@@ -212,7 +212,6 @@ int syscall_template(void)
     int param1 = 0;
     int param2 = 0;
     int param3 = 0;
-    int param4 = 0;
     int ret;
     int syscall = SYS_CALL_EXIT;
 
