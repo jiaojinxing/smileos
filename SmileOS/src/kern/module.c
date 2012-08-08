@@ -95,8 +95,8 @@ static int arm_reloc_rel(Elf32_Rel *rel, Elf32_Addr addr, uint8_t *target)
         if (addend & 0x00800000) {
             addend |= 0xff000000;
         }
-        tmp   = addr - (Elf32_Addr)where + (addend << 2);
-        tmp >>= 2;
+        tmp    = addr - (Elf32_Addr)where + (addend << 2);
+        tmp  >>= 2;
         *where = (*where & 0xff000000) | (tmp & 0x00ffffff);
         break;
 
