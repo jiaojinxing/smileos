@@ -497,7 +497,7 @@ void *heap_free(heap_t *heap, const char *func, int line, void *ptr)
     }
 
     if (ptr == NULL) {
-#ifndef SMILEOS_KERNEL
+#ifdef SMILEOS_KERNEL
         debug("%s: process %d memptr=NULL, call by %s() line %d\n",
                 __func__, getpid(), func, line);
 #endif
