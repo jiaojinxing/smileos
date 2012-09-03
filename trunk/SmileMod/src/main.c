@@ -164,12 +164,10 @@ static void test_thread(void *arg)
         return;
     }
 
-//    for (i = 0; i < 100000; i++) {
-//        printf("hello SmileOS, in test kernel module, i = %d\n", i);
-//        sleep(10);
-//    }
-
-    while (1);
+    for (i = 0; i < 100000; i++) {
+        printf("hello SmileOS, in test kernel module, i = %d\n", i);
+        sleep(10);
+    }
 
     close(fd);
 }
