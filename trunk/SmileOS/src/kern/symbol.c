@@ -861,7 +861,6 @@ extern int  cfsetispeed();
 extern int  cfsetospeed(); 
 extern int  cfsetspeed(); 
 extern int  chdir(); 
-extern int  child_process_shell(); 
 extern int  cimag(); 
 extern int  cimagf(); 
 extern int  cleanup_glue(); 
@@ -1100,9 +1099,7 @@ extern int  gcvtf();
 extern int  gen_numname(); 
 extern int  get_fat(); 
 extern int  get_fattime(); 
-extern int  get_spsr(); 
 extern int  get_sys_lr(); 
-extern int  get_sys_sp(); 
 extern int  get_terminal_width_height(); 
 extern int  getc(); 
 extern int  getc_unlocked(); 
@@ -4280,7 +4277,6 @@ SYMBOL_TABLE_BEGIN
     SYMBOL_ITEM_FUNC(cfsetospeed) 
     SYMBOL_ITEM_FUNC(cfsetspeed) 
     SYMBOL_ITEM_FUNC(chdir) 
-    SYMBOL_ITEM_FUNC(child_process_shell) 
     SYMBOL_ITEM_FUNC(cimag) 
     SYMBOL_ITEM_FUNC(cimagf) 
     SYMBOL_ITEM_FUNC(cleanup_glue) 
@@ -4519,9 +4515,7 @@ SYMBOL_TABLE_BEGIN
     SYMBOL_ITEM_FUNC(gen_numname) 
     SYMBOL_ITEM_FUNC(get_fat) 
     SYMBOL_ITEM_FUNC(get_fattime) 
-    SYMBOL_ITEM_FUNC(get_spsr) 
     SYMBOL_ITEM_FUNC(get_sys_lr) 
-    SYMBOL_ITEM_FUNC(get_sys_sp) 
     SYMBOL_ITEM_FUNC(get_terminal_width_height) 
     SYMBOL_ITEM_FUNC(getc) 
     SYMBOL_ITEM_FUNC(getc_unlocked) 
