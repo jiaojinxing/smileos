@@ -1,6 +1,6 @@
 /*********************************************************************************************************
 **
-** Copyright (c) 2011 - 2012  Jiao JinXing <JiaoJinXing1987@gmail.com>
+** Copyright (c) 2011 - 2012  Jiao JinXing <jiaojinxing1987@gmail.com>
 **
 ** Licensed under the Academic Free License version 2.1
 **
@@ -368,10 +368,10 @@
 #define IISFCON (*(volatile unsigned *)0x5500000c) //IIS FIFO control
 
 #ifdef __BIG_ENDIAN
-#define IISFIFO  ((volatile unsigned short *)0x55000012) //IIS FIFO entry
+#define IISFIFO  (*(volatile unsigned short *)0x55000012) //IIS FIFO entry
 
 #else //Little Endian
-#define IISFIFO  ((volatile unsigned short *)0x55000010) //IIS FIFO entry
+#define IISFIFO  (*(volatile unsigned short *)0x55000010) //IIS FIFO entry
 
 #endif
 
@@ -585,5 +585,5 @@
 
 #endif                                                                  /*  S3C2440_H_                  */
 /*********************************************************************************************************
-  END FILE
+** END FILE
 *********************************************************************************************************/

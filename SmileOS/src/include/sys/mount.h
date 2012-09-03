@@ -1,6 +1,6 @@
 /*********************************************************************************************************
 **
-** Copyright (c) 2011 - 2012  Jiao JinXing <JiaoJinXing1987@gmail.com>
+** Copyright (c) 2011 - 2012  Jiao JinXing <jiaojinxing1987@gmail.com>
 **
 ** Licensed under the Academic Free License version 2.1
 **
@@ -49,5 +49,5 @@ int mount(const char *point_name, const char *dev_name, const char *fs_name);
 
 #endif                                                                  /*  MOUNT_H_                    */
 /*********************************************************************************************************
-  END FILE
+** END FILE
 *********************************************************************************************************/

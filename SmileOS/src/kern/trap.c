@@ -1,6 +1,6 @@
 /*********************************************************************************************************
 **
-** Copyright (c) 2011 - 2012  Jiao JinXing <JiaoJinXing1987@gmail.com>
+** Copyright (c) 2011 - 2012  Jiao JinXing <jiaojinxing1987@gmail.com>
 **
 ** Licensed under the Academic Free License version 2.1
 **
@@ -36,6 +36,12 @@
 ** Version:                 1.1.0
 ** Descriptions:            处理更多的异常, 异常改为杀死当前任务而非终止内核
 **
+**--------------------------------------------------------------------------------------------------------
+** Modified by:             JiaoJinXing
+** Modified date:           2012-8-29
+** Version:                 1.3.0
+** Descriptions:            增加注释
+**
 *********************************************************************************************************/
 #include "kern/config.h"
 #include "kern/types.h"
@@ -44,11 +50,14 @@
 #include "kern/vmm.h"
 #include "kern/arm.h"
 
-extern void get_sys_lr(uint32_t *lr);
-
-/*
- * FIQ 快速中断处理程序
- */
+extern void get_sys_lr(uint32_t *LR);
+/*********************************************************************************************************
+** Function name:           fiq_c_handler
+** Descriptions:            FIQ 快速中断处理程序
+** input parameters:        NONE
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
 void fiq_c_handler(void)
 {
     /*
@@ -60,22 +69,26 @@ void fiq_c_handler(void)
     extern void _start(void);
     _start();
 }
-
-/*
- * 未定义指令异常处理程序
- */
-void undf_c_handler(uint32_t pc, uint32_t cpsr)
+/*********************************************************************************************************
+** Function name:           undf_c_handler
+** Descriptions:            未定义指令异常处理程序
+** input parameters:        PC                  寄存器 PC
+**                          CPSR                寄存器 CPSR
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
+void undf_c_handler(uint32_t PC, uint32_t CPSR)
 {
-    uint32_t lr;
+    uint32_t LR;
 
     interrupt_enter();                                                  /*  进入中断                    */
 
     printk("%s, current tid = %d name=%s\n", __func__, current->tid, current->name);
-    printk("pc   = 0x%x\n", pc);
-    printk("cpsr = 0x%x\n", cpsr);
-    get_sys_lr(&lr);
-    printk("lr = 0x%x\n", lr);
-    if ((cpsr & ARM_MODE_MASK) == ARM_SVC_MODE && current->pid == 0) {  /*  如果是在 SVC 模式挂掉       */
+    printk("PC   = 0x%x\n", PC);
+    printk("CPSR = 0x%x\n", CPSR);
+    get_sys_lr(&LR);
+    printk("LR = 0x%x\n", LR);
+    if ((CPSR & ARM_MODE_MASK) == ARM_SVC_MODE && current->pid == 0) {  /*  如果是在 SVC 模式挂掉       */
         extern const char *last_syscall;
         printk("last system call = %s\n", last_syscall);
     }
@@ -84,24 +97,28 @@ void undf_c_handler(uint32_t pc, uint32_t cpsr)
 
     interrupt_exit();                                                   /*  退出中断                    */
 }
-
-/*
- * 预取指中止异常处理程序
- */
-void pabt_c_handler(uint32_t pc, uint32_t cpsr)
+/*********************************************************************************************************
+** Function name:           pabt_c_handler
+** Descriptions:            预取指中止异常处理程序
+** input parameters:        PC                  寄存器 PC
+**                          CPSR                寄存器 CPSR
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
+void pabt_c_handler(uint32_t PC, uint32_t CPSR)
 {
-    uint32_t lr;
+    uint32_t LR;
 
     interrupt_enter();                                                  /*  进入中断                    */
 
     printk("%s, current tid = %d name=%s\n", __func__, current->tid, current->name);
     printk("fault address = 0x%x\n", mmu_get_fault_address());
     printk("fault status  = 0x%x\n", mmu_get_prefetch_fault_status());
-    printk("pc   = 0x%x\n", pc);
-    printk("cpsr = 0x%x\n", cpsr);
-    get_sys_lr(&lr);
-    printk("lr = 0x%x\n", lr);
-    if ((cpsr & ARM_MODE_MASK) == ARM_SVC_MODE && current->pid == 0) {  /*  如果是在 SVC 模式挂掉       */
+    printk("PC   = 0x%x\n", PC);
+    printk("CPSR = 0x%x\n", CPSR);
+    get_sys_lr(&LR);
+    printk("LR = 0x%x\n", LR);
+    if ((CPSR & ARM_MODE_MASK) == ARM_SVC_MODE && current->pid == 0) {  /*  如果是在 SVC 模式挂掉       */
         extern const char *last_syscall;
         printk("last system call = %s\n", last_syscall);
     }
@@ -110,31 +127,38 @@ void pabt_c_handler(uint32_t pc, uint32_t cpsr)
 
     interrupt_exit();                                                   /*  退出中断                    */
 }
-
-/*
- * 数据访问中止 oops
- */
+/*********************************************************************************************************
+** Function name:           dabt_oops
+** Descriptions:            数据访问中止 oops
+** input parameters:        NONE
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
 #define dabt_oops()                                                                     \
     printk("%s, current tid = %d name=%s\n", __func__, current->tid, current->name);    \
     printk("fault address = 0x%x\n", mmu_get_fault_address());                          \
     printk("fault status  = 0x%x\n", mmu_get_data_fault_status());                      \
-    printk("pc   = 0x%x\n", pc);                                                        \
-    printk("cpsr = 0x%x\n", cpsr);                                                      \
-    get_sys_lr(&lr);                                                                    \
-    printk("lr   = 0x%x\n", lr);                                                        \
-    if ((cpsr & ARM_MODE_MASK) == ARM_SVC_MODE && current->pid == 0) {      /*  如果是在 SVC 模式挂掉   */\
+    printk("PC   = 0x%x\n", PC);                                                        \
+    printk("CPSR = 0x%x\n", CPSR);                                                      \
+    get_sys_lr(&LR);                                                                    \
+    printk("LR   = 0x%x\n", LR);                                                        \
+    if ((CPSR & ARM_MODE_MASK) == ARM_SVC_MODE && current->pid == 0) {      /*  如果是在 SVC 模式挂掉   */\
         extern const char *last_syscall;                                                \
         printk("last system call = %s\n", last_syscall);                                \
     }                                                                                   \
     task_kill(current->tid, SIGSEGV)                                        /*  杀死当前任务            */
-
-/*
- * 数据访问中止异常处理程序
- */
-void dabt_c_handler(uint32_t pc, uint32_t cpsr)
+/*********************************************************************************************************
+** Function name:           dabt_c_handler
+** Descriptions:            数据访问中止异常处理程序
+** input parameters:        PC                  寄存器 PC
+**                          CPSR                寄存器 CPSR
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
+void dabt_c_handler(uint32_t PC, uint32_t CPSR)
 {
-    uint32_t mva;
-    uint32_t lr;
+    uint32_t MVA;
+    uint32_t LR;
 
     interrupt_enter();                                                  /*  进入中断                    */
 
@@ -148,23 +172,23 @@ void dabt_c_handler(uint32_t pc, uint32_t cpsr)
     case 7:
         if (current->pid != 0) {                                        /*  如果是在进程里发生错误      */
 
-            mva = mmu_get_fault_address();
+            MVA = mmu_get_fault_address();
             /*
              * 真实硬件时, mmu_get_fault_address 应该返回的是
              *
-             * mva = va < 32 * MB ? va + PROCESS_SPACE_SIZE * current->pid : va
+             * MVA = VA < 32 * MB ? VA + PROCESS_SPACE_SIZE * current->pid : VA
              *
-             * 而 qemu-system-arm.exe 有 bug, 始终返回的是 va
+             * 而 qemu-system-arm.exe 有 bug, 始终返回的是 VA
              *
              * 所以加上下面的修正代码
              */
-            if (mva < PROCESS_SPACE_SIZE) {
-                mva = mva + PROCESS_SPACE_SIZE * current->pid;
+            if (MVA < PROCESS_SPACE_SIZE) {
+                MVA = MVA + PROCESS_SPACE_SIZE * current->pid;
             }
 
-            if (    mva >= PROCESS_SPACE_SIZE *  current->pid           /*  判断出错地址是否在当前进程  */
-                 && mva <  PROCESS_SPACE_SIZE * (current->pid + 1)) {   /*  的虚拟地址空间范围内        */
-                if (vmm_page_map(current, mva) == 0) {                  /*  页面映射                    */
+            if (    MVA >= PROCESS_SPACE_SIZE *  current->pid           /*  判断出错地址是否在当前进程  */
+                 && MVA <  PROCESS_SPACE_SIZE * (current->pid + 1)) {   /*  的虚拟地址空间范围内        */
+                if (vmm_page_map(current, MVA) == 0) {                  /*  页面映射                    */
                     current->dabt_cnt++;                                /*  数据访问中止次数加一        */
                     interrupt_exit_no_sched();                          /*  退出中断, 但不要调度        */
                     return;
@@ -179,13 +203,13 @@ void dabt_c_handler(uint32_t pc, uint32_t cpsr)
              * 注意在系统调用处理中, 必须将指针型参数经 va_to_mva 转换方可传入内核接口
              */
 
-            mva = mmu_get_fault_address();                              /*  必须就是 MVA                */
+            MVA = mmu_get_fault_address();                              /*  必须就是 MVA                */
 
-            pid = mva / PROCESS_SPACE_SIZE;
+            pid = MVA / PROCESS_SPACE_SIZE;
             if (pid != 0 && pid < PROCESS_NR) {
                 task_t *task = &tasks[pid];
                 if (task->state != TASK_UNALLOCATE) {
-                    if (vmm_page_map(task, mva) == 0) {                 /*  页面映射                    */
+                    if (vmm_page_map(task, MVA) == 0) {                 /*  页面映射                    */
                         task->dabt_cnt++;                               /*  数据访问中止次数加一        */
                         interrupt_exit_no_sched();                      /*  退出中断, 但不要调度        */
                         return;
@@ -223,5 +247,5 @@ void dabt_c_handler(uint32_t pc, uint32_t cpsr)
     interrupt_exit();                                                   /*  退出中断                    */
 }
 /*********************************************************************************************************
-  END FILE
+** END FILE
 *********************************************************************************************************/

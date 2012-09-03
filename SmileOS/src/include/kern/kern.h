@@ -1,6 +1,6 @@
 /*********************************************************************************************************
 **
-** Copyright (c) 2011 - 2012  Jiao JinXing <JiaoJinXing1987@gmail.com>
+** Copyright (c) 2011 - 2012  Jiao JinXing <jiaojinxing1987@gmail.com>
 **
 ** Licensed under the Academic Free License version 2.1
 **
@@ -178,16 +178,24 @@ int process_fork(void);
  */
 int32_t kthread_create(const char *name, void (*func)(void *), void *arg, uint32_t stack_size, uint32_t priority);
 
-/*
- * printk
- * 因为里面用了 kmalloc, 所以不能用在 kmalloc 失败之后, 终止内核前的报警也不能使用
- */
+/*********************************************************************************************************
+** Function name:           printk
+** Descriptions:            因为里面用了 kmalloc, 所以不能用在 kmalloc 失败之后,
+**                          终止内核前的报警也不能使用
+** input parameters:        fmt                 格式字符串
+**                          ...                 其余参数
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
 void printk(const char *fmt, ...);
-
-/*
- * 内核抱怨
- * 供不能使用 printk 时使用
- */
+/*********************************************************************************************************
+** Function name:           kcomplain
+** Descriptions:            内核抱怨(供不能使用 printk 时使用)
+** input parameters:        fmt                 格式字符串
+**                          ...                 其余参数
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
 void kcomplain(const char *fmt, ...);
 
 /*
@@ -266,6 +274,21 @@ int32_t gettid(void);
 int task_kill(int32_t tid, int sig);
 
 /*
+ * 任务休眠
+ */
+int task_sleep(uint32_t ticks);
+
+/*
+ * 设置任务 reent 结构指针
+ */
+int task_setreent(struct _reent *reent);
+
+/*
+ * 获得任务的 PID
+ */
+int32_t task_getpid(void);
+
+/*
  * 判断是否在中断处理程序中
  */
 int in_interrupt(void);
@@ -289,5 +312,5 @@ int task_stat(int tid, char *buf);
 
 #endif                                                                  /*  KERN_H_                     */
 /*********************************************************************************************************
-  END FILE
+** END FILE
 *********************************************************************************************************/

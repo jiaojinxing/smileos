@@ -1,6 +1,6 @@
 /*********************************************************************************************************
 **
-** Copyright (c) 2011 - 2012  Jiao JinXing <JiaoJinXing1987@gmail.com>
+** Copyright (c) 2011 - 2012  Jiao JinXing <jiaojinxing1987@gmail.com>
 **
 ** Licensed under the Academic Free License version 2.1
 **
@@ -72,15 +72,7 @@ static void do_exit(int status)
  */
 static int do_sleep(unsigned int ticks)
 {
-    current->timer = ticks != 0 ? ticks : 1;                            /*  休睡 TICK 数                */
-
-    current->state = TASK_SLEEPING;                                     /*  当前任务进入休睡态          */
-
-    current->resume_type = TASK_RESUME_UNKNOW;                          /*  设置恢复类型为未知          */
-
-    task_schedule();                                                    /*  任务调度                    */
-
-    return 0;
+    return task_sleep(ticks);
 }
 
 /*
@@ -103,7 +95,7 @@ static int do_gettimeofday(struct timeval *tv, void *tzp)
  */
 static int do_getpid(void)
 {
-    return (int)current->pid;
+    return task_getpid();
 }
 
 /*
@@ -119,9 +111,7 @@ static void do_yeild(void)
  */
 static int do_setreent(struct _reent *reent)
 {
-    _impure_ptr = current->reent = va_to_mva(reent);
-
-    return 0;
+    return task_setreent(va_to_mva(reent));
 }
 
 /*
@@ -137,7 +127,7 @@ static int do_kill(int pid, int sig)
  */
 static int do_fork(void)
 {
-    return process_fork();
+    return -1;
 }
 
 /*
@@ -555,5 +545,5 @@ sys_do_t sys_do_table[] = {
         (sys_do_t)do_setsockopt,
 };
 /*********************************************************************************************************
-  END FILE
+** END FILE
 *********************************************************************************************************/

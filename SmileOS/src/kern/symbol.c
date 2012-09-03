@@ -1519,7 +1519,6 @@ extern int  printenv_main();
 extern int  printf(); 
 extern int  printk(); 
 extern int  process_create(); 
-extern int  process_fork(); 
 extern int  pty_create(); 
 extern int  pty_init(); 
 extern int  put_fat(); 
@@ -4939,7 +4938,6 @@ SYMBOL_TABLE_BEGIN
     SYMBOL_ITEM_FUNC(printf) 
     SYMBOL_ITEM_FUNC(printk) 
     SYMBOL_ITEM_FUNC(process_create) 
-    SYMBOL_ITEM_FUNC(process_fork) 
     SYMBOL_ITEM_FUNC(pty_create) 
     SYMBOL_ITEM_FUNC(pty_init) 
     SYMBOL_ITEM_FUNC(put_fat) 

@@ -1,6 +1,6 @@
 /*********************************************************************************************************
 **
-** Copyright (c) 2011 - 2012  Jiao JinXing <JiaoJinXing1987@gmail.com>
+** Copyright (c) 2011 - 2012  Jiao JinXing <jiaojinxing1987@gmail.com>
 **
 ** Licensed under the Academic Free License version 2.1
 **
@@ -45,9 +45,13 @@
 #include <unistd.h>
 
 #ifndef SMILEOS_KERNEL
-/*
- * 初始化 C 库
- */
+/*********************************************************************************************************
+** Function name:           libc_init
+** Descriptions:            初始化 C 库
+** input parameters:        NONE
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
 void libc_init(void)
 {
     /*
@@ -74,40 +78,54 @@ void libc_init(void)
     open("/dev/ttyS0", O_WRONLY, 0666);
     stderr = fdopen(STDERR_FILENO, "w");
 }
-
-/*
- * printk
- */
+/*********************************************************************************************************
+** Function name:           printk
+** Descriptions:            内核信息打印
+** input parameters:        fmt                 格式字符串
+**                          ...                 其余参数
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
 void printk(const char *fmt, ...)
 {
     va_list va;
-    char    buffer[256];
+    char    buf[LINE_MAX];
 
     va_start(va, fmt);
 
-    vsnprintf(buffer, 256, fmt, va);
+    vsnprintf(buf, sizeof(buf), fmt, va);
 
-    fputs(buffer, stderr);
+    fputs(buf, stderr);
 
     va_end(va);
 }
 #endif
-
-/*
- * 在 newlib-1.19.0/newlib/libc/search/hash_bigkey.c
- */
+/*********************************************************************************************************
+** Function name:           MIN(在 newlib-1.19.0/newlib/libc/search/hash_bigkey.c 文件里)
+** Descriptions:            返回两个数中的较小值
+** input parameters:        x                   数 1
+**                          y                   数 2
+** output parameters:       NONE
+** Returned value:          两个数中的较小值
+*********************************************************************************************************/
 int MIN(int x, int y)
 {
     return x > y ? y : x;
 }
-
+/*********************************************************************************************************
+** Function name:           sigprocmask
+** Descriptions:            ???
+** input parameters:        NONE
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
 void sigprocmask(void)
 {
 
 }
 
 /*
- * 在 newlib-1.19.0/newlib/libc/misc/init.c
+ * 在 newlib-1.19.0/newlib/libc/misc/init.c 文件里
  */
 #if 0
 /* These magic symbols are provided by the linker.  */
@@ -153,38 +171,59 @@ __libc_fini_array (void)
   _fini ();
 }
 #endif
-
-/*
- * _init
- */
+/*********************************************************************************************************
+** Function name:           _init
+** Descriptions:            被 __libc_init_array 调用, 完成初始化工作
+** input parameters:        NONE
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
 void _init(void)
 {
 
 }
-
-/*
- * _fini
- */
+/*********************************************************************************************************
+** Function name:           _fini
+** Descriptions:            __libc_fini_array 调用, 完成清理工作
+** input parameters:        NONE
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
 void _fini(void)
 {
 
 }
-
-void *memrchr(const void *ptr, int ch, size_t len)
+/*********************************************************************************************************
+** Function name:           memrchr
+** Descriptions:            在内存里逆向查找指定的字符, 返回其逆向第一次出现的位置
+** input parameters:        ptr                 内存
+**                          ch                  指定的字符
+**                          size                内存的大小
+** output parameters:       NONE
+** Returned value:          字符逆向第一次出现的位置
+*********************************************************************************************************/
+void *memrchr(const void *ptr, int ch, size_t size)
 {
     const unsigned char *end;
 
-    if (len != 0) {
-        end = (unsigned char *)ptr + len;
+    if (size != 0) {
+        end = (unsigned char *)ptr + size;
         do {
             if (*(--end) == (unsigned char)ch) {
                 return ((void *)end);
             }
-        } while (--len != 0);
+        } while (--size != 0);
     }
     return (NULL);
 }
-
+/*********************************************************************************************************
+** Function name:           strchrnul
+** Descriptions:            在字符串中查找指定的字符, 返回其第一次出现的位置
+** input parameters:        str                 字符串
+**                          ch                  指定的字符
+** output parameters:       NONE
+** Returned value:          字符第一次出现的位置
+*********************************************************************************************************/
 char *strchrnul(const char *str, int ch)
 {
     char tmp = ch;
@@ -194,7 +233,14 @@ char *strchrnul(const char *str, int ch)
     }
     return (char *)str;
 }
-
+/*********************************************************************************************************
+** Function name:           xstrndup
+** Descriptions:            复制字符串
+** input parameters:        str                 字符串
+**                          len                 字符串长度
+** output parameters:       NONE
+** Returned value:          新的字符串副本
+*********************************************************************************************************/
 char *xstrndup(const char *str, size_t len)
 {
     char *ptr;
@@ -205,7 +251,13 @@ char *xstrndup(const char *str, size_t len)
     }
     return ptr;
 }
-
+/*********************************************************************************************************
+** Function name:           xstrdup
+** Descriptions:            复制字符串
+** input parameters:        str                 字符串
+** output parameters:       NONE
+** Returned value:          新的字符串副本
+*********************************************************************************************************/
 char *xstrdup(const char *str)
 {
     char *ptr;
@@ -216,28 +268,40 @@ char *xstrdup(const char *str)
     }
     return ptr;
 }
-
-void *xmalloc(size_t len)
+/*********************************************************************************************************
+** Function name:           xmalloc
+** Descriptions:            分配一块内存
+** input parameters:        size                大小
+** output parameters:       NONE
+** Returned value:          内存指针
+*********************************************************************************************************/
+void *xmalloc(size_t size)
 {
     void *ptr;
 
-    ptr = malloc(len);
+    ptr = malloc(size);
     if (ptr == NULL) {
         fprintf(stderr, "%s error!\n", __func__);
     }
     return ptr;
 }
-
-void *xzalloc(size_t len)
+/*********************************************************************************************************
+** Function name:           xzalloc
+** Descriptions:            分配一块零值内存
+** input parameters:        size                大小
+** output parameters:       NONE
+** Returned value:          内存指针
+*********************************************************************************************************/
+void *xzalloc(size_t size)
 {
     void *ptr;
 
-    ptr = xmalloc(len);
+    ptr = xmalloc(size);
     if (ptr != NULL) {
-        memset(ptr, 0, len);
+        memset(ptr, 0, size);
     }
     return ptr;
 }
 /*********************************************************************************************************
-  END FILE
+** END FILE
 *********************************************************************************************************/

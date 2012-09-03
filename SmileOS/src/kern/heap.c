@@ -1,6 +1,6 @@
 /*********************************************************************************************************
 **
-** Copyright (c) 2011 - 2012  Jiao JinXing <JiaoJinXing1987@gmail.com>
+** Copyright (c) 2011 - 2012  Jiao JinXing <jiaojinxing1987@gmail.com>
 **
 ** Licensed under the Academic Free License version 2.1
 **
@@ -56,6 +56,12 @@
 ** Descriptions:            今天多得同事 曾波 帮我指出了内存释放函数里的内存块合并错误! 会造成内存碎片,
 **                          在此表示 THANKS!
 **
+**--------------------------------------------------------------------------------------------------------
+** Modified by:             JiaoJinXing
+** Modified date:           2012-8-29
+** Version:                 1.5.0
+** Descriptions:            增加注释
+**
 *********************************************************************************************************/
 #include "kern/config.h"
 #include "kern/types.h"
@@ -64,31 +70,35 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <errno.h>
-
-/*
- * 进程代码项目应享有一份该文件, 用于实现用户态的 malloc 等
- */
+/*********************************************************************************************************
+** 内核定义
+*********************************************************************************************************/
 #ifdef SMILEOS_KERNEL
-
 #include "kern/kern.h"
-
+/*
+ * 内核里使用 gettid
+ */
 #define getpid      gettid
 
 /*
  * printk 会使用内存分配, 不使用 printk
  */
 #define debug       kcomplain
-
-/*
- * 内核内存堆
- */
-static heap_t  kheap;
-static uint8_t kheap_mem[KERN_HEAP_SIZE];
-
-/*
- * 从内核内存堆分配内存
- */
-void *__kmalloc(const char *func, int line, uint32_t size)
+/*********************************************************************************************************
+** 内核内存堆
+*********************************************************************************************************/
+static heap_t       kheap;
+static uint8_t      kheap_mem[KERN_HEAP_SIZE];
+/*********************************************************************************************************
+** Function name:           __kmalloc
+** Descriptions:            从内核内存堆里分配内存
+** input parameters:        func                调用者的函数名
+**                          line                调用者的行号
+**                          size                需要分配的大小
+** output parameters:       NONE
+** Returned value:          内存指针
+*********************************************************************************************************/
+void *__kmalloc(const char *func, int line, size_t size)
 {
     void    *ptr;
     uint32_t reg;
@@ -101,10 +111,15 @@ void *__kmalloc(const char *func, int line, uint32_t size)
 
     return ptr;
 }
-
-/*
- * 释放内存回内核内存堆
- */
+/*********************************************************************************************************
+** Function name:           __kfree
+** Descriptions:            释放内存回内核内存堆
+** input parameters:        func                调用者的函数名
+**                          line                调用者的行号
+**                          ptr                 内存指针
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
 void __kfree(const char *func, int line, void *ptr)
 {
     uint32_t reg;
@@ -115,11 +130,17 @@ void __kfree(const char *func, int line, void *ptr)
 
     interrupt_resume(reg);
 }
-
-/*
- * kcalloc
- */
-void *__kcalloc(const char *func, int line, uint32_t nelem, uint32_t elsize)
+/*********************************************************************************************************
+** Function name:           __kcalloc
+** Descriptions:            从内核内存堆里分配内存
+** input parameters:        func                调用者的函数名
+**                          line                调用者的行号
+**                          nelem               元素的个数
+**                          elsize              元素的大小
+** output parameters:       NONE
+** Returned value:          内存指针
+*********************************************************************************************************/
+void *__kcalloc(const char *func, int line, size_t nelem, size_t elsize)
 {
     void    *ptr;
     uint32_t reg;
@@ -135,10 +156,14 @@ void *__kcalloc(const char *func, int line, uint32_t nelem, uint32_t elsize)
     }
     return ptr;
 }
-
-/*
- * _malloc_r
- */
+/*********************************************************************************************************
+** Function name:           _malloc_r
+** Descriptions:            malloc 桩函数
+** input parameters:        reent               可重入结构
+**                          size                需要分配的大小
+** output parameters:       NONE
+** Returned value:          内存指针
+*********************************************************************************************************/
 void *_malloc_r(struct _reent *reent, size_t size)
 {
     void    *ptr;
@@ -155,10 +180,14 @@ void *_malloc_r(struct _reent *reent, size_t size)
     }
     return ptr;
 }
-
-/*
- * _free_r
- */
+/*********************************************************************************************************
+** Function name:           _free_r
+** Descriptions:            free 桩函数
+** input parameters:        reent               可重入结构
+**                          ptr                 内存指针
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
 void _free_r(struct _reent *reent, void *ptr)
 {
     uint32_t reg;
@@ -169,10 +198,15 @@ void _free_r(struct _reent *reent, void *ptr)
 
     interrupt_resume(reg);
 }
-
-/*
- * _realloc_r
- */
+/*********************************************************************************************************
+** Function name:           _realloc_r
+** Descriptions:            realloc 桩函数
+** input parameters:        reent               可重入结构
+**                          ptr                 内存指针
+**                          newsize             新的大小
+** output parameters:       NONE
+** Returned value:          内存指针
+*********************************************************************************************************/
 void *_realloc_r(struct _reent *reent, void *ptr, size_t newsize)
 {
     void    *newptr;
@@ -199,10 +233,16 @@ void *_realloc_r(struct _reent *reent, void *ptr, size_t newsize)
     }
     return newptr;
 }
-
-/*
- * _calloc_r
- */
+/*********************************************************************************************************
+** Function name:           _calloc_r
+** Descriptions:            calloc 桩函数
+** input parameters:        reent               可重入结构
+**                          ptr                 内存
+**                          nelem               元素的个数
+**                          elsize              元素的大小
+** output parameters:       NONE
+** Returned value:          内存指针
+*********************************************************************************************************/
 void *_calloc_r(struct _reent *reent, size_t nelem, size_t elsize)
 {
     void    *ptr;
@@ -221,37 +261,50 @@ void *_calloc_r(struct _reent *reent, size_t nelem, size_t elsize)
     }
     return ptr;
 }
-
-/*
- * 打印内核内存堆信息
- */
+/*********************************************************************************************************
+** Function name:           kheap_show
+** Descriptions:            打印内核内存堆信息
+** input parameters:        fd                  输出到的文件描述符
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
 void kheap_show(int fd)
 {
     heap_show(&kheap, fd);
 }
-
-/*
- * 创建内核内存堆
- */
+/*********************************************************************************************************
+** Function name:           kheap_create
+** Descriptions:            创建内核内存堆
+** input parameters:        NONE
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
 void kheap_create(void)
 {
     heap_init(&kheap, kheap_mem, KERN_HEAP_SIZE);
 }
-
 #else
-
+/*********************************************************************************************************
+** 用户空间程序定义
+*********************************************************************************************************/
 #define debug       printf
-
-static heap_t uheap;
-
-/*
- * _malloc_r
- */
+/*********************************************************************************************************
+** 用户空间内存堆
+*********************************************************************************************************/
+static heap_t       uheap;
+/*********************************************************************************************************
+** Function name:           _malloc_r
+** Descriptions:            malloc 桩函数
+** input parameters:        reent               可重入结构
+**                          size                需要分配的大小
+** output parameters:       NONE
+** Returned value:          内存指针
+*********************************************************************************************************/
 void *_malloc_r(struct _reent *reent, size_t size)
 {
     void *ptr;
     /*
-     * 因进程里使用非抢占的 pthread, 免锁免关中断
+     * 因进程里使用非抢占的 pthread, 免锁免关中断, 下同
      */
     ptr = heap_alloc(&uheap, __func__, __LINE__, size);
     if (ptr == NULL) {
@@ -259,18 +312,27 @@ void *_malloc_r(struct _reent *reent, size_t size)
     }
     return ptr;
 }
-
-/*
- * _free_r
- */
+/*********************************************************************************************************
+** Function name:           _free_r
+** Descriptions:            free 桩函数
+** input parameters:        reent               可重入结构
+**                          ptr                 内存指针
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
 void _free_r(struct _reent *reent, void *ptr)
 {
     heap_free(&uheap, __func__, __LINE__, ptr);
 }
-
-/*
- * _realloc_r
- */
+/*********************************************************************************************************
+** Function name:           _realloc_r
+** Descriptions:            realloc 桩函数
+** input parameters:        reent               可重入结构
+**                          ptr                 内存指针
+**                          newsize             新的大小
+** output parameters:       NONE
+** Returned value:          内存指针
+*********************************************************************************************************/
 void *_realloc_r(struct _reent *reent, void *ptr, size_t newsize)
 {
     void *newptr;
@@ -286,10 +348,16 @@ void *_realloc_r(struct _reent *reent, void *ptr, size_t newsize)
     }
     return newptr;
 }
-
-/*
- * _calloc_r
- */
+/*********************************************************************************************************
+** Function name:           _calloc_r
+** Descriptions:            calloc 桩函数
+** input parameters:        reent               可重入结构
+**                          ptr                 内存
+**                          nelem               元素的个数
+**                          elsize              元素的大小
+** output parameters:       NONE
+** Returned value:          内存指针
+*********************************************************************************************************/
 void *_calloc_r(struct _reent *reent, size_t nelem, size_t elsize)
 {
     void *ptr;
@@ -302,10 +370,13 @@ void *_calloc_r(struct _reent *reent, size_t nelem, size_t elsize)
     }
     return ptr;
 }
-
-/*
- * 创建用户空间内存堆
- */
+/*********************************************************************************************************
+** Function name:           uheap_create
+** Descriptions:            创建用户空间内存堆
+** input parameters:        NONE
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
 void uheap_create(void)
 {
     extern unsigned char __bss_end;
@@ -317,7 +388,9 @@ void uheap_create(void)
                                   PROCESS_STACK_SIZE - PROCESS_PARAM_SIZE);
 }
 #endif
-
+/*********************************************************************************************************
+** 定义
+*********************************************************************************************************/
 /*
  * 内存块状态
  */
@@ -341,11 +414,16 @@ struct mem_block {
     uint32_t        size;                                               /*  大小                        */
     uint8_t         status;                                             /*  状态                        */
 };
-
-/*
- * 创建内存堆
- */
-int heap_init(heap_t *heap, uint8_t *base, uint32_t size)
+/*********************************************************************************************************
+** Function name:           heap_init
+** Descriptions:            创建内存堆
+** input parameters:        heap                内存堆
+**                          base                内存区基址
+**                          size                内存区大小
+** output parameters:       NONE
+** Returned value:          0 OR -1
+*********************************************************************************************************/
+int heap_init(heap_t *heap, uint8_t *base, size_t size)
 {
     if (heap == NULL) {
         debug("%s: process %d heap=NULL!\n", __func__, getpid());
@@ -386,11 +464,17 @@ int heap_init(heap_t *heap, uint8_t *base, uint32_t size)
 
     return 0;
 }
-
-/*
- * 分配内存
- */
-void *heap_alloc(heap_t *heap, const char *func, int line, uint32_t size)
+/*********************************************************************************************************
+** Function name:           heap_alloc
+** Descriptions:            分配内存
+** input parameters:        heap                内存堆
+**                          func                调用者的函数名
+**                          line                调用者的行号
+**                          size                需要分配的大小
+** output parameters:       NONE
+** Returned value:          内存指针
+*********************************************************************************************************/
+void *heap_alloc(heap_t *heap, const char *func, int line, size_t size)
 {
     mem_block_t *blk;
     mem_block_t *new_blk;
@@ -474,10 +558,16 @@ void *heap_alloc(heap_t *heap, const char *func, int line, uint32_t size)
 
     return NULL;
 }
-
-/*
- * 释放内存
- */
+/*********************************************************************************************************
+** Function name:           heap_free
+** Descriptions:            释放内存
+** input parameters:        heap                内存堆
+**                          func                调用者的函数名
+**                          line                调用者的行号
+**                          ptr                 内存指针
+** output parameters:       NONE
+** Returned value:          NULL OR 内存指针
+*********************************************************************************************************/
 void *heap_free(heap_t *heap, const char *func, int line, void *ptr)
 {
     mem_block_t *blk;
@@ -611,15 +701,22 @@ void *heap_free(heap_t *heap, const char *func, int line, void *ptr)
 
     return NULL;
 }
-
-/*
- * 打印内存堆信息到文件
- */
+/*********************************************************************************************************
+** Function name:           heap_show
+** Descriptions:            打印内存堆信息到文件
+** input parameters:        heap                内存堆
+**                          fd                  输出到的文件描述符
+** output parameters:       NONE
+** Returned value:          0 OR -1
+*********************************************************************************************************/
 int heap_show(heap_t *heap, int fd)
 {
-    heap_t tmp;
-    char   buf[LINE_MAX];
-    int    len;
+    heap_t   tmp;
+    char     buf[LINE_MAX];
+    int      len;
+#ifdef SMILEOS_KERNEL
+    uint32_t reg;
+#endif
 
     if (fd < 0) {
         debug("%s: process %d fd=%d invalid!\n", __func__, getpid(), fd);
@@ -639,7 +736,15 @@ int heap_show(heap_t *heap, int fd)
     /*
      * 为了避免信息波动, 先拷贝到局部变量
      */
+#ifdef SMILEOS_KERNEL
+    reg = interrupt_disable();
+#endif
+
     memcpy(&tmp, heap, sizeof(heap_t));
+
+#ifdef SMILEOS_KERNEL
+    interrupt_resume(reg);
+#endif
 
     len = sprintf(buf, "********** heap info **********\n");
     write(fd, buf, len);
@@ -657,15 +762,15 @@ int heap_show(heap_t *heap, int fd)
     write(fd, buf, len);
 
     len = sprintf(buf, "heap used  size   = %dMB.%dKB.%dB\n",
-            tmp.used_size / MB,
-            tmp.used_size % MB / KB,
-            tmp.used_size % KB);
+                  tmp.used_size / MB,
+                  tmp.used_size % MB / KB,
+                  tmp.used_size % KB);
     write(fd, buf, len);
 
     len = sprintf(buf, "heap free  size   = %dMB.%dKB.%dB\n",
-            (tmp.size - tmp.used_size) / MB,
-            (tmp.size - tmp.used_size) % MB / KB,
-            (tmp.size - tmp.used_size) % KB);
+                 (tmp.size - tmp.used_size) / MB,
+                 (tmp.size - tmp.used_size) % MB / KB,
+                 (tmp.size - tmp.used_size) % KB);
     write(fd, buf, len);
 
     len = sprintf(buf, "************* end *************\n");
@@ -674,5 +779,5 @@ int heap_show(heap_t *heap, int fd)
     return 0;
 }
 /*********************************************************************************************************
-  END FILE
+** END FILE
 *********************************************************************************************************/
