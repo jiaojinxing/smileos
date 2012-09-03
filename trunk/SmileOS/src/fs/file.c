@@ -1,6 +1,6 @@
 /*********************************************************************************************************
 **
-** Copyright (c) 2011 - 2012  Jiao JinXing <JiaoJinXing1987@gmail.com>
+** Copyright (c) 2011 - 2012  Jiao JinXing <jiaojinxing1987@gmail.com>
 **
 ** Licensed under the Academic Free License version 2.1
 **
@@ -110,5 +110,5 @@ int file_manager_init(void)
     return mutex_new(&file_mgr_lock);
 }
 /*********************************************************************************************************
-  END FILE
+** END FILE
 *********************************************************************************************************/

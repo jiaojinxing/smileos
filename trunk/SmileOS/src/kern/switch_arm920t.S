@@ -1,6 +1,6 @@
 /*********************************************************************************************************
 **
-** Copyright (c) 2011 - 2012  Jiao JinXing <JiaoJinXing1987@gmail.com>
+** Copyright (c) 2011 - 2012  Jiao JinXing <jiaojinxing1987@gmail.com>
 **
 ** Licensed under the Academic Free License version 2.1
 **
@@ -36,11 +36,17 @@
 ** Version:                 1.1.0
 ** Descriptions:            简化 __switch_to 中对 CPU 模式的判断, 以适合各种异常处理程序退出时的任务切换
 **
+**--------------------------------------------------------------------------------------------------------
+** Modified by:             JiaoJinXing
+** Modified date:           2012-8-29
+** Version:                 1.2.0
+** Descriptions:            增加注释
+**
 *********************************************************************************************************/
 #include "kern/config.h"
 #include "kern/arm.h"
 /*********************************************************************************************************
-  成员变量在 task_t 结构中的偏移量
+** 成员变量在 task_t 结构中的偏移量
 *********************************************************************************************************/
 /*
     int32_t         pid;
@@ -64,262 +70,262 @@
 #undef  ARM_MODE_MASK
 #define ARM_MODE_MASK       0xFFFFFFE0
 /*********************************************************************************************************
-  任务切换
+** 任务切换
 *********************************************************************************************************/
 .text
 .code 32
 .align 2
 .global __switch_to
-__switch_to:                                    /*  __switch_to 可能在异常和 svc 模式下调用             */
-    mrs     r2, cpsr
-    bic     r2, r2, #ARM_MODE_MASK
+__switch_to:                                    /*  __switch_to 可能在异常和 SVC 模式下调用             */
+    MRS     R2, CPSR
+    BIC     R2, R2, #ARM_MODE_MASK
 
-    cmp     r2, #ARM_SVC_MODE                   /*  判断是否在 svc 模式下                               */
-    beq     svc_mode_save
+    CMP     R2, #ARM_SVC_MODE                   /*  判断是否在 SVC 模式下                               */
+    BEQ     svc_mode_save
 
-    b       trap_mode_save
+    B       trap_mode_save
 /*********************************************************************************************************
-  trap 模式保存任务上下文
+** trap 模式保存任务上下文
 *********************************************************************************************************/
 trap_mode_save:
 /*
               +--------------------------------------+
-              | 中断时的 pc (sys 模式)               |
+              | 中断时的 PC (SYS 模式)               |
               +--------------------------------------+
               |                                      |
-              | r0 - r12 (sys 模式)                  |
+              | R0 - R12 (SYS 模式)                  |
               |                                      |
               +--------------------------------------+
-              | 中断时的 lr (sys 模式)               |
+              | 中断时的 LR (SYS 模式)               |
               +--------------------------------------+
-              | 中断时的 spsr = 0x13, svc 模式(无效) |
+              | 中断时的 SPSR = 0x13, SVC 模式(无效) |
               +--------------------------------------+
-              | 中断时的 sp (sys 模式)               |
+              | 中断时的 SP (SYS 模式)               |
               +--------------------------------------+
-              | 中断时的 cpsr (sys 模式)             |
+              | 中断时的 CPSR (SYS 模式)             |
               +--------------------------------------+
               | 原有值                               |
               +--------------------------------------+
 */
-    add     r0, r0, #CONTENT_OFFSET             /*  r0 = current->content                               */
-    ldr     sp, =(IRQ_STACK_P_BASE - 14 * 4)    /*  sp 指向中断进入时保存的寄存器                       */
+    ADD     R0, R0, #CONTENT_OFFSET             /*  R0 = current->content                               */
+    LDR     SP, =(IRQ_STACK_P_BASE - 14 * 4)    /*  SP 指向中断进入时保存的寄存器                       */
 
-    add     r0, r0, #4                          /*  不修改 sp_backup                                    */
+    ADD     R0, R0, #4                          /*  不修改 SP_backup                                    */
 
-    mrs     r2, spsr                            /*  中断时的 cpsr (sys 模式)                            */
-    stmia   r0!, {r2}
+    MRS     R2, SPSR                            /*  中断时的 CPSR (SYS 模式)                            */
+    STMIA   R0!, {R2}
 
-    stmia   r0!, {sp}^                          /*  中断时的 sp (sys 模式)                              */
-    nop
+    STMIA   R0!, {SP}^                          /*  中断时的 SP (SYS 模式)                              */
+    NOP
 
-    mov     r2, #ARM_SVC_MODE                   /*  中断时的 spsr = 0x13, svc 模式(无效)                */
-    stmia   r0!, {r2}
+    MOV     R2, #ARM_SVC_MODE                   /*  中断时的 SPSR = 0x13, SVC 模式(无效)                */
+    STMIA   R0!, {R2}
 
-    stmia   r0!, {lr}^                          /*  中断时的 lr (sys 模式)                              */
-    nop
+    STMIA   R0!, {LR}^                          /*  中断时的 LR (SYS 模式)                              */
+    NOP
 
-    ldmia   sp!, {r2-r8}                        /*  把中断进入时保存的寄存器转移到 current->content 中  */
-    stmia   r0!, {r2-r8}
-    ldmia   sp!, {r2-r8}
-    stmia   r0!, {r2-r8}
+    LDMIA   SP!, {R2-R8}                        /*  把中断进入时保存的寄存器转移到 current->content 中  */
+    STMIA   R0!, {R2-R8}
+    LDMIA   SP!, {R2-R8}
+    STMIA   R0!, {R2-R8}
 
-    b       do_switch                           /*  执行任务切换                                        */
+    B       do_switch                           /*  执行任务切换                                        */
 /*********************************************************************************************************
-  svc 模式保存任务上下文
+** SVC 模式保存任务上下文
 *********************************************************************************************************/
 svc_mode_save:
 /*
               +--------------------------------------+
-              | pc (svc 模式)                        |
+              | PC (SVC 模式)                        |
               +--------------------------------------+
               |                                      |
-              | r0 - r12 (svc 模式)                  |
+              | R0 - R12 (SVC 模式)                  |
               |                                      |
               +--------------------------------------+
-              | 中断时的 lr (svc 模式)               |
+              | 中断时的 LR (SVC 模式)               |
               +--------------------------------------+
-              | 中断时的 spsr (sys 模式 cpsr != 0x13)|
+              | 中断时的 SPSR (SYS 模式 CPSR != 0x13)|
               +--------------------------------------+
-              | 中断时的 sp (svc 模式)               |
+              | 中断时的 SP (SVC 模式)               |
               +--------------------------------------+
-              | 中断时的 cpsr (svc 模式)             |
+              | 中断时的 CPSR (SVC 模式)             |
               +--------------------------------------+
-              | 系统调用时的 sp (sys 模式)           |
+              | 系统调用时的 SP (SYS 模式)           |
               +--------------------------------------+
 */
-    add     r0, r0, #CONTENT_OFFSET             /*  r0 = current->content                               */
+    ADD     R0, R0, #CONTENT_OFFSET             /*  R0 = current->content                               */
 
-    stmia   r0!, {sp}^                          /*  系统调用时的 sp (sys 模式)                          */
-    nop
+    STMIA   R0!, {SP}^                          /*  系统调用时的 SP (SYS 模式)                          */
+    NOP
 
-    mrs     r2, cpsr                            /*  中断时的 cpsr (svc 模式)                            */
-    stmia   r0!, {r2}
+    MRS     R2, CPSR                            /*  中断时的 CPSR (SVC 模式)                            */
+    STMIA   R0!, {R2}
 
-    stmia   r0!, {sp}                           /*  中断时的 sp (svc 模式)                              */
+    STMIA   R0!, {SP}                           /*  中断时的 SP (SVC 模式)                              */
 
-    mrs     r2, spsr                            /*  中断时的 spsr (sys 模式 cpsr != 0x13)               */
-    stmia   r0!, {r2}
+    MRS     R2, SPSR                            /*  中断时的 SPSR (SYS 模式 CPSR != 0x13)               */
+    STMIA   R0!, {R2}
 
-    stmia   r0!, {lr}                           /*  中断时的 lr (svc 模式)                              */
+    STMIA   R0!, {LR}                           /*  中断时的 LR (SVC 模式)                              */
 
-    stmia   r0!, {r0-r12, lr}                   /*  保存寄存器到 current->content 中                    */
+    STMIA   R0!, {R0-R12, LR}                   /*  保存寄存器到 current->content 中                    */
 
-    b       do_switch                           /*  执行任务切换                                        */
+    B       do_switch                           /*  执行任务切换                                        */
 /*********************************************************************************************************
-  执行任务切换
+** 执行任务切换
 *********************************************************************************************************/
 do_switch:
-    ldr     r0, [r1, #PID_OFFSET]               /*  新任务的 PID                                        */
-    mov     r0, r0, lsl #25                     /*  PID 在寄存器的最高 7 位                             */
-    mcr     p15, 0, r0, c13, c0, 0              /*  写 PID, MVA 发生变化了!!!                           */
-    nop
-    nop
-    nop
+    LDR     R0, [R1, #PID_OFFSET]               /*  新任务的 PID                                        */
+    MOV     R0, R0, LSL #25                     /*  PID 在寄存器的最高 7 位                             */
+    MCR     p15, 0, R0, c13, c0, 0              /*  写 PID, MVA 发生变化了!!!                           */
+    NOP
+    NOP
+    NOP
 
-    add     r1, r1, #CONTENT_OFFSET             /*  r1 = task[next].content                             */
+    ADD     R1, R1, #CONTENT_OFFSET             /*  R1 = task[next].content                             */
 
-    ldmia   r1!, {r2-r6}                        /*  r2=sp_backup, r3=cpsr_int, r4=sp_int, r5=spsr_int   */
-                                                /*  r6=lr_int                                           */
+    LDMIA   R1!, {R2-R6}                        /*  R2=SP_backup, r3=CPSR_int, R4=SP_int, R5=SPSR_int   */
+                                                /*  R6=LR_int                                           */
 
-    mov     r0, r5                              /*  下面可能还要用到 r5, 使用 r0 来作比较               */
-    bic     r0, r0, #ARM_MODE_MASK
-    cmp     r0, #ARM_SVC_MODE                   /*  判断 spsr_int 中的模式是否为 svc 模式               */
-    beq     svc_mode_switch
+    MOV     R0, R5                              /*  下面可能还要用到 R5, 使用 R0 来作比较               */
+    BIC     R0, R0, #ARM_MODE_MASK
+    CMP     R0, #ARM_SVC_MODE                   /*  判断 SPSR_int 中的模式是否为 SVC 模式               */
+    BEQ     svc_mode_switch
 /*********************************************************************************************************
-  sys 模式任务切换
+** SYS 模式任务切换
 *********************************************************************************************************/
 sys_mode_switch:
 /*
               +--------------------------------------+
-              | pc (svc 模式)                        |
+              | PC (SVC 模式)                        |
               +--------------------------------------+
               |                                      |
-              | r0 - r12 (svc 模式)                  |
+              | R0 - R12 (SVC 模式)                  |
               |                                      |
               +--------------------------------------+
-              | 中断时的 lr (svc 模式)               |
+              | 中断时的 LR (SVC 模式)               |
               +--------------------------------------+
-              | 中断时的 spsr (sys 模式 cpsr != 0x13)|
+              | 中断时的 SPSR (SYS 模式 CPSR != 0x13)|
               +--------------------------------------+
-              | 中断时的 sp (svc 模式)               |
+              | 中断时的 SP (SVC 模式)               |
               +--------------------------------------+
-              | 中断时的 cpsr (svc 模式)             |
+              | 中断时的 CPSR (SVC 模式)             |
               +--------------------------------------+
-              | 系统调用时的 sp (sys 模式)           |
+              | 系统调用时的 SP (SYS 模式)           |
               +--------------------------------------+
 */
-    msr     cpsr_c, #(ARM_FIQ_NO + ARM_IRQ_NO + ARM_SYS_MODE)   /*  进入 sys 模式, 关中断               */
+    MSR     CPSR_c, #(ARM_FIQ_NO + ARM_IRQ_NO + ARM_SYS_MODE)   /*  进入 SYS 模式, 关中断               */
 
-    mov     sp, r2                              /*  设置 sys 模式的 sp                                  */
+    MOV     SP, R2                              /*  设置 SYS 模式的 SP                                  */
 
-    msr     cpsr_cxsf, r3                       /*  进入 svc 模式                                       */
+    MSR     CPSR_cxsf, R3                       /*  进入 SVC 模式                                       */
 
-    mov     sp, r4                              /*  中断时的 sp                                         */
+    MOV     SP, R4                              /*  中断时的 SP                                         */
 
-    msr     spsr_cxsf, r5                       /*  中断时的 spsr                                       */
+    MSR     SPSR_cxsf, R5                       /*  中断时的 SPSR                                       */
 
-    mov     lr, r6                              /*  中断时的 lr                                         */
+    MOV     LR, R6                              /*  中断时的 LR                                         */
 
-    mov     r0, r1
-    ldmia   r0, {r0-r12, pc}                    /*  切换到新的任务                                      */
+    MOV     R0, R1
+    LDMIA   R0, {R0-R12, PC}                    /*  切换到新的任务                                      */
 /*********************************************************************************************************
-  svc 模式任务切换
+** SVC 模式任务切换
 *********************************************************************************************************/
 svc_mode_switch:
 /*
               +--------------------------------------+
-              | 中断时的 pc (sys 模式)               |
+              | 中断时的 PC (SYS 模式)               |
               +--------------------------------------+
               |                                      |
-              | r0 - r12 (sys 模式)                  |
+              | R0 - R12 (SYS 模式)                  |
               |                                      |
               +--------------------------------------+
-              | 中断时的 lr (sys 模式)               |
+              | 中断时的 LR (SYS 模式)               |
               +--------------------------------------+
-              | 中断时的 spsr = 0x13, svc 模式(无效) |
+              | 中断时的 SPSR = 0x13, SVC 模式(无效) |
               +--------------------------------------+
-              | 中断时的 sp (sys 模式)               |
+              | 中断时的 SP (SYS 模式)               |
               +--------------------------------------+
-              | 中断时的 cpsr (sys 模式)             |
+              | 中断时的 CPSR (SYS 模式)             |
               +--------------------------------------+
               | 原有值                               |
               +--------------------------------------+
 */
-    msr     cpsr_c, #(ARM_FIQ_NO + ARM_IRQ_NO + ARM_SYS_MODE)   /*  进入 sys 模式, 关中断               */
+    MSR     CPSR_c, #(ARM_FIQ_NO + ARM_IRQ_NO + ARM_SYS_MODE)   /*  进入 SYS 模式, 关中断               */
 
-    mov     sp, r4                              /*  中断时的 sp                                         */
+    MOV     SP, R4                              /*  中断时的 SP                                         */
 
-    mov     lr, r6                              /*  中断时的 lr                                         */
+    MOV     LR, R6                              /*  中断时的 LR                                         */
 
-    msr     cpsr_c, #(ARM_FIQ_NO + ARM_IRQ_NO + ARM_SVC_MODE)   /*  进入 svc 模式, 关中断               */
+    MSR     CPSR_c, #(ARM_FIQ_NO + ARM_IRQ_NO + ARM_SVC_MODE)   /*  进入 SVC 模式, 关中断               */
 
-    mov     sp, r2                              /*  设置 svc 模式的 sp                                  */
+    MOV     SP, R2                              /*  设置 SVC 模式的 SP                                  */
 
-    msr     spsr_cxsf, r3                       /*  将 sys 模式的 cpsr 保存到 svc 模式的 spsr           */
+    MSR     SPSR_cxsf, R3                       /*  将 SYS 模式的 CPSR 保存到 SVC 模式的 SPSR           */
 
-    mov     r0, r1
-    ldmia   r0, {r0-r12, pc}^                   /*  切换到新的任务, ^ 表示复制 spsr 到 cpsr             */
+    MOV     R0, R1
+    LDMIA   R0, {R0-R12, PC}^                   /*  切换到新的任务, ^ 表示复制 SPSR 到 CPSR             */
     /*
-     * 记录以前犯下的一个错误: ldmia   r0, {r0-r12, lr, pc}^
+     * 记录以前犯下的一个错误: LDMIA   R0, {R0-R12, LR, PC}^
      * 你知道错在哪里吗?
      */
 /*********************************************************************************************************
-  切换到进程 0, 并开中断
+** 切换到进程 0, 并开中断
 *********************************************************************************************************/
 .global __switch_to_process0
 __switch_to_process0:
-    mov     r1, sp                              /*  暂存 sp 到 r1                                       */
+    MOV     R1, SP                              /*  暂存 SP 到 R1                                       */
 
-    mov     r2, lr                              /*  暂存 lr 到 r2                                       */
+    MOV     R2, LR                              /*  暂存 LR 到 R2                                       */
 
-    mov     sp, r0                              /*  设置 svc 模式的 sp                                  */
+    MOV     SP, R0                              /*  设置 SVC 模式的 SP                                  */
 
-    msr     cpsr_c, #(ARM_FIQ_NO + ARM_IRQ_NO + ARM_SYS_MODE)   /*  进入 sys 模式, 关中断               */
+    MSR     CPSR_c, #(ARM_FIQ_NO + ARM_IRQ_NO + ARM_SYS_MODE)   /*  进入 SYS 模式, 关中断               */
 
-    mov     lr, r2                              /*  恢复 lr                                             */
+    MOV     LR, R2                              /*  恢复 LR                                             */
 
-    mov     sp, r1                              /*  恢复 sp                                             */
+    MOV     SP, R1                              /*  恢复 SP                                             */
 
-    msr     cpsr_c, #(ARM_FIQ_NO + ARM_IRQ_EN + ARM_SYS_MODE)   /*  进入 sys 模式, 开 irq 中断          */
+    MSR     CPSR_c, #(ARM_FIQ_NO + ARM_IRQ_EN + ARM_SYS_MODE)   /*  进入 SYS 模式, 开 IRQ 中断          */
 
-    bx      lr                                  /*  返回                                                */
+    BX      LR                                  /*  返回                                                */
 /*********************************************************************************************************
-  进入临界区域
+** 进入临界区域
 *********************************************************************************************************/
 .globl interrupt_disable
 interrupt_disable:
-    mrs     r0, cpsr
+    MRS     R0, CPSR
 
-    orr     r1, r0, #(ARM_FIQ_NO + ARM_IRQ_NO)
+    ORR     R1, R0, #(ARM_FIQ_NO + ARM_IRQ_NO)
 
-    msr     cpsr_c, r1
+    MSR     CPSR_c, R1
 
-    mov     pc, lr
+    MOV     PC, LR
 /*********************************************************************************************************
-  退出临界区域
+** 退出临界区域
 *********************************************************************************************************/
 .globl interrupt_resume
 interrupt_resume:
-    msr     cpsr_c, r0
+    MSR     CPSR_c, R0
 
-    mov     pc, lr
+    MOV     PC, LR
 /*********************************************************************************************************
-  判断是否在内核模式
+** 判断是否在内核里
 *********************************************************************************************************/
 .global in_kernel
 in_kernel:
-    mrs     r0, cpsr
-    bic     r0, r0, #ARM_MODE_MASK
+    MRS     R0, CPSR
+    BIC     R0, R0, #ARM_MODE_MASK
 
-    cmp     r0, #ARM_SYS_MODE                   /*  判断是否在 sys 模式下                               */
-    beq     sys_mode
+    CMP     R0, #ARM_SYS_MODE                   /*  判断是否在 SYS 模式下                               */
+    BEQ     sys_mode
 
-    mov     r0, #1
-    mov     pc, lr
+    MOV     R0, #1
+    MOV     PC, LR
 
 sys_mode:
-    mov     r0, #0
-    mov     pc, lr
+    MOV     R0, #0
+    MOV     PC, LR
 /*********************************************************************************************************
-  END FILE
+** END FILE
 *********************************************************************************************************/

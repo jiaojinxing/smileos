@@ -1,6 +1,6 @@
 /*********************************************************************************************************
 **
-** Copyright (c) 2011 - 2012  Jiao JinXing <JiaoJinXing1987@gmail.com>
+** Copyright (c) 2011 - 2012  Jiao JinXing <jiaojinxing1987@gmail.com>
 **
 ** Licensed under the Academic Free License version 2.1
 **
@@ -37,67 +37,88 @@
 ** Descriptions:            修改 mmu_map_section_as_page 和加入 mmu_map_section 函数,
 **                          以实现进程虚拟地址空间的保护
 **
+**--------------------------------------------------------------------------------------------------------
+** Modified by:             JiaoJinXing
+** Modified date:           2012-8-29
+** Version:                 1.2.0
+** Descriptions:            增加注释
+**
 *********************************************************************************************************/
 #include "kern/config.h"
 #include "kern/types.h"
 #include "kern/mmu.h"
 #include <string.h>
-
-/*
- * 获得 ID
- */
+/*********************************************************************************************************
+** Function name:           mmu_get_id
+** Descriptions:            获得 ID
+** input parameters:        NONE
+** output parameters:       NONE
+** Returned value:          ID
+*********************************************************************************************************/
 uint32_t mmu_get_id(void)
 {
     register uint32_t i;
 
     // MRC p15,0,Rd,c0,c0,0 ; returns ID register
 
-    __asm__ __volatile__("mrc p15, 0, %0, c0, c0, 0":"=r"(i));
+    __asm__ __volatile__("MRC p15, 0, %0, c0, c0, 0":"=r"(i));
 
     return i;
 }
-
-/*
- * 获得 Cache 类型
- */
+/*********************************************************************************************************
+** Function name:           mmu_get_cache_type
+** Descriptions:            获得 Cache 类型
+** input parameters:        NONE
+** output parameters:       NONE
+** Returned value:          Cache 类型
+*********************************************************************************************************/
 uint32_t mmu_get_cache_type(void)
 {
     register uint32_t i;
 
     // MRC p15,0,Rd,c0,c0,1 ; returns cache details
 
-    __asm__ __volatile__("mrc p15, 0, %0, c0, c0, 1":"=r"(i));
+    __asm__ __volatile__("MRC p15, 0, %0, c0, c0, 1":"=r"(i));
 
     return i;
 }
-
-/*
- * 设置转换表基址
- */
+/*********************************************************************************************************
+** Function name:           mmu_set_ttb
+** Descriptions:            设置转换表基址
+** input parameters:        i                   转换表基址
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
 void mmu_set_ttb(register uint32_t i)
 {
     // MRC p15, 0, Rd, c2, c0, 0 ; read TTB register
 
     // MCR p15, 0, Rd, c2, c0, 0 ; write TTB register
 
-    __asm__ __volatile__("mcr p15, 0, %0, c2, c0, 0": :"r"(i));
+    __asm__ __volatile__("MCR p15, 0, %0, c2, c0, 0": :"r"(i));
 }
-
-/*
- * 设置 Domain
- */
+/*********************************************************************************************************
+** Function name:           mmu_set_domain
+** Descriptions:            设置 Domain
+** input parameters:        i                   Domain
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
 void mmu_set_domain(register uint32_t i)
 {
     // MRC p15, 0, Rd, c3, c0, 0 ; read domain 15:0 access permissions
 
     // MCR p15, 0, Rd, c3, c0, 0 ; write domain 15:0 access permissions
 
-    __asm__ __volatile__("mcr p15,0, %0, c3, c0, 0": :"r"(i));
+    __asm__ __volatile__("MCR p15,0, %0, c3, c0, 0": :"r"(i));
 }
-
-/*
- * 使能 MMU
- */
+/*********************************************************************************************************
+** Function name:           mmu_enable
+** Descriptions:            使能 MMU
+** input parameters:        NONE
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
 void mmu_enable(void)
 {
     register uint32_t i;
@@ -106,16 +127,19 @@ void mmu_enable(void)
 
     // MCR p15, 0, Rd, c1, c0, 0 ; write control register
 
-    __asm__ __volatile__("mrc p15, 0, %0, c1, c0, 0":"=r"(i));
+    __asm__ __volatile__("MRC p15, 0, %0, c1, c0, 0":"=r"(i));
 
     i |= (1 << 0);
 
-    __asm__ __volatile__("mcr p15, 0, %0, c1, c0, 0": :"r"(i));
+    __asm__ __volatile__("MCR p15, 0, %0, c1, c0, 0": :"r"(i));
 }
-
-/*
- * 禁能 MMU
- */
+/*********************************************************************************************************
+** Function name:           mmu_disable
+** Descriptions:            禁能 MMU
+** input parameters:        NONE
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
 void mmu_disable(void)
 {
     register uint32_t i;
@@ -124,16 +148,19 @@ void mmu_disable(void)
 
     // MCR p15, 0, Rd, c1, c0, 0 ; write control register
 
-    __asm__ __volatile__("mrc p15, 0, %0, c1, c0, 0":"=r"(i));
+    __asm__ __volatile__("MRC p15, 0, %0, c1, c0, 0":"=r"(i));
 
     i &= ~(1 << 0);
 
-    __asm__ __volatile__("mcr p15, 0, %0, c1, c0, 0": :"r"(i));
+    __asm__ __volatile__("MCR p15, 0, %0, c1, c0, 0": :"r"(i));
 }
-
-/*
- * 使能对齐错误检查
- */
+/*********************************************************************************************************
+** Function name:           mmu_enable_align_fault_check
+** Descriptions:            使能对齐错误检查
+** input parameters:        NONE
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
 void mmu_enable_align_fault_check(void)
 {
     register uint32_t i;
@@ -142,16 +169,19 @@ void mmu_enable_align_fault_check(void)
 
     // MCR p15, 0, Rd, c1, c0, 0 ; write control register
 
-    __asm__ __volatile__("mrc p15, 0, %0, c1, c0, 0":"=r"(i));
+    __asm__ __volatile__("MRC p15, 0, %0, c1, c0, 0":"=r"(i));
 
     i |= (1 << 1);
 
-    __asm__ __volatile__("mcr p15, 0, %0, c1, c0, 0": :"r"(i));
+    __asm__ __volatile__("MCR p15, 0, %0, c1, c0, 0": :"r"(i));
 }
-
-/*
- * 禁能对齐错误检查
- */
+/*********************************************************************************************************
+** Function name:           mmu_disable_align_fault_check
+** Descriptions:            禁能对齐错误检查
+** input parameters:        NONE
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
 void mmu_disable_align_fault_check(void)
 {
     register uint32_t i;
@@ -160,17 +190,21 @@ void mmu_disable_align_fault_check(void)
 
     // MCR p15, 0, Rd, c1, c0, 0 ; write control register
 
-    __asm__ __volatile__("mrc p15, 0, %0, c1, c0, 0":"=r"(i));
+    __asm__ __volatile__("MRC p15, 0, %0, c1, c0, 0":"=r"(i));
 
     i &= ~(1 << 1);
 
-    __asm__ __volatile__("mcr p15, 0, %0, c1, c0, 0": :"r"(i));
+    __asm__ __volatile__("MCR p15, 0, %0, c1, c0, 0": :"r"(i));
 }
-
-/*
- * 设置系统和 ROM 保护位
- */
-void mmu_set_sys_rom_protect_bit(register uint32_t sys, register uint32_t rom)
+/*********************************************************************************************************
+** Function name:           mmu_set_sys_rom_protect_bit
+** Descriptions:            设置系统和 ROM 保护位
+** input parameters:        sys                 系统位
+**                          rom                 ROM 保护位
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
+void mmu_set_sys_rom_protect_bit(uint32_t sys, uint32_t rom)
 {
     register uint32_t i;
 
@@ -178,7 +212,7 @@ void mmu_set_sys_rom_protect_bit(register uint32_t sys, register uint32_t rom)
 
     // MCR p15, 0, Rd, c1, c0, 0 ; write control register
 
-    __asm__ __volatile__("mrc p15, 0, %0, c1, c0, 0":"=r"(i));
+    __asm__ __volatile__("MRC p15, 0, %0, c1, c0, 0":"=r"(i));
 
     if (sys) {
         i |=  (1 << 8);
@@ -192,13 +226,16 @@ void mmu_set_sys_rom_protect_bit(register uint32_t sys, register uint32_t rom)
         i &= ~(1 << 9);
     }
 
-    __asm__ __volatile__("mcr p15, 0, %0, c1, c0, 0": :"r"(i));
+    __asm__ __volatile__("MCR p15, 0, %0, c1, c0, 0": :"r"(i));
 }
-
-/*
- * 设置异常向量地址
- */
-void mmu_set_vector_addr(register uint32_t vector_addr)
+/*********************************************************************************************************
+** Function name:           mmu_set_vector_addr
+** Descriptions:            设置异常向量地址
+** input parameters:        vector_addr         异常向量地址
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
+void mmu_set_vector_addr(uint32_t vector_addr)
 {
     register uint32_t i;
 
@@ -206,7 +243,7 @@ void mmu_set_vector_addr(register uint32_t vector_addr)
 
     // MCR p15, 0, Rd, c1, c0, 0 ; write control register
 
-    __asm__ __volatile__("mrc p15, 0, %0, c1, c0, 0":"=r"(i));
+    __asm__ __volatile__("MRC p15, 0, %0, c1, c0, 0":"=r"(i));
 
     if (vector_addr) {
         i |=  (1 << 13);
@@ -214,12 +251,15 @@ void mmu_set_vector_addr(register uint32_t vector_addr)
         i &= ~(1 << 13);
     }
 
-    __asm__ __volatile__("mcr p15, 0, %0, c1, c0, 0": :"r"(i));
+    __asm__ __volatile__("MCR p15, 0, %0, c1, c0, 0": :"r"(i));
 }
-
-/*
- * 使能 D-Cache
- */
+/*********************************************************************************************************
+** Function name:           mmu_enable_dcache
+** Descriptions:            使能 D-Cache
+** input parameters:        NONE
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
 void mmu_enable_dcache(void)
 {
     register uint32_t i;
@@ -228,16 +268,19 @@ void mmu_enable_dcache(void)
 
     // MCR p15, 0, Rd, c1, c0, 0 ; write control register
 
-    __asm__ __volatile__("mrc p15, 0, %0, c1, c0, 0":"=r"(i));
+    __asm__ __volatile__("MRC p15, 0, %0, c1, c0, 0":"=r"(i));
 
     i |= (1 << 2);
 
-    __asm__ __volatile__("mcr p15, 0, %0, c1, c0, 0": :"r"(i));
+    __asm__ __volatile__("MCR p15, 0, %0, c1, c0, 0": :"r"(i));
 }
-
-/*
- * 禁能 D-Cache
- */
+/*********************************************************************************************************
+** Function name:           mmu_disable_dcache
+** Descriptions:            禁能 D-Cache
+** input parameters:        NONE
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
 void mmu_disable_dcache(void)
 {
     register uint32_t i;
@@ -246,16 +289,19 @@ void mmu_disable_dcache(void)
 
     // MCR p15, 0, Rd, c1, c0, 0 ; write control register
 
-    __asm__ __volatile__("mrc p15, 0, %0, c1, c0, 0":"=r"(i));
+    __asm__ __volatile__("MRC p15, 0, %0, c1, c0, 0":"=r"(i));
 
     i &= ~(1 << 2);
 
-    __asm__ __volatile__("mcr p15, 0, %0, c1, c0, 0": :"r"(i));
+    __asm__ __volatile__("MCR p15, 0, %0, c1, c0, 0": :"r"(i));
 }
-
-/*
- * 使能 I-Cache
- */
+/*********************************************************************************************************
+** Function name:           mmu_enable_icache
+** Descriptions:            使能 I-Cache
+** input parameters:        NONE
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
 void mmu_enable_icache(void)
 {
     register uint32_t i;
@@ -264,16 +310,19 @@ void mmu_enable_icache(void)
 
     // MCR p15, 0, Rd, c1, c0, 0 ; write control register
 
-    __asm__ __volatile__("mrc p15, 0, %0, c1, c0, 0":"=r"(i));
+    __asm__ __volatile__("MRC p15, 0, %0, c1, c0, 0":"=r"(i));
 
     i |= (1 << 12);
 
-    __asm__ __volatile__("mcr p15, 0, %0, c1, c0, 0": :"r"(i));
+    __asm__ __volatile__("MCR p15, 0, %0, c1, c0, 0": :"r"(i));
 }
-
-/*
- * 禁能 I-Cache
- */
+/*********************************************************************************************************
+** Function name:           mmu_disable_icache
+** Descriptions:            禁能 I-Cache
+** input parameters:        NONE
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
 void mmu_disable_icache(void)
 {
     register uint32_t i;
@@ -282,232 +331,294 @@ void mmu_disable_icache(void)
 
     // MCR p15, 0, Rd, c1, c0, 0 ; write control register
 
-    __asm__ __volatile__("mrc p15, 0, %0, c1, c0, 0":"=r"(i));
+    __asm__ __volatile__("MRC p15, 0, %0, c1, c0, 0":"=r"(i));
 
     i &= ~(1 << 12);
 
-    __asm__ __volatile__("mcr p15, 0, %0, c1, c0, 0": :"r"(i));
+    __asm__ __volatile__("MCR p15, 0, %0, c1, c0, 0": :"r"(i));
 }
-
-/*
- * 无效 I-Cache 和 D-Cache
- */
+/*********************************************************************************************************
+** Function name:           mmu_invalidate_icache_dcache
+** Descriptions:            无效 I-Cache 和 D-Cache
+** input parameters:        NONE
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
 void mmu_invalidate_icache_dcache(void)
 {
     // Invalidate ICache and DCache SBZ MCR p15,0,Rd,c7,c7,0
 
-    __asm__ __volatile__("mcr p15, 0, %0, c7, c7, 0": :"r"(0));
+    __asm__ __volatile__("MCR p15, 0, %0, c7, c7, 0": :"r"(0));
 }
-
-/*
- * 无效 I-Cache
- */
+/*********************************************************************************************************
+** Function name:           mmu_invalidate_icache
+** Descriptions:            无效 I-Cache
+** input parameters:        NONE
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
 void mmu_invalidate_icache(void)
 {
     // Invalidate ICache SBZ MCR p15,0,Rd,c7,c5,0
 
-    __asm__ __volatile__("mcr p15, 0, %0, c7, c5, 0": :"r"(0));
+    __asm__ __volatile__("MCR p15, 0, %0, c7, c5, 0": :"r"(0));
 }
-
-/*
- * 清理并无效指定 mva 的 I-Cache
- */
-void mmu_invalidate_icache_mva(register uint32_t mva)
+/*********************************************************************************************************
+** Function name:           mmu_invalidate_icache_mva
+** Descriptions:            无效指定 MVA 的 I-Cache
+** input parameters:        MVA                 修改后的虚拟地址
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
+void mmu_invalidate_icache_mva(register uint32_t MVA)
 {
     // Invalidate ICache single entry (using MVA) MVA format MCR p15,0,Rd,c7,c5,1
 
-    mva &= ~0x1Ful;
+    MVA &= ~0x1Ful;
 
-    __asm__ __volatile__("mcr p15, 0, %0, c7, c5, 1": :"r"(mva));
+    __asm__ __volatile__("MCR p15, 0, %0, c7, c5, 1": :"r"(MVA));
 }
-
-/*
- * 无效 D-Cache
- */
+/*********************************************************************************************************
+** Function name:           mmu_invalidate_dcache
+** Descriptions:            无效 D-Cache
+** input parameters:        NONE
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
 void mmu_invalidate_dcache(void)
 {
     // Invalidate DCache SBZ MCR p15,0,Rd,c7,c6,0
 
-    __asm__ __volatile__("mcr p15, 0, %0, c7, c6, 0": :"r"(0));
+    __asm__ __volatile__("MCR p15, 0, %0, c7, c6, 0": :"r"(0));
 }
-
-/*
- * 清理指定 index 的 D-Cache
- */
+/*********************************************************************************************************
+** Function name:           mmu_clean_dcache_index
+** Descriptions:            清理指定 index 的 D-Cache
+** input parameters:        index               索引
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
 void mmu_clean_dcache_index(register uint32_t index)
 {
     // Clean DCache single entry (using index) Index format MCR p15,0,Rd,c7,c10,2
 
-    __asm__ __volatile__("mcr p15, 0, %0, c7, c10, 2": :"r"(index));
+    __asm__ __volatile__("MCR p15, 0, %0, c7, c10, 2": :"r"(index));
 }
-
-/*
- * 清理并无效指定 mva 的 D-Cache
- */
-void mmu_clean_invalidate_dcache_mva(register uint32_t mva)
+/*********************************************************************************************************
+** Function name:           mmu_clean_invalidate_dcache_mva
+** Descriptions:            清理并无效指定 MVA 的 D-Cache
+** input parameters:        MVA                 修改后的虚拟地址
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
+void mmu_clean_invalidate_dcache_mva(register uint32_t MVA)
 {
     // Clean and Invalidate DCache entry (using MVA) MVA format MCR p15,0,Rd,c7,c14,1
 
-    mva &= ~0x1Ful;
+    MVA &= ~0x1Ful;
 
-    __asm__ __volatile__("mcr p15, 0, %0, c7, c14, 1": :"r"(mva));
+    __asm__ __volatile__("MCR p15, 0, %0, c7, c14, 1": :"r"(MVA));
 }
-
-/*
- * 清理并无效指定 index 的 D-Cache
- */
+/*********************************************************************************************************
+** Function name:           mmu_clean_invalidate_dcache_index
+** Descriptions:            清理并无效指定 index 的 D-Cache
+** input parameters:        index               索引
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
 void mmu_clean_invalidate_dcache_index(register uint32_t index)
 {
     // Clean and Invalidate DCache entry (using index) Index format MCR p15,0,Rd,c7,c14,2
 
-    __asm__ __volatile__("mcr p15, 0, %0, c7, c14, 2": :"r"(index));
+    __asm__ __volatile__("MCR p15, 0, %0, c7, c14, 2": :"r"(index));
 }
-
-/*
- * 回写写缓冲
- */
+/*********************************************************************************************************
+** Function name:           mmu_drain_write_buffer
+** Descriptions:            回写写缓冲
+** input parameters:        NONE
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
 void mmu_drain_write_buffer(void)
 {
     // Drain write buffer SBZ MCR p15,0,Rd,c7,c10,4
 
-    __asm__ __volatile__("mcr p15, 0, %0, c7, c10, 4": :"r"(0));
+    __asm__ __volatile__("MCR p15, 0, %0, c7, c10, 4": :"r"(0));
 }
-
-/*
- * 等待中断, 进入节能模式
- */
+/*********************************************************************************************************
+** Function name:           mmu_wait_for_interrupt
+** Descriptions:            等待中断, 进入节能模式
+** input parameters:        NONE
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
 void mmu_wait_for_interrupt(void)
 {
     // Wait for interrupt SBZ MCR p15,0,Rd,c7,c0,4
 
-    __asm__ __volatile__("mcr p15, 0, %0, c7, c0, 4": :"r"(0));
+    __asm__ __volatile__("MCR p15, 0, %0, c7, c0, 4": :"r"(0));
 }
-
-/*
- * 无效转换旁路缓冲
- */
+/*********************************************************************************************************
+** Function name:           mmu_invalidate_itlb_dtlb
+** Descriptions:            无效转换旁路缓冲
+** input parameters:        NONE
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
 void mmu_invalidate_itlb_dtlb(void)
 {
     // Invalidate TLB(s) SBZ MCR p15,0,Rd,c8,c7,0
 
-    __asm__ __volatile__("mcr p15, 0, %0, c8, c7, 0": :"r"(0));
+    __asm__ __volatile__("MCR p15, 0, %0, c8, c7, 0": :"r"(0));
 }
-
-/*
- * 无效指令转换旁路缓冲
- */
+/*********************************************************************************************************
+** Function name:           mmu_invalidate_itlb
+** Descriptions:            无效指令转换旁路缓冲
+** input parameters:        NONE
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
 void mmu_invalidate_itlb(void)
 {
     // Invalidate I TLB SBZ MCR p15,0,Rd,c8,c5,0
 
-    __asm__ __volatile__("mcr p15, 0, %0, c8, c5, 0": :"r"(0));
+    __asm__ __volatile__("MCR p15, 0, %0, c8, c5, 0": :"r"(0));
 }
-
-/*
- * 无效数据转换旁路缓冲
- */
+/*********************************************************************************************************
+** Function name:           mmu_invalidate_dtlb
+** Descriptions:            无效数据转换旁路缓冲
+** input parameters:        NONE
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
 void mmu_invalidate_dtlb(void)
 {
     // Invalidate D TLB SBZ MCR p15,0,Rd,c8,c6,0
 
-    __asm__ __volatile__("mcr p15, 0, %0, c8, c6, 0": :"r"(0));
+    __asm__ __volatile__("MCR p15, 0, %0, c8, c6, 0": :"r"(0));
 }
-
-/*
- * 无效数据 mva 的指令转换旁路缓冲
- */
-void mmu_invalidate_dtlb_mva(register uint32_t mva)
+/*********************************************************************************************************
+** Function name:           mmu_invalidate_dtlb_mva
+** Descriptions:            无效数据 MVA 的指令转换旁路缓冲
+** input parameters:        MVA                 修改后的虚拟地址
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
+void mmu_invalidate_dtlb_mva(register uint32_t MVA)
 {
     // Invalidate D TLB single entry (using MVA) MVA format MCR p15,0,Rd,c8,c6,1
 
-    mva &= ~0x1Ful;
+    MVA &= ~0x1Ful;
 
-    __asm__ __volatile__("mcr p15, 0, %0, c8, c6, 1": :"r"(mva));
+    __asm__ __volatile__("MCR p15, 0, %0, c8, c6, 1": :"r"(MVA));
 }
-
-/*
- * 无效指定 mva 的指令转换旁路缓冲
- */
-void mmu_invalidate_itlb_mva(register uint32_t mva)
+/*********************************************************************************************************
+** Function name:           mmu_invalidate_itlb_mva
+** Descriptions:            无效指定 MVA 的指令转换旁路缓冲
+** input parameters:        MVA                 修改后的虚拟地址
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
+void mmu_invalidate_itlb_mva(register uint32_t MVA)
 {
     // Invalidate I TLB single entry (using MVA) MVA format MCR p15,0,Rd,c8,c5,1
 
-    mva &= ~0x1Ful;
+    MVA &= ~0x1Ful;
 
-    __asm__ __volatile__("mcr p15, 0, %0, c8, c5, 1": :"r"(mva));
+    __asm__ __volatile__("MCR p15, 0, %0, c8, c5, 1": :"r"(MVA));
 }
-
-/*
- * 获得预取指错误状态
- */
+/*********************************************************************************************************
+** Function name:           mmu_get_prefetch_fault_status
+** Descriptions:            获得预取指错误状态
+** input parameters:        NONE
+** output parameters:       NONE
+** Returned value:          预取指错误状态
+*********************************************************************************************************/
 uint32_t mmu_get_prefetch_fault_status(void)
 {
     register uint32_t i;
 
     // read prefetch FSR value MRC p15, 0, Rd, c5, c0, 1
 
-    __asm__ __volatile__("mrc p15, 0, %0, c5, c0, 1":"=r"(i));
+    __asm__ __volatile__("MRC p15, 0, %0, c5, c0, 1":"=r"(i));
 
     return i;
 }
-
-/*
- * 获得数据访问错误状态
- */
+/*********************************************************************************************************
+** Function name:           mmu_get_data_fault_status
+** Descriptions:            获得数据访问错误状态
+** input parameters:        NONE
+** output parameters:       NONE
+** Returned value:          数据访问错误状态
+*********************************************************************************************************/
 uint32_t mmu_get_data_fault_status(void)
 {
     register uint32_t i;
 
     // read data FSR value MRC p15, 0, Rd, c5, c0, 0
 
-    __asm__ __volatile__("mrc p15, 0, %0, c5, c0, 0":"=r"(i));
+    __asm__ __volatile__("MRC p15, 0, %0, c5, c0, 0":"=r"(i));
 
     return i;
 }
-
-/*
- * 获得错误地址
- */
+/*********************************************************************************************************
+** Function name:           mmu_get_fault_address
+** Descriptions:            获得错误地址
+** input parameters:        NONE
+** output parameters:       NONE
+** Returned value:          错误地址
+*********************************************************************************************************/
 uint32_t mmu_get_fault_address(void)
 {
     register uint32_t i;
 
     // read FAR data MRC p15, 0, Rd, c6, c0, 0
 
-    __asm__ __volatile__("mrc p15, 0, %0, c6, c0, 0":"=r"(i));
+    __asm__ __volatile__("MRC p15, 0, %0, c6, c0, 0":"=r"(i));
 
     return i;
 }
-
-/*
- * 映射段, 通过参数
- */
-void mmu_map_section(register uint32_t section_nr,
-                     register uint32_t value)
+/*********************************************************************************************************
+** Function name:           mmu_map_section
+** Descriptions:            映射段, 通过参数
+** input parameters:        section_nr          段号
+**                          value               参数
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
+void mmu_map_section(uint32_t section_nr,
+                     uint32_t value)
 {
     volatile uint32_t *entry = (volatile uint32_t *)MMU_TBL_BASE + section_nr;
 
     *entry = value;
 }
-
-/*
- * 取消映射段
- */
-void mmu_unmap_section(register uint32_t section_nr)
+/*********************************************************************************************************
+** Function name:           mmu_unmap_section
+** Descriptions:            取消映射段
+** input parameters:        section_nr          段号
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
+void mmu_unmap_section(uint32_t section_nr)
 {
     volatile uint32_t *entry = (volatile uint32_t *)MMU_TBL_BASE + section_nr;
 
     *entry = 0;
 }
-
-/*
- * 映射段, 使用二级页表
- */
-uint32_t mmu_map_section_as_page(register uint32_t section_nr,
-                                 register uint32_t page_tbl_base)
+/*********************************************************************************************************
+** Function name:           mmu_map_section_as_page
+** Descriptions:            映射段, 使用二级页表
+** input parameters:        section_nr          段号
+**                          page_tbl_base       二级页表基址
+** output parameters:       NONE
+** Returned value:          可用作 mmu_map_section 参数的值
+*********************************************************************************************************/
+uint32_t mmu_map_section_as_page(uint32_t section_nr,
+                                 uint32_t page_tbl_base)
 {
     volatile uint32_t *entry = (volatile uint32_t *)MMU_TBL_BASE + section_nr;
-    register uint32_t  value;
+    uint32_t           value;
 
     value = (page_tbl_base & (~(PAGE_TBL_SIZE - 1))) |
             (DOMAIN_CHECK << 5) |
@@ -518,36 +629,47 @@ uint32_t mmu_map_section_as_page(register uint32_t section_nr,
 
     return value;
 }
-
-/*
- * 映射 4K 小页面
- */
-void mmu_map_page(register uint32_t page_tbl_base,
-                  register uint32_t page_nr,
-                  register uint32_t frame_base)
+/*********************************************************************************************************
+** Function name:           mmu_map_page
+** Descriptions:            映射 4K 小页面
+** input parameters:        page_tbl_base       二级页表基址
+**                          page_nr             段内页号
+**                          frame_base          页框基址
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
+void mmu_map_page(uint32_t page_tbl_base,
+                  uint32_t page_nr,
+                  uint32_t frame_base)
 {
     volatile uint32_t *entry = (volatile uint32_t *)page_tbl_base + page_nr;
 
     *entry = (frame_base & (~(VMM_FRAME_SIZE - 1))) |
             (AP_USER_RW << 10) |
-            (AP_USER_RW << 8) |
-            (AP_USER_RW << 6) |
-            (AP_USER_RW << 4) |
-            (CACHE_EN   << 3) |
-            (BUFFER_EN  << 2) |
-            (1          << 1);
+            (AP_USER_RW <<  8) |
+            (AP_USER_RW <<  6) |
+            (AP_USER_RW <<  4) |
+            (CACHE_EN   <<  3) |
+            (BUFFER_EN  <<  2) |
+            (1          <<  1);
 }
-
-/*
- * 映射区域
- */
-void mmu_map_region(register uint32_t virtual_base,
-                    register uint32_t physical_base,
-                    register uint32_t size,
-                    register uint32_t attr)
+/*********************************************************************************************************
+** Function name:           mmu_map_region
+** Descriptions:            映射区域
+** input parameters:        virtual_base        虚拟基址
+**                          physical_base       物理基址
+**                          size                大小
+**                          attr                属性
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
+void mmu_map_region(uint32_t virtual_base,
+                    uint32_t physical_base,
+                    uint32_t size,
+                    uint32_t attr)
 {
     volatile uint32_t *entry;
-    register int       i;
+    int                i;
 
     entry  = (volatile uint32_t *)MMU_TBL_BASE + (virtual_base >> SECTION_OFFSET);
 
@@ -557,13 +679,16 @@ void mmu_map_region(register uint32_t virtual_base,
         *entry++ = attr | (((physical_base >> SECTION_OFFSET) + i) << SECTION_OFFSET);
     }
 }
-
-/*
- * 建立转换表, 初始化 MMU Cache 等
- */
+/*********************************************************************************************************
+** Function name:           mmu_init
+** Descriptions:            建立转换表, 初始化 MMU Cache 等
+** input parameters:        NONE
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
 void mmu_init(void)
 {
-    register int i, j;
+    int i, j;
 
     /*
      * 将 D-Cache 和 I-Cache 禁能
@@ -689,10 +814,9 @@ void mmu_init(void)
      */
     memcpy((char *)VECTOR_P_ADDR, (char *)KERN_LOAD_ADDR, PAGE_SIZE);
 }
-
-/*
- * 系统保留虚拟地址空间
- */
+/*********************************************************************************************************
+** 系统保留虚拟地址空间
+*********************************************************************************************************/
 space_t sys_resv_space[] = {
         {
                 PHY_MEM_BASE,
@@ -711,5 +835,5 @@ space_t sys_resv_space[] = {
         }
 };
 /*********************************************************************************************************
-  END FILE
+** END FILE
 *********************************************************************************************************/

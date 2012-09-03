@@ -1,6 +1,6 @@
 /*********************************************************************************************************
 **
-** Copyright (c) 2011 - 2012  Jiao JinXing <JiaoJinXing1987@gmail.com>
+** Copyright (c) 2011 - 2012  Jiao JinXing <jiaojinxing1987@gmail.com>
 **
 ** Licensed under the Academic Free License version 2.1
 **
@@ -78,5 +78,5 @@ int socket(int domain, int type, int protocol);
 
 #endif                                                                  /*  SOCKET_H_                   */
 /*********************************************************************************************************
-  END FILE
+** END FILE
 *********************************************************************************************************/

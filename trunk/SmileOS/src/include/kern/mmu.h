@@ -1,6 +1,6 @@
 /*********************************************************************************************************
 **
-** Copyright (c) 2011 - 2012  Jiao JinXing <JiaoJinXing1987@gmail.com>
+** Copyright (c) 2011 - 2012  Jiao JinXing <jiaojinxing1987@gmail.com>
 **
 ** Licensed under the Academic Free License version 2.1
 **
@@ -41,7 +41,9 @@
 #define MMU_H_
 
 #include "kern/types.h"
-
+/*********************************************************************************************************
+** 定义
+*********************************************************************************************************/
 /*
  * Domain
  */
@@ -90,200 +92,319 @@
  */
 #define SECTION_ATTR(ap, domain, cache, buffer) \
         (ap << 10) + (domain << 5) + (1 << 4) + (cache << 3) + (buffer << 2) + (1 << 1) + (0 << 0)
-
-/*
- * 获得 ID
- */
+/*********************************************************************************************************
+** Function name:           mmu_get_id
+** Descriptions:            获得 ID
+** input parameters:        NONE
+** output parameters:       NONE
+** Returned value:          ID
+*********************************************************************************************************/
 uint32_t mmu_get_id(void);
-
-/*
- * 获得 Cache 类型
- */
+/*********************************************************************************************************
+** Function name:           mmu_get_cache_type
+** Descriptions:            获得 Cache 类型
+** input parameters:        NONE
+** output parameters:       NONE
+** Returned value:          Cache 类型
+*********************************************************************************************************/
 uint32_t mmu_get_cache_type(void);
-
-/*
- * 设置转换表基址
- */
+/*********************************************************************************************************
+** Function name:           mmu_set_ttb
+** Descriptions:            设置转换表基址
+** input parameters:        i                   转换表基址
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
 void mmu_set_ttb(register uint32_t i);
-
-/*
- * 设置 Domain
- */
+/*********************************************************************************************************
+** Function name:           mmu_set_domain
+** Descriptions:            设置 Domain
+** input parameters:        i                   Domain
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
 void mmu_set_domain(register uint32_t i);
-
-/*
- * 使能 MMU
- */
+/*********************************************************************************************************
+** Function name:           mmu_enable
+** Descriptions:            使能 MMU
+** input parameters:        NONE
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
 void mmu_enable(void);
-
-/*
- * 禁能 MMU
- */
+/*********************************************************************************************************
+** Function name:           mmu_disable
+** Descriptions:            禁能 MMU
+** input parameters:        NONE
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
 void mmu_disable(void);
-
-/*
- * 使能对齐错误检查
- */
+/*********************************************************************************************************
+** Function name:           mmu_enable_align_fault_check
+** Descriptions:            使能对齐错误检查
+** input parameters:        NONE
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
 void mmu_enable_align_fault_check(void);
-
-/*
- * 禁能对齐错误检查
- */
+/*********************************************************************************************************
+** Function name:           mmu_disable_align_fault_check
+** Descriptions:            禁能对齐错误检查
+** input parameters:        NONE
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
 void mmu_disable_align_fault_check(void);
-
-/*
- * 设置系统和 ROM 保护位
- */
-void mmu_set_sys_rom_protect_bit(register uint32_t sys, register uint32_t rom);
-
-/*
- * 设置异常向量地址
- */
-void mmu_set_vector_addr(register uint32_t vector_addr);
-
-/*
- * 使能 D-Cache
- */
+/*********************************************************************************************************
+** Function name:           mmu_set_sys_rom_protect_bit
+** Descriptions:            设置系统和 ROM 保护位
+** input parameters:        sys                 系统位
+**                          rom                 ROM 保护位
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
+void mmu_set_sys_rom_protect_bit(uint32_t sys, uint32_t rom);
+/*********************************************************************************************************
+** Function name:           mmu_set_vector_addr
+** Descriptions:            设置异常向量地址
+** input parameters:        vector_addr         异常向量地址
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
+void mmu_set_vector_addr(uint32_t vector_addr);
+/*********************************************************************************************************
+** Function name:           mmu_enable_dcache
+** Descriptions:            使能 D-Cache
+** input parameters:        NONE
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
 void mmu_enable_dcache(void);
-
-/*
- * 禁能 D-Cache
- */
+/*********************************************************************************************************
+** Function name:           mmu_disable_dcache
+** Descriptions:            禁能 D-Cache
+** input parameters:        NONE
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
 void mmu_disable_dcache(void);
-
-/*
- * 使能 I-Cache
- */
+/*********************************************************************************************************
+** Function name:           mmu_enable_icache
+** Descriptions:            使能 I-Cache
+** input parameters:        NONE
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
 void mmu_enable_icache(void);
-
-/*
- * 禁能 I-Cache
- */
+/*********************************************************************************************************
+** Function name:           mmu_disable_icache
+** Descriptions:            禁能 I-Cache
+** input parameters:        NONE
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
 void mmu_disable_icache(void);
-
-/*
- * 无效 I-Cache 和 D-Cache
- */
+/*********************************************************************************************************
+** Function name:           mmu_invalidate_icache_dcache
+** Descriptions:            无效 I-Cache 和 D-Cache
+** input parameters:        NONE
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
 void mmu_invalidate_icache_dcache(void);
-
-/*
- * 无效 I-Cache
- */
+/*********************************************************************************************************
+** Function name:           mmu_invalidate_icache
+** Descriptions:            无效 I-Cache
+** input parameters:        NONE
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
 void mmu_invalidate_icache(void);
-
-/*
- * 清理并无效指定 mva 的 I-Cache
- */
-void mmu_invalidate_icache_mva(register uint32_t mva);
-
-/*
- * 无效 D-Cache
- */
+/*********************************************************************************************************
+** Function name:           mmu_invalidate_icache_mva
+** Descriptions:            无效指定 MVA 的 I-Cache
+** input parameters:        MVA                 修改后的虚拟地址
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
+void mmu_invalidate_icache_mva(register uint32_t MVA);
+/*********************************************************************************************************
+** Function name:           mmu_invalidate_dcache
+** Descriptions:            无效 D-Cache
+** input parameters:        NONE
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
 void mmu_invalidate_dcache(void);
-
-/*
- * 清理指定 index 的 D-Cache
- */
+/*********************************************************************************************************
+** Function name:           mmu_clean_dcache_index
+** Descriptions:            清理指定 index 的 D-Cache
+** input parameters:        index               索引
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
 void mmu_clean_dcache_index(register uint32_t index);
-
-/*
- * 清理并无效指定 mva 的 D-Cache
- */
-void mmu_clean_invalidate_dcache_mva(register uint32_t mva);
-
-/*
- * 清理并无效指定 index 的 D-Cache
- */
+/*********************************************************************************************************
+** Function name:           mmu_clean_invalidate_dcache_mva
+** Descriptions:            清理并无效指定 MVA 的 D-Cache
+** input parameters:        MVA                 修改后的虚拟地址
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
+void mmu_clean_invalidate_dcache_mva(register uint32_t MVA);
+/*********************************************************************************************************
+** Function name:           mmu_clean_invalidate_dcache_index
+** Descriptions:            清理并无效指定 index 的 D-Cache
+** input parameters:        index               索引
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
 void mmu_clean_invalidate_dcache_index(register uint32_t index);
-
-/*
- * 回写写缓冲
- */
+/*********************************************************************************************************
+** Function name:           mmu_drain_write_buffer
+** Descriptions:            回写写缓冲
+** input parameters:        NONE
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
 void mmu_drain_write_buffer(void);
-
-/*
- * 等待中断, 进入节能模式
- */
+/*********************************************************************************************************
+** Function name:           mmu_wait_for_interrupt
+** Descriptions:            等待中断, 进入节能模式
+** input parameters:        NONE
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
 void mmu_wait_for_interrupt(void);
-
-/*
- * 无效转换旁路缓冲
- */
+/*********************************************************************************************************
+** Function name:           mmu_invalidate_itlb_dtlb
+** Descriptions:            无效转换旁路缓冲
+** input parameters:        NONE
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
 void mmu_invalidate_itlb_dtlb(void);
-
-/*
- * 无效指令转换旁路缓冲
- */
+/*********************************************************************************************************
+** Function name:           mmu_invalidate_itlb
+** Descriptions:            无效指令转换旁路缓冲
+** input parameters:        NONE
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
 void mmu_invalidate_itlb(void);
-
-/*
- * 无效数据转换旁路缓冲
- */
+/*********************************************************************************************************
+** Function name:           mmu_invalidate_dtlb
+** Descriptions:            无效数据转换旁路缓冲
+** input parameters:        NONE
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
 void mmu_invalidate_dtlb(void);
-
-/*
- * 无效数据 mva 的指令转换旁路缓冲
- */
-void mmu_invalidate_dtlb_mva(register uint32_t mva);
-
-/*
- * 无效指定 mva 的指令转换旁路缓冲
- */
-void mmu_invalidate_itlb_mva(register uint32_t mva);
-
-/*
- * 获得预取指错误状态
- */
+/*********************************************************************************************************
+** Function name:           mmu_invalidate_dtlb_mva
+** Descriptions:            无效数据 MVA 的指令转换旁路缓冲
+** input parameters:        MVA                 修改后的虚拟地址
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
+void mmu_invalidate_dtlb_mva(register uint32_t MVA);
+/*********************************************************************************************************
+** Function name:           mmu_invalidate_itlb_mva
+** Descriptions:            无效指定 MVA 的指令转换旁路缓冲
+** input parameters:        MVA                 修改后的虚拟地址
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
+void mmu_invalidate_itlb_mva(register uint32_t MVA);
+/*********************************************************************************************************
+** Function name:           mmu_get_prefetch_fault_status
+** Descriptions:            获得预取指错误状态
+** input parameters:        NONE
+** output parameters:       NONE
+** Returned value:          预取指错误状态
+*********************************************************************************************************/
 uint32_t mmu_get_prefetch_fault_status(void);
-
-/*
- * 获得数据访问错误状态
- */
+/*********************************************************************************************************
+** Function name:           mmu_get_data_fault_status
+** Descriptions:            获得数据访问错误状态
+** input parameters:        NONE
+** output parameters:       NONE
+** Returned value:          数据访问错误状态
+*********************************************************************************************************/
 uint32_t mmu_get_data_fault_status(void);
-
-/*
- * 获得错误地址
- */
+/*********************************************************************************************************
+** Function name:           mmu_get_fault_address
+** Descriptions:            获得错误地址
+** input parameters:        NONE
+** output parameters:       NONE
+** Returned value:          错误地址
+*********************************************************************************************************/
 uint32_t mmu_get_fault_address(void);
-
-/*
- * 取消映射段
- */
-void mmu_unmap_section(register uint32_t section_nr);
-
-/*
- * 映射段, 通过参数
- */
-void mmu_map_section(register uint32_t section_nr,
-                     register uint32_t value);
-
-/*
- * 映射区域
- */
-void mmu_map_region(register uint32_t virtual_base,
-                    register uint32_t physical_base,
-                    register uint32_t size,
-                    register uint32_t attr);
-
-/*
- * 映射段, 使用二级页表
- */
-uint32_t mmu_map_section_as_page(register uint32_t section_nr,
-                                 register uint32_t page_tbl_base);
-
-/*
- * 映射 4K 小页面
- */
-void mmu_map_page(register uint32_t page_tbl_base,
-                  register uint32_t page_nr,
-                  register uint32_t frame_base);
-
-/*
- * 建立转换表, 初始化 MMU Cache 等
- */
+/*********************************************************************************************************
+** Function name:           mmu_map_section
+** Descriptions:            映射段, 通过参数
+** input parameters:        section_nr          段号
+**                          value               参数
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
+void mmu_map_section(uint32_t section_nr,
+                     uint32_t value);
+/*********************************************************************************************************
+** Function name:           mmu_unmap_section
+** Descriptions:            取消映射段
+** input parameters:        section_nr          段号
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
+void mmu_unmap_section(uint32_t section_nr);
+/*********************************************************************************************************
+** Function name:           mmu_map_section_as_page
+** Descriptions:            映射段, 使用二级页表
+** input parameters:        section_nr          段号
+**                          page_tbl_base       二级页表基址
+** output parameters:       NONE
+** Returned value:          可用作 mmu_map_section 参数的值
+*********************************************************************************************************/
+uint32_t mmu_map_section_as_page(uint32_t section_nr,
+                                 uint32_t page_tbl_base);
+/*********************************************************************************************************
+** Function name:           mmu_map_page
+** Descriptions:            映射 4K 小页面
+** input parameters:        page_tbl_base       二级页表基址
+**                          page_nr             段内页号
+**                          frame_base          页框基址
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
+void mmu_map_page(uint32_t page_tbl_base,
+                  uint32_t page_nr,
+                  uint32_t frame_base);
+/*********************************************************************************************************
+** Function name:           mmu_map_region
+** Descriptions:            映射区域
+** input parameters:        virtual_base        虚拟基址
+**                          physical_base       物理基址
+**                          size                大小
+**                          attr                属性
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
+void mmu_map_region(uint32_t virtual_base,
+                    uint32_t physical_base,
+                    uint32_t size,
+                    uint32_t attr);
+/*********************************************************************************************************
+** Function name:           mmu_init
+** Descriptions:            建立转换表, 初始化 MMU Cache 等
+** input parameters:        NONE
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
 void mmu_init(void);
 
 #endif                                                                  /*  MMU_H_                      */
 /*********************************************************************************************************
-  END FILE
+** END FILE
 *********************************************************************************************************/

@@ -1,6 +1,6 @@
 /*********************************************************************************************************
 **
-** Copyright (c) 2011 - 2012  Jiao JinXing <JiaoJinXing1987@gmail.com>
+** Copyright (c) 2011 - 2012  Jiao JinXing <jiaojinxing1987@gmail.com>
 **
 ** Licensed under the Academic Free License version 2.1
 **
@@ -48,6 +48,12 @@
 ** Version:                 1.3.0
 ** Descriptions:            按 newlib 需求, 重写了部分系统调用
 **
+**--------------------------------------------------------------------------------------------------------
+** Modified by:             JiaoJinXing
+** Modified date:           2012-8-29
+** Version:                 1.4.0
+** Descriptions:            增加注释
+**
 *********************************************************************************************************/
 #include "kern/config.h"
 #include "kern/types.h"
@@ -55,25 +61,31 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
-
+/*********************************************************************************************************
+** 定义
+*********************************************************************************************************/
 struct stat;
 struct tms;
 struct timeval;
 typedef void DIR;
-
+/*********************************************************************************************************
+** 内核定义
+*********************************************************************************************************/
 #ifdef SMILEOS_KERNEL
 
 #include "kern/kern.h"
 
-extern sys_do_t sys_do_table[];
+extern sys_do_t         sys_do_table[];
 
-const char *last_syscall = NULL;
+const char             *last_syscall = NULL;
 
-//#define debug        kcomplain
-#define debug(...)     last_syscall = __func__
+//#define debug         kcomplain
+#define debug(...)      last_syscall = __func__
 
 #else
-
+/*********************************************************************************************************
+** 用户空间程序定义
+*********************************************************************************************************/
 typedef int (*sys_do_t)();
 
 /*
@@ -92,7 +104,7 @@ typedef struct {
     void *arg9;
 } sys_do_args_t;
 
-static sys_do_t sys_do_table[1];
+static sys_do_t         sys_do_table[1];
 
 #define in_kernel()     0
 
@@ -127,35 +139,32 @@ static sys_do_t sys_do_table[1];
 #define pwrite          syscall_pwrite
 
 #endif
-
-/*
- * newlib 需要如下的桩函数支持:
- *
-    extern int _close_r _PARAMS ((struct _reent *, int));
-    extern int _execve_r _PARAMS ((struct _reent *, const char *, char *const *, char *const *));
-    extern int _fcntl_r _PARAMS ((struct _reent *, int, int, int));
-    extern int _fork_r _PARAMS ((struct _reent *));
-    extern int _fstat_r _PARAMS ((struct _reent *, int, struct stat *));
-    extern int _getpid_r _PARAMS ((struct _reent *));
-    extern int _isatty_r _PARAMS ((struct _reent *, int));
-    extern int _kill_r _PARAMS ((struct _reent *, int, int));
-    extern int _link_r _PARAMS ((struct _reent *, const char *, const char *));
-    extern _off_t _lseek_r _PARAMS ((struct _reent *, int, _off_t, int));
-    extern int _mkdir_r _PARAMS ((struct _reent *, const char *, int));
-    extern int _open_r _PARAMS ((struct _reent *, const char *, int, int));
-    extern _ssize_t _read_r _PARAMS ((struct _reent *, int, void *, size_t));
-    extern int _rename_r _PARAMS ((struct _reent *, const char *, const char *));
-    extern void *_sbrk_r _PARAMS ((struct _reent *, ptrdiff_t));
-    extern int _stat_r _PARAMS ((struct _reent *, const char *, struct stat *));
-    extern _CLOCK_T_ _times_r _PARAMS ((struct _reent *, struct tms *));
-    extern int _unlink_r _PARAMS ((struct _reent *, const char *));
-    extern int _wait_r _PARAMS ((struct _reent *, int *));
-    extern _ssize_t _write_r _PARAMS ((struct _reent *, int, const void *, size_t));
- */
-
-/*
- * 系统调用号
- */
+/*********************************************************************************************************
+** newlib 需要如下的桩函数支持
+*********************************************************************************************************/
+extern int _close_r _PARAMS ((struct _reent *, int));
+extern int _execve_r _PARAMS ((struct _reent *, const char *, char *const *, char *const *));
+extern int _fcntl_r _PARAMS ((struct _reent *, int, int, int));
+extern int _fork_r _PARAMS ((struct _reent *));
+extern int _fstat_r _PARAMS ((struct _reent *, int, struct stat *));
+extern int _getpid_r _PARAMS ((struct _reent *));
+extern int _isatty_r _PARAMS ((struct _reent *, int));
+extern int _kill_r _PARAMS ((struct _reent *, int, int));
+extern int _link_r _PARAMS ((struct _reent *, const char *, const char *));
+extern _off_t _lseek_r _PARAMS ((struct _reent *, int, _off_t, int));
+extern int _mkdir_r _PARAMS ((struct _reent *, const char *, int));
+extern int _open_r _PARAMS ((struct _reent *, const char *, int, int));
+extern _ssize_t _read_r _PARAMS ((struct _reent *, int, void *, size_t));
+extern int _rename_r _PARAMS ((struct _reent *, const char *, const char *));
+extern void *_sbrk_r _PARAMS ((struct _reent *, ptrdiff_t));
+extern int _stat_r _PARAMS ((struct _reent *, const char *, struct stat *));
+extern _CLOCK_T_ _times_r _PARAMS ((struct _reent *, struct tms *));
+extern int _unlink_r _PARAMS ((struct _reent *, const char *));
+extern int _wait_r _PARAMS ((struct _reent *, int *));
+extern _ssize_t _write_r _PARAMS ((struct _reent *, int, const void *, size_t));
+/*********************************************************************************************************
+** 系统调用号
+*********************************************************************************************************/
 #define SYS_CALL_EXIT       0
 #define SYS_CALL_SLEEP      1
 #define SYS_CALL_YIELD      2
@@ -216,17 +225,19 @@ int syscall_template(void)
     int syscall = SYS_CALL_EXIT;
 
     /*
-     * 根据 APCS, 前三个参数使用 r0 - r2, 后面的参数使用堆栈
-     * 因为切换了处理器模式, sp 也切换了, 所以多于 3 个参数时会有问题
+     * 根据 APCS, 前三个参数使用 R0 - r3, 后面的参数使用堆栈
+     * 因为切换了处理器模式, SP 也切换了, 所以多于 4 个参数时不能用如下的方式来传参数,
+     * 可以使用 sys_do_args_t, 只传一个参数(sys_do_args_t 指针)
+     * 实测多于 3 个参数时会有问题(而不是上述的 4 个参数)
      */
-    __asm__ __volatile__("mov    r0,  %0": :"r"(param1));               /*  R0 传递参数 1               */
-    __asm__ __volatile__("mov    r1,  %0": :"r"(param2));               /*  R1 传递参数 2               */
-    __asm__ __volatile__("mov    r2,  %0": :"r"(param3));               /*  R2 传递参数 3               */
-    __asm__ __volatile__("stmfd  sp!, {r7, lr}");                       /*  保存 R7, LR 到堆栈          */
-    __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));              /*  R7 传递系统调用号           */
-    __asm__ __volatile__("swi    0");                                   /*  软件中断                    */
-    __asm__ __volatile__("ldmfd  sp!, {r7, lr}");                       /*  从堆栈恢复 R7, LR           */
-    __asm__ __volatile__("mov    %0,  r0": "=r"(ret));                  /*  R0 传递返回值               */
+    __asm__ __volatile__("MOV    R0,  %0": :"r"(param1));               /*  R0 传递参数 1               */
+    __asm__ __volatile__("MOV    R1,  %0": :"r"(param2));               /*  R1 传递参数 2               */
+    __asm__ __volatile__("MOV    R2,  %0": :"r"(param3));               /*  R2 传递参数 3               */
+    __asm__ __volatile__("STMFD  SP!, {R7, LR}");                       /*  保存 R7, LR 到堆栈          */
+    __asm__ __volatile__("MOV    R7,  %0": :"r"(syscall));              /*  R7 传递系统调用号           */
+    __asm__ __volatile__("SWI    0");                                   /*  软件中断                    */
+    __asm__ __volatile__("LDMFD  SP!, {R7, LR}");                       /*  从堆栈恢复 R7, LR           */
+    __asm__ __volatile__("MOV    %0,  R0": "=r"(ret));                  /*  R0 传递返回值               */
 
     return ret;
 }
@@ -242,9 +253,9 @@ void _exit(int status)
     if (in_kernel()) {
         (sys_do_table[syscall])(status);
     } else {
-        __asm__ __volatile__("mov    r0,  %0": :"r"(status));
-        __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
-        __asm__ __volatile__("swi    0");
+        __asm__ __volatile__("MOV    R0,  %0": :"r"(status));
+        __asm__ __volatile__("MOV    R7,  %0": :"r"(syscall));
+        __asm__ __volatile__("SWI    0");
         __asm__ __volatile__("b      .");
     }
 }
@@ -260,11 +271,11 @@ static void sleep_tick(unsigned int ticks)
     if (in_kernel()) {
         (sys_do_table[syscall])(ticks);
     } else {
-        __asm__ __volatile__("mov    r0,  %0": :"r"(ticks));
-        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
-        __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
+        __asm__ __volatile__("MOV    R0,  %0": :"r"(ticks));
+        __asm__ __volatile__("STMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    R7,  %0": :"r"(syscall));
+        __asm__ __volatile__("SWI    0");
+        __asm__ __volatile__("LDMFD  SP!, {R7, LR}");
     }
 }
 
@@ -318,10 +329,10 @@ void yield(void)
     if (in_kernel()) {
         (sys_do_table[syscall])();
     } else {
-        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
-        __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
+        __asm__ __volatile__("STMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    R7,  %0": :"r"(syscall));
+        __asm__ __volatile__("SWI    0");
+        __asm__ __volatile__("LDMFD  SP!, {R7, LR}");
     }
 }
 
@@ -337,13 +348,13 @@ int _gettimeofday_r(struct _reent *reent, struct timeval *tv, void *tzp)
     if (in_kernel()) {
         ret = (sys_do_table[syscall])(tv, tzp);
     } else {
-        __asm__ __volatile__("mov    r0,  %0": :"r"(tv));
-        __asm__ __volatile__("mov    r1,  %0": :"r"(tzp));
-        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
-        __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
+        __asm__ __volatile__("MOV    R0,  %0": :"r"(tv));
+        __asm__ __volatile__("MOV    R1,  %0": :"r"(tzp));
+        __asm__ __volatile__("STMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    R7,  %0": :"r"(syscall));
+        __asm__ __volatile__("SWI    0");
+        __asm__ __volatile__("LDMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    %0,  R0": "=r"(ret));
     }
     return ret;
 }
@@ -360,12 +371,12 @@ int _close_r(struct _reent *reent, int fd)
     if (in_kernel()) {
         ret = (sys_do_table[syscall])(fd);
     } else {
-        __asm__ __volatile__("mov    r0,  %0": :"r"(fd));
-        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
-        __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
+        __asm__ __volatile__("MOV    R0,  %0": :"r"(fd));
+        __asm__ __volatile__("STMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    R7,  %0": :"r"(syscall));
+        __asm__ __volatile__("SWI    0");
+        __asm__ __volatile__("LDMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    %0,  R0": "=r"(ret));
     }
     return ret;
 }
@@ -388,14 +399,14 @@ int ioctl(int fd, int cmd, ...)
     if (in_kernel()) {
         ret = (sys_do_table[syscall])(fd, cmd, arg);
     } else {
-        __asm__ __volatile__("mov    r0,  %0": :"r"(fd));
-        __asm__ __volatile__("mov    r1,  %0": :"r"(cmd));
-        __asm__ __volatile__("mov    r2,  %0": :"r"(arg));
-        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
-        __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
+        __asm__ __volatile__("MOV    R0,  %0": :"r"(fd));
+        __asm__ __volatile__("MOV    R1,  %0": :"r"(cmd));
+        __asm__ __volatile__("MOV    R2,  %0": :"r"(arg));
+        __asm__ __volatile__("STMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    R7,  %0": :"r"(syscall));
+        __asm__ __volatile__("SWI    0");
+        __asm__ __volatile__("LDMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    %0,  R0": "=r"(ret));
     }
     return ret;
 }
@@ -424,14 +435,14 @@ int fcntl(int fd, int cmd, ...)
     if (in_kernel()) {
         ret = (sys_do_table[syscall])(fd, cmd, arg);
     } else {
-        __asm__ __volatile__("mov    r0,  %0": :"r"(fd));
-        __asm__ __volatile__("mov    r1,  %0": :"r"(cmd));
-        __asm__ __volatile__("mov    r2,  %0": :"r"(arg));
-        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
-        __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
+        __asm__ __volatile__("MOV    R0,  %0": :"r"(fd));
+        __asm__ __volatile__("MOV    R1,  %0": :"r"(cmd));
+        __asm__ __volatile__("MOV    R2,  %0": :"r"(arg));
+        __asm__ __volatile__("STMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    R7,  %0": :"r"(syscall));
+        __asm__ __volatile__("SWI    0");
+        __asm__ __volatile__("LDMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    %0,  R0": "=r"(ret));
     }
     return ret;
 }
@@ -448,13 +459,13 @@ int _fstat_r(struct _reent *reent, int fd, struct stat *buf)
     if (in_kernel()) {
         ret = (sys_do_table[syscall])(fd, buf);
     } else {
-        __asm__ __volatile__("mov    r0,  %0": :"r"(fd));
-        __asm__ __volatile__("mov    r1,  %0": :"r"(buf));
-        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
-        __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
+        __asm__ __volatile__("MOV    R0,  %0": :"r"(fd));
+        __asm__ __volatile__("MOV    R1,  %0": :"r"(buf));
+        __asm__ __volatile__("STMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    R7,  %0": :"r"(syscall));
+        __asm__ __volatile__("SWI    0");
+        __asm__ __volatile__("LDMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    %0,  R0": "=r"(ret));
     }
     return ret;
 }
@@ -471,11 +482,11 @@ int _getpid_r(struct _reent *reent)
     if (in_kernel()) {
         ret = (sys_do_table[syscall])();
     } else {
-        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
-        __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
+        __asm__ __volatile__("STMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    R7,  %0": :"r"(syscall));
+        __asm__ __volatile__("SWI    0");
+        __asm__ __volatile__("LDMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    %0,  R0": "=r"(ret));
     }
     return ret;
 }
@@ -492,12 +503,12 @@ int _isatty_r(struct _reent *reent, int fd)
     if (in_kernel()) {
         ret = (sys_do_table[syscall])(fd);
     } else {
-        __asm__ __volatile__("mov    r0,  %0": :"r"(fd));
-        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
-        __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
+        __asm__ __volatile__("MOV    R0,  %0": :"r"(fd));
+        __asm__ __volatile__("STMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    R7,  %0": :"r"(syscall));
+        __asm__ __volatile__("SWI    0");
+        __asm__ __volatile__("LDMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    %0,  R0": "=r"(ret));
     }
     return ret;
 }
@@ -514,13 +525,13 @@ int _link_r(struct _reent *reent, const char *path1, const char *path2)
     if (in_kernel()) {
         ret = (sys_do_table[syscall])(path1, path2);
     } else {
-        __asm__ __volatile__("mov    r0,  %0": :"r"(path1));
-        __asm__ __volatile__("mov    r1,  %0": :"r"(path2));
-        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
-        __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
+        __asm__ __volatile__("MOV    R0,  %0": :"r"(path1));
+        __asm__ __volatile__("MOV    R1,  %0": :"r"(path2));
+        __asm__ __volatile__("STMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    R7,  %0": :"r"(syscall));
+        __asm__ __volatile__("SWI    0");
+        __asm__ __volatile__("LDMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    %0,  R0": "=r"(ret));
     }
     return ret;
 }
@@ -537,14 +548,14 @@ _off_t _lseek_r(struct _reent *reent, int fd, _off_t offset, int whence)
     if (in_kernel()) {
         ret = (sys_do_table[syscall])(fd, offset, whence);
     } else {
-        __asm__ __volatile__("mov    r0,  %0": :"r"(fd));
-        __asm__ __volatile__("mov    r1,  %0": :"r"(offset));
-        __asm__ __volatile__("mov    r2,  %0": :"r"(whence));
-        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
-        __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
+        __asm__ __volatile__("MOV    R0,  %0": :"r"(fd));
+        __asm__ __volatile__("MOV    R1,  %0": :"r"(offset));
+        __asm__ __volatile__("MOV    R2,  %0": :"r"(whence));
+        __asm__ __volatile__("STMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    R7,  %0": :"r"(syscall));
+        __asm__ __volatile__("SWI    0");
+        __asm__ __volatile__("LDMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    %0,  R0": "=r"(ret));
     }
     return ret;
 }
@@ -561,13 +572,13 @@ int _mkdir_r(struct _reent *reent, const char *path, int mode)
     if (in_kernel()) {
         ret = (sys_do_table[syscall])(path, mode);
     } else {
-        __asm__ __volatile__("mov    r0,  %0": :"r"(path));
-        __asm__ __volatile__("mov    r1,  %0": :"r"(mode));
-        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
-        __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
+        __asm__ __volatile__("MOV    R0,  %0": :"r"(path));
+        __asm__ __volatile__("MOV    R1,  %0": :"r"(mode));
+        __asm__ __volatile__("STMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    R7,  %0": :"r"(syscall));
+        __asm__ __volatile__("SWI    0");
+        __asm__ __volatile__("LDMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    %0,  R0": "=r"(ret));
     }
     return ret;
 }
@@ -584,12 +595,12 @@ int _rmdir_r(struct _reent *reent, const char *path)
     if (in_kernel()) {
         ret = (sys_do_table[syscall])(path);
     } else {
-        __asm__ __volatile__("mov    r0,  %0": :"r"(path));
-        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
-        __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
+        __asm__ __volatile__("MOV    R0,  %0": :"r"(path));
+        __asm__ __volatile__("STMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    R7,  %0": :"r"(syscall));
+        __asm__ __volatile__("SWI    0");
+        __asm__ __volatile__("LDMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    %0,  R0": "=r"(ret));
     }
     return ret;
 }
@@ -607,14 +618,14 @@ int _open_r(struct _reent *reent, const char *path, int oflag, int mode)
     if (in_kernel()) {
         ret = (sys_do_table[syscall])(path, oflag, mode);
     } else {
-        __asm__ __volatile__("mov    r0,  %0": :"r"(path));
-        __asm__ __volatile__("mov    r1,  %0": :"r"(oflag));
-        __asm__ __volatile__("mov    r2,  %0": :"r"(mode));
-        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
-        __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
+        __asm__ __volatile__("MOV    R0,  %0": :"r"(path));
+        __asm__ __volatile__("MOV    R1,  %0": :"r"(oflag));
+        __asm__ __volatile__("MOV    R2,  %0": :"r"(mode));
+        __asm__ __volatile__("STMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    R7,  %0": :"r"(syscall));
+        __asm__ __volatile__("SWI    0");
+        __asm__ __volatile__("LDMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    %0,  R0": "=r"(ret));
     }
     return ret;
 }
@@ -639,14 +650,14 @@ _ssize_t read(int fd, void *buf, size_t nbytes)
     if (in_kernel()) {
         ret = (sys_do_table[syscall])(fd, buf, nbytes);
     } else {
-        __asm__ __volatile__("mov    r0,  %0": :"r"(fd));
-        __asm__ __volatile__("mov    r1,  %0": :"r"(buf));
-        __asm__ __volatile__("mov    r2,  %0": :"r"(nbytes));
-        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
-        __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
+        __asm__ __volatile__("MOV    R0,  %0": :"r"(fd));
+        __asm__ __volatile__("MOV    R1,  %0": :"r"(buf));
+        __asm__ __volatile__("MOV    R2,  %0": :"r"(nbytes));
+        __asm__ __volatile__("STMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    R7,  %0": :"r"(syscall));
+        __asm__ __volatile__("SWI    0");
+        __asm__ __volatile__("LDMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    %0,  R0": "=r"(ret));
     }
     return ret;
 }
@@ -676,14 +687,14 @@ _ssize_t write(int fd, const void *buf, size_t nbytes)
     if (in_kernel()) {
         ret = (sys_do_table[syscall])(fd, buf, nbytes);
     } else {
-        __asm__ __volatile__("mov    r0,  %0": :"r"(fd));
-        __asm__ __volatile__("mov    r1,  %0": :"r"(buf));
-        __asm__ __volatile__("mov    r2,  %0": :"r"(nbytes));
-        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
-        __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
+        __asm__ __volatile__("MOV    R0,  %0": :"r"(fd));
+        __asm__ __volatile__("MOV    R1,  %0": :"r"(buf));
+        __asm__ __volatile__("MOV    R2,  %0": :"r"(nbytes));
+        __asm__ __volatile__("STMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    R7,  %0": :"r"(syscall));
+        __asm__ __volatile__("SWI    0");
+        __asm__ __volatile__("LDMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    %0,  R0": "=r"(ret));
     }
     return ret;
 }
@@ -700,13 +711,13 @@ int _rename_r(struct _reent *reent, const char *old, const char *new)
     if (in_kernel()) {
         ret = (sys_do_table[syscall])(old, new);
     } else {
-        __asm__ __volatile__("mov    r0,  %0": :"r"(old));
-        __asm__ __volatile__("mov    r1,  %0": :"r"(new));
-        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
-        __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
+        __asm__ __volatile__("MOV    R0,  %0": :"r"(old));
+        __asm__ __volatile__("MOV    R1,  %0": :"r"(new));
+        __asm__ __volatile__("STMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    R7,  %0": :"r"(syscall));
+        __asm__ __volatile__("SWI    0");
+        __asm__ __volatile__("LDMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    %0,  R0": "=r"(ret));
     }
     return ret;
 }
@@ -723,13 +734,13 @@ int _stat_r(struct _reent *reent, const char *path, struct stat *buf)
     if (in_kernel()) {
         ret = (sys_do_table[syscall])(path, buf);
     } else {
-        __asm__ __volatile__("mov    r0,  %0": :"r"(path));
-        __asm__ __volatile__("mov    r1,  %0": :"r"(buf));
-        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
-        __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
+        __asm__ __volatile__("MOV    R0,  %0": :"r"(path));
+        __asm__ __volatile__("MOV    R1,  %0": :"r"(buf));
+        __asm__ __volatile__("STMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    R7,  %0": :"r"(syscall));
+        __asm__ __volatile__("SWI    0");
+        __asm__ __volatile__("LDMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    %0,  R0": "=r"(ret));
     }
     return ret;
 }
@@ -746,12 +757,12 @@ int _unlink_r(struct _reent *reent, const char *path)
     if (in_kernel()) {
         ret = (sys_do_table[syscall])(path);
     } else {
-        __asm__ __volatile__("mov    r0,  %0": :"r"(path));
-        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
-        __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
+        __asm__ __volatile__("MOV    R0,  %0": :"r"(path));
+        __asm__ __volatile__("STMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    R7,  %0": :"r"(syscall));
+        __asm__ __volatile__("SWI    0");
+        __asm__ __volatile__("LDMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    %0,  R0": "=r"(ret));
     }
     return ret;
 }
@@ -768,12 +779,12 @@ int dup(int fd)
     if (in_kernel()) {
         ret = (sys_do_table[syscall])(fd);
     } else {
-        __asm__ __volatile__("mov    r0,  %0": :"r"(fd));
-        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
-        __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
+        __asm__ __volatile__("MOV    R0,  %0": :"r"(fd));
+        __asm__ __volatile__("STMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    R7,  %0": :"r"(syscall));
+        __asm__ __volatile__("SWI    0");
+        __asm__ __volatile__("LDMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    %0,  R0": "=r"(ret));
     }
     return ret;
 }
@@ -790,13 +801,13 @@ int dup2(int fd, int to)
     if (in_kernel()) {
         ret = (sys_do_table[syscall])(fd, to);
     } else {
-        __asm__ __volatile__("mov    r0,  %0": :"r"(fd));
-        __asm__ __volatile__("mov    r1,  %0": :"r"(to));
-        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
-        __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
+        __asm__ __volatile__("MOV    R0,  %0": :"r"(fd));
+        __asm__ __volatile__("MOV    R1,  %0": :"r"(to));
+        __asm__ __volatile__("STMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    R7,  %0": :"r"(syscall));
+        __asm__ __volatile__("SWI    0");
+        __asm__ __volatile__("LDMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    %0,  R0": "=r"(ret));
     }
     return ret;
 }
@@ -813,12 +824,12 @@ int setreent(struct _reent *reent)
     if (in_kernel()) {
         ret = (sys_do_table[syscall])(reent);
     } else {
-        __asm__ __volatile__("mov    r0,  %0": :"r"(reent));
-        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
-        __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
+        __asm__ __volatile__("MOV    R0,  %0": :"r"(reent));
+        __asm__ __volatile__("STMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    R7,  %0": :"r"(syscall));
+        __asm__ __volatile__("SWI    0");
+        __asm__ __volatile__("LDMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    %0,  R0": "=r"(ret));
     }
     return ret;
 }
@@ -851,11 +862,11 @@ int _fork_r(struct _reent *reent)
     if (in_kernel()) {
         ret = (sys_do_table[syscall])();
     } else {
-        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
-        __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
+        __asm__ __volatile__("STMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    R7,  %0": :"r"(syscall));
+        __asm__ __volatile__("SWI    0");
+        __asm__ __volatile__("LDMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    %0,  R0": "=r"(ret));
     }
     return ret;
 }
@@ -920,13 +931,13 @@ int _kill_r(struct _reent *reent, int pid, int sig)
     if (in_kernel()) {
         ret = (sys_do_table[syscall])(pid, sig);
     } else {
-        __asm__ __volatile__("mov    r0,  %0": :"r"(pid));
-        __asm__ __volatile__("mov    r1,  %0": :"r"(sig));
-        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
-        __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
+        __asm__ __volatile__("MOV    R0,  %0": :"r"(pid));
+        __asm__ __volatile__("MOV    R1,  %0": :"r"(sig));
+        __asm__ __volatile__("STMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    R7,  %0": :"r"(syscall));
+        __asm__ __volatile__("SWI    0");
+        __asm__ __volatile__("LDMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    %0,  R0": "=r"(ret));
     }
     return ret;
 }
@@ -943,12 +954,12 @@ DIR *opendir(const char *path)
     if (in_kernel()) {
         ret = (DIR *)(sys_do_table[syscall])(path);
     } else {
-        __asm__ __volatile__("mov    r0,  %0": :"r"(path));
-        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
-        __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
+        __asm__ __volatile__("MOV    R0,  %0": :"r"(path));
+        __asm__ __volatile__("STMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    R7,  %0": :"r"(syscall));
+        __asm__ __volatile__("SWI    0");
+        __asm__ __volatile__("LDMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    %0,  R0": "=r"(ret));
     }
     return ret;
 }
@@ -965,12 +976,12 @@ int closedir(DIR *dir)
     if (in_kernel()) {
         ret = (sys_do_table[syscall])(dir);
     } else {
-        __asm__ __volatile__("mov    r0,  %0": :"r"(dir));
-        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
-        __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
+        __asm__ __volatile__("MOV    R0,  %0": :"r"(dir));
+        __asm__ __volatile__("STMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    R7,  %0": :"r"(syscall));
+        __asm__ __volatile__("SWI    0");
+        __asm__ __volatile__("LDMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    %0,  R0": "=r"(ret));
     }
     return ret;
 }
@@ -987,12 +998,12 @@ struct dirent *readdir(DIR *dir)
     if (in_kernel()) {
         ret = (struct dirent *)(sys_do_table[syscall])(dir);
     } else {
-        __asm__ __volatile__("mov    r0,  %0": :"r"(dir));
-        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
-        __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
+        __asm__ __volatile__("MOV    R0,  %0": :"r"(dir));
+        __asm__ __volatile__("STMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    R7,  %0": :"r"(syscall));
+        __asm__ __volatile__("SWI    0");
+        __asm__ __volatile__("LDMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    %0,  R0": "=r"(ret));
     }
     return ret;
 }
@@ -1009,12 +1020,12 @@ int rewinddir(DIR *dir)
     if (in_kernel()) {
         ret = (sys_do_table[syscall])(dir);
     } else {
-        __asm__ __volatile__("mov    r0,  %0": :"r"(dir));
-        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
-        __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
+        __asm__ __volatile__("MOV    R0,  %0": :"r"(dir));
+        __asm__ __volatile__("STMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    R7,  %0": :"r"(syscall));
+        __asm__ __volatile__("SWI    0");
+        __asm__ __volatile__("LDMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    %0,  R0": "=r"(ret));
     }
     return ret;
 }
@@ -1031,13 +1042,13 @@ int seekdir(DIR *dir, long loc)
     if (in_kernel()) {
         ret = (sys_do_table[syscall])(dir, loc);
     } else {
-        __asm__ __volatile__("mov    r0,  %0": :"r"(dir));
-        __asm__ __volatile__("mov    r1,  %0": :"r"(loc));
-        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
-        __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
+        __asm__ __volatile__("MOV    R0,  %0": :"r"(dir));
+        __asm__ __volatile__("MOV    R1,  %0": :"r"(loc));
+        __asm__ __volatile__("STMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    R7,  %0": :"r"(syscall));
+        __asm__ __volatile__("SWI    0");
+        __asm__ __volatile__("LDMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    %0,  R0": "=r"(ret));
     }
     return ret;
 }
@@ -1054,12 +1065,12 @@ long telldir(DIR *dir)
     if (in_kernel()) {
         ret = (long)(sys_do_table[syscall])(dir);
     } else {
-        __asm__ __volatile__("mov    r0,  %0": :"r"(dir));
-        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
-        __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
+        __asm__ __volatile__("MOV    R0,  %0": :"r"(dir));
+        __asm__ __volatile__("STMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    R7,  %0": :"r"(syscall));
+        __asm__ __volatile__("SWI    0");
+        __asm__ __volatile__("LDMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    %0,  R0": "=r"(ret));
     }
     return ret;
 }
@@ -1076,12 +1087,12 @@ int chdir(const char *path)
     if (in_kernel()) {
         ret = (sys_do_table[syscall])(path);
     } else {
-        __asm__ __volatile__("mov    r0,  %0": :"r"(path));
-        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
-        __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
+        __asm__ __volatile__("MOV    R0,  %0": :"r"(path));
+        __asm__ __volatile__("STMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    R7,  %0": :"r"(syscall));
+        __asm__ __volatile__("SWI    0");
+        __asm__ __volatile__("LDMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    %0,  R0": "=r"(ret));
     }
     return ret;
 }
@@ -1098,13 +1109,13 @@ char *getcwd(char *buf, size_t size)
     if (in_kernel()) {
         ret = (char *)(sys_do_table[syscall])(buf, size);
     } else {
-        __asm__ __volatile__("mov    r0,  %0": :"r"(buf));
-        __asm__ __volatile__("mov    r1,  %0": :"r"(size));
-        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
-        __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
+        __asm__ __volatile__("MOV    R0,  %0": :"r"(buf));
+        __asm__ __volatile__("MOV    R1,  %0": :"r"(size));
+        __asm__ __volatile__("STMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    R7,  %0": :"r"(syscall));
+        __asm__ __volatile__("SWI    0");
+        __asm__ __volatile__("LDMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    %0,  R0": "=r"(ret));
     }
     return ret;
 }
@@ -1122,12 +1133,12 @@ int select(int nfds, fd_set *readset, fd_set *writeset, fd_set *exceptset, struc
     if (in_kernel()) {
         ret = (sys_do_table[syscall])(&args);
     } else {
-        __asm__ __volatile__("mov    r0,  %0": :"r"(&args));
-        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
-        __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
+        __asm__ __volatile__("MOV    R0,  %0": :"r"(&args));
+        __asm__ __volatile__("STMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    R7,  %0": :"r"(syscall));
+        __asm__ __volatile__("SWI    0");
+        __asm__ __volatile__("LDMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    %0,  R0": "=r"(ret));
     }
     return ret;
 }
@@ -1154,14 +1165,14 @@ int socket(int domain, int type, int protocol)
     if (in_kernel()) {
         ret = (sys_do_table[syscall])(domain, type, protocol);
     } else {
-        __asm__ __volatile__("mov    r0,  %0": :"r"(domain));
-        __asm__ __volatile__("mov    r1,  %0": :"r"(type));
-        __asm__ __volatile__("mov    r2,  %0": :"r"(protocol));
-        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
-        __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
+        __asm__ __volatile__("MOV    R0,  %0": :"r"(domain));
+        __asm__ __volatile__("MOV    R1,  %0": :"r"(type));
+        __asm__ __volatile__("MOV    R2,  %0": :"r"(protocol));
+        __asm__ __volatile__("STMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    R7,  %0": :"r"(syscall));
+        __asm__ __volatile__("SWI    0");
+        __asm__ __volatile__("LDMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    %0,  R0": "=r"(ret));
     }
     return ret;
 }
@@ -1178,14 +1189,14 @@ int bind(int s, const struct sockaddr *name, socklen_t namelen)
     if (in_kernel()) {
         ret = (sys_do_table[syscall])(s, name, namelen);
     } else {
-        __asm__ __volatile__("mov    r0,  %0": :"r"(s));
-        __asm__ __volatile__("mov    r1,  %0": :"r"(name));
-        __asm__ __volatile__("mov    r2,  %0": :"r"(namelen));
-        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
-        __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
+        __asm__ __volatile__("MOV    R0,  %0": :"r"(s));
+        __asm__ __volatile__("MOV    R1,  %0": :"r"(name));
+        __asm__ __volatile__("MOV    R2,  %0": :"r"(namelen));
+        __asm__ __volatile__("STMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    R7,  %0": :"r"(syscall));
+        __asm__ __volatile__("SWI    0");
+        __asm__ __volatile__("LDMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    %0,  R0": "=r"(ret));
     }
     return ret;
 }
@@ -1202,14 +1213,14 @@ int accept(int s, struct sockaddr *addr, socklen_t *addrlen)
     if (in_kernel()) {
         ret = (sys_do_table[syscall])(s, addr, addrlen);
     } else {
-        __asm__ __volatile__("mov    r0,  %0": :"r"(s));
-        __asm__ __volatile__("mov    r1,  %0": :"r"(addr));
-        __asm__ __volatile__("mov    r2,  %0": :"r"(addrlen));
-        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
-        __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
+        __asm__ __volatile__("MOV    R0,  %0": :"r"(s));
+        __asm__ __volatile__("MOV    R1,  %0": :"r"(addr));
+        __asm__ __volatile__("MOV    R2,  %0": :"r"(addrlen));
+        __asm__ __volatile__("STMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    R7,  %0": :"r"(syscall));
+        __asm__ __volatile__("SWI    0");
+        __asm__ __volatile__("LDMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    %0,  R0": "=r"(ret));
     }
     return ret;
 }
@@ -1234,14 +1245,14 @@ int connect(int s, const struct sockaddr *name, socklen_t namelen)
     if (in_kernel()) {
         ret = (sys_do_table[syscall])(s, name, namelen);
     } else {
-        __asm__ __volatile__("mov    r0,  %0": :"r"(s));
-        __asm__ __volatile__("mov    r1,  %0": :"r"(name));
-        __asm__ __volatile__("mov    r2,  %0": :"r"(namelen));
-        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
-        __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
+        __asm__ __volatile__("MOV    R0,  %0": :"r"(s));
+        __asm__ __volatile__("MOV    R1,  %0": :"r"(name));
+        __asm__ __volatile__("MOV    R2,  %0": :"r"(namelen));
+        __asm__ __volatile__("STMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    R7,  %0": :"r"(syscall));
+        __asm__ __volatile__("SWI    0");
+        __asm__ __volatile__("LDMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    %0,  R0": "=r"(ret));
     }
     return ret;
 }
@@ -1266,13 +1277,13 @@ int listen(int s, int backlog)
     if (in_kernel()) {
         ret = (sys_do_table[syscall])(s, backlog);
     } else {
-        __asm__ __volatile__("mov    r0,  %0": :"r"(s));
-        __asm__ __volatile__("mov    r1,  %0": :"r"(backlog));
-        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
-        __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
+        __asm__ __volatile__("MOV    R0,  %0": :"r"(s));
+        __asm__ __volatile__("MOV    R1,  %0": :"r"(backlog));
+        __asm__ __volatile__("STMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    R7,  %0": :"r"(syscall));
+        __asm__ __volatile__("SWI    0");
+        __asm__ __volatile__("LDMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    %0,  R0": "=r"(ret));
     }
     return ret;
 }
@@ -1290,12 +1301,12 @@ int recv(int s, void *mem, size_t len, int flags)
     if (in_kernel()) {
         ret = (sys_do_table[syscall])(&args);
     } else {
-        __asm__ __volatile__("mov    r0,  %0": :"r"(&args));
-        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
-        __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
+        __asm__ __volatile__("MOV    R0,  %0": :"r"(&args));
+        __asm__ __volatile__("STMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    R7,  %0": :"r"(syscall));
+        __asm__ __volatile__("SWI    0");
+        __asm__ __volatile__("LDMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    %0,  R0": "=r"(ret));
     }
     return ret;
 }
@@ -1322,12 +1333,12 @@ int recvfrom(int s, void *mem, size_t len, int flags,
     if (in_kernel()) {
         ret = (sys_do_table[syscall])(&args);
     } else {
-        __asm__ __volatile__("mov    r0,  %0": :"r"(&args));
-        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
-        __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
+        __asm__ __volatile__("MOV    R0,  %0": :"r"(&args));
+        __asm__ __volatile__("STMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    R7,  %0": :"r"(syscall));
+        __asm__ __volatile__("SWI    0");
+        __asm__ __volatile__("LDMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    %0,  R0": "=r"(ret));
     }
     return ret;
 }
@@ -1355,12 +1366,12 @@ int sendto(int s, const void *dataptr, size_t size, int flags,
     if (in_kernel()) {
         ret = (sys_do_table[syscall])(&args);
     } else {
-        __asm__ __volatile__("mov    r0,  %0": :"r"(&args));
-        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
-        __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
+        __asm__ __volatile__("MOV    R0,  %0": :"r"(&args));
+        __asm__ __volatile__("STMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    R7,  %0": :"r"(syscall));
+        __asm__ __volatile__("SWI    0");
+        __asm__ __volatile__("LDMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    %0,  R0": "=r"(ret));
     }
     return ret;
 }
@@ -1387,12 +1398,12 @@ int getsockopt(int s, int level, int optname, void *optval, socklen_t *optlen)
     if (in_kernel()) {
         ret = (sys_do_table[syscall])(&args);
     } else {
-        __asm__ __volatile__("mov    r0,  %0": :"r"(&args));
-        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
-        __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
+        __asm__ __volatile__("MOV    R0,  %0": :"r"(&args));
+        __asm__ __volatile__("STMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    R7,  %0": :"r"(syscall));
+        __asm__ __volatile__("SWI    0");
+        __asm__ __volatile__("LDMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    %0,  R0": "=r"(ret));
     }
     return ret;
 }
@@ -1410,12 +1421,12 @@ int send(int s, const void *dataptr, size_t size, int flags)
     if (in_kernel()) {
         ret = (sys_do_table[syscall])(&args);
     } else {
-        __asm__ __volatile__("mov    r0,  %0": :"r"(&args));
-        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
-        __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
+        __asm__ __volatile__("MOV    R0,  %0": :"r"(&args));
+        __asm__ __volatile__("STMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    R7,  %0": :"r"(syscall));
+        __asm__ __volatile__("SWI    0");
+        __asm__ __volatile__("LDMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    %0,  R0": "=r"(ret));
     }
     return ret;
 }
@@ -1440,13 +1451,13 @@ int shutdown(int s, int how)
     if (in_kernel()) {
         ret = (sys_do_table[syscall])(s, how);
     } else {
-        __asm__ __volatile__("mov    r0,  %0": :"r"(s));
-        __asm__ __volatile__("mov    r1,  %0": :"r"(how));
-        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
-        __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
+        __asm__ __volatile__("MOV    R0,  %0": :"r"(s));
+        __asm__ __volatile__("MOV    R1,  %0": :"r"(how));
+        __asm__ __volatile__("STMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    R7,  %0": :"r"(syscall));
+        __asm__ __volatile__("SWI    0");
+        __asm__ __volatile__("LDMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    %0,  R0": "=r"(ret));
     }
     return ret;
 }
@@ -1464,15 +1475,15 @@ int setsockopt(int s, int level, int optname, const void *optval, socklen_t optl
     if (in_kernel()) {
         ret = (sys_do_table[syscall])(&args);
     } else {
-        __asm__ __volatile__("mov    r0,  %0": :"r"(&args));
-        __asm__ __volatile__("stmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    r7,  %0": :"r"(syscall));
-        __asm__ __volatile__("swi    0");
-        __asm__ __volatile__("ldmfd  sp!, {r7, lr}");
-        __asm__ __volatile__("mov    %0,  r0": "=r"(ret));
+        __asm__ __volatile__("MOV    R0,  %0": :"r"(&args));
+        __asm__ __volatile__("STMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    R7,  %0": :"r"(syscall));
+        __asm__ __volatile__("SWI    0");
+        __asm__ __volatile__("LDMFD  SP!, {R7, LR}");
+        __asm__ __volatile__("MOV    %0,  R0": "=r"(ret));
     }
     return ret;
 }
 /*********************************************************************************************************
-  END FILE
+** END FILE
 *********************************************************************************************************/

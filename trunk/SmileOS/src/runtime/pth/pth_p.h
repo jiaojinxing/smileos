@@ -1,6 +1,6 @@
 /*********************************************************************************************************
 **
-** Copyright (c) 2011 - 2012  Jiao JinXing <JiaoJinXing1987@gmail.com>
+** Copyright (c) 2011 - 2012  Jiao JinXing <jiaojinxing1987@gmail.com>
 **
 ** Licensed under the Academic Free License version 2.1
 **
@@ -568,5 +568,5 @@ int      pth_sc(sendto)(int s, const void *dataptr, size_t size, int flags,
 
 #endif                                                                  /*  _PTH_P_H_                   */
 /*********************************************************************************************************
-  END FILE
+** END FILE
 *********************************************************************************************************/

@@ -1,6 +1,6 @@
 /*********************************************************************************************************
 **
-** Copyright (c) 2011 - 2012  Jiao JinXing <JiaoJinXing1987@gmail.com>
+** Copyright (c) 2011 - 2012  Jiao JinXing <jiaojinxing1987@gmail.com>
 **
 ** Licensed under the Academic Free License version 2.1
 **
@@ -65,7 +65,9 @@
 #include "kern/mmu.h"
 #include <sys/tree.h>
 #include <string.h>
-
+/*********************************************************************************************************
+** 定义
+*********************************************************************************************************/
 /*
  * 页表
  */
@@ -73,14 +75,20 @@ struct page_table {
     RB_ENTRY(page_table)    node;                                       /*  红黑树节点                  */
     uint32_t                section_nr;                                 /*  段号                        */
 };
-
-static struct page_table  page_tables[PAGE_TBL_NR];                     /*  页表                        */
-static struct page_table *free_page_table_list;                         /*  空闲页表链表                */
-static int                free_page_table_nr = PAGE_TBL_NR;
-
-/*
- * 页表比较函数
- */
+/*********************************************************************************************************
+** 内部变量
+*********************************************************************************************************/
+static struct page_table    page_tables[PAGE_TBL_NR];                   /*  页表                        */
+static struct page_table   *free_page_table_list;                       /*  空闲页表链表                */
+static uint32_t             free_page_table_nr = PAGE_TBL_NR;           /*  空闲页框数                  */
+/*********************************************************************************************************
+** Function name:           vmm_page_table_compare
+** Descriptions:            页表比较函数
+** input parameters:        a                   页表 A
+**                          b                   页表 B
+** output parameters:       NONE
+** Returned value:          -1 OR 1 OR 0
+*********************************************************************************************************/
 static inline int vmm_page_table_compare(struct page_table *a, struct page_table *b)
 {
 #if 0
@@ -461,5 +469,5 @@ int vmm_show(int fd)
     return 0;
 }
 /*********************************************************************************************************
-  END FILE
+** END FILE
 *********************************************************************************************************/

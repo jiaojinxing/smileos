@@ -1,6 +1,6 @@
 /*********************************************************************************************************
 **
-** Copyright (c) 2011 - 2012  Jiao JinXing <JiaoJinXing1987@gmail.com>
+** Copyright (c) 2011 - 2012  Jiao JinXing <jiaojinxing1987@gmail.com>
 **
 ** Licensed under the Academic Free License version 2.1
 **
@@ -157,5 +157,5 @@ void interrupt_install(uint32_t interrupt, isr_t new_isr, isr_t *old_isr, void *
     }
 }
 /*********************************************************************************************************
-  END FILE
+** END FILE
 *********************************************************************************************************/

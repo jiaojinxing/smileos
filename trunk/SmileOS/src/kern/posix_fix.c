@@ -1,6 +1,6 @@
 /*********************************************************************************************************
 **
-** Copyright (c) 2011 - 2012  Jiao JinXing <JiaoJinXing1987@gmail.com>
+** Copyright (c) 2011 - 2012  Jiao JinXing <jiaojinxing1987@gmail.com>
 **
 ** Licensed under the Academic Free License version 2.1
 **
@@ -31,68 +31,86 @@
 ** Descriptions:            创建文件
 **
 **--------------------------------------------------------------------------------------------------------
-** Modified by:
-** Modified date:
-** Version:
-** Descriptions:
+** Modified by:             JiaoJinXing
+** Modified date:           2012-8-29
+** Version:                 1.1.0
+** Descriptions:            增加注释
 **
 *********************************************************************************************************/
 #include <fcntl.h>
 #include <reent.h>
 #include <unistd.h>
-
-/*
- * 创建文件
- */
+#include <poll.h>
+#include <sys/select.h>
+/*********************************************************************************************************
+** Function name:           creat
+** Descriptions:            创建文件
+** input parameters:        path                路径
+**                          mode                模式
+** output parameters:       NONE
+** Returned value:          0 OR -1
+*********************************************************************************************************/
 int creat(const char *path, mode_t mode)
 {
     return open(path, O_WRONLY | O_CREAT | O_TRUNC, mode);
 }
-
-/*
- * 创建目录
- */
+/*********************************************************************************************************
+** Function name:           mkdir
+** Descriptions:            创建目录
+** input parameters:        path                路径
+**                          mode                模式
+** output parameters:       NONE
+** Returned value:          0 OR -1
+*********************************************************************************************************/
 int mkdir(const char *path, mode_t mode)
 {
     return _mkdir_r(_REENT, path, mode);
 }
-
-/*
- * 删除目录
- */
+/*********************************************************************************************************
+** Function name:           rmdir
+** Descriptions:            删除目录
+** input parameters:        path                路径
+** output parameters:       NONE
+** Returned value:          0 OR -1
+*********************************************************************************************************/
 int rmdir(const char *path)
 {
     extern int _rmdir_r(struct _reent *reent, const char *path);
 
     return _rmdir_r(_REENT, path);
 }
-
-/*
- * 判断文件是不是一个 TTY
- */
+/*********************************************************************************************************
+** Function name:           isatty
+** Descriptions:            判断文件是不是一个 TTY
+** input parameters:        fd                  文件描述符
+** output parameters:       NONE
+** Returned value:          1 OR 0
+*********************************************************************************************************/
 int isatty(int fd)
 {
     return _isatty_r(_REENT, fd);
 }
-
-/*
- * poll, 使用 select 实现
- */
-#include <poll.h>
-#include <sys/select.h>
-
+/*********************************************************************************************************
+** Function name:           poll
+** Descriptions:            使用 select 实现
+** input parameters:        fds                 pollfd 结构数组指针
+**                          nfds                pollfd 结构数组大小
+**                          timeout             超时时间
+** output parameters:       NONE
+** Returned value:          0 OR -1
+*********************************************************************************************************/
 int poll(struct pollfd fds[], nfds_t nfds, int timeout)
 {
-    fd_set readset;
-    fd_set writeset;
-    fd_set errorset;
+    fd_set rfds;
+    fd_set wfds;
+    fd_set efds;
     nfds_t i;
-    int n;
-    int ret;
+    int    n;
+    int    ret;
 
-    FD_ZERO(&readset);
-    FD_ZERO(&writeset);
-    FD_ZERO(&errorset);
+    FD_ZERO(&rfds);
+    FD_ZERO(&wfds);
+    FD_ZERO(&efds);
 
     n = -1;
     for (i = 0; i < nfds; i++) {
@@ -100,9 +118,17 @@ int poll(struct pollfd fds[], nfds_t nfds, int timeout)
             continue;
         }
 
-        if (fds[i].events & POLLIN)  FD_SET(fds[i].fd, &readset);
-        if (fds[i].events & POLLOUT) FD_SET(fds[i].fd, &writeset);
-        if (fds[i].events & POLLERR) FD_SET(fds[i].fd, &errorset);
+        if (fds[i].events & POLLIN) {
+            FD_SET(fds[i].fd, &rfds);
+        }
+
+        if (fds[i].events & POLLOUT) {
+            FD_SET(fds[i].fd, &wfds);
+        }
+
+        if (fds[i].events & POLLERR) {
+            FD_SET(fds[i].fd, &efds);
+        }
 
         if (fds[i].fd > n) {
             n = fds[i].fd;
@@ -114,13 +140,13 @@ int poll(struct pollfd fds[], nfds_t nfds, int timeout)
     }
 
     if (timeout < 0) {
-        ret = select(n + 1, &readset, &writeset, &errorset, NULL);
+        ret = select(n + 1, &rfds, &wfds, &efds, NULL);
     } else {
         struct timeval tv;
 
         tv.tv_sec  = timeout / 1000;
         tv.tv_usec = 1000 * (timeout % 1000);
-        ret = select(n + 1, &readset, &writeset, &errorset, &tv);
+        ret = select(n + 1, &rfds, &wfds, &efds, &tv);
     }
 
     if (ret < 0) {
@@ -130,13 +156,21 @@ int poll(struct pollfd fds[], nfds_t nfds, int timeout)
     for (i = 0; i < nfds; i++) {
         fds[i].revents = 0;
 
-        if (FD_ISSET(fds[i].fd, &readset))  fds[i].revents |= POLLIN;
-        if (FD_ISSET(fds[i].fd, &writeset)) fds[i].revents |= POLLOUT;
-        if (FD_ISSET(fds[i].fd, &errorset)) fds[i].revents |= POLLERR;
+        if (FD_ISSET(fds[i].fd, &rfds)) {
+            fds[i].revents |= POLLIN;
+        }
+
+        if (FD_ISSET(fds[i].fd, &wfds)) {
+            fds[i].revents |= POLLOUT;
+        }
+
+        if (FD_ISSET(fds[i].fd, &efds)) {
+            fds[i].revents |= POLLERR;
+        }
     }
 
     return ret;
 }
 /*********************************************************************************************************
-  END FILE
+** END FILE
 *********************************************************************************************************/

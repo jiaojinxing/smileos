@@ -1,6 +1,6 @@
 /*********************************************************************************************************
 **
-** Copyright (c) 2011 - 2012  Jiao JinXing <JiaoJinXing1987@gmail.com>
+** Copyright (c) 2011 - 2012  Jiao JinXing <jiaojinxing1987@gmail.com>
 **
 ** Licensed under the Academic Free License version 2.1
 **
@@ -287,5 +287,5 @@ extern ssize_t            __pthread_pwrite(int, const void *, size_t, off_t);
 
 #endif                                                                  /*  PTHREAD_H_                  */
 /*********************************************************************************************************
-  END FILE
+** END FILE
 *********************************************************************************************************/

@@ -1,6 +1,6 @@
 /*********************************************************************************************************
 **
-** Copyright (c) 2011 - 2012  Jiao JinXing <JiaoJinXing1987@gmail.com>
+** Copyright (c) 2011 - 2012  Jiao JinXing <jiaojinxing1987@gmail.com>
 **
 ** Licensed under the Academic Free License version 2.1
 **
@@ -132,6 +132,9 @@ int bsp_drivers_install(void)
     extern driver_t sdcard_drv;
     driver_install(&sdcard_drv);
 
+    extern driver_t audio_drv;
+    driver_install(&audio_drv);
+
     return 0;
 }
 
@@ -155,8 +158,11 @@ int bsp_devices_create(void)
     extern int touch_init(void);
     touch_init();
 
+    extern int audio_create(void);
+    audio_create();
+
     return 0;
 }
 /*********************************************************************************************************
-  END FILE
+** END FILE
 *********************************************************************************************************/
