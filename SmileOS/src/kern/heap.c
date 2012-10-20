@@ -98,7 +98,7 @@ static uint8_t      kheap_mem[KERN_HEAP_SIZE];
 ** output parameters:       NONE
 ** Returned value:          内存指针
 *********************************************************************************************************/
-void *__kmalloc(const char *func, int line, size_t size)
+void *__kmalloc(const char *func, int line, uint32_t size)
 {
     void    *ptr;
     uint32_t reg;
@@ -140,7 +140,7 @@ void __kfree(const char *func, int line, void *ptr)
 ** output parameters:       NONE
 ** Returned value:          内存指针
 *********************************************************************************************************/
-void *__kcalloc(const char *func, int line, size_t nelem, size_t elsize)
+void *__kcalloc(const char *func, int line, uint32_t nelem, uint32_t elsize)
 {
     void    *ptr;
     uint32_t reg;
@@ -423,7 +423,7 @@ struct mem_block {
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-int heap_init(heap_t *heap, uint8_t *base, size_t size)
+int heap_init(heap_t *heap, uint8_t *base, uint32_t size)
 {
     if (heap == NULL) {
         debug("%s: process %d heap=NULL!\n", __func__, getpid());
@@ -474,7 +474,7 @@ int heap_init(heap_t *heap, uint8_t *base, size_t size)
 ** output parameters:       NONE
 ** Returned value:          内存指针
 *********************************************************************************************************/
-void *heap_alloc(heap_t *heap, const char *func, int line, size_t size)
+void *heap_alloc(heap_t *heap, const char *func, int line, uint32_t size)
 {
     mem_block_t *blk;
     mem_block_t *new_blk;
