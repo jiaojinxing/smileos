@@ -160,7 +160,7 @@ static int ramdisk_ioctl(void *ctx, file_t *file, int cmd, void *arg)
 /*
  * ¶Á ramdisk ¿é
  */
-static ssize_t ramdisk_readblk(void *ctx, file_t *file, size_t blk_nr, size_t blk_cnt, void *buf)
+static ssize_t ramdisk_readblk(void *ctx, file_t *file, size_t blk_no, size_t blk_cnt, void *buf)
 {
     privinfo_t *priv = ctx;
 
@@ -172,14 +172,14 @@ static ssize_t ramdisk_readblk(void *ctx, file_t *file, size_t blk_nr, size_t bl
         seterrno(EIO);
         return -1;
     }
-    memcpy(buf, priv->buf + blk_nr * SECT_SZ, blk_cnt * SECT_SZ);
+    memcpy(buf, priv->buf + blk_no * SECT_SZ, blk_cnt * SECT_SZ);
     return blk_cnt * SECT_SZ;
 }
 
 /*
  * Ð´ ramdisk ¿é
  */
-static ssize_t ramdisk_writeblk(void *ctx, file_t *file, size_t blk_nr, size_t blk_cnt, const void *buf)
+static ssize_t ramdisk_writeblk(void *ctx, file_t *file, size_t blk_no, size_t blk_cnt, const void *buf)
 {
     privinfo_t *priv = ctx;
 
@@ -191,7 +191,7 @@ static ssize_t ramdisk_writeblk(void *ctx, file_t *file, size_t blk_nr, size_t b
         seterrno(EIO);
         return -1;
     }
-    memcpy(priv->buf + blk_nr * SECT_SZ, buf, blk_cnt * SECT_SZ);
+    memcpy(priv->buf + blk_no * SECT_SZ, buf, blk_cnt * SECT_SZ);
     return blk_cnt * SECT_SZ;
 }
 

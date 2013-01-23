@@ -538,7 +538,7 @@ static int mtdblock_ioctl(void *ctx, file_t *file, int cmd, void *arg)
 /*
  * ¶Á mtdblock ¿é
  */
-static ssize_t mtdblock_readblk(void *ctx, file_t *file, size_t blk_nr, size_t blk_cnt, void *buf)
+static ssize_t mtdblock_readblk(void *ctx, file_t *file, size_t blk_no, size_t blk_cnt, void *buf)
 {
     privinfo_t    *priv  = ctx;
     yaffs_RwParam *param = buf;
@@ -552,7 +552,7 @@ static ssize_t mtdblock_readblk(void *ctx, file_t *file, size_t blk_nr, size_t b
         return -1;
     }
 
-    if (nand_read(param->data, param->spare, blk_nr) == 0) {
+    if (nand_read(param->data, param->spare, blk_no) == 0) {
         return blk_cnt * (priv->totalBytesPerChunk + priv->spareBytesPerChunk);
     } else {
         seterrno(EIO);
@@ -563,7 +563,7 @@ static ssize_t mtdblock_readblk(void *ctx, file_t *file, size_t blk_nr, size_t b
 /*
  * Ð´ mtdblock ¿é
  */
-static ssize_t mtdblock_writeblk(void *ctx, file_t *file, size_t blk_nr, size_t blk_cnt, const void *buf)
+static ssize_t mtdblock_writeblk(void *ctx, file_t *file, size_t blk_no, size_t blk_cnt, const void *buf)
 {
     privinfo_t          *priv  = ctx;
     const yaffs_RwParam *param = buf;
@@ -577,7 +577,7 @@ static ssize_t mtdblock_writeblk(void *ctx, file_t *file, size_t blk_nr, size_t 
         return -1;
     }
 
-    if (nand_write(param->data, param->spare, blk_nr) == 0) {
+    if (nand_write(param->data, param->spare, blk_no) == 0) {
         return blk_cnt * (priv->totalBytesPerChunk + priv->spareBytesPerChunk);
     } else {
         seterrno(EIO);

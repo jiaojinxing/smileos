@@ -57,7 +57,7 @@ typedef struct {
  */
 struct page_table {
     RB_ENTRY(page_table)    node;                                       /*  红黑树节点                  */
-    uint32_t                section_nr;                                 /*  段号                        */
+    uint32_t                section_no;                                 /*  段号                        */
 };
 /*********************************************************************************************************
 ** 内部变量
@@ -77,15 +77,15 @@ static RB_HEAD(page_table_tree, page_table) used_page_table_tree;       /*  已用
 static inline int vmm_page_table_compare(struct page_table *a, struct page_table *b)
 {
 #if 0
-    if (a->section_nr < b->section_nr) {
+    if (a->section_no < b->section_no) {
         return -1;
-    } else if (a->section_nr > b->section_nr) {
+    } else if (a->section_no > b->section_no) {
         return 1;
     } else {
         return 0;
     }
 #else
-    return a->section_nr - b->section_nr;
+    return a->section_no - b->section_no;
 #endif
 }
 /*********************************************************************************************************
@@ -95,16 +95,16 @@ RB_GENERATE_INTERNAL(page_table_tree, page_table, node, vmm_page_table_compare, 
 /*********************************************************************************************************
 ** Function name:           vmm_page_table_lookup
 ** Descriptions:            根据段号查找页表
-** input parameters:        section_nr          段号
+** input parameters:        section_no          段号
 ** output parameters:       NONE
 ** Returned value:          页表基址 OR 0
 *********************************************************************************************************/
-static uint32_t vmm_page_table_lookup(uint32_t section_nr)
+static uint32_t vmm_page_table_lookup(uint32_t section_no)
 {
     struct page_table *tbl;
     struct page_table  tmp;
 
-    tmp.section_nr = section_nr;
+    tmp.section_no = section_no;
 
     tbl = page_table_tree_RB_FIND(&used_page_table_tree, &tmp);         /*  在已用页表红黑树中查找      */
     if (tbl != NULL) {
@@ -117,11 +117,11 @@ static uint32_t vmm_page_table_lookup(uint32_t section_nr)
 ** Function name:           vmm_page_table_alloc
 ** Descriptions:            分配页表
 ** input parameters:        task                任务控制块
-**                          section_nr          段号
+**                          section_no          段号
 ** output parameters:       NONE
 ** Returned value:          页表基址 OR 0
 *********************************************************************************************************/
-static uint32_t vmm_page_table_alloc(task_t *task, uint32_t section_nr)
+static uint32_t vmm_page_table_alloc(task_t *task, uint32_t section_no)
 {
     struct page_table *tbl;
     uint32_t           page_tbl_base;
@@ -130,7 +130,7 @@ static uint32_t vmm_page_table_alloc(task_t *task, uint32_t section_nr)
     if (tbl != NULL) {
         free_page_table_list = tbl->node.rbe_right;
 
-        tbl->section_nr = section_nr;
+        tbl->section_no = section_no;
         page_table_tree_RB_INSERT(&used_page_table_tree, tbl);          /*  加入到已用页表红黑树中      */
 
         vmm_stat.free_page_table_nr--;                                  /*  空闲页表数--                */
@@ -304,16 +304,16 @@ int vmm_page_map(task_t *task, uint32_t MVA)
     if (   MVA >= PROCESS_SPACE_SIZE *  task->pid                       /*  判断虚拟地址是否在进程      */
         && MVA <  PROCESS_SPACE_SIZE * (task->pid + 1)) {               /*  的虚拟地址空间范围内        */
 
-        uint32_t section_nr = MVA >> SECTION_OFFSET;                    /*  计算虚拟地址的段号          */
+        uint32_t section_no = MVA >> SECTION_OFFSET;                    /*  计算虚拟地址的段号          */
 
-        uint32_t tbl = vmm_page_table_lookup(section_nr);               /*  查找该段的页表              */
+        uint32_t tbl = vmm_page_table_lookup(section_no);               /*  查找该段的页表              */
 
         if (tbl == 0) {                                                 /*  没找到                      */
 
-            tbl = vmm_page_table_alloc(task, section_nr);               /*  分配一个空闲的页表          */
+            tbl = vmm_page_table_alloc(task, section_no);               /*  分配一个空闲的页表          */
             if (tbl != 0) {
-                task->mmu_backup[section_nr % (PROCESS_SPACE_SIZE / SECTION_SIZE)] =
-                        mmu_map_section_as_page(section_nr, tbl);       /*  映射该段                    */
+                task->mmu_backup[section_no % (PROCESS_SPACE_SIZE / SECTION_SIZE)] =
+                        mmu_map_section_as_page(section_no, tbl);       /*  映射该段                    */
 
                 flag = TRUE;
             } else {
@@ -339,9 +339,9 @@ int vmm_page_map(task_t *task, uint32_t MVA)
              * 但不反对有兴趣的朋友尝试下:-)
              */
             if (flag) {
-                mmu_unmap_section(section_nr);
+                mmu_unmap_section(section_no);
 
-                task->mmu_backup[section_nr % (PROCESS_SPACE_SIZE / SECTION_SIZE)] = 0;
+                task->mmu_backup[section_no % (PROCESS_SPACE_SIZE / SECTION_SIZE)] = 0;
 
                 vmm_page_table_free(task, tbl);
             }
