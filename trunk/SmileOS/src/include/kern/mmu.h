@@ -348,30 +348,30 @@ uint32_t mmu_get_fault_address(void);
 /*********************************************************************************************************
 ** Function name:           mmu_map_section
 ** Descriptions:            映射段, 通过参数
-** input parameters:        section_nr          段号
+** input parameters:        section_no          段号
 **                          value               参数
 ** output parameters:       NONE
 ** Returned value:          NONE
 *********************************************************************************************************/
-void mmu_map_section(uint32_t section_nr,
+void mmu_map_section(uint32_t section_no,
                      uint32_t value);
 /*********************************************************************************************************
 ** Function name:           mmu_unmap_section
 ** Descriptions:            取消映射段
-** input parameters:        section_nr          段号
+** input parameters:        section_no          段号
 ** output parameters:       NONE
 ** Returned value:          NONE
 *********************************************************************************************************/
-void mmu_unmap_section(uint32_t section_nr);
+void mmu_unmap_section(uint32_t section_no);
 /*********************************************************************************************************
 ** Function name:           mmu_map_section_as_page
 ** Descriptions:            映射段, 使用二级页表
-** input parameters:        section_nr          段号
+** input parameters:        section_no          段号
 **                          page_tbl_base       二级页表基址
 ** output parameters:       NONE
 ** Returned value:          可用作 mmu_map_section 参数的值
 *********************************************************************************************************/
-uint32_t mmu_map_section_as_page(uint32_t section_nr,
+uint32_t mmu_map_section_as_page(uint32_t section_no,
                                  uint32_t page_tbl_base);
 /*********************************************************************************************************
 ** Function name:           mmu_map_page
