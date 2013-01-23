@@ -542,7 +542,7 @@ module_t *module_ref_by_addr(void *addr)
 
 
     if (mod != NULL) {
-        atomic_ref(&mod->ref);
+        atomic_inc(&mod->ref);
     }
     mutex_unlock(&mod_mgr_lock);
 

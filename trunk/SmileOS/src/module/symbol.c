@@ -1395,7 +1395,7 @@ extern int  modff();
 extern int  modfl(); 
 extern int  module_load(); 
 extern int  module_lookup(); 
-extern int  module_lookup_by_addr(); 
+extern int  module_ref_by_addr();
 extern int  module_unload(); 
 extern int  more_main(); 
 extern int  mount_point_get(); 
@@ -1525,7 +1525,6 @@ extern int  pow10();
 extern int  pow10f(); 
 extern int  powf(); 
 extern int  powl(); 
-extern int  pr_mask(); 
 extern int  printenv_main(); 
 extern int  printf(); 
 extern int  printk(); 
@@ -2030,7 +2029,6 @@ extern int  wscanf();
 extern int  xmalloc(); 
 extern int  xstrdup(); 
 extern int  xstrndup(); 
-extern int  xxx(); 
 extern int  xxx_init(); 
 extern int  xzalloc(); 
 extern int  y0(); 
@@ -4871,7 +4869,7 @@ SYMBOL_TABLE_BEGIN
     SYMBOL_ITEM_FUNC(modfl) 
     SYMBOL_ITEM_FUNC(module_load) 
     SYMBOL_ITEM_FUNC(module_lookup) 
-    SYMBOL_ITEM_FUNC(module_lookup_by_addr) 
+    SYMBOL_ITEM_FUNC(module_ref_by_addr)
     SYMBOL_ITEM_FUNC(module_unload) 
     SYMBOL_ITEM_FUNC(more_main) 
     SYMBOL_ITEM_FUNC(mount_point_get) 
@@ -5001,7 +4999,6 @@ SYMBOL_TABLE_BEGIN
     SYMBOL_ITEM_FUNC(pow10f) 
     SYMBOL_ITEM_FUNC(powf) 
     SYMBOL_ITEM_FUNC(powl) 
-    SYMBOL_ITEM_FUNC(pr_mask) 
     SYMBOL_ITEM_FUNC(printenv_main) 
     SYMBOL_ITEM_FUNC(printf) 
     SYMBOL_ITEM_FUNC(printk) 
@@ -5506,7 +5503,6 @@ SYMBOL_TABLE_BEGIN
     SYMBOL_ITEM_FUNC(xmalloc) 
     SYMBOL_ITEM_FUNC(xstrdup) 
     SYMBOL_ITEM_FUNC(xstrndup) 
-    SYMBOL_ITEM_FUNC(xxx) 
     SYMBOL_ITEM_FUNC(xxx_init) 
     SYMBOL_ITEM_FUNC(xzalloc) 
     SYMBOL_ITEM_FUNC(y0) 
