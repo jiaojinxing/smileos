@@ -1,1 +1,0 @@
-set SO_NAME=libruntime.so
