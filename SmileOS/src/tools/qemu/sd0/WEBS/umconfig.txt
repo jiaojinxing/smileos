@@ -1,3 +1,0 @@
-TABLE=users
-TABLE=groups
-TABLE=access
