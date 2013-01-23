@@ -1,0 +1,1 @@
+call winimage.exe SDCARD.IMA
