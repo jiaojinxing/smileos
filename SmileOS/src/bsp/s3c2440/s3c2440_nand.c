@@ -19,10 +19,10 @@
 ** Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 **
 **--------------------------------------------------------------------------------------------------------
-** File name:               s3c2440_k9f1208.c
+** File name:               s3c2440_nand.c
 ** Last modified Date:      2012-2-2
 ** Last Version:            1.0.0
-** Descriptions:            K9F1208
+** Descriptions:            NAND FLASH Çý¶¯
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing
@@ -88,13 +88,13 @@
 *********************************************************************************************************/
 #define NF_CMD(cmd)                 { rNFCMD  = cmd; }
 #define NF_ADDR(addr)               { rNFADDR = addr; }
-#define NF_NFCE_L()                 BIT_CLR(rNFCONT, 1)                 /*  { rNFCONT &= ~(1 << 1); }   */
-#define NF_NFCE_H()                 BIT_SET(rNFCONT, 1)                 /*  { rNFCONT |=  (1 << 1); }   */
+#define NF_NFCE_L()                 BIT_CLR(rNFCONT, 1)
+#define NF_NFCE_H()                 BIT_SET(rNFCONT, 1)
 /*********************************************************************************************************
 ** Ó²¼þ NAND FLASH ¶ÁÐ´ºê
 *********************************************************************************************************/
 #define NF_RDDATA()                 (rNFDATA)
-#define NF_RDDATA8()                ((*(volatile unsigned char*)0x4E000010))
+#define NF_RDDATA8()                (rNFDATA8)
 #define NF_WRDATA(data)             { rNFDATA  = data; }
 #define NF_WRDATA8(data)            { rNFDATA8 = data; }
 /*********************************************************************************************************
