@@ -95,7 +95,7 @@ static void init(void *arg)
 
     vfs_mkfs("/tmp", NULL);
 
-    vfs_mount("/yaffs", NULL, "yaffs", NULL);
+    vfs_mount("/data", NULL, "yaffs", NULL);
 
     extern void shell(void *arg);
     kthread_create("shell", shell, NULL, 16 * KB, 10);

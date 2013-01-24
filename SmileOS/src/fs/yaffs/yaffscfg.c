@@ -75,12 +75,10 @@ int yaffs_StartUp(void)
 
     for (i = 0; ; i++) {
         snprintf(buf, sizeof(buf), "/dev/mtdblock%d", i);
-        mutex_lock(&dev_mgr_lock, 0);
         dev = device_lookup(buf);
         if (dev == NULL) {
             break;
         }
-        mutex_unlock(&dev_mgr_lock);
     }
     max = i;
     if (max == 0) {
@@ -127,13 +125,16 @@ int yaffs_StartUp(void)
 	    ydev->param.eraseBlockInNAND  = ydevice_EraseBlock;
 	    ydev->param.initialiseNAND    = ydevice_Initialise;
 
-        snprintf(buf, sizeof(buf), "/p%d", i);
         cfg->dev    = ydev;
-        cfg->prefix = strdup(buf);
+        cfg->prefix = ydev->param.name;
         if (cfg->prefix == NULL) {
-            kfree(ydev);
-            atomic_dec(&dev->ref);
-            continue;
+            snprintf(buf, sizeof(buf), "/p%d", i);
+            cfg->prefix = strdup(buf);
+            if (cfg->prefix == NULL) {
+                kfree(ydev);
+                atomic_dec(&dev->ref);
+                continue;
+            }
         }
         cfg++;
 	}
