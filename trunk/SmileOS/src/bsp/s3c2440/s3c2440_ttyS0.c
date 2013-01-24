@@ -272,6 +272,8 @@ static int ttyS0_ioctl(void *ctx, file_t *file, int cmd, void *arg)
         return -1;
     }
 
+    arg = va_to_mva(arg);
+
     ret = tty_ioctl(&priv->tty, cmd, arg);
     if (ret != 0) {
         seterrno(ret);

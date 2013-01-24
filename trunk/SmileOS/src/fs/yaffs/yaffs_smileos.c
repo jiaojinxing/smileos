@@ -146,6 +146,7 @@ typedef struct {
                                      */
     int useNANDECC;                 /* Flag to decide whether or not to use NANDECC on data (yaffs1) */
     int noTagsECC;                  /* Flag to decide whether or not to do ECC on packed tags (yaffs2) */
+    const char *name;
 } yaffs_Info;
 /*********************************************************************************************************
 ** Function name:           ydevice_GetInfo
@@ -180,6 +181,7 @@ int ydevice_GetInfo(yaffs_Device *ydev)
     ydev->param.endBlock            = info.endBlock;
     ydev->param.useNANDECC          = info.useNANDECC;
     ydev->param.nShortOpCaches      = info.nShortOpCaches;
+    ydev->param.name                = info.name;
 
     return YAFFS_OK;
 }

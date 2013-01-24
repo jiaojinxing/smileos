@@ -120,6 +120,8 @@ static int ramdisk_ioctl(void *ctx, file_t *file, int cmd, void *arg)
         return -1;
     }
 
+    arg = va_to_mva(arg);
+
     switch (cmd) {
     case BLKDEV_CMD_STATUS:
         *(uint32_t *)arg = 0;

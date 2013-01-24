@@ -383,6 +383,7 @@ typedef struct {
                                      */
     int useNANDECC;                 /* Flag to decide whether or not to use NANDECC on data (yaffs1) */
     int noTagsECC;                  /* Flag to decide whether or not to do ECC on packed tags (yaffs2) */
+    const char *name;
 } privinfo_t;
 /*********************************************************************************************************
 ** 设备分区信息
@@ -401,6 +402,7 @@ typedef struct {
                                      */
     int useNANDECC;                 /* Flag to decide whether or not to use NANDECC on data (yaffs1) */
     int noTagsECC;                  /* Flag to decide whether or not to do ECC on packed tags (yaffs2) */
+    const char *name;
 } yaffs_Info;
 /*********************************************************************************************************
 ** 读写参数
@@ -467,7 +469,7 @@ static int mtdblock_close(void *ctx, file_t *file)
  */
 static int mtdblock_ioctl(void *ctx, file_t *file, int cmd, void *arg)
 {
-    privinfo_t *priv  = ctx;
+    privinfo_t *priv = ctx;
     yaffs_Info *param;
 
     if (priv == NULL) {
@@ -478,6 +480,8 @@ static int mtdblock_ioctl(void *ctx, file_t *file, int cmd, void *arg)
         seterrno(EIO);
         return -1;
     }
+
+    arg = va_to_mva(arg);
 
     switch (cmd) {
     case BLKDEV_CMD_STATUS:
@@ -516,7 +520,7 @@ static int mtdblock_ioctl(void *ctx, file_t *file, int cmd, void *arg)
         break;
 
     case BLKDEV_CMD_INFO:
-        param = arg;
+        param                       = arg;
         param->endBlock             = priv->endBlock;
         param->nChunksPerBlock      = priv->nChunksPerBlock;
         param->nReservedBlocks      = priv->nReservedBlocks;
@@ -526,6 +530,7 @@ static int mtdblock_ioctl(void *ctx, file_t *file, int cmd, void *arg)
         param->startBlock           = priv->startBlock;
         param->totalBytesPerChunk   = priv->totalBytesPerChunk;
         param->useNANDECC           = priv->useNANDECC;
+        param->name                 = priv->name;
         break;
 
     default:
@@ -622,6 +627,7 @@ int mtdblock_init(void)
         priv->nChunksPerBlock       = NAND_SECTS_PER_BLOCK;
         priv->spareBytesPerChunk    = NAND_SPARE_PER_SECT;
         priv->totalBytesPerChunk    = NAND_BYTES_PER_SECT;
+        priv->name                  = "boot";
 
         if (device_create("/dev/mtdblock0", "mtdblock", priv) < 0) {
             kfree(priv);
@@ -642,6 +648,7 @@ int mtdblock_init(void)
         priv->nChunksPerBlock       = NAND_SECTS_PER_BLOCK;
         priv->spareBytesPerChunk    = NAND_SPARE_PER_SECT;
         priv->totalBytesPerChunk    = NAND_BYTES_PER_SECT;
+        priv->name                  = "kernel";
 
         if (device_create("/dev/mtdblock1", "mtdblock", priv) < 0) {
             kfree(priv);
@@ -662,6 +669,7 @@ int mtdblock_init(void)
         priv->nChunksPerBlock       = NAND_SECTS_PER_BLOCK;
         priv->spareBytesPerChunk    = NAND_SPARE_PER_SECT;
         priv->totalBytesPerChunk    = NAND_BYTES_PER_SECT;
+        priv->name                  = "rootfs";
 
         if (device_create("/dev/mtdblock2", "mtdblock", priv) < 0) {
             kfree(priv);
