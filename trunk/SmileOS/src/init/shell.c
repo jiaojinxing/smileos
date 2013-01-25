@@ -45,8 +45,60 @@
 #include <stdlib.h>
 #include <termios.h>
 /*********************************************************************************************************
-** Function name:           do_cmd
+** logo
+*********************************************************************************************************/
+static const char smileos_logo[] =
+" [[[[                      [[[[   [[[[  \n"
+"[    [                    [    [ [    [ \n"
+"[             @ [    [[[  [    [ [      \n"
+" [[[[   [  [    [   [   [ [    [  [[[[  \n"
+"     [ [ [[ [ [ [   [[[[  [    [      [ \n"
+"[    [ [    [ [ [   [     [    [ [    [ \n"
+" [[[[  [    [ [ [[[  [[[[  [[[[   [[[[  \n";
+/*********************************************************************************************************
+** Function name:           exec_cmd
 ** Descriptions:            Ö´ÐÐÃüÁî
+** input parameters:        NONE
+** output parameters:       NONE
+** Returned value:          0 OR -1
+*********************************************************************************************************/
+int exec_cmd(int argc, char **argv)
+{
+    cmd_t *cmd;
+    int    ret = -1;
+
+    extern cmd_t __smileos_cmd_start;
+    extern cmd_t __smileos_cmd_end;
+    for (cmd = &__smileos_cmd_start;
+         cmd != &__smileos_cmd_end;
+         cmd++) {
+        if (strcmp(argv[0], cmd->name) == 0) {
+            ret = cmd->cmd(argc, argv);
+            break;
+        }
+    }
+
+    if (cmd == &__smileos_cmd_end) {
+        if (strcmp(argv[0], "module") == 0) {
+            extern int module_load(const char *path, int argc, char **argv);
+            ret = module_load(argv[1], argc - 1, &argv[1]);
+        } else {
+            struct stat st;
+
+            if (stat(argv[0], &st) < 0) {
+                fprintf(stderr, "%s no found!\n", argv[0]);
+                return -1;
+            }
+
+            ret = process_create(argv[0], 5, argc, argv);
+        }
+    }
+
+    return ret;
+}
+/*********************************************************************************************************
+** Function name:           parse_line
+** Descriptions:            ·ÖÎöÃüÁî
 ** input parameters:        NONE
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
@@ -56,7 +108,6 @@ int parse_line(char *line)
     char *argv[ARG_MAX];
     char *p, *word = NULL;
     int argc = 0;
-    cmd_t *cmd;
 
     if (line[0] != ' ' && line[0] != '\t') {
         word = line;
@@ -91,46 +142,8 @@ int parse_line(char *line)
 
     argv[argc] = NULL;
 
-    extern cmd_t __smileos_cmd_start;
-    extern cmd_t __smileos_cmd_end;
-    for (cmd = &__smileos_cmd_start;
-         cmd != &__smileos_cmd_end;
-         cmd++) {
-        if (strcmp(argv[0], cmd->name) == 0) {
-            cmd->cmd(argc, argv);
-            break;
-        }
-    }
-
-
-
-//    } else if (strcmp(argv[0], "module") == 0) {
-//        extern int module_load(const char *path, int argc, char **argv);
-//        module_load(argv[1], argc - 1, &argv[1]);
-//    } else {
-//        struct stat st;
-//
-//        if (stat(argv[0], &st) < 0) {
-//            fprintf(stderr, "%s no found!\n", argv[0]);
-//            return -1;
-//        }
-//
-//        process_create(argv[0], 5, argc, argv);
-//    }
-
-    return 0;
+    return exec_cmd(argc, argv);
 }
-/*********************************************************************************************************
-** logo
-*********************************************************************************************************/
-static const char smileos_logo[] =
-" [[[[                      [[[[   [[[[  \n"
-"[    [                    [    [ [    [ \n"
-"[             @ [    [[[  [    [ [      \n"
-" [[[[   [  [    [   [   [ [    [  [[[[  \n"
-"     [ [ [[ [ [ [   [[[[  [    [      [ \n"
-"[    [ [    [ [ [   [     [    [ [    [ \n"
-" [[[[  [    [ [ [[[  [[[[  [[[[   [[[[  \n";
 /*********************************************************************************************************
 ** Function name:           shell
 ** Descriptions:            shell º¯Êý
@@ -159,7 +172,7 @@ void shell(void *arg)
     dup(STDIN_FILENO);
     dup(STDIN_FILENO);
 
-    stdin  = fdopen(STDIN_FILENO, "r");
+    stdin  = fdopen(STDIN_FILENO,  "r");
 
     stdout = fdopen(STDOUT_FILENO, "w+");
 
@@ -169,7 +182,7 @@ void shell(void *arg)
      * ÉèÖÃÖÕ¶ËÊôÐÔ
      */
     tcgetattr(0, &termbuf);
-    termbuf.c_lflag  = ECHO | ICANON;
+    termbuf.c_lflag  = ECHO  | ICANON;
     termbuf.c_oflag |= ONLCR | OXTABS;
     termbuf.c_iflag &= ~IXOFF;
     tcsetattr(0, TCSANOW, &termbuf);
