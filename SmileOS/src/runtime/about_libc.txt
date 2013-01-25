@@ -16,7 +16,7 @@ lib_a-raise.o
 lib_a-signal.o
 lib_a-signalr.o
 
-ar -c libc.a *.o
+ar rs libc.a *.o
 
 ar 在 yagarto\arm-none-eabi\bin 目录下有！
 
