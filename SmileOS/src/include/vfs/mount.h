@@ -64,8 +64,8 @@ int mount_point_install(mount_point_t *point);
 mount_point_t *mount_point_lookup(const char *name);
 /*********************************************************************************************************
 ** Function name:           mount_point_remove
-** Descriptions:            и╬ЁЩ╧рть╣Ц               ╧рть╣Ц
-** input parameters:        point
+** Descriptions:            и╬ЁЩ╧рть╣Ц
+** input parameters:        point               ╧рть╣Ц
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/

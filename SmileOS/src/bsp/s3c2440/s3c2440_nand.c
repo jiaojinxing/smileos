@@ -204,14 +204,6 @@ static void nand_read_id (uint16_t *id)
 *********************************************************************************************************/
 static void  nand_port_init (void)
 {
-    static int  iIsInit = 0;
-
-    if (iIsInit) {                                                      /*  避免重复初始化              */
-        return;
-    }
-
-    iIsInit = 1;
-
     rNFCONF = (NAND_TACLS << 12)                                        /*  HCLK x (TACLS)              */
             | (NAND_TWRPH0 << 8)                                        /*  HCLK x (TWRPH0 + 1)         */
             | (NAND_TWRPH1 << 4);                                       /*  HCLK x (TWRPH1 + 1)         */
@@ -357,7 +349,14 @@ static int  nand_erase (uint64_t  ulBlockIndex)
 *********************************************************************************************************/
 static int  nand_chip_init (void)
 {
-    uint16_t id;
+    static int  iIsInit = 0;
+    uint16_t    id;
+
+    if (iIsInit) {                                                      /*  避免重复初始化              */
+        return  (ERROR_NONE);
+    }
+
+    iIsInit = 1;
 
     nand_port_init();                                                   /*  初始化端口                  */
     nand_reset();                                                       /*  复位 NAND FLASH 芯片        */

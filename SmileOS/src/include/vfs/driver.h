@@ -62,6 +62,14 @@ driver_t *driver_lookup(const char *name);
 *********************************************************************************************************/
 int driver_install(driver_t *drv);
 /*********************************************************************************************************
+** Function name:           driver_remove
+** Descriptions:            删除驱动
+** input parameters:        drv                 驱动
+** output parameters:       NONE
+** Returned value:          0 OR -1
+*********************************************************************************************************/
+int driver_remove(driver_t *drv);
+/*********************************************************************************************************
 ** Function name:           driver_manager_init
 ** Descriptions:            初始化驱动管理
 ** input parameters:        NONE

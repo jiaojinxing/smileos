@@ -82,6 +82,47 @@ file_system_t *file_system_lookup(const char *name)
     return fs;
 }
 /*********************************************************************************************************
+** Function name:           file_system_remove
+** Descriptions:            删除文件系统
+** input parameters:        fs                  文件系统
+** output parameters:       NONE
+** Returned value:          0 OR -1
+*********************************************************************************************************/
+int file_system_remove(file_system_t *fs)
+{
+    file_system_t *prev, *temp;
+    int ret = -1;
+
+    if (fs == NULL) {
+        return ret;
+    }
+
+    mutex_lock(&fs_mgr_lock, 0);
+
+    if (atomic_read(&fs->ref) == 0) {
+        prev = NULL;
+        temp = fs_list;
+        while (temp != NULL && temp != fs) {
+            prev = temp;
+            temp = temp->next;
+        }
+
+        if (temp != NULL) {
+            if (prev != NULL) {
+                prev->next = fs->next;
+            } else {
+                fs_list = fs->next;
+            }
+            ret = 0;
+            module_unref(fs->module);
+            kfree(fs);
+        }
+    }
+    mutex_unlock(&fs_mgr_lock);
+
+    return ret;
+}
+/*********************************************************************************************************
 ** Function name:           file_system_install
 ** Descriptions:            安装文件系统
 ** input parameters:        fs                  文件系统
@@ -97,6 +138,7 @@ int file_system_install(file_system_t *fs)
     }
 
     module = module_ref_by_addr(fs);
+    fs->module = module;
 
     mutex_lock(&fs_mgr_lock, 0);
     if (file_system_lookup(fs->name) != NULL) {

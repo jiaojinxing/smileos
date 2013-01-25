@@ -549,6 +549,22 @@ module_t *module_ref_by_addr(void *addr)
     return mod;
 }
 /*********************************************************************************************************
+** Function name:           module_unref
+** Descriptions:            解取对模块的引用
+** input parameters:        mod                 模块
+** output parameters:       NONE
+** Returned value:          0 OR -1
+*********************************************************************************************************/
+int module_unref(module_t *mod)
+{
+    if (mod != NULL) {
+        atomic_dec(&mod->ref);
+        return 0;
+    } else {
+        return -1;
+    }
+}
+/*********************************************************************************************************
 ** Function name:           module_remove
 ** Descriptions:            删除模块
 ** input parameters:        name                模块名
