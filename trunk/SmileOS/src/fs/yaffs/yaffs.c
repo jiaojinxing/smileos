@@ -189,13 +189,7 @@ static int __yaffs_stat(mount_point_t *point, const char *path, struct stat *buf
     struct yaffs_stat st;
     int ret;
 
-    if (path[1] == 0) {
-        ((char *)path)[1] = point->name[1];
-        ret = yaffs_stat(path, &st);
-    } else {
-        ret = yaffs_stat(vfs_path_add_mount_point(path), &st);
-    }
-
+    ret = yaffs_stat(vfs_path_add_mount_point(path), &st);
     if (ret == 0) {
         buf->st_dev         = st.st_dev;
         buf->st_ino         = st.st_ino;
@@ -226,13 +220,7 @@ static int __yaffs_access(mount_point_t *point, const char *path, int amode)
 
 static int __yaffs_opendir(mount_point_t *point, file_t *file, const char *path)
 {
-    if (path[1] == 0) {
-        ((char *)path)[1] = point->name[1];
-        file->ctx = yaffs_opendir(path);
-    } else {
-        file->ctx = yaffs_opendir(vfs_path_add_mount_point(path));
-    }
-
+    file->ctx = yaffs_opendir(vfs_path_add_mount_point(path));
     if (file->ctx == NULL) {
         return -1;
     } else {
