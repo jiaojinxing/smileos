@@ -478,7 +478,7 @@ void vmm_init(void)
     RB_INIT(&used_page_table_tree);
 
     vmm_stat.free_frame_nr      = VMM_FRAME_NR;                         /*  ¿ÕÏÐÒ³¿òÊý                  */
-    vmm_stat.free_page_table_nr = PAGE_TBL_NR;                          /*  ¿ÕÏÐÒ³¿òÊý                  */
+    vmm_stat.free_page_table_nr = PAGE_TBL_NR;                          /*  ¿ÕÏÐÒ³±íÊý                  */
 }
 /*********************************************************************************************************
 ** END FILE

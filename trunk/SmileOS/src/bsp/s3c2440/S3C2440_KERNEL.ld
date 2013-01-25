@@ -8,7 +8,7 @@ ENTRY(_start)
 /* Memory Definitions */
 MEMORY
 {
-  RAM (rw) : ORIGIN = 0x30000000, LENGTH = 0x00A00000
+  RAM (rw) : ORIGIN = 0x30000000, LENGTH = 0x01400000
 }
 
 /* Section Definitions */

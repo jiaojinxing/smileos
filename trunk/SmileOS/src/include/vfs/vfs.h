@@ -382,6 +382,16 @@ char *vfs_getcwd(char *buf, size_t size);
 *********************************************************************************************************/
 int vfs_mount(const char *point_name, const char *dev_name, const char *fs_name, const char *param);
 /*********************************************************************************************************
+** Function name:           vfs_mount_point_create
+** Descriptions:            创建挂载点
+** input parameters:        point_name          挂载点名
+**                          fs                  文件系统
+**                          dev                 设备
+** output parameters:       NONE
+** Returned value:          0 OR -1
+*********************************************************************************************************/
+int vfs_mount_point_create(const char *point_name, file_system_t *fs, device_t *dev);
+/*********************************************************************************************************
 ** Function name:           vfs_mkfs
 ** Descriptions:            格式化文件系统
 ** input parameters:        path                目录 PATH

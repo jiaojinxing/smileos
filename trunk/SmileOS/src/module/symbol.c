@@ -33,7 +33,7 @@
     {   #pcName, (char *)&pcName,               \
         SYMBOL_DATA                             \
     },													
-														
+#if 0
 /*********************************************************************************************************	
 ** 全局对象声明												
 *********************************************************************************************************/	
@@ -3705,10 +3705,12 @@ extern int  __unctrllen;
 extern int  __hexdig; 
 extern int  suboptarg; 
 extern int  errno; 
+#endif
 /*********************************************************************************************************	
 ** 系统静态符号表												
 *********************************************************************************************************/	
-SYMBOL_TABLE_BEGIN												
+SYMBOL_TABLE_BEGIN
+#if 0
     SYMBOL_ITEM_FUNC(.Lchange_fp) 
     SYMBOL_ITEM_FUNC(.Lchange_ip) 
     SYMBOL_ITEM_FUNC(.Lchange_lr) 
@@ -7377,6 +7379,7 @@ SYMBOL_TABLE_BEGIN
     SYMBOL_ITEM_OBJ(__hexdig) 
     SYMBOL_ITEM_OBJ(suboptarg) 
     SYMBOL_ITEM_OBJ(errno) 
+#endif
 SYMBOL_TABLE_END												
 /*********************************************************************************************************	
 ** END FILE													

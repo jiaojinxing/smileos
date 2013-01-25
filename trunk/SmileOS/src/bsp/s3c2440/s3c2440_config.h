@@ -55,6 +55,9 @@
 #define MMU_TBL_BASE        (PAGE_TBL_BASE - MMU_TBL_SIZE)              /*  MMU 转换表基址              */
 
 #define PROCESS0_STACK_BASE (MMU_TBL_BASE)                              /*  进程 0 栈空间基址           */
+#define PROCESS0_STACK_SIZE (16 * KB)                                   /*  进程 0 栈空间大小           */
+
+#define KERN_STACK_TOP      (PROCESS0_STACK_BASE - PROCESS0_STACK_SIZE) /*  内核堆顶地址                */
 
 #define KERN_LOAD_ADDR      (KERN_MEM_BASE)                             /*  内核加载地址                */
 

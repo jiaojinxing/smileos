@@ -50,7 +50,6 @@ extern "C" {
 #include "../../bsp/s3c2440/s3c2440_config.h"
 #endif
 
-#define KERN_HEAP_SIZE              (3 * MB)                            /*  内核动态内存堆大小          */
 #define KERN_STACK_SIZE             (8192)                              /*  内核栈空间大小              */
 
 #define SIG_USR_STACK_SIZE          (8192)                              /*  信号用户栈空间大小          */
