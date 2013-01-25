@@ -403,9 +403,11 @@ static int devfs_stat(mount_point_t *point, const char *path, struct stat *buf)
         if (dev != NULL) {
             file_t file;
             int    ret;
+            atomic_inc(&dev->ref);
+            mutex_unlock(&dev_mgr_lock);
             file->ctx = dev;
             ret = devfs_fstat(point, &file, buf);
-            mutex_unlock(&dev_mgr_lock);
+            atomic_dec(&dev->ref);
             return ret;
         } else {
             mutex_unlock(&dev_mgr_lock);
