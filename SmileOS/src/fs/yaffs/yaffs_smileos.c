@@ -167,6 +167,13 @@ int ydevice_GetInfo(yaffs_Device *ydev)
         return YAFFS_FAIL;
     }
 
+    ret = dev->drv->ioctl(dev->ctx, NULL, BLKDEV_CMD_INIT, NULL);
+    if (ret < 0) {
+        return YAFFS_FAIL;
+    } else {
+        return YAFFS_OK;
+    }
+
     ret = dev->drv->ioctl(dev->ctx, NULL, BLKDEV_CMD_INFO, &info);
     if (ret < 0) {
         return YAFFS_FAIL;

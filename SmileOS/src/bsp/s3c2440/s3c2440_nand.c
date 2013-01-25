@@ -623,7 +623,7 @@ int mtdblock_init(void)
         priv->nChunksPerBlock       = NAND_SECTS_PER_BLOCK;
         priv->spareBytesPerChunk    = NAND_SPARE_PER_SECT;
         priv->totalBytesPerChunk    = NAND_BYTES_PER_SECT;
-        priv->name                  = "boot";
+        priv->name                  = "bl";
 
         if (device_create("/dev/mtdblock0", "mtdblock", priv) < 0) {
             kfree(priv);
@@ -644,7 +644,7 @@ int mtdblock_init(void)
         priv->nChunksPerBlock       = NAND_SECTS_PER_BLOCK;
         priv->spareBytesPerChunk    = NAND_SPARE_PER_SECT;
         priv->totalBytesPerChunk    = NAND_BYTES_PER_SECT;
-        priv->name                  = "kernel";
+        priv->name                  = "kern";
 
         if (device_create("/dev/mtdblock1", "mtdblock", priv) < 0) {
             kfree(priv);
@@ -665,7 +665,7 @@ int mtdblock_init(void)
         priv->nChunksPerBlock       = NAND_SECTS_PER_BLOCK;
         priv->spareBytesPerChunk    = NAND_SPARE_PER_SECT;
         priv->totalBytesPerChunk    = NAND_BYTES_PER_SECT;
-        priv->name                  = "rootfs";
+        priv->name                  = "root";
 
         if (device_create("/dev/mtdblock2", "mtdblock", priv) < 0) {
             kfree(priv);
