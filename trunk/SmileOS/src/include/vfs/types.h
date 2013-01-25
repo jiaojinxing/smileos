@@ -105,6 +105,7 @@ struct driver {
     const char             *name;
     struct driver          *next;
     atomic_t                ref;
+    void                   *module;
 
     /*
      * 驱动接口
@@ -155,6 +156,7 @@ struct file_system {
     const char             *name;
     struct file_system     *next;
     atomic_t                ref;
+    void                   *module;
 
     /*
      * 文件系统接口

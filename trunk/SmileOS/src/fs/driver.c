@@ -82,6 +82,47 @@ driver_t *driver_lookup(const char *name)
     return drv;
 }
 /*********************************************************************************************************
+** Function name:           driver_remove
+** Descriptions:            删除驱动
+** input parameters:        drv                 驱动
+** output parameters:       NONE
+** Returned value:          0 OR -1
+*********************************************************************************************************/
+int driver_remove(driver_t *drv)
+{
+    driver_t *prev, *temp;
+    int ret = -1;
+
+    if (drv == NULL) {
+        return ret;
+    }
+
+    mutex_lock(&drv_mgr_lock, 0);
+
+    if (atomic_read(&drv->ref) == 0) {
+        prev = NULL;
+        temp = drv_list;
+        while (temp != NULL && temp != drv) {
+            prev = temp;
+            temp = temp->next;
+        }
+
+        if (temp != NULL) {
+            if (prev != NULL) {
+                prev->next = drv->next;
+            } else {
+                drv_list = drv->next;
+            }
+            ret = 0;
+            module_unref(drv->module);
+            kfree(drv);
+        }
+    }
+    mutex_unlock(&drv_mgr_lock);
+
+    return ret;
+}
+/*********************************************************************************************************
 ** Function name:           driver_install
 ** Descriptions:            安装驱动
 ** input parameters:        drv                 驱动
@@ -97,6 +138,7 @@ int driver_install(driver_t *drv)
     }
 
     module = module_ref_by_addr(drv);
+    drv->module = module;
 
     mutex_lock(&drv_mgr_lock, 0);
     if (driver_lookup(drv->name) != NULL) {

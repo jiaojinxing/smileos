@@ -63,6 +63,14 @@ file_system_t *file_system_lookup(const char *name);
 *********************************************************************************************************/
 int file_system_install(file_system_t *fs);
 /*********************************************************************************************************
+** Function name:           file_system_remove
+** Descriptions:            删除文件系统
+** input parameters:        fs                  文件系统
+** output parameters:       NONE
+** Returned value:          0 OR -1
+*********************************************************************************************************/
+int file_system_remove(file_system_t *fs);
+/*********************************************************************************************************
 ** Function name:           file_system_manager_init
 ** Descriptions:            初始化文件系统管理
 ** input parameters:        NONE

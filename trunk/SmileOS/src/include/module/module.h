@@ -84,6 +84,14 @@ int module_unload(const char *path);
 *********************************************************************************************************/
 module_t *module_ref_by_addr(void *addr);
 /*********************************************************************************************************
+** Function name:           module_unref
+** Descriptions:            解取对模块的引用
+** input parameters:        mod                 模块
+** output parameters:       NONE
+** Returned value:          0 OR -1
+*********************************************************************************************************/
+int module_unref(module_t *mod);
+/*********************************************************************************************************
 ** Function name:           module_lookup
 ** Descriptions:            查找模块
 ** input parameters:        name                模块名
