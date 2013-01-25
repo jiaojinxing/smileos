@@ -143,9 +143,7 @@ int file_system_install(file_system_t *fs)
     mutex_lock(&fs_mgr_lock, 0);
     if (file_system_lookup(fs->name) != NULL) {
         mutex_unlock(&fs_mgr_lock);
-        if (module != NULL) {
-            atomic_dec(&module->ref);
-        }
+        module_unref(module);
         return -1;
     }
 

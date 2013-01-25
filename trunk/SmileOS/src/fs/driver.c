@@ -143,7 +143,7 @@ int driver_install(driver_t *drv)
     mutex_lock(&drv_mgr_lock, 0);
     if (driver_lookup(drv->name) != NULL) {
         mutex_unlock(&drv_mgr_lock);
-        atomic_dec(&module->ref);
+        module_unref(module);
         return -1;
     }
 
