@@ -401,7 +401,7 @@ static int devfs_stat(mount_point_t *point, const char *path, struct stat *buf)
         mutex_lock(&dev_mgr_lock, 0);
         dev = device_lookup(vfs_path_add_mount_point(path));
         if (dev != NULL) {
-            file_t file;
+            file_t file = {0};
             int    ret;
             atomic_inc(&dev->ref);
             mutex_unlock(&dev_mgr_lock);

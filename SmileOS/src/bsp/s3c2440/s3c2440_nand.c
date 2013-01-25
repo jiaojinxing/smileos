@@ -64,25 +64,25 @@
 #define BIT_CLR(addr, bit)          addr &= ~(1 << bit)
 #define BIT_SET(addr, bit)          addr |=  (1 << bit)
 
-#define rNFCONF                     (*(volatile unsigned *)0x4E000000)  //  NAND Flash configuration
-#define rNFCONT                     (*(volatile unsigned *)0x4E000004)  //  NAND Flash control
-#define rNFCMD                      (*(volatile unsigned *)0x4E000008)  //  NAND Flash command
-#define rNFADDR                     (*(volatile unsigned *)0x4E00000C)  //  NAND Flash address
-#define rNFDATA                     (*(volatile unsigned *)0x4E000010)  //  NAND Flash data
-#define rNFDATA8                    (*(volatile unsigned char *)0x4E000010) //  NAND Flash data
+#define rNFCONF                     (*(volatile unsigned *)0x4E000000)  /*  NAND Flash configuration    */
+#define rNFCONT                     (*(volatile unsigned *)0x4E000004)  /*  NAND Flash control          */
+#define rNFCMD                      (*(volatile unsigned *)0x4E000008)  /*  NAND Flash command          */
+#define rNFADDR                     (*(volatile unsigned *)0x4E00000C)  /*  NAND Flash address          */
+#define rNFDATA                     (*(volatile unsigned *)0x4E000010)  /*  NAND Flash data             */
+#define rNFDATA8                    (*(volatile unsigned char *)0x4E000010) /*  NAND Flash data         */
 #undef  NFDATA
-#define NFDATA                      (0x4E000010)                        //  NAND Flash data address
-#define rNFMECCD0                   (*(volatile unsigned *)0x4E000014)  //  NAND Flash ECC for Main Area
+#define NFDATA                      (0x4E000010)                        /*  NAND Flash data address     */
+#define rNFMECCD0                   (*(volatile unsigned *)0x4E000014)  /*  NAND Flash ECC for Main Area*/
 #define rNFMECCD1                   (*(volatile unsigned *)0x4E000018)
-#define rNFSECCD                    (*(volatile unsigned *)0x4E00001C)  //  NAND Flash ECC for Spare Area
-#define rNFSTAT                     (*(volatile unsigned *)0x4E000020)  //  NAND Flash operation status
+#define rNFSECCD                    (*(volatile unsigned *)0x4E00001C)  /*  NAND Flash ECC for Spare Area   */
+#define rNFSTAT                     (*(volatile unsigned *)0x4E000020)  /*  NAND Flash operation status */
 #define rNFESTAT0                   (*(volatile unsigned *)0x4E000024)
 #define rNFESTAT1                   (*(volatile unsigned *)0x4E000028)
 #define rNFMECC0                    (*(volatile unsigned *)0x4E00002C)
 #define rNFMECC1                    (*(volatile unsigned *)0x4E000030)
 #define rNFSECC                     (*(volatile unsigned *)0x4E000034)
-#define rNFSBLK                     (*(volatile unsigned *)0x4E000038)  //  NAND Flash Start block address
-#define rNFEBLK                     (*(volatile unsigned *)0x4E00003C)  //  NAND Flash End block address
+#define rNFSBLK                     (*(volatile unsigned *)0x4E000038)  /*  NAND Flash Start block address  */
+#define rNFEBLK                     (*(volatile unsigned *)0x4E00003C)  /*  NAND Flash End block address*/
 /*********************************************************************************************************
 ** 硬件 NAND FLASH 操作宏
 *********************************************************************************************************/
@@ -121,9 +121,6 @@
 *********************************************************************************************************/
 #define NAND_FALG_BUSY              (1 << 6)                            /*  忙标志                      */
 #define NAND_FALG_PE_OK             (1 << 0)                            /*  结果标志                    */
-
-#define ERROR_NONE                  0
-#define PX_ERROR                    -1
 /*********************************************************************************************************
 ** Function name:           nand_status
 ** Descriptions:            获得 NAND FLASH 芯片状态
@@ -131,16 +128,16 @@
 ** output parameters:       NONE
 ** Returned value:          NAND FLASH 芯片状态
 *********************************************************************************************************/
-static unsigned char nand_status (void)
+static unsigned char nand_status(void)
 {
-    unsigned char  status = 0xFF;
+    unsigned char status = 0xFF;
 
     NF_NFCE_L();                                                        /*  使能芯片片选                */
     NF_CMD(NAND_READ_STATUS);                                           /*  发送读取状态命令            */
     status = NF_RDDATA8();                                              /*  读取状态                    */
     NF_NFCE_H();                                                        /*  释放新片片选                */
 
-    return  (status);
+    return (status);
 }
 /*********************************************************************************************************
 ** Function name:           nand_reset
@@ -149,7 +146,7 @@ static unsigned char nand_status (void)
 ** output parameters:       NONE
 ** Returned value:          NONE
 *********************************************************************************************************/
-static void  nand_reset (void)
+static void nand_reset(void)
 {
     NF_NFCE_L();                                                        /*  使能芯片片选                */
     NF_CLEAR_RB();                                                      /*  清除忙闲信号                */
@@ -164,17 +161,17 @@ static void  nand_reset (void)
 ** Returned value:          0                   完成   OK
 **                          -1                  未完成 Not OK
 *********************************************************************************************************/
-static int  nand_is_ok (void)
+static int nand_is_ok(void)
 {
-    unsigned char  status;
+    unsigned char status;
 
     status = nand_status();
     if ((status & NAND_FALG_BUSY) != 0) {
         if ((status & NAND_FALG_PE_OK) == 0) {
-            return  (ERROR_NONE);
+            return (0);
         }
     }
-    return  (PX_ERROR);
+    return (-1);
 }
 /*********************************************************************************************************
 ** Function name:           nand_read_id
@@ -183,7 +180,7 @@ static int  nand_is_ok (void)
 ** output parameters:       id                  保存读到的ID
 ** Returned value:          NONE
 *********************************************************************************************************/
-static void nand_read_id (uint16_t *id)
+static void nand_read_id(uint16_t *id)
 {
     NF_NFCE_L();                                                        /*  片选                        */
 
@@ -202,7 +199,7 @@ static void nand_read_id (uint16_t *id)
 ** output parameters:       NONE
 ** Returned value:          NONE
 *********************************************************************************************************/
-static void  nand_port_init (void)
+static void nand_port_init(void)
 {
     rNFCONF = (NAND_TACLS << 12)                                        /*  HCLK x (TACLS)              */
             | (NAND_TWRPH0 << 8)                                        /*  HCLK x (TWRPH0 + 1)         */
@@ -232,13 +229,13 @@ static void  nand_port_init (void)
 ** Returned value:          0                   成功
 **                          -1                  未成功
 *********************************************************************************************************/
-static int  nand_read (void                  *pvSecBuf,
-                       void                  *pvSeccDataBuf,
-                       uint64_t               ulSecIndex)
+static int nand_read(void                  *pvSecBuf,
+                     void                  *pvSeccDataBuf,
+                     uint64_t               ulSecIndex)
 {
-             int    i;
-    unsigned char  *pucBuffer      = (unsigned char *)pvSecBuf;
-    unsigned char  *pucBufferSpare = (unsigned char *)pvSeccDataBuf;
+             int   i;
+    unsigned char *pucBuffer      = (unsigned char *)pvSecBuf;
+    unsigned char *pucBufferSpare = (unsigned char *)pvSeccDataBuf;
 
     NF_NFCE_L();                                                        /*  片选                        */
     NF_CLEAR_RB();
@@ -263,7 +260,7 @@ static int  nand_read (void                  *pvSecBuf,
     }
     NF_NFCE_H();                                                        /*  释放新片片选                */
 
-    return  (ERROR_NONE);
+    return (0);
 }
 /*********************************************************************************************************
 ** Function name:           nand_write
@@ -275,13 +272,13 @@ static int  nand_read (void                  *pvSecBuf,
 ** Returned value:          0                   完成
 **                          -1                  未完成
 *********************************************************************************************************/
-static int  nand_write (const void            *pvSecBuf,
-                        const void            *pvSeccDataBuf,
-                        uint64_t               ulSecIndex)
+static int nand_write(const void            *pvSecBuf,
+                      const void            *pvSeccDataBuf,
+                      uint64_t               ulSecIndex)
 {
-             int    i;
-    unsigned char  *pucBuffer      = (unsigned char *)pvSecBuf;
-    unsigned char  *pucBufferSpare = (unsigned char *)pvSeccDataBuf;
+             int   i;
+    unsigned char *pucBuffer      = (unsigned char *)pvSecBuf;
+    unsigned char *pucBufferSpare = (unsigned char *)pvSeccDataBuf;
 
     NF_NFCE_L();                                                        /*  片选                        */
 
@@ -309,7 +306,7 @@ static int  nand_write (const void            *pvSecBuf,
 
     NF_DETECT_RB();
 
-    return  (nand_is_ok());
+    return (nand_is_ok());
 }
 /*********************************************************************************************************
 ** Function name:           nand_erase
@@ -319,7 +316,7 @@ static int  nand_write (const void            *pvSecBuf,
 ** Returned value:          0                   完成
 **                          -1                  未完成
 *********************************************************************************************************/
-static int  nand_erase (uint64_t  ulBlockIndex)
+static int nand_erase(uint64_t  ulBlockIndex)
 {
     uint64_t ulSecIndex = ulBlockIndex * 32;
 
@@ -337,7 +334,7 @@ static int  nand_erase (uint64_t  ulBlockIndex)
 
     NF_DETECT_RB();
 
-    return  (nand_is_ok());
+    return (nand_is_ok());
 }
 /*********************************************************************************************************
 ** Function name:           nand_chip_init
@@ -347,13 +344,13 @@ static int  nand_erase (uint64_t  ulBlockIndex)
 ** Returned value:          0                   成功
 **                          -1                  未成功
 *********************************************************************************************************/
-static int  nand_chip_init (void)
+static int nand_chip_init(void)
 {
-    static int  iIsInit = 0;
-    uint16_t    id;
+    static int iIsInit = 0;
+    uint16_t   id;
 
     if (iIsInit) {                                                      /*  避免重复初始化              */
-        return  (ERROR_NONE);
+        return (0);
     }
 
     iIsInit = 1;
@@ -362,7 +359,7 @@ static int  nand_chip_init (void)
     nand_reset();                                                       /*  复位 NAND FLASH 芯片        */
     nand_read_id(&id);                                                  /*  读取芯片 ID 号              */
 
-    return  (ERROR_NONE);
+    return (0);
 }
 /*********************************************************************************************************
 ** 私有信息
