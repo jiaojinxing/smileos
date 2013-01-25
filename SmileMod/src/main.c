@@ -39,6 +39,7 @@
 *********************************************************************************************************/
 #include "vfs/device.h"
 #include "vfs/driver.h"
+#include "vfs/utils.h"
 #include "kern/kern.h"
 #include <errno.h>
 
@@ -46,7 +47,7 @@
  * 私有信息
  */
 typedef struct {
-    VFS_SELECT_MEMBERS;
+    VFS_DEVICE_MEMBERS;
 } privinfo_t;
 
 /*
@@ -88,7 +89,7 @@ static ssize_t test_read(void *ctx, file_t *file, void *buf, size_t len)
         seterrno(EINVAL);
         return -1;
     }
-    if (priv->flags & VFS_FILE_ERROR) {
+    if (atomic_read(&priv->select.flags) & VFS_FILE_ERROR) {
         seterrno(EIO);
         return -1;
     }
@@ -106,7 +107,7 @@ static ssize_t test_write(void *ctx, file_t *file, const void *buf, size_t len)
         seterrno(EINVAL);
         return -1;
     }
-    if (priv->flags & VFS_FILE_ERROR) {
+    if (atomic_read(&priv->select.flags) & VFS_FILE_ERROR) {
         seterrno(EIO);
         return -1;
     }
@@ -132,8 +133,6 @@ static int test_scan(void *ctx, file_t *file, int flags)
     }
     return ret;
 }
-
-#include "drv/selectdrv.h"
 
 /*
  * test 驱动
@@ -183,7 +182,7 @@ int module_init(int argc, char **argv)
 
     priv = kmalloc(sizeof(privinfo_t));
     if (priv != NULL) {
-        select_init(priv);
+        device_init(priv);
         if (device_create("/dev/test", "test", priv) < 0) {
             kfree(priv);
             return -1;

@@ -48,12 +48,12 @@
 /*
  * 驱动链表
  */
-static driver_t *drv_list;
+static driver_t    *drv_list;
 
 /*
  * 驱动管理锁
  */
-mutex_t drv_mgr_lock;
+mutex_t             drv_mgr_lock;
 /*********************************************************************************************************
 ** Function name:           driver_lookup
 ** Descriptions:            查找驱动

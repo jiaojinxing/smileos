@@ -377,13 +377,13 @@ uint32_t mmu_map_section_as_page(uint32_t section_no,
 ** Function name:           mmu_map_page
 ** Descriptions:            映射 4K 小页面
 ** input parameters:        page_tbl_base       二级页表基址
-**                          page_nr             段内页号
+**                          page_no             段内页号
 **                          frame_base          页框基址
 ** output parameters:       NONE
 ** Returned value:          NONE
 *********************************************************************************************************/
 void mmu_map_page(uint32_t page_tbl_base,
-                  uint32_t page_nr,
+                  uint32_t page_no,
                   uint32_t frame_base);
 /*********************************************************************************************************
 ** Function name:           mmu_map_region

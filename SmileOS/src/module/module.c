@@ -69,7 +69,7 @@ static module_t    *mod_list;
 /*
  * 模块管理锁
  */
-mutex_t             mod_mgr_lock;
+static mutex_t      mod_mgr_lock;
 /*********************************************************************************************************
 ** Function name:           arm_reloc_rel
 ** Descriptions:            对指定的 rel 条目进行重定位
@@ -115,15 +115,15 @@ static int arm_reloc_rel(Elf32_Rel *rel, Elf32_Addr addr, uint8_t *target)
 /*********************************************************************************************************
 ** Function name:           module_probe
 ** Descriptions:            探测模块
-** input parameters:        module              模块
+** input parameters:        mod                 模块
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-static int module_probe(module_t *module)
+static int module_probe(module_t *mod)
 {
     Elf32_Ehdr *ehdr;
 
-    ehdr = (Elf32_Ehdr *)module->elf;                                   /*  ELF 首部                    */
+    ehdr = (Elf32_Ehdr *)mod->elf;                                      /*  ELF 首部                    */
 
     if ((ehdr->e_ident[EI_MAG0] != ELFMAG0) ||                          /*  魔数检查                    */
         (ehdr->e_ident[EI_MAG1] != ELFMAG1) ||
@@ -199,11 +199,11 @@ static int module_probe(module_t *module)
 /*********************************************************************************************************
 ** Function name:           module_reloc
 ** Descriptions:            重定位模块
-** input parameters:        module              模块
+** input parameters:        mod                 模块
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-static int module_reloc(module_t *module)
+static int module_reloc(module_t *mod)
 {
     Elf32_Ehdr *ehdr;
     Elf32_Shdr *shdr;
@@ -214,13 +214,13 @@ static int module_reloc(module_t *module)
     int         bss_idx;
     int         text_idx;
 
-    ehdr = (Elf32_Ehdr *)module->elf;                                   /*  ELF 首部                    */
+    ehdr = (Elf32_Ehdr *)mod->elf;                                      /*  ELF 首部                    */
 
     /*
      * 节区首部中的字符串的节区首部
      */
-    shstrtab_shdr = (Elf32_Shdr *)(module->elf + ehdr->e_shoff + ehdr->e_shstrndx * ehdr->e_shentsize);
-    shstrtab      = (char *)module->elf + shstrtab_shdr->sh_offset;
+    shstrtab_shdr = (Elf32_Shdr *)(mod->elf + ehdr->e_shoff + ehdr->e_shstrndx * ehdr->e_shentsize);
+    shstrtab      = (char *)mod->elf + shstrtab_shdr->sh_offset;
 
     /*
      * 先装载所有节区首部到局部数组
@@ -234,7 +234,7 @@ static int module_reloc(module_t *module)
     text_idx = SHN_UNDEF;
 
     for (i = 0; i < ehdr->e_shnum; i++) {
-        shdrs[i] = shdr = (Elf32_Shdr *)(module->elf + ehdr->e_shoff + ehdr->e_shentsize * i);
+        shdrs[i] = shdr = (Elf32_Shdr *)(mod->elf + ehdr->e_shoff + ehdr->e_shentsize * i);
         /*
          * .bss 节区不存在 ELF 文件中, 需要分配出来
          */
@@ -281,9 +281,9 @@ static int module_reloc(module_t *module)
             }
             strtab_shdr = shdrs[symtab_shdr->sh_link];                  /*  字符串表节区首部            */
 
-            symtab      = module->elf + symtab_shdr->sh_offset;
-            target      = module->elf + target_shdr->sh_offset;
-            strtab      = (char *)module->elf + strtab_shdr->sh_offset;
+            symtab      = mod->elf + symtab_shdr->sh_offset;
+            target      = mod->elf + target_shdr->sh_offset;
+            strtab      = (char *)mod->elf + strtab_shdr->sh_offset;
         }
 
         if (shdr->sh_type == SHT_REL) {
@@ -293,7 +293,7 @@ static int module_reloc(module_t *module)
             /*
              * 处理所有的 rel 条目
              */
-            for (j = 0, rel = (Elf32_Rel *)(module->elf + shdr->sh_offset);
+            for (j = 0, rel = (Elf32_Rel *)(mod->elf + shdr->sh_offset);
                  j < shdr->sh_size / shdr->sh_entsize;
                  j++,   rel = (Elf32_Rel *)((char *)rel + shdr->sh_entsize)) {
 
@@ -315,7 +315,7 @@ static int module_reloc(module_t *module)
                         if (sym->st_shndx == bss_idx) {                 /*  如果这个符号在 .bss 节区    */
                             addr = (uint32_t)(shdrs[bss_idx]->sh_offset + sym->st_value);
                         } else {
-                            addr = (uint32_t)(module->elf + shdrs[sym->st_shndx]->sh_offset + sym->st_value);
+                            addr = (uint32_t)(mod->elf + shdrs[sym->st_shndx]->sh_offset + sym->st_value);
                         }
 
                         /*
@@ -365,8 +365,8 @@ static int module_reloc(module_t *module)
         /*
          * 清除并无效 D-Cache
          */
-        for (i = 0; i < (module->size + 31) / 32; i++) {
-            mmu_clean_invalidate_dcache_mva((((uint32_t)module->elf) & (~31)) + i * 32);
+        for (i = 0; i < (mod->size + 31) / 32; i++) {
+            mmu_clean_invalidate_dcache_mva((((uint32_t)mod->elf) & (~31)) + i * 32);
         }
 
         /*
@@ -377,14 +377,14 @@ static int module_reloc(module_t *module)
         /*
          * 无效 I-Cache
          */
-        for (i = 0; i < (module->size + 31) / 32; i++) {
-            mmu_invalidate_icache_mva((((uint32_t)module->elf) & (~31)) + i * 32);
+        for (i = 0; i < (mod->size + 31) / 32; i++) {
+            mmu_invalidate_icache_mva((((uint32_t)mod->elf) & (~31)) + i * 32);
         }
     }
 
-    module->shdrs    = shdrs;
-    module->bss_idx  = bss_idx;
-    module->text_idx = text_idx;
+    mod->shdrs    = shdrs;
+    mod->bss_idx  = bss_idx;
+    mod->text_idx = text_idx;
 
     return 0;
 
@@ -397,25 +397,25 @@ static int module_reloc(module_t *module)
 /*********************************************************************************************************
 ** Function name:           module_exec
 ** Descriptions:            执行模块
-** input parameters:        module              模块
+** input parameters:        mod                 模块
 **                          argc                参数个数
 **                          argv                参数数组
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-static int module_exec(module_t *module, const char *func_name, int argc, char **argv)
+static int module_exec(module_t *mod, const char *func_name, int argc, char **argv)
 {
     int         i;
     Elf32_Ehdr *ehdr;
     Elf32_Shdr *shdr;
     int (*entry)(int argc, char **argv);
 
-    ehdr = (Elf32_Ehdr *)module->elf;                                   /*  ELF 首部                    */
+    ehdr = (Elf32_Ehdr *)mod->elf;                                      /*  ELF 首部                    */
 
     /*
      * 执行 module_init 函数
      */
-    for (i = 0, shdr = module->shdrs[0]; i < ehdr->e_shnum; i++, shdr = module->shdrs[i]) {
+    for (i = 0, shdr = mod->shdrs[0]; i < ehdr->e_shnum; i++, shdr = mod->shdrs[i]) {
 
         if (shdr->sh_type == SHT_SYMTAB) {
             Elf32_Shdr *symtab_shdr;
@@ -426,23 +426,23 @@ static int module_exec(module_t *module, const char *func_name, int argc, char *
             int         j;
 
             symtab_shdr = shdr;
-            symtab      = module->elf + symtab_shdr->sh_offset;
+            symtab      = mod->elf + symtab_shdr->sh_offset;
 
             if (symtab_shdr->sh_link == SHN_UNDEF) {
                 break;
             }
-            strtab_shdr = module->shdrs[symtab_shdr->sh_link];          /*  字符串表节区首部            */
-            strtab      = (char *)module->elf + strtab_shdr->sh_offset;
+            strtab_shdr = mod->shdrs[symtab_shdr->sh_link];             /*  字符串表节区首部            */
+            strtab      = (char *)mod->elf + strtab_shdr->sh_offset;
 
             for (j = 0,
                  sym = (Elf32_Sym *)symtab;
                  j < symtab_shdr->sh_size / symtab_shdr->sh_entsize;
                  j++, sym = (Elf32_Sym *)((char *)sym + symtab_shdr->sh_entsize)) {
 
-                if (sym->st_shndx == module->text_idx &&
+                if (sym->st_shndx == mod->text_idx &&
                     ELF32_ST_TYPE(sym->st_info) == STT_FUNC) {
                     if (strcmp(sym->st_name + strtab, func_name) == 0) {
-                        entry = (int (*)(int, char **))(module->elf + module->shdrs[module->text_idx]->sh_offset + sym->st_value);
+                        entry = (int (*)(int, char **))(mod->elf + mod->shdrs[mod->text_idx]->sh_offset + sym->st_value);
                         return entry(argc, argv);
                     }
                 }
@@ -454,7 +454,7 @@ static int module_exec(module_t *module, const char *func_name, int argc, char *
 /*********************************************************************************************************
 ** Function name:           module_install
 ** Descriptions:            安装模块
-** input parameters:        dev                 模块
+** input parameters:        mod                 模块
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
@@ -466,6 +466,42 @@ static int module_install(module_t *mod)
     mutex_unlock(&mod_mgr_lock);
 
     return 0;
+}
+/*********************************************************************************************************
+** Function name:           module_remove
+** Descriptions:            删除模块从模块链表
+** input parameters:        mod                 模块
+** output parameters:       NONE
+** Returned value:          0 OR -1
+*********************************************************************************************************/
+static int module_remove(module_t *mod)
+{
+    module_t *tmp, *prev;
+    int ret = -1;
+
+    mutex_lock(&mod_mgr_lock, 0);
+    prev = NULL;
+    tmp  = mod_list;
+    while (tmp != NULL) {
+        if (mod == tmp) {
+            break;
+        }
+        prev = tmp;
+        tmp  = tmp->next;
+    }
+
+    if (tmp != NULL) {
+        if (prev != NULL) {
+            prev->next = tmp->next;
+        } else {
+            mod_list   = tmp->next;
+        }
+        ret = 0;
+    }
+
+    mutex_unlock(&mod_mgr_lock);
+
+    return ret;
 }
 /*********************************************************************************************************
 ** Function name:           module_lookup
@@ -500,7 +536,7 @@ module_t *module_lookup(const char *name)
 /*********************************************************************************************************
 ** Function name:           module_lookup_by_key
 ** Descriptions:            查找模块
-** input parameters:        name                模块名
+** input parameters:        key                 模块名 KEY
 ** output parameters:       NONE
 ** Returned value:          模块 OR NULL
 *********************************************************************************************************/
@@ -534,7 +570,8 @@ module_t *module_ref_by_addr(void *addr)
     mutex_lock(&mod_mgr_lock, 0);
     mod = mod_list;
     while (mod != NULL) {
-        if (((char *)addr >= (char *)mod + sizeof(module_t)) && ((char *)addr < (char *)mod + sizeof(module_t) + mod->size)) {
+        if (((char *)addr >= (char *)mod + sizeof(module_t)) &&
+            ((char *)addr <  (char *)mod + sizeof(module_t) + mod->size)) {
             break;
         }
         mod = mod->next;
@@ -564,40 +601,29 @@ int module_unref(module_t *mod)
     }
 }
 /*********************************************************************************************************
-** Function name:           module_remove
-** Descriptions:            删除模块
-** input parameters:        name                模块名
+** Function name:           module_destroy
+** Descriptions:            销毁模块
+** input parameters:        mod                 模块
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-static int module_remove(unsigned int key)
+static int module_destroy(module_t *mod)
 {
-    module_t *mod, *prev;
-    int ret = -1;
-
-    mutex_lock(&mod_mgr_lock, 0);
-    prev = NULL;
-    mod  = mod_list;
-    while (mod != NULL) {
-        if (key == mod->key) {
-            break;
-        }
-        prev = mod;
-        mod  = mod->next;
+    /*
+     * 释放掉 .bss 节区
+     */
+    if (mod->bss_idx != SHN_UNDEF) {
+        kfree((void *)mod->shdrs[mod->bss_idx]->sh_offset);
     }
 
-    if (mod != NULL) {
-        if (prev != NULL) {
-            prev->next = mod->next;
-        } else {
-            mod_list = mod->next;
-        }
-        kfree(mod);
-        ret = 0;
-    }
-    mutex_unlock(&mod_mgr_lock);
+    /*
+     * 释放节区首部数组
+     */
+    kfree(mod->shdrs);
 
-    return ret;
+    kfree(mod);
+
+    return 0;
 }
 /*********************************************************************************************************
 ** Function name:           module_exec
@@ -615,7 +641,7 @@ int module_load(const char *path, int argc, char **argv)
     int          len;
     uint8_t     *buf;
     struct stat  st;
-    module_t    *module;
+    module_t    *mod;
 
     if (path == NULL) {
         printk("%s: path = NULL\n", __func__);
@@ -640,26 +666,26 @@ int module_load(const char *path, int argc, char **argv)
         return -1;
     }
 
-    module = kmalloc(sizeof(module_t) + st.st_size);                    /*  分配缓冲                    */
-    if (module == NULL) {
+    mod = kmalloc(sizeof(module_t) + st.st_size);                       /*  分配缓冲                    */
+    if (mod == NULL) {
         printk("%s: failed to kmalloc %d byte\n", __func__, st.st_size);
         close(fd);
         return -1;
     }
 
-    strcpy(module->name, path);
-    module->key  = BKDRHash(path);
-    buf          = (uint8_t *)module + sizeof(module_t);
-    module->elf  = buf;
-    module->size = st.st_size;
-    atomic_set(&module->ref, 0);
+    strcpy(mod->name, path);
+    mod->key  = BKDRHash(path);
+    buf          = (uint8_t *)mod + sizeof(module_t);
+    mod->elf  = buf;
+    mod->size = st.st_size;
+    atomic_set(&mod->ref, 0);
 
     len = 0;                                                            /*  将文件的内容读到缓冲区      */
     while (st.st_size - len > 0) {
         ret = read(fd, buf, st.st_size - len);
         if (ret < 0) {
             printk("%s: failed to read %s %d byte at %d\n", __func__, path, st.st_size - len, len);
-            kfree(module);
+            kfree(mod);
             close(fd);
             return -1;
         }
@@ -669,53 +695,37 @@ int module_load(const char *path, int argc, char **argv)
 
     close(fd);                                                          /*  关闭文件                    */
 
-    ret = module_probe(module);                                         /*  探测模块                    */
+    ret = module_probe(mod);                                            /*  探测模块                    */
     if (ret < 0) {
         printk("%s: %s is not a module file\n", __func__, path);
-        kfree(module);
+        kfree(mod);
         return -1;
     }
 
-    ret = module_reloc(module);                                         /*  重定位模块                  */
+    ret = module_reloc(mod);                                            /*  重定位模块                  */
     if (ret < 0) {
         printk("%s: failed to reloc %s\n", __func__, path);
-        kfree(module);
+        kfree(mod);
         return -1;
     }
 
     mutex_lock(&mod_mgr_lock, 0);
 
-    if (module_lookup_by_key(module->key) != NULL) {
-
+    if (module_lookup_by_key(mod->key) != NULL) {
         mutex_unlock(&mod_mgr_lock);
-
-        if (module->bss_idx != SHN_UNDEF) {                             /*  释放掉 .bss 节区            */
-            kfree((void *)module->shdrs[module->bss_idx]->sh_offset);
-        }
-
-        kfree(module->shdrs);                                           /*  释放节区首部数组            */
-
-        kfree(module);
+        module_destroy(mod);
         return -1;
     }
 
-    module_install(module);
+    module_install(mod);
 
-    ret = module_exec(module, "module_init", argc, argv);               /*  执行模块                    */
+    mutex_unlock(&mod_mgr_lock);
+
+    ret = module_exec(mod, "module_init", argc, argv);                  /*  执行模块                    */
     if (ret < 0) {
-
-        mutex_unlock(&mod_mgr_lock);
-
         printk("%s: failed to exec %s module_init\n", __func__, path);
-
-        if (module->bss_idx != SHN_UNDEF) {                             /*  释放掉 .bss 节区            */
-            kfree((void *)module->shdrs[module->bss_idx]->sh_offset);
-        }
-
-        kfree(module->shdrs);                                           /*  释放节区首部数组            */
-
-        module_remove(module->key);
-
+        module_remove(mod);
+        module_destroy(mod);
         return -1;
     }
 
@@ -730,7 +740,7 @@ int module_load(const char *path, int argc, char **argv)
 *********************************************************************************************************/
 int module_unload(const char *path)
 {
-    module_t *module;
+    module_t *mod;
     int ret;
 
     if (path == NULL) {
@@ -738,36 +748,26 @@ int module_unload(const char *path)
         return -1;
     }
 
-    module = module_lookup(path);
-    if (module == NULL) {
+    mod = module_lookup(path);
+    if (mod == NULL) {
         printk("%s: module %s no found\n", __func__, path);
         return -1;
     }
 
-    ret = module_exec(module, "module_exit", 0, NULL);
+    ret = module_exec(mod, "module_exit", 0, NULL);
     if (ret < 0) {
         printk("%s: failed to exec %s module_exit\n", __func__, path);
         return -1;
     }
 
-    if (atomic_read(&module->ref) != 0) {
+    if (atomic_read(&mod->ref) != 0) {
         printk("%s: module %s is busy\n", __func__, path);
         return -1;
     }
 
-    /*
-     * 释放掉 .bss 节区
-     */
-    if (module->bss_idx != SHN_UNDEF) {
-        kfree((void *)module->shdrs[module->bss_idx]->sh_offset);
-    }
+    module_remove(mod);
 
-    /*
-     * 释放节区首部数组
-     */
-    kfree(module->shdrs);
-
-    module_remove(module->key);
+    module_destroy(mod);
 
     return 0;
 }
