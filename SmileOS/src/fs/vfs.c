@@ -328,7 +328,6 @@ static mount_point_t *vfs_mount_point_lookup2(char pathbuf[PATH_MAX], char **ppa
 {
     mount_point_t  *point;
     char           *tmp;
-    //static char     rootdir[] = "/";
 
     if (path == NULL) {                                                 /*  PATH 合法性检查             */
         seterrno(EINVAL);
@@ -356,8 +355,8 @@ static mount_point_t *vfs_mount_point_lookup2(char pathbuf[PATH_MAX], char **ppa
         tmp = strchr(pathbuf + 1, '/');                                 /*  查找挂载点名后的 / 号       */
         if (tmp == NULL) {                                              /*  如果是挂载点                */
             point = mount_point_lookup(pathbuf);
-            pathbuf[1] = '\0';
-            tmp = pathbuf;
+            strcat(pathbuf + 1, "/");
+            tmp = strchr(pathbuf + 1, '/');
         } else {
             *tmp = '\0';                                                /*  暂时去掉 / 号               */
             point = mount_point_lookup(pathbuf);                        /*  查找挂载点                  */
