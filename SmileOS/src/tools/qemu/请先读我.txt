@@ -1,0 +1,42 @@
+
+首次使用，请先执行add_tap.bat批处理文件，以增加虚拟网卡（可以执行delete_tap.bat批处理文件将所有的虚拟网卡删除），
+
+将新增的虚拟网卡的名字修改为virtual，将IP设为192.168.7.XX（必须要和SmileOS的IP同一个子网），将子网掩码设为255.255.255.0。
+
+SDCARD.IMA是qemu-system-arm.exe运行时的仿真SD卡所需的镜像文件，可以使用winimage.exe（可以导入winimage绿化.reg注册表文件和谐之）打开并编辑（增删文件和目录）。
+
+winimage.bat供懒人用的，一键用winimage.exe打开SDCARD.IMA。
+
+putty.exe你懂的。
+
+nand.bin是qemu-system-arm.exe运行时的仿真nand flash所需的镜像文件，它在linux下用如下的命令生成：
+
+$ cd ~ 
+$ mkdir nand 
+$ sudo mount -t tmpfs none nand/ 
+$ dd if=/dev/zero of=nand/nand.bin bs=528 count=131072
+$ cp nand/nand.bin . 
+$ sudo umount nand/
+$ rmdir nand 
+
+把~/nand.bin弄到windows下。
+
+现在nand.bin的内容为全0，会被认为是坏块，执行mini2440_uboot.bat批处理文件，输入q退出菜单，在控制台下输入如下的命令：
+
+OpenJTAG> nand scrub
+
+完成后，关闭模拟器程序。
+
+mini2440_smileos.bat批处理文件用于启动qemu-system-arm.exe模拟mini2440开发板运行当前目录下的SmileOS.elf文件，现在你可以执行它体验一下SmileOS了。
+
+下面讲解一下调试的方法：
+
+在eclipse下新建一个Zylin Embedded debug(Native)，（Zylin Embedded debug怎么弄出来的，自己google吧）
+
+将Debugger选项卡里的GDB debugger改为arm-none-eabi-gdb
+
+将Commands选项卡里的Initalize commands改为如下的内容:
+target remote localhost:1234
+load
+
+执行mini2440_debug.bat批处理文件，再点一下eclipse的调试。
