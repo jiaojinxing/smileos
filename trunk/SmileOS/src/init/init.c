@@ -54,13 +54,10 @@ static void tcpip_init_done(void *arg)
     static struct netif ethernetif;
     ip_addr_t           ip, submask, gateway;
 
-    /*
-     * 如果使用 qemu, 请把 #if 1 改为 #if 0
-     */
-#if 0
-    IP4_ADDR(&ip,       192, 168,   27, 201);
-    IP4_ADDR(&submask,  255, 255, 255,    0);
-    IP4_ADDR(&gateway,  192, 168,   27,   1);
+#if 1
+    IP4_ADDR(&ip,       192, 168,   7,  30);
+    IP4_ADDR(&submask,  255, 255, 255,   0);
+    IP4_ADDR(&gateway,  192, 168,   7,   1);
 #else
     IP4_ADDR(&ip,       192, 168,   0,  30);
     IP4_ADDR(&submask,  255, 255, 255,   0);
