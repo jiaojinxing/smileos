@@ -127,15 +127,7 @@ int yaffs_StartUp(void)
 
         cfg->dev    = ydev;
         cfg->prefix = ydev->param.name;
-        if (cfg->prefix == NULL) {
-            snprintf(buf, sizeof(buf), "/p%d", i);
-            cfg->prefix = strdup(buf);
-            if (cfg->prefix == NULL) {
-                kfree(ydev);
-                atomic_dec(&dev->ref);
-                continue;
-            }
-        }
+
         cfg++;
 	}
 
@@ -146,7 +138,22 @@ int yaffs_StartUp(void)
 	    kfree(cfg_bak);
 	    return -1;
 	} else {
+	    extern file_system_t yaffs;
+
 	    yaffs_initialise(cfg_bak);
+
+	    cfg--;
+	    while (cfg >= cfg_bak) {
+	        if (yaffs_mount(cfg->prefix) != YAFFS_OK) {
+	            atomic_dec(&(((device_t *)(cfg->dev->context))->ref));
+	            //kfree(cfg->dev);
+	            continue;
+	        }
+	        vfs_mount_point_create(cfg->prefix, &yaffs, cfg->dev->context);
+	        atomic_dec(&(((device_t *)(cfg->dev->context))->ref));
+            cfg--;
+	    }
+
 	    return 0;
 	}
 }

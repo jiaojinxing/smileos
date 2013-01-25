@@ -405,7 +405,7 @@ static int devfs_stat(mount_point_t *point, const char *path, struct stat *buf)
             int    ret;
             atomic_inc(&dev->ref);
             mutex_unlock(&dev_mgr_lock);
-            file->ctx = dev;
+            file.ctx = dev;
             ret = devfs_fstat(point, &file, buf);
             atomic_dec(&dev->ref);
             return ret;

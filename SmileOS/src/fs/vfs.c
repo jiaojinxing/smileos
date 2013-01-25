@@ -328,7 +328,7 @@ static mount_point_t *vfs_mount_point_lookup2(char pathbuf[PATH_MAX], char **ppa
 {
     mount_point_t  *point;
     char           *tmp;
-    static char     rootdir[] = "/";
+    //static char     rootdir[] = "/";
 
     if (path == NULL) {                                                 /*  PATH 合法性检查             */
         seterrno(EINVAL);
@@ -356,7 +356,8 @@ static mount_point_t *vfs_mount_point_lookup2(char pathbuf[PATH_MAX], char **ppa
         tmp = strchr(pathbuf + 1, '/');                                 /*  查找挂载点名后的 / 号       */
         if (tmp == NULL) {                                              /*  如果是挂载点                */
             point = mount_point_lookup(pathbuf);
-            tmp = rootdir;
+            pathbuf[1] = '\0';
+            tmp = pathbuf;
         } else {
             *tmp = '\0';                                                /*  暂时去掉 / 号               */
             point = mount_point_lookup(pathbuf);                        /*  查找挂载点                  */
@@ -2054,8 +2055,7 @@ int vfs_mount(const char *point_name, const char *dev_name, const char *fs_name,
     device_t       *dev;
     int             ret;
 
-    if (point_name == NULL ||
-        fs_name    == NULL) {
+    if (fs_name == NULL) {
         return -1;
     }
 
@@ -2085,49 +2085,66 @@ int vfs_mount(const char *point_name, const char *dev_name, const char *fs_name,
             }
             mutex_unlock(&dev_mgr_lock);
 
-            point = kmalloc(sizeof(mount_point_t));                     /*  分配挂载点                  */
-            if (point != NULL) {
-                if (point_name[0] == '/') {                             /*  保证挂载点以 / 号开始       */
-                    strlcpy(point->name, point_name, sizeof(point->name));
-                } else {
-                    snprintf(point->name, sizeof(point->name), "/%s", point_name);
-                }
+            if (point_name != NULL) {                                   /*  有指定挂载点名              */
+                point = kmalloc(sizeof(mount_point_t));                 /*  分配挂载点                  */
+                if (point != NULL) {
+                    if (point_name[0] == '/') {                         /*  保证挂载点以 / 号开始       */
+                        strlcpy(point->name, point_name, sizeof(point->name));
+                    } else {
+                        snprintf(point->name, sizeof(point->name), "/%s", point_name);
+                    }
 
-                if (point->name[1] != '\0') {                           /*  如果不是根文件系统          */
-                    if (strchr(point->name + 1, '/') != NULL) {         /*  保证挂载点不能再出现 / 号   */
+                    if (point->name[1] != '\0') {                       /*  如果不是根文件系统          */
+                        if (strchr(point->name + 1, '/') != NULL) {     /*  保证挂载点不能再出现 / 号   */
                                                                         /*  因为我不知道 / 号还有几个   */
+                            mutex_unlock(&point_mgr_lock);
+                            if (dev != NULL) {
+                                atomic_dec(&dev->ref);
+                            }
+                            atomic_dec(&fs->ref);
+                            kfree(point);
+                            return -1;                                  /*  所以当作出错来处理          */
+                        }
+                    } else {
+                        rootfs_point = point;
+                    }
+
+                    point->fs  = fs;
+                    point->dev = dev;
+                    point->ctx = NULL;
+                    atomic_set(&point->ref, 0);
+
+                    ret = fs->mount(point, dev, dev_name, param);       /*  挂载                        */
+                    if (ret < 0) {
+                        if (rootfs_point == point) {
+                            rootfs_point =  NULL;
+                        }
                         mutex_unlock(&point_mgr_lock);
                         if (dev != NULL) {
                             atomic_dec(&dev->ref);
                         }
                         atomic_dec(&fs->ref);
                         kfree(point);
-                        return -1;                                      /*  所以当作出错来处理          */
+                        return -1;
+                    } else {
+                        mount_point_install(point);                     /*  安装挂载点                  */
+                        mutex_unlock(&point_mgr_lock);
+                        return 0;
                     }
-                } else {
-                    rootfs_point = point;
                 }
-
-                point->fs  = fs;
-                point->dev = dev;
-                point->ctx = NULL;
-                atomic_set(&point->ref, 0);
-
-                ret = fs->mount(point, dev, dev_name, param);           /*  挂载                        */
+            } else {                                                    /*  无指定挂载点名, 挂载时创建  */
+                                                                        /*  用分区名创建挂载点          */
+                ret = fs->mount(NULL, dev, dev_name, param);            /*  挂载                        */
                 if (ret < 0) {
-                    if (rootfs_point == point) {
-                        rootfs_point =  NULL;
-                    }
                     mutex_unlock(&point_mgr_lock);
                     if (dev != NULL) {
                         atomic_dec(&dev->ref);
                     }
                     atomic_dec(&fs->ref);
-                    kfree(point);
                     return -1;
                 } else {
-                    mount_point_install(point);                         /*  安装挂载点                  */
                     mutex_unlock(&point_mgr_lock);
+                    atomic_dec(&fs->ref);                               /*  这里会减少文件系统引用      */
                     return 0;
                 }
             }
@@ -2138,6 +2155,56 @@ int vfs_mount(const char *point_name, const char *dev_name, const char *fs_name,
 
     mutex_unlock(&point_mgr_lock);
     return -1;
+}
+/*********************************************************************************************************
+** Function name:           vfs_mount_point_create
+** Descriptions:            创建挂载点
+** input parameters:        point_name          挂载点名
+**                          fs                  文件系统
+**                          dev                 设备
+** output parameters:       NONE
+** Returned value:          0 OR -1
+*********************************************************************************************************/
+int vfs_mount_point_create(const char *point_name, file_system_t *fs, device_t *dev)
+{
+    mount_point_t  *point;
+
+    if (point_name == NULL || fs == NULL) {
+        return -1;
+    }
+
+    point = kmalloc(sizeof(mount_point_t));                             /*  分配挂载点                  */
+    if (point != NULL) {
+        if (point_name[0] == '/') {                                     /*  保证挂载点以 / 号开始       */
+            strlcpy(point->name, point_name, sizeof(point->name));
+        } else {
+            snprintf(point->name, sizeof(point->name), "/%s", point_name);
+        }
+
+        if (point->name[1] != '\0') {                                   /*  如果不是根文件系统          */
+            if (strchr(point->name + 1, '/') != NULL) {                 /*  保证挂载点不能再出现 / 号   */
+                kfree(point);
+                return -1;                                              /*  所以当作出错来处理          */
+            }
+        } else {
+            kfree(point);
+            return -1;
+        }
+
+        atomic_inc(&fs->ref);
+        if (dev != NULL) {
+            atomic_inc(&dev->ref);
+        }
+
+        point->fs  = fs;
+        point->dev = dev;
+        point->ctx = NULL;
+        atomic_set(&point->ref, 0);
+
+        mount_point_install(point);                                     /*  安装挂载点                  */
+    }
+
+    return 0;
 }
 /*********************************************************************************************************
 ** Function name:           vfs_unmount
@@ -2354,6 +2421,9 @@ int vfs_init(void)
 
     extern file_system_t fatfs;
     file_system_install(&fatfs);
+
+    extern file_system_t yaffs;
+    file_system_install(&yaffs);
 
     vfs_mount("/",    NULL, "rootfs", NULL);
 

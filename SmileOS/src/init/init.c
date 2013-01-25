@@ -92,10 +92,14 @@ static void init(void *arg)
 
     vfs_mkfs("/tmp", NULL);
 
-    vfs_mount("/data", NULL, "yaffs", NULL);
+    vfs_mount(NULL, NULL, "yaffs", NULL);
 
     extern void shell(void *arg);
     kthread_create("shell", shell, NULL, 16 * KB, 10);
+
+    while (1) {
+        sleep(1000);
+    }
 }
 /*********************************************************************************************************
 ** Function name:           sys_drivers_install

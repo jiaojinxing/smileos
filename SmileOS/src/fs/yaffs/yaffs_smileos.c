@@ -167,18 +167,9 @@ int ydevice_GetInfo(yaffs_Device *ydev)
         return YAFFS_FAIL;
     }
 
-    ret = dev->drv->ioctl(dev->ctx, NULL, BLKDEV_CMD_INIT, NULL);
-    if (ret < 0) {
-        return YAFFS_FAIL;
-    } else {
-        return YAFFS_OK;
-    }
-
     ret = dev->drv->ioctl(dev->ctx, NULL, BLKDEV_CMD_INFO, &info);
     if (ret < 0) {
         return YAFFS_FAIL;
-    } else {
-        return YAFFS_OK;
     }
 
     ydev->param.totalBytesPerChunk  = info.totalBytesPerChunk;
@@ -189,6 +180,10 @@ int ydevice_GetInfo(yaffs_Device *ydev)
     ydev->param.useNANDECC          = info.useNANDECC;
     ydev->param.nShortOpCaches      = info.nShortOpCaches;
     ydev->param.name                = info.name;
+
+    if (ydev->param.name == NULL) {
+        return YAFFS_FAIL;
+    }
 
     return YAFFS_OK;
 }
@@ -298,7 +293,7 @@ int ydevice_EraseBlock(yaffs_Device *ydev, int blockNumber)
 *********************************************************************************************************/
 int ydevice_Initialise(yaffs_Device *ydev)
 {
-    device_t *dev = (device_t *)ydev;
+    device_t *dev = (device_t *)ydev->context;
     int ret;
 
     if (dev == NULL ||

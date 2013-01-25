@@ -57,7 +57,7 @@ static int __yaffs_mount(mount_point_t *point, device_t *dev, const char *dev_na
 
 static int __yaffs_open(mount_point_t *point, file_t *file, const char *path, int oflag, mode_t mode)
 {
-    file->ctx = (void *)yaffs_open(path, oflag, mode);
+    file->ctx = (void *)yaffs_open(vfs_path_add_mount_point(path), oflag, mode);
     if (file->ctx == (void *)-1) {
         return -1;
     } else {
@@ -189,7 +189,13 @@ static int __yaffs_stat(mount_point_t *point, const char *path, struct stat *buf
     struct yaffs_stat st;
     int ret;
 
-    ret = yaffs_stat(path, &st);
+    if (path[1] == 0) {
+        ((char *)path)[1] = point->name[1];
+        ret = yaffs_stat(path, &st);
+    } else {
+        ret = yaffs_stat(vfs_path_add_mount_point(path), &st);
+    }
+
     if (ret == 0) {
         buf->st_dev         = st.st_dev;
         buf->st_ino         = st.st_ino;
@@ -215,12 +221,18 @@ static int __yaffs_stat(mount_point_t *point, const char *path, struct stat *buf
 
 static int __yaffs_access(mount_point_t *point, const char *path, int amode)
 {
-    return yaffs_access(path, amode);
+    return yaffs_access(vfs_path_add_mount_point(path), amode);
 }
 
 static int __yaffs_opendir(mount_point_t *point, file_t *file, const char *path)
 {
-    file->ctx = yaffs_opendir(path);
+    if (path[1] == 0) {
+        ((char *)path)[1] = point->name[1];
+        file->ctx = yaffs_opendir(path);
+    } else {
+        file->ctx = yaffs_opendir(vfs_path_add_mount_point(path));
+    }
+
     if (file->ctx == NULL) {
         return -1;
     } else {
@@ -262,27 +274,27 @@ static int __yaffs_closedir(mount_point_t *point, file_t *file)
 
 static int __yaffs_link(mount_point_t *point, const char *path1, const char *path2)
 {
-    return yaffs_link(path1, path2);
+    return yaffs_link(vfs_path_add_mount_point(path1), vfs_path_add_mount_point(path2));
 }
 
 static int __yaffs_unlink(mount_point_t *point, const char *path)
 {
-    return yaffs_unlink(path);
+    return yaffs_unlink(vfs_path_add_mount_point(path));
 }
 
 static int __yaffs_mkdir(mount_point_t *point, const char *path, mode_t mode)
 {
-    return yaffs_mkdir(path, mode);
+    return yaffs_mkdir(vfs_path_add_mount_point(path), mode);
 }
 
 static int __yaffs_rmdir(mount_point_t *point, const char *path)
 {
-    return yaffs_rmdir(path);
+    return yaffs_rmdir(vfs_path_add_mount_point(path));
 }
 
 static int __yaffs_rename(mount_point_t *point, const char *old, const char *new)
 {
-    return yaffs_rename(old, new);
+    return yaffs_rename(vfs_path_add_mount_point(old), vfs_path_add_mount_point(new));
 }
 
 static int __yaffs_sync(mount_point_t *point)
@@ -292,7 +304,7 @@ static int __yaffs_sync(mount_point_t *point)
 
 static int __yaffs_truncate(mount_point_t *point, const char *path, off_t len)
 {
-    return yaffs_truncate(path, len);
+    return yaffs_truncate(vfs_path_add_mount_point(path), len);
 }
 
 static int __yaffs_mkfs(mount_point_t *point, const char *param)

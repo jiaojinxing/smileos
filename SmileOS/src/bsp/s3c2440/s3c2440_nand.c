@@ -41,6 +41,7 @@
 #include "vfs/device.h"
 #include "vfs/driver.h"
 #include "vfs/utils.h"
+#include "s3c2440.h"
 #include <errno.h>
 #include <fcntl.h>
 /*********************************************************************************************************
@@ -151,6 +152,7 @@ static void nand_reset(void)
     NF_NFCE_L();                                                        /*  使能芯片片选                */
     NF_CLEAR_RB();                                                      /*  清除忙闲信号                */
     NF_CMD(NAND_RESET);                                                 /*  发送复位命令                */
+    NF_DETECT_RB();
     NF_NFCE_H();                                                        /*  释放新片片选                */
 }
 /*********************************************************************************************************
@@ -201,6 +203,9 @@ static void nand_read_id(uint16_t *id)
 *********************************************************************************************************/
 static void nand_port_init(void)
 {
+    GPACON = (GPACON & ~(0x3f << 17)) | (0x3f << 17);
+
+
     rNFCONF = (NAND_TACLS << 12)                                        /*  HCLK x (TACLS)              */
             | (NAND_TWRPH0 << 8)                                        /*  HCLK x (TWRPH0 + 1)         */
             | (NAND_TWRPH1 << 4);                                       /*  HCLK x (TWRPH1 + 1)         */
@@ -616,14 +621,14 @@ int mtdblock_init(void)
 
         priv->startBlock            = 0;
         priv->endBlock              = 63;
-        priv->nReservedBlocks       = 0;
-        priv->nShortOpCaches        = 0;
+        priv->nReservedBlocks       = 2;
+        priv->nShortOpCaches        = 10;
         priv->useNANDECC            = 0;
         priv->noTagsECC             = 0;
         priv->nChunksPerBlock       = NAND_SECTS_PER_BLOCK;
         priv->spareBytesPerChunk    = NAND_SPARE_PER_SECT;
         priv->totalBytesPerChunk    = NAND_BYTES_PER_SECT;
-        priv->name                  = "bl";
+        priv->name                  = "/bl";
 
         if (device_create("/dev/mtdblock0", "mtdblock", priv) < 0) {
             kfree(priv);
@@ -637,14 +642,14 @@ int mtdblock_init(void)
 
         priv->startBlock            = 64;
         priv->endBlock              = 255;
-        priv->nReservedBlocks       = 0;
-        priv->nShortOpCaches        = 0;
+        priv->nReservedBlocks       = 2;
+        priv->nShortOpCaches        = 10;
         priv->useNANDECC            = 0;
         priv->noTagsECC             = 0;
         priv->nChunksPerBlock       = NAND_SECTS_PER_BLOCK;
         priv->spareBytesPerChunk    = NAND_SPARE_PER_SECT;
         priv->totalBytesPerChunk    = NAND_BYTES_PER_SECT;
-        priv->name                  = "kern";
+        priv->name                  = "/kern";
 
         if (device_create("/dev/mtdblock1", "mtdblock", priv) < 0) {
             kfree(priv);
@@ -658,14 +663,14 @@ int mtdblock_init(void)
 
         priv->startBlock            = 256;
         priv->endBlock              = 4095;
-        priv->nReservedBlocks       = 0;
+        priv->nReservedBlocks       = 5;
         priv->nShortOpCaches        = 10;
         priv->useNANDECC            = 0;
         priv->noTagsECC             = 0;
         priv->nChunksPerBlock       = NAND_SECTS_PER_BLOCK;
         priv->spareBytesPerChunk    = NAND_SPARE_PER_SECT;
         priv->totalBytesPerChunk    = NAND_BYTES_PER_SECT;
-        priv->name                  = "root";
+        priv->name                  = "/root";
 
         if (device_create("/dev/mtdblock2", "mtdblock", priv) < 0) {
             kfree(priv);
