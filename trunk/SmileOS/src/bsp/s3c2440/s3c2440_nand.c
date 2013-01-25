@@ -48,7 +48,7 @@
 *********************************************************************************************************/
 #define NAND_BYTES_PER_SECT         512                                 /*  每扇区 512 字节             */
 #define NAND_SPARE_PER_SECT         16                                  /*  每扇区 16 字节扩扇数据      */
-#define NAND_SECTS_PER_BLOCK        32                                  /*  每块 32 个扇区           	*/
+#define NAND_SECTS_PER_BLOCK        32                                  /*  每块 32 个扇区              */
 /*********************************************************************************************************
 ** 控制参数配置
 *********************************************************************************************************/
@@ -61,28 +61,28 @@
 /*********************************************************************************************************
 ** 硬件操作控制
 *********************************************************************************************************/
-#define BIT_CLR(addr, bit)			addr &= ~(1 << bit)
-#define BIT_SET(addr, bit)			addr |=  (1 << bit)
+#define BIT_CLR(addr, bit)          addr &= ~(1 << bit)
+#define BIT_SET(addr, bit)          addr |=  (1 << bit)
 
-#define rNFCONF		                (*(volatile unsigned *)0x4E000000)  //  NAND Flash configuration
-#define rNFCONT		                (*(volatile unsigned *)0x4E000004)  //  NAND Flash control
-#define rNFCMD		                (*(volatile unsigned *)0x4E000008)  //  NAND Flash command
-#define rNFADDR		                (*(volatile unsigned *)0x4E00000C)  //  NAND Flash address
-#define rNFDATA		                (*(volatile unsigned *)0x4E000010)  //  NAND Flash data
-#define rNFDATA8	                (*(volatile unsigned char *)0x4E000010) //  NAND Flash data
+#define rNFCONF                     (*(volatile unsigned *)0x4E000000)  //  NAND Flash configuration
+#define rNFCONT                     (*(volatile unsigned *)0x4E000004)  //  NAND Flash control
+#define rNFCMD                      (*(volatile unsigned *)0x4E000008)  //  NAND Flash command
+#define rNFADDR                     (*(volatile unsigned *)0x4E00000C)  //  NAND Flash address
+#define rNFDATA                     (*(volatile unsigned *)0x4E000010)  //  NAND Flash data
+#define rNFDATA8                    (*(volatile unsigned char *)0x4E000010) //  NAND Flash data
 #undef  NFDATA
-#define NFDATA		                (0x4E000010)      					//  NAND Flash data address
-#define rNFMECCD0	                (*(volatile unsigned *)0x4E000014)  //  NAND Flash ECC for Main Area
-#define rNFMECCD1	                (*(volatile unsigned *)0x4E000018)
-#define rNFSECCD	                (*(volatile unsigned *)0x4E00001C)  //  NAND Flash ECC for Spare Area
-#define rNFSTAT		                (*(volatile unsigned *)0x4E000020)  //  NAND Flash operation status
-#define rNFESTAT0	                (*(volatile unsigned *)0x4E000024)
-#define rNFESTAT1	                (*(volatile unsigned *)0x4E000028)
-#define rNFMECC0	                (*(volatile unsigned *)0x4E00002C)
-#define rNFMECC1	                (*(volatile unsigned *)0x4E000030)
-#define rNFSECC		                (*(volatile unsigned *)0x4E000034)
-#define rNFSBLK		                (*(volatile unsigned *)0x4E000038)  //  NAND Flash Start block address
-#define rNFEBLK		                (*(volatile unsigned *)0x4E00003C)  //  NAND Flash End block address
+#define NFDATA                      (0x4E000010)                        //  NAND Flash data address
+#define rNFMECCD0                   (*(volatile unsigned *)0x4E000014)  //  NAND Flash ECC for Main Area
+#define rNFMECCD1                   (*(volatile unsigned *)0x4E000018)
+#define rNFSECCD                    (*(volatile unsigned *)0x4E00001C)  //  NAND Flash ECC for Spare Area
+#define rNFSTAT                     (*(volatile unsigned *)0x4E000020)  //  NAND Flash operation status
+#define rNFESTAT0                   (*(volatile unsigned *)0x4E000024)
+#define rNFESTAT1                   (*(volatile unsigned *)0x4E000028)
+#define rNFMECC0                    (*(volatile unsigned *)0x4E00002C)
+#define rNFMECC1                    (*(volatile unsigned *)0x4E000030)
+#define rNFSECC                     (*(volatile unsigned *)0x4E000034)
+#define rNFSBLK                     (*(volatile unsigned *)0x4E000038)  //  NAND Flash Start block address
+#define rNFEBLK                     (*(volatile unsigned *)0x4E00003C)  //  NAND Flash End block address
 /*********************************************************************************************************
 ** 硬件 NAND FLASH 操作宏
 *********************************************************************************************************/
@@ -122,8 +122,8 @@
 #define NAND_FALG_BUSY              (1 << 6)                            /*  忙标志                      */
 #define NAND_FALG_PE_OK             (1 << 0)                            /*  结果标志                    */
 
-#define ERROR_NONE 				    0
-#define PX_ERROR   					-1
+#define ERROR_NONE                  0
+#define PX_ERROR                    -1
 /*********************************************************************************************************
 ** Function name:           nand_status
 ** Descriptions:            获得 NAND FLASH 芯片状态
@@ -135,7 +135,7 @@ static unsigned char nand_status (void)
 {
     unsigned char  status = 0xFF;
 
-    NF_NFCE_L();                                                        /*  使能芯片片选              	*/
+    NF_NFCE_L();                                                        /*  使能芯片片选                */
     NF_CMD(NAND_READ_STATUS);                                           /*  发送读取状态命令            */
     status = NF_RDDATA8();                                              /*  读取状态                    */
     NF_NFCE_H();                                                        /*  释放新片片选                */
@@ -151,7 +151,7 @@ static unsigned char nand_status (void)
 *********************************************************************************************************/
 static void  nand_reset (void)
 {
-    NF_NFCE_L();                                                        /*  使能芯片片选             	*/
+    NF_NFCE_L();                                                        /*  使能芯片片选                */
     NF_CLEAR_RB();                                                      /*  清除忙闲信号                */
     NF_CMD(NAND_RESET);                                                 /*  发送复位命令                */
     NF_NFCE_H();                                                        /*  释放新片片选                */
@@ -185,7 +185,7 @@ static int  nand_is_ok (void)
 *********************************************************************************************************/
 static void nand_read_id (uint16_t *id)
 {
-    NF_NFCE_L();                                                        /*  片选               			*/
+    NF_NFCE_L();                                                        /*  片选                        */
 
     NF_CMD(NAND_READ_ID);
     NF_ADDR(0);
@@ -206,7 +206,7 @@ static void  nand_port_init (void)
 {
     static int  iIsInit = 0;
 
-    if (iIsInit) {                                                      /*  避免重复初始化    			*/
+    if (iIsInit) {                                                      /*  避免重复初始化              */
         return;
     }
 
@@ -260,7 +260,7 @@ static int  nand_read (void                  *pvSecBuf,
     NF_ADDR((uint8_t)(ulSecIndex >> 8));
     NF_ADDR((uint8_t)(ulSecIndex >> 16));
 
-    NF_DETECT_RB();                                                     /*  等待空闲                  	*/
+    NF_DETECT_RB();                                                     /*  等待空闲                    */
 
     for (i = 0; i < NAND_BYTES_PER_SECT; i++) {
         *pucBuffer++ = NF_RDDATA8();                                    /*  读取数据                    */
@@ -269,7 +269,7 @@ static int  nand_read (void                  *pvSecBuf,
     for (i = 0; i < NAND_SPARE_PER_SECT; i++) {
         *pucBufferSpare++ = NF_RDDATA8();                               /*  读取数据                    */
     }
-    NF_NFCE_H();                                                        /*  释放新片片选               	*/
+    NF_NFCE_H();                                                        /*  释放新片片选                */
 
     return  (ERROR_NONE);
 }
@@ -291,9 +291,9 @@ static int  nand_write (const void            *pvSecBuf,
     unsigned char  *pucBuffer      = (unsigned char *)pvSecBuf;
     unsigned char  *pucBufferSpare = (unsigned char *)pvSeccDataBuf;
 
-    NF_NFCE_L();                                                        /*  片选                     	*/
+    NF_NFCE_L();                                                        /*  片选                        */
 
-    NF_CMD(0);                                    					    /*  准备编程                    */
+    NF_CMD(0);                                                          /*  准备编程                    */
     NF_CMD(NAND_PAGE_PROGRAM_1);                                        /*  准备编程                    */
 
     NF_ADDR((uint8_t)(0));
@@ -331,9 +331,9 @@ static int  nand_erase (uint64_t  ulBlockIndex)
 {
     uint64_t ulSecIndex = ulBlockIndex * 32;
 
-    NF_NFCE_L();                                                        /*  片选               			*/
+    NF_NFCE_L();                                                        /*  片选                        */
 
-    NF_CMD(NAND_BLOCK_ERASE_1);                                         /*  准备擦除                 	*/
+    NF_CMD(NAND_BLOCK_ERASE_1);                                         /*  准备擦除                    */
 
     NF_ADDR((uint8_t)(ulSecIndex));
     NF_ADDR((uint8_t)(ulSecIndex >> 8));
@@ -359,9 +359,9 @@ static int  nand_chip_init (void)
 {
     uint16_t id;
 
-    nand_port_init();                                                   /*  初始化端口             	    */
+    nand_port_init();                                                   /*  初始化端口                  */
     nand_reset();                                                       /*  复位 NAND FLASH 芯片        */
-    nand_read_id(&id);                                           		/*  读取芯片 ID 号              */
+    nand_read_id(&id);                                                  /*  读取芯片 ID 号              */
 
     return  (ERROR_NONE);
 }
