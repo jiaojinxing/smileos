@@ -540,7 +540,6 @@ module_t *module_ref_by_addr(void *addr)
         mod = mod->next;
     }
 
-
     if (mod != NULL) {
         atomic_inc(&mod->ref);
     }
@@ -700,6 +699,8 @@ int module_load(const char *path, int argc, char **argv)
         return -1;
     }
 
+    module_install(module);
+
     ret = module_exec(module, "module_init", argc, argv);               /*  执行模块                    */
     if (ret < 0) {
 
@@ -713,14 +714,10 @@ int module_load(const char *path, int argc, char **argv)
 
         kfree(module->shdrs);                                           /*  释放节区首部数组            */
 
-        kfree(module);
+        module_remove(module->key);
 
         return -1;
     }
-
-    module_install(module);
-
-    mutex_unlock(&mod_mgr_lock);
 
     return 0;
 }
