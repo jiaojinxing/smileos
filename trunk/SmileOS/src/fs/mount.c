@@ -51,17 +51,17 @@
 /*
  * 挂载点链表
  */
-static mount_point_t *point_list;
+static mount_point_t   *point_list;
 
 /*
  * 根文件系统挂载点
  */
-mount_point_t *rootfs_point;
+mount_point_t          *rootfs_point;
 
 /*
  * 挂载点管理锁
  */
-mutex_t point_mgr_lock;
+mutex_t                 point_mgr_lock;
 /*********************************************************************************************************
 ** Function name:           mount_point_install
 ** Descriptions:            安装挂载点

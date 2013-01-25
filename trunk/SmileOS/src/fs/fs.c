@@ -48,12 +48,12 @@
 /*
  * 文件系统链表
  */
-static file_system_t *fs_list;
+static file_system_t   *fs_list;
 
 /*
  * 文件系统管理锁
  */
-mutex_t fs_mgr_lock;
+mutex_t                 fs_mgr_lock;
 /*********************************************************************************************************
 ** Function name:           file_system_lookup
 ** Descriptions:            查找文件系统

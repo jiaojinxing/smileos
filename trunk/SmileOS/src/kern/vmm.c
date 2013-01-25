@@ -34,7 +34,13 @@
 ** Modified by:
 ** Modified date:
 ** Version:
-** Descriptions:
+** Descriptions:            总结一下下面几个单词缩写的使用:
+**
+**  id      ID 号           例如线程的 ID 号, 一般被分配出来, 分配有一定的随机性, 可能在 0-2^32 范围
+**  index   索引            表示元素在数组、链表等线性表中的位置
+**  nr　　　数目            比方说现在有苹果有多少个, 可以发生变化, 初始化一般不为 0
+**  no　　　号码            类似于 id 和 index
+**  cnt     计数            用于统计次数, 一般发生变化, 变化一般是自增和自减, 初始化一般为 0
 **
 *********************************************************************************************************/
 #include "kern/kern.h"
@@ -324,13 +330,13 @@ int vmm_page_map(task_t *task, uint32_t MVA)
 
         frame = vmm_frame_alloc(task);                                  /*  分配一个空闲的页框          */
         if (frame != NULL) {
-            uint32_t page_nr;
+            uint32_t page_no;
 
-            page_nr    = (MVA & (SECTION_SIZE - 1)) >> PAGE_OFFSET;     /*  计算虚拟地址在页表里的页号  */
+            page_no    = (MVA & (SECTION_SIZE - 1)) >> PAGE_OFFSET;     /*  计算虚拟地址在页表里的页号  */
 
             frame->MVA = MVA & (~(PAGE_SIZE - 1));                      /*  页框映射到的页面的虚拟基址  */
 
-            mmu_map_page(tbl, page_nr, vmm_frame_addr(frame));          /*  页面映射                    */
+            mmu_map_page(tbl, page_no, vmm_frame_addr(frame));          /*  页面映射                    */
 
             return 0;
         } else {

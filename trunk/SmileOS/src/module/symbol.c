@@ -14,7 +14,7 @@
 **														
 ** 创   建   人: MakeSymbol 工具										
 **														
-** 文件创建日期: ?? 2 年 13 月 01 日						
+** 文件创建日期: 2013 年 01 月 25 日						
 **														
 ** 描        述: SmileOS 操作系统符号表. (此文件由 MakeSymbol 工具自动生成, 请勿修改)			
 *********************************************************************************************************/	
@@ -35,8 +35,23 @@
     },													
 														
 /*********************************************************************************************************	
-** 全局对象声明
+** 全局对象声明												
 *********************************************************************************************************/	
+extern int  .Lchange_fp(); 
+extern int  .Lchange_ip(); 
+extern int  .Lchange_lr(); 
+extern int  .Lchange_r0(); 
+extern int  .Lchange_r1(); 
+extern int  .Lchange_r2(); 
+extern int  .Lchange_r3(); 
+extern int  .Lchange_r4(); 
+extern int  .Lchange_r5(); 
+extern int  .Lchange_r6(); 
+extern int  .Lchange_r7(); 
+extern int  .Lchange_r8(); 
+extern int  .Lchange_r9(); 
+extern int  .Lchange_sl(); 
+extern int  .Lchange_sp(); 
 extern int  BKDRHash(); 
 extern int  MIN(); 
 extern int  _Balloc(); 
@@ -1395,7 +1410,7 @@ extern int  modff();
 extern int  modfl(); 
 extern int  module_load(); 
 extern int  module_lookup(); 
-extern int  module_ref_by_addr();
+extern int  module_ref_by_addr(); 
 extern int  module_unload(); 
 extern int  more_main(); 
 extern int  mount_point_get(); 
@@ -1418,6 +1433,7 @@ extern int  mqueue_trypost();
 extern int  mqueue_valid(); 
 extern int  mrand48(); 
 extern int  msleep(); 
+extern int  mtdblock_init(); 
 extern int  mutex_abort(); 
 extern int  mutex_free(); 
 extern int  mutex_lock(); 
@@ -2035,6 +2051,146 @@ extern int  y0();
 extern int  y0f(); 
 extern int  y1(); 
 extern int  y1f(); 
+extern int  yaffs_CalcECC(); 
+extern int  yaffs_CalcTagsECC(); 
+extern int  yaffs_CheckECCOnTags(); 
+extern int  yaffs_CheckFF(); 
+extern int  yaffs_CheckpointClose(); 
+extern int  yaffs_CheckpointInvalidateStream(); 
+extern int  yaffs_CheckpointOpen(); 
+extern int  yaffs_CheckpointRead(); 
+extern int  yaffs_CheckpointRestore(); 
+extern int  yaffs_CheckpointSave(); 
+extern int  yaffs_CheckpointWrite(); 
+extern int  yaffs_CountBits(); 
+extern int  yaffs_Deinitialise(); 
+extern int  yaffs_DeleteChunk(); 
+extern int  yaffs_DeleteFile(); 
+extern int  yaffs_DeleteObject(); 
+extern int  yaffs_DoWriteDataToFile(); 
+extern int  yaffs_Dofsync(); 
+extern int  yaffs_DumpDevStruct(); 
+extern int  yaffs_ECCCalculate(); 
+extern int  yaffs_ECCCalculateOther(); 
+extern int  yaffs_ECCCorrect(); 
+extern int  yaffs_ECCCorrectOther(); 
+extern int  yaffs_EraseBlockInNAND(); 
+extern int  yaffs_FindObjectByName(); 
+extern int  yaffs_FindObjectByNumber(); 
+extern int  yaffs_FlushEntireDeviceCache(); 
+extern int  yaffs_FlushFile(); 
+extern int  yaffs_GetAttributes(); 
+extern int  yaffs_GetCheckpointSum(); 
+extern int  yaffs_GetEquivalentObject(); 
+extern int  yaffs_GetFileSize(); 
+extern int  yaffs_GetNumberOfFreeChunks(); 
+extern int  yaffs_GetObjectFileLength(); 
+extern int  yaffs_GetObjectInode(); 
+extern int  yaffs_GetObjectLinkCount(); 
+extern int  yaffs_GetObjectName(); 
+extern int  yaffs_GetObjectType(); 
+extern int  yaffs_GetSymlinkAlias(); 
+extern int  yaffs_GetTempBuffer(); 
+extern int  yaffs_GutsInitialise(); 
+extern int  yaffs_HandleChunkError(); 
+extern int  yaffs_HandleDeferedFree(); 
+extern int  yaffs_InitialiseNAND(); 
+extern int  yaffs_InitialiseTags(); 
+extern int  yaffs_IsManagedTempBuffer(); 
+extern int  yaffs_Link(); 
+extern int  yaffs_LoadLevel0Tnode(); 
+extern int  yaffs_LostNFound(); 
+extern int  yaffs_MarkBlockBad(); 
+extern int  yaffs_MknodDirectory(); 
+extern int  yaffs_MknodFile(); 
+extern int  yaffs_MknodSpecial(); 
+extern int  yaffs_MknodSymLink(); 
+extern int  yaffs_PackTags1(); 
+extern int  yaffs_PackTags2(); 
+extern int  yaffs_PackTags2TagsPart(); 
+extern int  yaffs_QueryInitialBlockState(); 
+extern int  yaffs_ReadChunkWithTagsFromNAND(); 
+extern int  yaffs_ReadDataFromFile(); 
+extern int  yaffs_ReleaseTempBuffer(); 
+extern int  yaffs_RenameObject(); 
+extern int  yaffs_ResizeFile(); 
+extern int  yaffs_Root(); 
+extern int  yaffs_SetAttributes(); 
+extern int  yaffs_StartUp(); 
+extern int  yaffs_TagsCompatabilityMarkNANDBlockBad(); 
+extern int  yaffs_TagsCompatabilityQueryNANDBlock(); 
+extern int  yaffs_TagsCompatabilityReadChunkWithTagsFromNAND(); 
+extern int  yaffs_TagsCompatabilityWriteChunkWithTagsToNAND(); 
+extern int  yaffs_Unlink(); 
+extern int  yaffs_UnpackTags1(); 
+extern int  yaffs_UnpackTags2(); 
+extern int  yaffs_UnpackTags2TagsPart(); 
+extern int  yaffs_UpdateDirtyDirectories(); 
+extern int  yaffs_ValidateTags(); 
+extern int  yaffs_WriteChunkWithTagsToNAND(); 
+extern int  yaffs_WriteDataToFile(); 
+extern int  yaffs_access(); 
+extern int  yaffs_chmod(); 
+extern int  yaffs_close(); 
+extern int  yaffs_closedir(); 
+extern int  yaffs_dup(); 
+extern int  yaffs_fchmod(); 
+extern int  yaffs_fdatasync(); 
+extern int  yaffs_flush(); 
+extern int  yaffs_free(); 
+extern int  yaffs_freespace(); 
+extern int  yaffs_fstat(); 
+extern int  yaffs_fsync(); 
+extern int  yaffs_ftruncate(); 
+extern int  yaffs_initialise(); 
+extern int  yaffs_inodecount(); 
+extern int  yaffs_link(); 
+extern int  yaffs_lseek(); 
+extern int  yaffs_lstat(); 
+extern int  yaffs_malloc(); 
+extern int  yaffs_mkdir(); 
+extern int  yaffs_mknod(); 
+extern int  yaffs_mount(); 
+extern int  yaffs_mount2(); 
+extern int  yaffs_open(); 
+extern int  yaffs_opendir(); 
+extern int  yaffs_pread(); 
+extern int  yaffs_pwrite(); 
+extern int  yaffs_qsort(); 
+extern int  yaffs_read(); 
+extern int  yaffs_readdir(); 
+extern int  yaffs_readlink(); 
+extern int  yaffs_remount(); 
+extern int  yaffs_rename(); 
+extern int  yaffs_rewinddir(); 
+extern int  yaffs_rmdir(); 
+extern int  yaffs_stat(); 
+extern int  yaffs_symlink(); 
+extern int  yaffs_sync(); 
+extern int  yaffs_totalspace(); 
+extern int  yaffs_truncate(); 
+extern int  yaffs_unlink(); 
+extern int  yaffs_unmount(); 
+extern int  yaffs_unmount2(); 
+extern int  yaffs_write(); 
+extern int  yaffsfs_CurrentTime(); 
+extern int  yaffsfs_DoUnlink(); 
+extern int  yaffsfs_GetHandleObject(); 
+extern int  yaffsfs_GetHandlePointer(); 
+extern int  yaffsfs_GetInodePointer(); 
+extern int  yaffsfs_IsPathDivider(); 
+extern int  yaffsfs_LocalInitialisation(); 
+extern int  yaffsfs_Lock(); 
+extern int  yaffsfs_Match(); 
+extern int  yaffsfs_SetError(); 
+extern int  yaffsfs_Unlock(); 
+extern int  yaffsfs_do_read(); 
+extern int  yaffsfs_do_write(); 
+extern int  ydevice_EraseBlock(); 
+extern int  ydevice_GetInfo(); 
+extern int  ydevice_Initialise(); 
+extern int  ydevice_ReadChunk(); 
+extern int  ydevice_WriteChunk(); 
 extern int  yn(); 
 extern int  ynf(); 
 extern int  __gnu_thumb1_case_sqi(); 
@@ -2065,6 +2221,21 @@ extern int  _call_via_r8();
 extern int  _call_via_r9(); 
 extern int  _call_via_sl(); 
 extern int  _call_via_sp(); 
+extern int  .Lchange_fp(); 
+extern int  .Lchange_ip(); 
+extern int  .Lchange_lr(); 
+extern int  .Lchange_r0(); 
+extern int  .Lchange_r1(); 
+extern int  .Lchange_r2(); 
+extern int  .Lchange_r3(); 
+extern int  .Lchange_r4(); 
+extern int  .Lchange_r5(); 
+extern int  .Lchange_r6(); 
+extern int  .Lchange_r7(); 
+extern int  .Lchange_r8(); 
+extern int  .Lchange_r9(); 
+extern int  .Lchange_sl(); 
+extern int  .Lchange_sp(); 
 extern int  _arm_return(); 
 extern int  _arm_return_r11(); 
 extern int  _arm_return_r7(); 
@@ -3429,9 +3600,17 @@ extern int  smileos_cmd_rm;
 extern int  smileos_cmd_rmdir; 
 extern int  smileos_cmd_touch; 
 extern int  smileos_cmd_ts; 
+extern int  smileos_symbol_table; 
 extern int  socket_drv; 
 extern int  sys_do_table; 
 extern int  sys_resv_space; 
+extern int  yaffs; 
+extern int  yaffs_checkptrw_c_version; 
+extern int  yaffs_ecc_c_version; 
+extern int  yaffs_guts_c_version; 
+extern int  yaffs_nand_c_version; 
+extern int  yaffs_traceMask; 
+extern int  yaffsfs_c_version; 
 extern int  _PathLocale; 
 extern int  __CTOR_LIST__; 
 extern int  __DTOR_LIST__; 
@@ -3478,17 +3657,23 @@ extern int  tcp_tmp_pcb;
 extern int  tcp_tw_pcbs; 
 extern int  ticks; 
 extern int  udp_pcbs; 
+extern int  yaffs_wr_attempts; 
 extern int  __aeabi_idiv0; 
 extern int  __aeabi_ldiv0; 
 extern int  __aeabi_unwind_cpp_pr1; 
 extern int  __aeabi_unwind_cpp_pr2; 
 extern int  __CTOR_LIST__; 
 extern int  __DTOR_LIST__; 
+extern int  __clz_tab; 
+extern int  __popcount_tab; 
 extern int  __aeabi_idiv0; 
 extern int  __aeabi_ldiv0; 
 extern int  __aeabi_unwind_cpp_pr1; 
 extern int  __aeabi_unwind_cpp_pr2; 
 extern int  __fdlib_version; 
+extern int  __infinity; 
+extern int  __infinityf; 
+extern int  __infinityld; 
 extern int  __ctype_ptr__; 
 extern int  environ; 
 extern int  opterr; 
@@ -3506,13 +3691,39 @@ extern int  __mlocale_changed;
 extern int  __nlocale_changed; 
 extern int  _daylight; 
 extern int  _timezone; 
+extern int  _ctype_; 
+extern int  _global_impure_ptr; 
+extern int  __mprec_bigtens; 
+extern int  __mprec_tens; 
+extern int  __mprec_tinytens; 
+extern int  __infinity; 
+extern int  __infinityf; 
+extern int  __infinityld; 
+extern int  tm_year_base; 
+extern int  __unctrl; 
+extern int  __unctrllen; 
 extern int  __hexdig; 
 extern int  suboptarg; 
 extern int  errno; 
 /*********************************************************************************************************	
-** 系统静态符号表
+** 系统静态符号表												
 *********************************************************************************************************/	
 SYMBOL_TABLE_BEGIN												
+    SYMBOL_ITEM_FUNC(.Lchange_fp) 
+    SYMBOL_ITEM_FUNC(.Lchange_ip) 
+    SYMBOL_ITEM_FUNC(.Lchange_lr) 
+    SYMBOL_ITEM_FUNC(.Lchange_r0) 
+    SYMBOL_ITEM_FUNC(.Lchange_r1) 
+    SYMBOL_ITEM_FUNC(.Lchange_r2) 
+    SYMBOL_ITEM_FUNC(.Lchange_r3) 
+    SYMBOL_ITEM_FUNC(.Lchange_r4) 
+    SYMBOL_ITEM_FUNC(.Lchange_r5) 
+    SYMBOL_ITEM_FUNC(.Lchange_r6) 
+    SYMBOL_ITEM_FUNC(.Lchange_r7) 
+    SYMBOL_ITEM_FUNC(.Lchange_r8) 
+    SYMBOL_ITEM_FUNC(.Lchange_r9) 
+    SYMBOL_ITEM_FUNC(.Lchange_sl) 
+    SYMBOL_ITEM_FUNC(.Lchange_sp) 
     SYMBOL_ITEM_FUNC(BKDRHash) 
     SYMBOL_ITEM_FUNC(MIN) 
     SYMBOL_ITEM_FUNC(_Balloc) 
@@ -3977,6 +4188,7 @@ SYMBOL_TABLE_BEGIN
     SYMBOL_ITEM_FUNC(_close_r) 
     SYMBOL_ITEM_FUNC(_ctans) 
     SYMBOL_ITEM_FUNC(_ctansf) 
+    SYMBOL_ITEM_FUNC(_ctype_) 
     SYMBOL_ITEM_FUNC(_dcvt) 
     SYMBOL_ITEM_FUNC(_diprintf_r) 
     SYMBOL_ITEM_FUNC(_dprintf_r) 
@@ -4037,6 +4249,7 @@ SYMBOL_TABLE_BEGIN
     SYMBOL_ITEM_FUNC(_gettimeofday_r) 
     SYMBOL_ITEM_FUNC(_getwc_r) 
     SYMBOL_ITEM_FUNC(_getwchar_r) 
+    SYMBOL_ITEM_FUNC(_global_impure_ptr) 
     SYMBOL_ITEM_FUNC(_init) 
     SYMBOL_ITEM_FUNC(_interwork_call_via_fp) 
     SYMBOL_ITEM_FUNC(_interwork_call_via_ip) 
@@ -4869,7 +5082,7 @@ SYMBOL_TABLE_BEGIN
     SYMBOL_ITEM_FUNC(modfl) 
     SYMBOL_ITEM_FUNC(module_load) 
     SYMBOL_ITEM_FUNC(module_lookup) 
-    SYMBOL_ITEM_FUNC(module_ref_by_addr)
+    SYMBOL_ITEM_FUNC(module_ref_by_addr) 
     SYMBOL_ITEM_FUNC(module_unload) 
     SYMBOL_ITEM_FUNC(more_main) 
     SYMBOL_ITEM_FUNC(mount_point_get) 
@@ -4892,6 +5105,7 @@ SYMBOL_TABLE_BEGIN
     SYMBOL_ITEM_FUNC(mqueue_valid) 
     SYMBOL_ITEM_FUNC(mrand48) 
     SYMBOL_ITEM_FUNC(msleep) 
+    SYMBOL_ITEM_FUNC(mtdblock_init) 
     SYMBOL_ITEM_FUNC(mutex_abort) 
     SYMBOL_ITEM_FUNC(mutex_free) 
     SYMBOL_ITEM_FUNC(mutex_lock) 
@@ -5509,6 +5723,146 @@ SYMBOL_TABLE_BEGIN
     SYMBOL_ITEM_FUNC(y0f) 
     SYMBOL_ITEM_FUNC(y1) 
     SYMBOL_ITEM_FUNC(y1f) 
+    SYMBOL_ITEM_FUNC(yaffs_CalcECC) 
+    SYMBOL_ITEM_FUNC(yaffs_CalcTagsECC) 
+    SYMBOL_ITEM_FUNC(yaffs_CheckECCOnTags) 
+    SYMBOL_ITEM_FUNC(yaffs_CheckFF) 
+    SYMBOL_ITEM_FUNC(yaffs_CheckpointClose) 
+    SYMBOL_ITEM_FUNC(yaffs_CheckpointInvalidateStream) 
+    SYMBOL_ITEM_FUNC(yaffs_CheckpointOpen) 
+    SYMBOL_ITEM_FUNC(yaffs_CheckpointRead) 
+    SYMBOL_ITEM_FUNC(yaffs_CheckpointRestore) 
+    SYMBOL_ITEM_FUNC(yaffs_CheckpointSave) 
+    SYMBOL_ITEM_FUNC(yaffs_CheckpointWrite) 
+    SYMBOL_ITEM_FUNC(yaffs_CountBits) 
+    SYMBOL_ITEM_FUNC(yaffs_Deinitialise) 
+    SYMBOL_ITEM_FUNC(yaffs_DeleteChunk) 
+    SYMBOL_ITEM_FUNC(yaffs_DeleteFile) 
+    SYMBOL_ITEM_FUNC(yaffs_DeleteObject) 
+    SYMBOL_ITEM_FUNC(yaffs_DoWriteDataToFile) 
+    SYMBOL_ITEM_FUNC(yaffs_Dofsync) 
+    SYMBOL_ITEM_FUNC(yaffs_DumpDevStruct) 
+    SYMBOL_ITEM_FUNC(yaffs_ECCCalculate) 
+    SYMBOL_ITEM_FUNC(yaffs_ECCCalculateOther) 
+    SYMBOL_ITEM_FUNC(yaffs_ECCCorrect) 
+    SYMBOL_ITEM_FUNC(yaffs_ECCCorrectOther) 
+    SYMBOL_ITEM_FUNC(yaffs_EraseBlockInNAND) 
+    SYMBOL_ITEM_FUNC(yaffs_FindObjectByName) 
+    SYMBOL_ITEM_FUNC(yaffs_FindObjectByNumber) 
+    SYMBOL_ITEM_FUNC(yaffs_FlushEntireDeviceCache) 
+    SYMBOL_ITEM_FUNC(yaffs_FlushFile) 
+    SYMBOL_ITEM_FUNC(yaffs_GetAttributes) 
+    SYMBOL_ITEM_FUNC(yaffs_GetCheckpointSum) 
+    SYMBOL_ITEM_FUNC(yaffs_GetEquivalentObject) 
+    SYMBOL_ITEM_FUNC(yaffs_GetFileSize) 
+    SYMBOL_ITEM_FUNC(yaffs_GetNumberOfFreeChunks) 
+    SYMBOL_ITEM_FUNC(yaffs_GetObjectFileLength) 
+    SYMBOL_ITEM_FUNC(yaffs_GetObjectInode) 
+    SYMBOL_ITEM_FUNC(yaffs_GetObjectLinkCount) 
+    SYMBOL_ITEM_FUNC(yaffs_GetObjectName) 
+    SYMBOL_ITEM_FUNC(yaffs_GetObjectType) 
+    SYMBOL_ITEM_FUNC(yaffs_GetSymlinkAlias) 
+    SYMBOL_ITEM_FUNC(yaffs_GetTempBuffer) 
+    SYMBOL_ITEM_FUNC(yaffs_GutsInitialise) 
+    SYMBOL_ITEM_FUNC(yaffs_HandleChunkError) 
+    SYMBOL_ITEM_FUNC(yaffs_HandleDeferedFree) 
+    SYMBOL_ITEM_FUNC(yaffs_InitialiseNAND) 
+    SYMBOL_ITEM_FUNC(yaffs_InitialiseTags) 
+    SYMBOL_ITEM_FUNC(yaffs_IsManagedTempBuffer) 
+    SYMBOL_ITEM_FUNC(yaffs_Link) 
+    SYMBOL_ITEM_FUNC(yaffs_LoadLevel0Tnode) 
+    SYMBOL_ITEM_FUNC(yaffs_LostNFound) 
+    SYMBOL_ITEM_FUNC(yaffs_MarkBlockBad) 
+    SYMBOL_ITEM_FUNC(yaffs_MknodDirectory) 
+    SYMBOL_ITEM_FUNC(yaffs_MknodFile) 
+    SYMBOL_ITEM_FUNC(yaffs_MknodSpecial) 
+    SYMBOL_ITEM_FUNC(yaffs_MknodSymLink) 
+    SYMBOL_ITEM_FUNC(yaffs_PackTags1) 
+    SYMBOL_ITEM_FUNC(yaffs_PackTags2) 
+    SYMBOL_ITEM_FUNC(yaffs_PackTags2TagsPart) 
+    SYMBOL_ITEM_FUNC(yaffs_QueryInitialBlockState) 
+    SYMBOL_ITEM_FUNC(yaffs_ReadChunkWithTagsFromNAND) 
+    SYMBOL_ITEM_FUNC(yaffs_ReadDataFromFile) 
+    SYMBOL_ITEM_FUNC(yaffs_ReleaseTempBuffer) 
+    SYMBOL_ITEM_FUNC(yaffs_RenameObject) 
+    SYMBOL_ITEM_FUNC(yaffs_ResizeFile) 
+    SYMBOL_ITEM_FUNC(yaffs_Root) 
+    SYMBOL_ITEM_FUNC(yaffs_SetAttributes) 
+    SYMBOL_ITEM_FUNC(yaffs_StartUp) 
+    SYMBOL_ITEM_FUNC(yaffs_TagsCompatabilityMarkNANDBlockBad) 
+    SYMBOL_ITEM_FUNC(yaffs_TagsCompatabilityQueryNANDBlock) 
+    SYMBOL_ITEM_FUNC(yaffs_TagsCompatabilityReadChunkWithTagsFromNAND) 
+    SYMBOL_ITEM_FUNC(yaffs_TagsCompatabilityWriteChunkWithTagsToNAND) 
+    SYMBOL_ITEM_FUNC(yaffs_Unlink) 
+    SYMBOL_ITEM_FUNC(yaffs_UnpackTags1) 
+    SYMBOL_ITEM_FUNC(yaffs_UnpackTags2) 
+    SYMBOL_ITEM_FUNC(yaffs_UnpackTags2TagsPart) 
+    SYMBOL_ITEM_FUNC(yaffs_UpdateDirtyDirectories) 
+    SYMBOL_ITEM_FUNC(yaffs_ValidateTags) 
+    SYMBOL_ITEM_FUNC(yaffs_WriteChunkWithTagsToNAND) 
+    SYMBOL_ITEM_FUNC(yaffs_WriteDataToFile) 
+    SYMBOL_ITEM_FUNC(yaffs_access) 
+    SYMBOL_ITEM_FUNC(yaffs_chmod) 
+    SYMBOL_ITEM_FUNC(yaffs_close) 
+    SYMBOL_ITEM_FUNC(yaffs_closedir) 
+    SYMBOL_ITEM_FUNC(yaffs_dup) 
+    SYMBOL_ITEM_FUNC(yaffs_fchmod) 
+    SYMBOL_ITEM_FUNC(yaffs_fdatasync) 
+    SYMBOL_ITEM_FUNC(yaffs_flush) 
+    SYMBOL_ITEM_FUNC(yaffs_free) 
+    SYMBOL_ITEM_FUNC(yaffs_freespace) 
+    SYMBOL_ITEM_FUNC(yaffs_fstat) 
+    SYMBOL_ITEM_FUNC(yaffs_fsync) 
+    SYMBOL_ITEM_FUNC(yaffs_ftruncate) 
+    SYMBOL_ITEM_FUNC(yaffs_initialise) 
+    SYMBOL_ITEM_FUNC(yaffs_inodecount) 
+    SYMBOL_ITEM_FUNC(yaffs_link) 
+    SYMBOL_ITEM_FUNC(yaffs_lseek) 
+    SYMBOL_ITEM_FUNC(yaffs_lstat) 
+    SYMBOL_ITEM_FUNC(yaffs_malloc) 
+    SYMBOL_ITEM_FUNC(yaffs_mkdir) 
+    SYMBOL_ITEM_FUNC(yaffs_mknod) 
+    SYMBOL_ITEM_FUNC(yaffs_mount) 
+    SYMBOL_ITEM_FUNC(yaffs_mount2) 
+    SYMBOL_ITEM_FUNC(yaffs_open) 
+    SYMBOL_ITEM_FUNC(yaffs_opendir) 
+    SYMBOL_ITEM_FUNC(yaffs_pread) 
+    SYMBOL_ITEM_FUNC(yaffs_pwrite) 
+    SYMBOL_ITEM_FUNC(yaffs_qsort) 
+    SYMBOL_ITEM_FUNC(yaffs_read) 
+    SYMBOL_ITEM_FUNC(yaffs_readdir) 
+    SYMBOL_ITEM_FUNC(yaffs_readlink) 
+    SYMBOL_ITEM_FUNC(yaffs_remount) 
+    SYMBOL_ITEM_FUNC(yaffs_rename) 
+    SYMBOL_ITEM_FUNC(yaffs_rewinddir) 
+    SYMBOL_ITEM_FUNC(yaffs_rmdir) 
+    SYMBOL_ITEM_FUNC(yaffs_stat) 
+    SYMBOL_ITEM_FUNC(yaffs_symlink) 
+    SYMBOL_ITEM_FUNC(yaffs_sync) 
+    SYMBOL_ITEM_FUNC(yaffs_totalspace) 
+    SYMBOL_ITEM_FUNC(yaffs_truncate) 
+    SYMBOL_ITEM_FUNC(yaffs_unlink) 
+    SYMBOL_ITEM_FUNC(yaffs_unmount) 
+    SYMBOL_ITEM_FUNC(yaffs_unmount2) 
+    SYMBOL_ITEM_FUNC(yaffs_write) 
+    SYMBOL_ITEM_FUNC(yaffsfs_CurrentTime) 
+    SYMBOL_ITEM_FUNC(yaffsfs_DoUnlink) 
+    SYMBOL_ITEM_FUNC(yaffsfs_GetHandleObject) 
+    SYMBOL_ITEM_FUNC(yaffsfs_GetHandlePointer) 
+    SYMBOL_ITEM_FUNC(yaffsfs_GetInodePointer) 
+    SYMBOL_ITEM_FUNC(yaffsfs_IsPathDivider) 
+    SYMBOL_ITEM_FUNC(yaffsfs_LocalInitialisation) 
+    SYMBOL_ITEM_FUNC(yaffsfs_Lock) 
+    SYMBOL_ITEM_FUNC(yaffsfs_Match) 
+    SYMBOL_ITEM_FUNC(yaffsfs_SetError) 
+    SYMBOL_ITEM_FUNC(yaffsfs_Unlock) 
+    SYMBOL_ITEM_FUNC(yaffsfs_do_read) 
+    SYMBOL_ITEM_FUNC(yaffsfs_do_write) 
+    SYMBOL_ITEM_FUNC(ydevice_EraseBlock) 
+    SYMBOL_ITEM_FUNC(ydevice_GetInfo) 
+    SYMBOL_ITEM_FUNC(ydevice_Initialise) 
+    SYMBOL_ITEM_FUNC(ydevice_ReadChunk) 
+    SYMBOL_ITEM_FUNC(ydevice_WriteChunk) 
     SYMBOL_ITEM_FUNC(yn) 
     SYMBOL_ITEM_FUNC(ynf) 
     SYMBOL_ITEM_FUNC(__gnu_thumb1_case_sqi) 
@@ -5539,6 +5893,21 @@ SYMBOL_TABLE_BEGIN
     SYMBOL_ITEM_FUNC(_call_via_r9) 
     SYMBOL_ITEM_FUNC(_call_via_sl) 
     SYMBOL_ITEM_FUNC(_call_via_sp) 
+    SYMBOL_ITEM_FUNC(.Lchange_fp) 
+    SYMBOL_ITEM_FUNC(.Lchange_ip) 
+    SYMBOL_ITEM_FUNC(.Lchange_lr) 
+    SYMBOL_ITEM_FUNC(.Lchange_r0) 
+    SYMBOL_ITEM_FUNC(.Lchange_r1) 
+    SYMBOL_ITEM_FUNC(.Lchange_r2) 
+    SYMBOL_ITEM_FUNC(.Lchange_r3) 
+    SYMBOL_ITEM_FUNC(.Lchange_r4) 
+    SYMBOL_ITEM_FUNC(.Lchange_r5) 
+    SYMBOL_ITEM_FUNC(.Lchange_r6) 
+    SYMBOL_ITEM_FUNC(.Lchange_r7) 
+    SYMBOL_ITEM_FUNC(.Lchange_r8) 
+    SYMBOL_ITEM_FUNC(.Lchange_r9) 
+    SYMBOL_ITEM_FUNC(.Lchange_sl) 
+    SYMBOL_ITEM_FUNC(.Lchange_sp) 
     SYMBOL_ITEM_FUNC(_arm_return) 
     SYMBOL_ITEM_FUNC(_arm_return_r11) 
     SYMBOL_ITEM_FUNC(_arm_return_r7) 
@@ -6907,6 +7276,13 @@ SYMBOL_TABLE_BEGIN
     SYMBOL_ITEM_OBJ(socket_drv) 
     SYMBOL_ITEM_OBJ(sys_do_table) 
     SYMBOL_ITEM_OBJ(sys_resv_space) 
+    SYMBOL_ITEM_OBJ(yaffs) 
+    SYMBOL_ITEM_OBJ(yaffs_checkptrw_c_version) 
+    SYMBOL_ITEM_OBJ(yaffs_ecc_c_version) 
+    SYMBOL_ITEM_OBJ(yaffs_guts_c_version) 
+    SYMBOL_ITEM_OBJ(yaffs_nand_c_version) 
+    SYMBOL_ITEM_OBJ(yaffs_traceMask) 
+    SYMBOL_ITEM_OBJ(yaffsfs_c_version) 
     SYMBOL_ITEM_OBJ(_PathLocale) 
     SYMBOL_ITEM_OBJ(__CTOR_LIST__) 
     SYMBOL_ITEM_OBJ(__DTOR_LIST__) 
@@ -6953,6 +7329,7 @@ SYMBOL_TABLE_BEGIN
     SYMBOL_ITEM_OBJ(tcp_tw_pcbs) 
     SYMBOL_ITEM_OBJ(ticks) 
     SYMBOL_ITEM_OBJ(udp_pcbs) 
+    SYMBOL_ITEM_OBJ(yaffs_wr_attempts) 
     SYMBOL_ITEM_OBJ(__aeabi_idiv0) 
     SYMBOL_ITEM_OBJ(__aeabi_ldiv0) 
     SYMBOL_ITEM_OBJ(__aeabi_unwind_cpp_pr1) 
@@ -7002,5 +7379,5 @@ SYMBOL_TABLE_BEGIN
     SYMBOL_ITEM_OBJ(errno) 
 SYMBOL_TABLE_END												
 /*********************************************************************************************************	
-** END FILE
+** END FILE													
 *********************************************************************************************************/	
