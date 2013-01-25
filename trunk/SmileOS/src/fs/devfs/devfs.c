@@ -50,6 +50,8 @@
 #include <fcntl.h>
 #include <errno.h>
 
+extern mutex_t dev_mgr_lock;
+
 static int devfs_mount(mount_point_t *point, device_t *dev, const char *dev_name, const char *param)
 {
     return 0;
@@ -57,20 +59,27 @@ static int devfs_mount(mount_point_t *point, device_t *dev, const char *dev_name
 
 static int devfs_open(mount_point_t *point, file_t *file, const char *path, int oflag, mode_t mode)
 {
-    device_t *dev = device_lookup(vfs_path_add_mount_point(path));
+    device_t *dev;
+    int       ret;
 
+    mutex_lock(&dev_mgr_lock, 0);
+    dev = device_lookup(vfs_path_add_mount_point(path));
     if (dev == NULL) {
+        mutex_unlock(&dev_mgr_lock);
         seterrno(ENODEV);
         return -1;
     }
 
     if (dev->drv->open == NULL) {
+        mutex_unlock(&dev_mgr_lock);
         seterrno(ENOSYS);
         return -1;
     }
 
     file->ctx = dev;
-    return dev->drv->open(dev->ctx, file, oflag, mode);
+    ret = dev->drv->open(dev->ctx, file, oflag, mode);
+    mutex_unlock(&dev_mgr_lock);
+    return ret;
 }
 
 static int devfs_dup(mount_point_t *point, const file_t *src, file_t *dest)
@@ -83,6 +92,8 @@ static int devfs_dup(mount_point_t *point, const file_t *src, file_t *dest)
     }
 
     atomic_inc(&dev->ref);
+
+    dest->ctx = dev;
 
     return 0;
 }
@@ -385,12 +396,20 @@ static int devfs_stat(mount_point_t *point, const char *path, struct stat *buf)
         buf->st_spare4[1]   = 0;
         return 0;
     } else {
-        int fd = vfs_open(vfs_path_add_mount_point(path), O_RDONLY, 0666);
-        if (fd >= 0) {
-            int ret = vfs_fstat(fd, buf);
-            vfs_close(fd);
+        device_t *dev;
+
+        mutex_lock(&dev_mgr_lock, 0);
+        dev = device_lookup(vfs_path_add_mount_point(path));
+        if (dev != NULL) {
+            file_t file;
+            int    ret;
+            file->ctx = dev;
+            ret = devfs_fstat(point, &file, buf);
+            mutex_unlock(&dev_mgr_lock);
             return ret;
         } else {
+            mutex_unlock(&dev_mgr_lock);
+            seterrno(ENOENT);
             return -1;
         }
     }
@@ -451,8 +470,6 @@ static struct dirent *devfs_readdir(mount_point_t *point, file_t *file)
         seterrno(EINVAL);
         return NULL;
     }
-
-    extern mutex_t dev_mgr_lock;
 
     mutex_lock(&dev_mgr_lock, 0);
     dev = device_get(priv->loc);
