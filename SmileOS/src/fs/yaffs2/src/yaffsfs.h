@@ -111,11 +111,11 @@
 #endif
 
 #ifndef ENOTEMPTY
-#define ENOTEMPTY 90
+#define ENOTEMPTY 39
 #endif
 
 #ifndef ENAMETOOLONG
-#define ENAMETOOLONG 91
+#define ENAMETOOLONG 36
 #endif
 
 #ifndef ENOMEM
@@ -180,12 +180,11 @@
 
 
 struct yaffs_dirent{
-    ino_t d_ino;                /* inode number */
-    YCHAR d_name [NAME_MAX+1];  /* file name (null-terminated) */
+    long d_ino;                 /* inode number */
     off_t d_off;                /* offset to this dirent */
     unsigned short d_reclen;    /* length of this d_name */
     YUCHAR  d_type;	/* type of this record */
-
+    YCHAR d_name [NAME_MAX+1];   /* file name (null-terminated) */
     unsigned d_dont_use;	/* debug pointer, not for public consumption */
 };
 

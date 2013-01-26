@@ -107,7 +107,7 @@ void printk(const char *fmt, ...)
     va_list va;
     msg_t  *msg;
 
-    msg = kmalloc(sizeof(msg_t));
+    msg = kmalloc(sizeof(msg_t), GFP_KERNEL);
     if (msg == NULL) {
         return;
     }

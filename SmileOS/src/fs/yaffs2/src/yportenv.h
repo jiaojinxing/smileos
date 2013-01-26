@@ -17,7 +17,6 @@
 #ifndef __YPORTENV_H__
 #define __YPORTENV_H__
 
-#define  USE_MODULE_CONFIG
 #include "moduleconfig.h"
 
 /*

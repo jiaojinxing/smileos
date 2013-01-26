@@ -268,7 +268,8 @@ void kcomplain(const char *fmt, ...);
 ** Returned value:          内存指针
 *********************************************************************************************************/
 void *__kmalloc(const char *func, int line, size_t size);
-#define kmalloc(a)      __kmalloc(__func__, __LINE__, a)
+#define GFP_KERNEL      0
+#define kmalloc(a, b)   __kmalloc(__func__, __LINE__, a)
 /*********************************************************************************************************
 ** Function name:           __kfree
 ** Descriptions:            释放内存回内核内存堆

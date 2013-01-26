@@ -16,12 +16,9 @@
 #ifndef __YAFFS_CONFIG_H__
 #define __YAFFS_CONFIG_H__
 
-#ifdef USE_MODULE_CONFIG
+/* #ifdef YAFFS_OUT_OF_TREE */
 
 #define CONFIG_YAFFS_DIRECT
-#define CONFIG_YAFFSFS_PROVIDE_VALUES
-#define CONFIG_YAFFS_PROVIDE_DEFS
-typedef long 		loff_t;
 
 /* DO NOT UNSET THESE THREE. YAFFS2 will not compile if you do. */
 #define CONFIG_YAFFS_FS
@@ -32,7 +29,7 @@ typedef long 		loff_t;
 
 /* Default: Not selected */
 /* Meaning: Yaffs does its own ECC, rather than using MTD ECC */
-/* #define CONFIG_YAFFS_DOES_ECC */
+#define CONFIG_YAFFS_DOES_ECC
 
 /* Default: Selected */
 /* Meaning: Yaffs does its own ECC on tags for packed tags rather than use mtd */
@@ -81,6 +78,6 @@ MTD versions in yaffs_mtdif1.c.
 /* Meaning: Use older-style on-NAND data format with pageStatus byte */
 /* #define CONFIG_YAFFS_9BYTE_TAGS */
 
-#endif /* YAFFS_OUT_OF_TREE */
+/* #endif */ /* YAFFS_OUT_OF_TREE */
 
 #endif /* __YAFFS_CONFIG_H__ */

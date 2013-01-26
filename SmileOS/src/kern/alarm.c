@@ -163,7 +163,7 @@ int task_alarm(uint32_t ms)
 {
     msg_t  *msg;
 
-    msg = kmalloc(sizeof(msg_t));
+    msg = kmalloc(sizeof(msg_t), GFP_KERNEL);
     if (msg == NULL) {
         return -1;
     }

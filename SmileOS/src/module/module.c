@@ -225,7 +225,7 @@ static int module_reloc(module_t *mod)
     /*
      * 先装载所有节区首部到局部数组
      */
-    shdrs = kmalloc(ehdr->e_shnum * sizeof(Elf32_Shdr *));
+    shdrs = kmalloc(ehdr->e_shnum * sizeof(Elf32_Shdr *), GFP_KERNEL);
     if (shdrs == NULL) {
         goto error0;
     }
@@ -666,7 +666,7 @@ int module_load(const char *path, int argc, char **argv)
         return -1;
     }
 
-    mod = kmalloc(sizeof(module_t) + st.st_size);                       /*  分配缓冲                    */
+    mod = kmalloc(sizeof(module_t) + st.st_size, GFP_KERNEL);           /*  分配缓冲                    */
     if (mod == NULL) {
         printk("%s: failed to kmalloc %d byte\n", __func__, st.st_size);
         close(fd);

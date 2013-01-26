@@ -226,7 +226,7 @@ int32_t kthread_create(const char *name, void (*func)(void *), void *arg, uint32
     /*
      * 内核线程专属信息
      */
-    task->stack_base    = (uint32_t)kmalloc(stack_size);                /*  分配线程栈空间              */
+    task->stack_base    = (uint32_t)kmalloc(stack_size, GFP_KERNEL);    /*  分配线程栈空间              */
     if (task->stack_base == 0) {
         goto __exit0;
     }

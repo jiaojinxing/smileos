@@ -452,7 +452,7 @@ static int devfs_opendir(mount_point_t *point, file_t *file, const char *path)
         return -1;
     }
 
-    priv = kmalloc(sizeof(privinfo_t));
+    priv = kmalloc(sizeof(privinfo_t), GFP_KERNEL);
     if (priv != NULL) {
         file->ctx = priv;
         priv->loc = 0;

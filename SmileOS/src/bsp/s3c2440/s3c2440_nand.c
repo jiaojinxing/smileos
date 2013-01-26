@@ -615,7 +615,7 @@ int mtdblock_init(void)
 
     driver_install(&mtdblock_drv);
 
-    priv = kmalloc(sizeof(privinfo_t));
+    priv = kmalloc(sizeof(privinfo_t), GFP_KERNEL);
     if (priv != NULL) {
         device_init(priv);
 
@@ -636,7 +636,7 @@ int mtdblock_init(void)
         }
     }
 
-    priv = kmalloc(sizeof(privinfo_t));
+    priv = kmalloc(sizeof(privinfo_t), GFP_KERNEL);
     if (priv != NULL) {
         device_init(priv);
 
@@ -657,7 +657,7 @@ int mtdblock_init(void)
         }
     }
 
-    priv = kmalloc(sizeof(privinfo_t));
+    priv = kmalloc(sizeof(privinfo_t), GFP_KERNEL);
     if (priv != NULL) {
         device_init(priv);
 

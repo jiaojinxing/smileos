@@ -40,11 +40,7 @@
 #include "kern/kern.h"
 #include "kern/ipc.h"
 #include "vfs/types.h"
-#include "./src/yaffsfs.h"
-#include "./src/yportenv.h"
-#include "./src/yaffs_flashif.h"
 #include "./src/yaffs_guts.h"
-#include "./src/devextras.h"
 
 #include <errno.h>
 
@@ -105,7 +101,7 @@ __u32 yaffsfs_CurrentTime(void)
 *********************************************************************************************************/
 void *yaffs_malloc(size_t size)
 {
-    return kmalloc(size);
+    return kmalloc(size, GFP_KERNEL);
 }
 /*********************************************************************************************************
 ** Function name:           yaffs_free

@@ -28,11 +28,13 @@
 #include "stdio.h"
 #include "string.h"
 #include "yaffs_malloc.h"
-
+#include <dirent.h>
+#include <unistd.h>
 #include "assert.h"
 #define YBUG() assert(0)
 //#define YBUG() do { *((int *)0) =1;} while(0)
 
+typedef long                        loff_t;
 
 #define YCHAR char
 #define YUCHAR unsigned char
@@ -71,7 +73,8 @@
 #define TENDSTR "\n"
 #define TSTR(x) x
 #define TCONT(x) x
-#define TOUT(p) printf p
+extern void printk(const char *fmt, ...);
+#define TOUT(p) printk p
 
 
 #define YAFFS_LOSTNFOUND_NAME		"lost+found"

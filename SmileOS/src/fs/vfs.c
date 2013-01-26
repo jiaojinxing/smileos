@@ -2085,7 +2085,7 @@ int vfs_mount(const char *point_name, const char *dev_name, const char *fs_name,
             mutex_unlock(&dev_mgr_lock);
 
             if (point_name != NULL) {                                   /*  有指定挂载点名              */
-                point = kmalloc(sizeof(mount_point_t));                 /*  分配挂载点                  */
+                point = kmalloc(sizeof(mount_point_t), GFP_KERNEL);     /*  分配挂载点                  */
                 if (point != NULL) {
                     if (point_name[0] == '/') {                         /*  保证挂载点以 / 号开始       */
                         strlcpy(point->name, point_name, sizeof(point->name));
@@ -2172,7 +2172,7 @@ int vfs_mount_point_create(const char *point_name, file_system_t *fs, device_t *
         return -1;
     }
 
-    point = kmalloc(sizeof(mount_point_t));                             /*  分配挂载点                  */
+    point = kmalloc(sizeof(mount_point_t), GFP_KERNEL);                 /*  分配挂载点                  */
     if (point != NULL) {
         if (point_name[0] == '/') {                                     /*  保证挂载点以 / 号开始       */
             strlcpy(point->name, point_name, sizeof(point->name));

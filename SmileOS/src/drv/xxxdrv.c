@@ -282,7 +282,7 @@ int xxx_init(void)
 
     driver_install(&xxx_drv);
 
-    priv = kmalloc(sizeof(privinfo_t));
+    priv = kmalloc(sizeof(privinfo_t), GFP_KERNEL);
     if (priv != NULL) {
         device_init(priv);
         if (device_create("/dev/xxx", "xxx", priv) < 0) {
