@@ -141,7 +141,7 @@ int mutex_new(mutex_t *mutex)
 {
     struct mutex *m;
 
-    m = kmalloc(sizeof(struct mutex));
+    m = kmalloc(sizeof(struct mutex), GFP_KERNEL);
     if (m) {
         m->type      = IPC_TYPE_MUTEX;
         m->owner     = NULL;
@@ -413,7 +413,7 @@ int sem_new(sem_t *sem, uint32_t count)
 {
     struct sem *s;
 
-    s = kmalloc(sizeof(struct sem));
+    s = kmalloc(sizeof(struct sem), GFP_KERNEL);
     if (s) {
         s->type      = IPC_TYPE_SEM;
         s->wait_list = NULL;
@@ -701,7 +701,7 @@ int mqueue_new(mqueue_t *mqueue, uint32_t size)
         size = 10;
     }
 
-    q = kmalloc(sizeof(struct mqueue) + (size - 1) * sizeof(void *));
+    q = kmalloc(sizeof(struct mqueue) + (size - 1) * sizeof(void *), GFP_KERNEL);
     if (q) {
         q->type        = IPC_TYPE_MQUEUE;
         q->r_wait_list = NULL;

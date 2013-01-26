@@ -212,7 +212,7 @@ int device_create(const char *dev_name, const char *drv_name, void *ctx)
 
         mutex_unlock(&drv_mgr_lock);
 
-        dev = kmalloc(sizeof(device_t));
+        dev = kmalloc(sizeof(device_t), GFP_KERNEL);
         if (dev != NULL) {
             strlcpy(dev->name, dev_name, sizeof(dev->name));
             dev->drv   = drv;

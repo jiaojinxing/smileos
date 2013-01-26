@@ -78,7 +78,7 @@ static int fifo_open(void *ctx, file_t *file, int oflag, mode_t mode)
 
         priv->in  = 0;
         priv->out = 0;
-        priv->buffer = kmalloc(8 * KB);
+        priv->buffer = kmalloc(8 * KB, GFP_KERNEL);
         if (priv->buffer == NULL) {
             atomic_dec(&(((device_t *)file->ctx)->ref));
             seterrno(ENOMEM);
@@ -298,7 +298,7 @@ int fifo_create(const char *name)
 {
     privinfo_t *priv;
 
-    priv = kmalloc(sizeof(privinfo_t));
+    priv = kmalloc(sizeof(privinfo_t), GFP_KERNEL);
     if (priv != NULL) {
         device_init(priv);
         if (device_create(name, "fifo", priv) < 0) {

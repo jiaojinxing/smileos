@@ -61,7 +61,7 @@ int select_select(select_struct_t *select, file_t *file, int type)
         return -1;
     }
 
-    node = kmalloc(sizeof(select_node_t));
+    node = kmalloc(sizeof(select_node_t), GFP_KERNEL);
     if (node == NULL) {
         seterrno(ENOMEM);
         return -1;

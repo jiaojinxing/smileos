@@ -291,7 +291,7 @@ int socket_attach(int sock_fd)
     privinfo_t *priv;
     uint32_t reg;
 
-    priv = kmalloc(sizeof(privinfo_t));
+    priv = kmalloc(sizeof(privinfo_t), GFP_KERNEL);
     if (priv != NULL) {
         priv->sock_fd = sock_fd;
 

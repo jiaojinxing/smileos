@@ -305,7 +305,7 @@ int signal_queue(int32_t tid, int sig)
             sigaddset(&task->sigset_pend, sig);
         }
 
-        ctx = kmalloc(sizeof(signal_ctx_t));                            /*  分配信号上下文              */
+        ctx = kmalloc(sizeof(signal_ctx_t), GFP_KERNEL);                /*  分配信号上下文              */
         if (ctx == NULL) {
             seterrno(ENOMEM);
             goto ret;

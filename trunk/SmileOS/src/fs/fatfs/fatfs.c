@@ -114,7 +114,7 @@ static int fatfs_mount(mount_point_t *point, device_t *dev, const char *dev_name
         return -1;
     }
 
-    fs = (FATFS *)kmalloc(sizeof(FATFS));
+    fs = (FATFS *)kmalloc(sizeof(FATFS), GFP_KERNEL);
     if (fs != NULL) {
         memset(fs, 0, sizeof(FATFS));
         res = f_mount(0, fs);
@@ -139,7 +139,7 @@ static int fatfs_open(mount_point_t *point, file_t *file, const char *path, int 
     int fatfs_mode = FA_READ;
     FRESULT res;
 
-    priv = kmalloc(sizeof(privinfo_t));
+    priv = kmalloc(sizeof(privinfo_t), GFP_KERNEL);
     if (priv != NULL) {
         memset(priv, 0, sizeof(privinfo_t));
         file->ctx = priv;
@@ -189,7 +189,7 @@ static int fatfs_dup(mount_point_t *point, const file_t *src, file_t *dest)
         return -1;
     }
 
-    priv = kmalloc(sizeof(privinfo_t));
+    priv = kmalloc(sizeof(privinfo_t), GFP_KERNEL);
     if (priv != NULL) {
         dest->ctx = priv;
         memcpy(dest->ctx, src->ctx, sizeof(privinfo_t));
@@ -572,7 +572,7 @@ static int fatfs_opendir(mount_point_t *point, file_t *file, const char *path)
     privinfo_t *priv;
     FRESULT res;
 
-    priv = kmalloc(sizeof(privinfo_t));
+    priv = kmalloc(sizeof(privinfo_t), GFP_KERNEL);
     if (priv != NULL) {
         memset(priv, 0, sizeof(privinfo_t));
         file->ctx = priv;

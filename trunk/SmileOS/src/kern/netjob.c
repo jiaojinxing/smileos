@@ -99,7 +99,7 @@ int netjob_add(void (*func)(void *), void *arg)
         return -1;
     }
 
-    msg = kmalloc(sizeof(msg_t));
+    msg = kmalloc(sizeof(msg_t), GFP_KERNEL);
     if (msg == NULL) {
         return -1;
     }

@@ -45,7 +45,7 @@
 #include "vfs/device.h"
 #include "./src/yaffscfg.h"
 #include "./src/yaffsfs.h"
-#include "./src/yaffs_flashif.h"
+#include "./src/yaffs_guts.h"
 
 extern void yaffsfs_LocalInitialisation(void);
 extern int ydevice_GetInfo(yaffs_Device *ydev);
@@ -85,7 +85,7 @@ int yaffs_StartUp(void)
         return -1;
     }
 
-    cfg_bak = cfg = kmalloc(sizeof(yaffsfs_DeviceConfiguration) * (max + 1));
+    cfg_bak = cfg = kmalloc(sizeof(yaffsfs_DeviceConfiguration) * (max + 1), GFP_KERNEL);
     if (cfg == NULL) {
         return -1;
     }
@@ -105,7 +105,7 @@ int yaffs_StartUp(void)
         }
         mutex_unlock(&dev_mgr_lock);
 
-	    ydev = (yaffs_Device *)kmalloc(sizeof(yaffs_Device));
+	    ydev = (yaffs_Device *)kmalloc(sizeof(yaffs_Device), GFP_KERNEL);
 	    if (ydev == NULL) {
             atomic_dec(&dev->ref);
             continue;
@@ -142,16 +142,19 @@ int yaffs_StartUp(void)
 
 	    yaffs_initialise(cfg_bak);
 
-	    cfg--;
-	    while (cfg >= cfg_bak) {
+	    for (cfg--; cfg >= cfg_bak; cfg--) {
 	        if (yaffs_mount(cfg->prefix) != YAFFS_OK) {
 	            atomic_dec(&(((device_t *)(cfg->dev->context))->ref));
 	            //kfree(cfg->dev);
 	            continue;
 	        }
-	        vfs_mount_point_create(cfg->prefix, &yaffs, cfg->dev->context);
+	        if (vfs_mount_point_create(cfg->prefix, &yaffs, cfg->dev->context) < 0) {
+	            yaffs_unmount(cfg->prefix);
+                atomic_dec(&(((device_t *)(cfg->dev->context))->ref));
+                //kfree(cfg->dev);
+                continue;
+	        }
 	        atomic_dec(&(((device_t *)(cfg->dev->context))->ref));
-            cfg--;
 	    }
 
 	    return 0;
