@@ -287,7 +287,7 @@ static int __yaffs_rename(mount_point_t *point, const char *old, const char *new
 
 static int __yaffs_sync(mount_point_t *point)
 {
-    return yaffs_sync("/");
+    return yaffs_sync(point->name);
 }
 
 static int __yaffs_truncate(mount_point_t *point, const char *path, off_t len)

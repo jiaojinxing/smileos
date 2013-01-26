@@ -98,7 +98,7 @@ static void init(void *arg)
     kthread_create("shell", shell, NULL, 16 * KB, 10);
 
     while (1) {
-        sleep(1000);
+        sleep(10);
     }
 }
 /*********************************************************************************************************
@@ -118,6 +118,9 @@ static int sys_drivers_install(void)
 
     extern int ramdisk_init(void);
     ramdisk_init();
+
+    extern int fifo_init(void);
+    fifo_init();
 
     return 0;
 }

@@ -81,6 +81,17 @@
 
 #define SYS_CLK_FREQ        (12000000)                                  /*  Fin = 12.00MHz              */
 
+#define CONFIG_SYS_MAX_NAND_DEVICE 1
+
+#define CONFIG_SYS_NAND_BASE 0x4e000000
+
+#define CONFIG_MTD_DEVICE   1
+
+#define CONFIG_RELOC_FIXUP_WORKS 1
+
+//#define CONFIG_MTD_DEBUG   1
+#define CONFIG_MTD_DEBUG_VERBOSE 4
+
 #endif                                                                  /*  S3C2440_CONFIG_H_           */
 /*********************************************************************************************************
 ** END FILE

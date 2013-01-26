@@ -2131,7 +2131,7 @@ int vfs_mount(const char *point_name, const char *dev_name, const char *fs_name,
                         return 0;
                     }
                 }
-            } else {                                                    /*  无指定挂载点名, 挂载时创建  */
+            } else {                                                    /*  无指定挂载点名, 挂载时      */
                                                                         /*  用分区名创建挂载点          */
                 ret = fs->mount(NULL, dev, dev_name, param);            /*  挂载                        */
                 if (ret < 0) {
@@ -2143,8 +2143,8 @@ int vfs_mount(const char *point_name, const char *dev_name, const char *fs_name,
                     return -1;
                 } else {
                     mutex_unlock(&point_mgr_lock);
-                    atomic_dec(&fs->ref);                               /*  这里会减少文件系统引用      */
-                    return 0;
+                    atomic_dec(&fs->ref);                               /*  创建挂载点会增加文件系统引用*/
+                    return 0;                                           /*  这里会减少文件系统引用      */
                 }
             }
         }
@@ -2190,9 +2190,9 @@ int vfs_mount_point_create(const char *point_name, file_system_t *fs, device_t *
             return -1;
         }
 
-        atomic_inc(&fs->ref);
+        atomic_inc(&fs->ref);                                           /*  增加文件系统引用            */
         if (dev != NULL) {
-            atomic_inc(&dev->ref);
+            atomic_inc(&dev->ref);                                      /*  增加设备引用                */
         }
 
         point->fs  = fs;
@@ -2201,9 +2201,11 @@ int vfs_mount_point_create(const char *point_name, file_system_t *fs, device_t *
         atomic_set(&point->ref, 0);
 
         mount_point_install(point);                                     /*  安装挂载点                  */
-    }
 
-    return 0;
+        return 0;
+    } else {
+        return -1;
+    }
 }
 /*********************************************************************************************************
 ** Function name:           vfs_unmount
