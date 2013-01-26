@@ -138,6 +138,12 @@ int bsp_drivers_install(void)
     extern void nand_init(void);
     nand_init();
 
+    extern int fb_init(void);
+    fb_init();
+
+    extern int audio_init(void);
+    audio_init();
+
     return 0;
 }
 /*********************************************************************************************************

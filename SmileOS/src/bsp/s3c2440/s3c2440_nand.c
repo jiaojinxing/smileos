@@ -43,7 +43,7 @@
 /*********************************************************************************************************
 ** ¼Ä´æÆ÷¶¨Òå
 *********************************************************************************************************/
-#define NF_BASE             (0x4e000000)
+#define NF_BASE             (0x4E000000)
 #define rNFCONF             (*(volatile unsigned *)0x4E000000)          /*  NAND Flash configuration    */
 #define rNFCONT             (*(volatile unsigned *)0x4E000004)          /*  NAND Flash control          */
 #define rNFCMD              (*(volatile unsigned *)0x4E000008)          /*  NAND Flash command          */
@@ -106,7 +106,7 @@ static void s3c2440_hwcontrol(struct mtd_info *mtd, int cmd, unsigned int ctrl)
     }
     
     if (cmd != NAND_CMD_NONE){
-        writeb(cmd,(void *)IO_ADDR_W);
+        writeb(cmd, (void *)IO_ADDR_W);
     }
 }
 /*********************************************************************************************************

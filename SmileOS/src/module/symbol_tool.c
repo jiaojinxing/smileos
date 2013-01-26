@@ -73,7 +73,7 @@ static HASH_TBL *smileos_symbol_hashtbl;
 *********************************************************************************************************/
 static HASH_TBL *hash_tbl_create(uint32_t size)
 {
-    HASH_TBL *tbl = (HASH_TBL *)kcalloc(1, sizeof(HASH_TBL) + sizeof(NODE *) * (size - 1));
+    HASH_TBL *tbl = (HASH_TBL *)kzalloc(1, sizeof(HASH_TBL) + sizeof(NODE *) * (size - 1));
     if (tbl != NULL) {
         tbl->size = size;
     }
@@ -131,7 +131,7 @@ static int hash_tbl_insert(HASH_TBL *tbl,
 
     head = tbl->lists[key % tbl->size];
     if (NULL == head){
-        node = (NODE *)kcalloc(1, sizeof(NODE));
+        node = (NODE *)kzalloc(1, sizeof(NODE));
         if (node == NULL) {
             return -1;
         }
@@ -140,7 +140,7 @@ static int hash_tbl_insert(HASH_TBL *tbl,
         tbl->lists[key % tbl->size] = node;
         return 0;
     } else {
-        node = (NODE *)kcalloc(1, sizeof(NODE));
+        node = (NODE *)kzalloc(1, sizeof(NODE));
         if (node == NULL) {
             return -1;
         }
