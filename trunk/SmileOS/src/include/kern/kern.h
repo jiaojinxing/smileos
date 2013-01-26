@@ -277,6 +277,7 @@ void kcomplain(const char *fmt, ...);
 *********************************************************************************************************/
 void *__kmalloc(const char *func, int line, size_t size);
 #define GFP_KERNEL      0
+#define GFP_DMA         1
 #define kmalloc(a, b)   __kmalloc(__func__, __LINE__, a)
 /*********************************************************************************************************
 ** Function name:           __kfree
@@ -290,7 +291,7 @@ void *__kmalloc(const char *func, int line, size_t size);
 void __kfree(const char *func, int line, void *ptr);
 #define kfree(a)        __kfree(__func__, __LINE__, a)
 /*********************************************************************************************************
-** Function name:           __kcalloc
+** Function name:           __kzalloc
 ** Descriptions:            从内核内存堆里分配内存
 ** input parameters:        func                调用者的函数名
 **                          line                调用者的行号
@@ -299,8 +300,8 @@ void __kfree(const char *func, int line, void *ptr);
 ** output parameters:       NONE
 ** Returned value:          内存指针
 *********************************************************************************************************/
-void *__kcalloc(const char *func, int line, size_t nelem, size_t elsize);
-#define kcalloc(a, b)   __kcalloc(__func__, __LINE__, a, b)
+void *__kzalloc(const char *func, int line, size_t nelem, size_t elsize);
+#define kzalloc(a, b)   __kzalloc(__func__, __LINE__, a, b)
 /*********************************************************************************************************
 ** Function name:           interrupt_enter
 ** Descriptions:            进入中断

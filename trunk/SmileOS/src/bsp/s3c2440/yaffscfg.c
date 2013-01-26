@@ -37,12 +37,7 @@
 ** Descriptions:
 **
 *********************************************************************************************************/
-#include "kern/kern.h"
-#include "kern/ipc.h"
-#include "vfs/config.h"
-#include "vfs/types.h"
 #include "vfs/vfs.h"
-#include "vfs/device.h"
 #include "../../fs/yaffs2/src/yaffscfg.h"
 #include "../../fs/yaffs2/src/yaffsfs.h"
 #include "../../fs/yaffs2/src/yaffs_guts.h"
@@ -83,6 +78,9 @@ int yaffs_StartUp(void)
     yaffsfs_LocalInitialisation();
 
     mtd = get_mtd_device(NULL, 0);
+    if (mtd == NULL) {
+        return -1;
+    }
 
     kern_part_ctx.mtd = mtd;
     root_part_ctx.mtd = mtd;

@@ -240,7 +240,7 @@ static int module_reloc(module_t *mod)
          */
         if (strcmp(shdr->sh_name + shstrtab, ".bss") == 0) {
             bss_idx = i;
-            shdr->sh_offset = (Elf32_Off)kcalloc(1, shdr->sh_size);
+            shdr->sh_offset = (Elf32_Off)kzalloc(1, shdr->sh_size);
             if (shdr->sh_offset == 0) {
                 goto error1;
             }

@@ -103,7 +103,7 @@ void __kfree(const char *func, int line, void *ptr)
     interrupt_resume(reg);
 }
 /*********************************************************************************************************
-** Function name:           __kcalloc
+** Function name:           __kzalloc
 ** Descriptions:            从内核内存堆里分配内存
 ** input parameters:        func                调用者的函数名
 **                          line                调用者的行号
@@ -112,7 +112,7 @@ void __kfree(const char *func, int line, void *ptr)
 ** output parameters:       NONE
 ** Returned value:          内存指针
 *********************************************************************************************************/
-void *__kcalloc(const char *func, int line, size_t nelem, size_t elsize)
+void *__kzalloc(const char *func, int line, size_t nelem, size_t elsize)
 {
     void    *ptr;
     uint32_t reg;

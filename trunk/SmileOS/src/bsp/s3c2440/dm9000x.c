@@ -969,7 +969,7 @@ static err_t low_level_output(struct netif *netif, struct pbuf *p)
 
         sys_mutex_unlock(&ethif->lock);
 
-        sys_arch_sem_wait(&ethif->tx_sync, 0);
+        sys_arch_sem_wait(&ethif->tx_sync, 10);
 
         sys_mutex_lock(&ethif->lock);
 
