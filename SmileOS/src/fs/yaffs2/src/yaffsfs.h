@@ -181,10 +181,15 @@
 
 struct yaffs_dirent{
     long d_ino;                 /* inode number */
+#ifdef SMILEOS
+    YCHAR d_name [NAME_MAX+1];   /* file name (null-terminated) */
+#endif
     off_t d_off;                /* offset to this dirent */
     unsigned short d_reclen;    /* length of this d_name */
     YUCHAR  d_type;	/* type of this record */
+#ifndef SMILEOS
     YCHAR d_name [NAME_MAX+1];   /* file name (null-terminated) */
+#endif
     unsigned d_dont_use;	/* debug pointer, not for public consumption */
 };
 

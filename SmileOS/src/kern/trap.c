@@ -138,6 +138,8 @@ static void dabt_oops(uint32_t *regs)
     printk("fault status  = 0x%x\n", mmu_get_data_fault_status());
 
     print_regs(regs);
+
+    while(1);
 }
 /*********************************************************************************************************
 ** Function name:           dabt_c_handler

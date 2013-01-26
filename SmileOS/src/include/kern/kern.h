@@ -240,6 +240,14 @@ int32_t kthread_create(const char *name, void (*func)(void *), void *arg, uint32
 ** Returned value:          NONE
 *********************************************************************************************************/
 void printk(const char *fmt, ...);
+#define KERN_EMERG
+#define KERN_ALERT
+#define KERN_CRIT
+#define KERN_ERR
+#define KERN_WARNING
+#define KERN_NOTICE
+#define KERN_INFO
+#define KERN_DEBUG
 /*********************************************************************************************************
 ** Function name:           netjob_add
 ** Descriptions:            增加一个网络工作

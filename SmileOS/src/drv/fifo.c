@@ -22,7 +22,7 @@
 ** File name:               fifo.c
 ** Last modified Date:      2012-4-6
 ** Last Version:            1.0.0
-** Descriptions:            设备驱动模板
+** Descriptions:            FIFO 设备驱动
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing
@@ -76,9 +76,10 @@ static int fifo_open(void *ctx, file_t *file, int oflag, mode_t mode)
          * 第一次打开时的初始化代码
          */
 
-        priv->in  = 0;
-        priv->out = 0;
-        priv->buffer = kmalloc(8 * KB, GFP_KERNEL);
+        priv->in   = 0;
+        priv->out  = 0;
+        priv->size = 1 * KB;
+        priv->buffer = kmalloc(1 * KB, GFP_KERNEL);
         if (priv->buffer == NULL) {
             atomic_dec(&(((device_t *)file->ctx)->ref));
             seterrno(ENOMEM);

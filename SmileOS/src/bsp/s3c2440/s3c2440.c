@@ -135,8 +135,8 @@ int bsp_drivers_install(void)
     extern int ttyS0_init(void);
     ttyS0_init();
 
-    extern int mtdblock_init(void);
-    mtdblock_init();
+    extern void nand_init(void);
+    nand_init();
 
     return 0;
 }

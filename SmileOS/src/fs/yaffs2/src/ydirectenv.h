@@ -23,7 +23,7 @@
 // Direct interface
 
 #include "devextras.h"
-
+#include <linux/version.h>
 #include "stdlib.h"
 #include "stdio.h"
 #include "string.h"
@@ -33,8 +33,6 @@
 #include "assert.h"
 #define YBUG() assert(0)
 //#define YBUG() do { *((int *)0) =1;} while(0)
-
-typedef long                        loff_t;
 
 #define YCHAR char
 #define YUCHAR unsigned char
@@ -91,6 +89,14 @@ extern void printk(const char *fmt, ...);
 
 #define yaffs_SumCompare(x,y) ((x) == (y))
 #define yaffs_strcmp(a,b) strcmp(a,b)
+
+#define yaffs_trace(mask, fmt, args...) \
+    do { if ((mask) & (yaffs_traceMask| YAFFS_TRACE_ALWAYS)) \
+        printk(KERN_WARNING "yaffs: " fmt, ## args); \
+    } while (0)
+
+#define compile_time_assertion(assertion) \
+    ({ int x = __builtin_choose_expr(assertion, 0, (void)0); (void) x; })
 
 #endif
 
