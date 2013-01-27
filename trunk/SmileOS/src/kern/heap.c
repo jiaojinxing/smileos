@@ -60,26 +60,42 @@
 /*********************************************************************************************************
 ** 内核内存堆
 *********************************************************************************************************/
-static heap_t       kheap;
+static heap_t       kern_heap;
+static heap_t       dma_heap;
 /*********************************************************************************************************
 ** Function name:           __kmalloc
 ** Descriptions:            从内核内存堆里分配内存
 ** input parameters:        func                调用者的函数名
 **                          line                调用者的行号
 **                          size                需要分配的大小
+**                          flags               分配标志
 ** output parameters:       NONE
 ** Returned value:          内存指针
 *********************************************************************************************************/
-void *__kmalloc(const char *func, int line, size_t size)
+void *__kmalloc(const char *func, int line, size_t size, int flags)
 {
     void    *ptr;
     uint32_t reg;
 
-    reg = interrupt_disable();
+    if (flags & GFP_DMA) {
+        reg = interrupt_disable();
 
-    ptr = heap_alloc(&kheap, func, line, size);
+        ptr = heap_alloc(&dma_heap, func, line, size);
 
-    interrupt_resume(reg);
+        interrupt_resume(reg);
+    } else {
+        reg = interrupt_disable();
+
+        ptr = heap_alloc(&kern_heap, func, line, size);
+
+        interrupt_resume(reg);
+    }
+
+    if (ptr != NULL) {
+        if (flags & GFP_ZERO) {
+            memset(ptr, 0, size);
+        }
+    }
 
     return ptr;
 }
@@ -97,36 +113,14 @@ void __kfree(const char *func, int line, void *ptr)
     uint32_t reg;
 
     reg = interrupt_disable();
-
-    heap_free(&kheap, func, line, ptr);
-
-    interrupt_resume(reg);
-}
-/*********************************************************************************************************
-** Function name:           __kzalloc
-** Descriptions:            从内核内存堆里分配内存
-** input parameters:        func                调用者的函数名
-**                          line                调用者的行号
-**                          nelem               元素的个数
-**                          elsize              元素的大小
-** output parameters:       NONE
-** Returned value:          内存指针
-*********************************************************************************************************/
-void *__kzalloc(const char *func, int line, size_t nelem, size_t elsize)
-{
-    void    *ptr;
-    uint32_t reg;
-
-    reg = interrupt_disable();
-
-    ptr = heap_alloc(&kheap, func, line, nelem * MEM_ALIGN_SIZE(elsize));
-
-    interrupt_resume(reg);
-
-    if (ptr != NULL) {
-        memset(ptr, 0, nelem * MEM_ALIGN_SIZE(elsize));
+    if (((uint8_t *)ptr >= dma_heap.base) &&
+        ((uint8_t *)ptr <  dma_heap.base + dma_heap.size)) {
+        heap_free(&dma_heap, func, line, ptr);
+    } else {
+        heap_free(&kern_heap, func, line, ptr);
     }
-    return ptr;
+
+    interrupt_resume(reg);
 }
 /*********************************************************************************************************
 ** Function name:           _malloc_r
@@ -143,7 +137,7 @@ void *_malloc_r(struct _reent *reent, size_t size)
 
     reg = interrupt_disable();
 
-    ptr = heap_alloc(&kheap, __func__, __LINE__, size);
+    ptr = heap_alloc(&kern_heap, __func__, __LINE__, size);
 
     interrupt_resume(reg);
 
@@ -168,7 +162,7 @@ void _free_r(struct _reent *reent, void *ptr)
 
     reg = interrupt_disable();
 
-    heap_free(&kheap, __func__, __LINE__, ptr);
+    heap_free(&kern_heap, __func__, __LINE__, ptr);
 
     interrupt_resume(reg);
 
@@ -190,7 +184,7 @@ void *_realloc_r(struct _reent *reent, void *ptr, size_t newsize)
 
     reg = interrupt_disable();
 
-    newptr = heap_alloc(&kheap, __func__, __LINE__, newsize);
+    newptr = heap_alloc(&kern_heap, __func__, __LINE__, newsize);
 
     interrupt_resume(reg);
 
@@ -200,7 +194,7 @@ void *_realloc_r(struct _reent *reent, void *ptr, size_t newsize)
 
             reg = interrupt_disable();
 
-            heap_free(&kheap, __func__, __LINE__, ptr);
+            heap_free(&kern_heap, __func__, __LINE__, ptr);
 
             interrupt_resume(reg);
         }
@@ -227,7 +221,7 @@ void *_calloc_r(struct _reent *reent, size_t nelem, size_t elsize)
 
     reg = interrupt_disable();
 
-    ptr = heap_alloc(&kheap, __func__, __LINE__, nelem * MEM_ALIGN_SIZE(elsize));
+    ptr = heap_alloc(&kern_heap, __func__, __LINE__, nelem * MEM_ALIGN_SIZE(elsize));
 
     interrupt_resume(reg);
 
@@ -248,9 +242,11 @@ void *_calloc_r(struct _reent *reent, size_t nelem, size_t elsize)
 *********************************************************************************************************/
 void kheap_create(void)
 {
-    extern uint8_t _end;
+    extern unsigned char _end;
 
-    heap_init(&kheap, &_end, KERN_STACK_TOP - (uint32_t)&_end);
+    heap_init(&kern_heap, &_end, KERN_STACK_TOP - (uint32_t)&_end);
+
+    heap_init(&dma_heap, DMA_MEM_BASE, DMA_MEM_SIZE);
 }
 #else
 /*********************************************************************************************************
@@ -261,7 +257,7 @@ void kheap_create(void)
 /*********************************************************************************************************
 ** 用户空间内存堆
 *********************************************************************************************************/
-static heap_t       uheap;
+static heap_t       user_heap;
 /*********************************************************************************************************
 ** Function name:           _malloc_r
 ** Descriptions:            malloc 桩函数
@@ -276,7 +272,7 @@ void *_malloc_r(struct _reent *reent, size_t size)
     /*
      * 因进程里使用非抢占的 pthread, 免锁免关中断, 下同
      */
-    ptr = heap_alloc(&uheap, __func__, __LINE__, size);
+    ptr = heap_alloc(&user_heap, __func__, __LINE__, size);
     if (ptr != NULL) {
         reent->_errno = 0;
     } else {
@@ -294,7 +290,7 @@ void *_malloc_r(struct _reent *reent, size_t size)
 *********************************************************************************************************/
 void _free_r(struct _reent *reent, void *ptr)
 {
-    heap_free(&uheap, __func__, __LINE__, ptr);
+    heap_free(&user_heap, __func__, __LINE__, ptr);
 
     reent->_errno = 0;
 }
@@ -311,11 +307,11 @@ void *_realloc_r(struct _reent *reent, void *ptr, size_t newsize)
 {
     void *newptr;
 
-    newptr = heap_alloc(&uheap, __func__, __LINE__, newsize);
+    newptr = heap_alloc(&user_heap, __func__, __LINE__, newsize);
     if (newptr != NULL) {
         if (ptr != NULL) {
             memcpy(newptr, ptr, newsize);
-            heap_free(&uheap, __func__, __LINE__, ptr);
+            heap_free(&user_heap, __func__, __LINE__, ptr);
         }
         reent->_errno = 0;
     } else {
@@ -337,7 +333,7 @@ void *_calloc_r(struct _reent *reent, size_t nelem, size_t elsize)
 {
     void *ptr;
 
-    ptr = heap_alloc(&uheap, __func__, __LINE__, nelem * MEM_ALIGN_SIZE(elsize));
+    ptr = heap_alloc(&user_heap, __func__, __LINE__, nelem * MEM_ALIGN_SIZE(elsize));
     if (ptr != NULL) {
         memset(ptr, 0, nelem * MEM_ALIGN_SIZE(elsize));
         reent->_errno = 0;
@@ -360,8 +356,8 @@ void uheap_create(void)
     /*
      * 在 __bss_end 后, 进程栈空间前, 建立内存堆
      */
-    heap_init(&uheap, &__bss_end, PROCESS_SPACE_SIZE - (uint32_t)&__bss_end -
-                                  PROCESS_STACK_SIZE - PROCESS_PARAM_SIZE);
+    heap_init(&user_heap, &__bss_end, PROCESS_SPACE_SIZE - (uint32_t)&__bss_end -
+                                      PROCESS_STACK_SIZE - PROCESS_PARAM_SIZE);
 }
 #endif
 /*********************************************************************************************************

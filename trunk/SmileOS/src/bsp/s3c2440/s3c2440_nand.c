@@ -72,18 +72,18 @@
 #define NAND_TWRPH0         4
 #define NAND_TWRPH1         2
 /*********************************************************************************************************
-** Function name:           s3c2440_hwcontrol
+** Function name:           s3c2440_cmd_ctrl
 ** Descriptions:            Ó²¼þ¿ØÖÆ
 ** input parameters:        NONE
 ** output parameters:       NONE
 ** Returned value:          NONE
 *********************************************************************************************************/
-static void s3c2440_hwcontrol(struct mtd_info *mtd, int cmd, unsigned int ctrl)
+static void s3c2440_cmd_ctrl(struct mtd_info *mtd, int cmd, unsigned int ctrl)
 {
     static ulong IO_ADDR_W = NF_BASE;
 
 #define S3C2440_NFCONT_nCE  (1 << 1)                                    /*  chip select bit             */
-#define S3C2440_ADDR_NALE   (0x0c)                                      /*  reg offset                  */
+#define S3C2440_ADDR_NALE   (0x0C)                                      /*  reg offset                  */
 #define S3C2440_ADDR_NCLE   (0x08)                                      /*  reg offset                  */
 
     if (ctrl & NAND_CTRL_CHANGE) {
@@ -129,7 +129,7 @@ static int s3c2440_dev_ready(struct mtd_info *mtd)
 *********************************************************************************************************/
 int board_nand_init(struct nand_chip *nand)
 {
-    GPACON = (GPACON & ~(0x3f << 17)) | (0x3f << 17);
+    GPACON = (GPACON & ~(0x3F << 17)) | (0x3F << 17);
 
     rNFCONF = (NAND_TACLS  << 12)                                       /*  HCLK x (TACLS)              */
             | (NAND_TWRPH0 <<  8)                                       /*  HCLK x (TWRPH0 + 1)         */
@@ -161,7 +161,7 @@ int board_nand_init(struct nand_chip *nand)
      *  read_byte and write_byte are default
      *  but cmd_ctrl and dev_ready always must be implemented
      */
-    nand->cmd_ctrl  = s3c2440_hwcontrol;
+    nand->cmd_ctrl  = s3c2440_cmd_ctrl;
     nand->dev_ready = s3c2440_dev_ready;
     
     return 0;
