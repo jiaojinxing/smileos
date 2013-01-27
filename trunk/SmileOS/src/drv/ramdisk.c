@@ -54,7 +54,7 @@
  */
 typedef struct {
     VFS_DEVICE_MEMBERS;
-    uint8_t         buf[DISK_SZ];
+    unsigned char   buf[DISK_SZ];
 } privinfo_t;
 
 /*
@@ -124,7 +124,7 @@ static int ramdisk_ioctl(void *ctx, file_t *file, int cmd, void *arg)
 
     switch (cmd) {
     case BLKDEV_CMD_STATUS:
-        *(uint32_t *)arg = 0;
+        *(int *)arg = 0;
         break;
 
     case BLKDEV_CMD_INIT:
@@ -136,20 +136,20 @@ static int ramdisk_ioctl(void *ctx, file_t *file, int cmd, void *arg)
         break;
 
     case BLKDEV_CMD_SECT_NR:
-        *(uint32_t *)arg = SECT_NR;
+        *(int *)arg = SECT_NR;
         break;
 
     case BLKDEV_CMD_SECT_SZ:
-        *(uint32_t *)arg = SECT_SZ;
+        *(int *)arg = SECT_SZ;
         break;
 
     case BLKDEV_CMD_BLK_SZ:
-        *(uint32_t *)arg = SECT_SZ;
+        *(int *)arg = SECT_SZ;
         break;
 
     case BLKDEV_CMD_ERASE:
-        memset(priv->buf + *(uint32_t *)arg * SECT_SZ, 0,
-                (*((uint32_t *)arg + 1) - *(uint32_t *)arg + 1)* SECT_SZ);
+        memset(priv->buf + *(int *)arg * SECT_SZ, 0,
+                (*((int *)arg + 1) - *(int *)arg + 1)* SECT_SZ);
         break;
 
     default:

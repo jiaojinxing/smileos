@@ -43,7 +43,6 @@
 #include <ctype.h>
 #include <limits.h>
 #include <stdlib.h>
-#include <termios.h>
 /*********************************************************************************************************
 ** logo
 *********************************************************************************************************/
@@ -158,17 +157,16 @@ void shell(void *arg)
     char line[LINE_MAX];
     char buf[LINE_MAX];
     unsigned char ch;
-    struct termios termbuf;
     int i;
 
     /*
-     * 重定向标准输入输出到 PTY
+     * 重定向标准输入输出到串口0
      */
     fclose(stdin);
     fclose(stdout);
     fclose(stderr);
 
-    open("/dev/ttyS0", O_RDWR);
+    open("/dev/serial0", O_RDWR);
     dup(STDIN_FILENO);
     dup(STDIN_FILENO);
 
@@ -177,15 +175,6 @@ void shell(void *arg)
     stdout = fdopen(STDOUT_FILENO, "w+");
 
     stderr = fdopen(STDERR_FILENO, "w+");
-
-    /*
-     * 设置终端属性
-     */
-    tcgetattr(0, &termbuf);
-    termbuf.c_lflag  = ECHO  | ICANON;
-    termbuf.c_oflag |= ONLCR | OXTABS;
-    termbuf.c_iflag &= ~IXOFF;
-    tcsetattr(0, TCSANOW, &termbuf);
 
     /*
      * 发送 logo
@@ -211,6 +200,8 @@ void shell(void *arg)
             goto end;
         }
 
+        write(STDIN_FILENO, buf, len);
+
         i = 0;
         while (len-- > 0) {
             ch = buf[i++];
@@ -227,7 +218,7 @@ void shell(void *arg)
                     fflush(stdout);
                     break;
 
-                case '\n':
+                case '\r':
                     if (pos > 0 && pos < LINE_MAX) {
                         line[pos] = '\0';
                         pos = 0;

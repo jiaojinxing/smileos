@@ -113,13 +113,12 @@ void __kfree(const char *func, int line, void *ptr)
     uint32_t reg;
 
     reg = interrupt_disable();
-    if (((uint8_t *)ptr >= dma_heap.base) &&
-        ((uint8_t *)ptr <  dma_heap.base + dma_heap.size)) {
+    if (((uint32_t)ptr >= DMA_MEM_BASE) &&
+        ((uint32_t)ptr <  DMA_MEM_BASE + DMA_MEM_SIZE)) {
         heap_free(&dma_heap, func, line, ptr);
     } else {
         heap_free(&kern_heap, func, line, ptr);
     }
-
     interrupt_resume(reg);
 }
 /*********************************************************************************************************

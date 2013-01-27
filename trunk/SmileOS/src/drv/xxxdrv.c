@@ -130,17 +130,21 @@ static int xxx_isatty(void *ctx, file_t *file)
     return 0;
 }
 
+static int xxx_scan(void *ctx, file_t *file, int flags);
 /*
  * 读 xxx
  */
 static ssize_t xxx_read(void *ctx, file_t *file, void *buf, size_t len)
 {
     privinfo_t *priv = ctx;
+    int ret;
 
     if (priv == NULL) {
         seterrno(EINVAL);
         return -1;
     }
+
+    __again:
     if (atomic_read(&priv->select.flags) & VFS_FILE_ERROR) {
         seterrno(EIO);
         return -1;
@@ -150,24 +154,11 @@ static ssize_t xxx_read(void *ctx, file_t *file, void *buf, size_t len)
      * 如果没有数据可读
      */
     if (0) {
-        if (file->flags & O_NONBLOCK) {
-            seterrno(EAGAIN);
-            return 0;
+        ret = select_helper(&priv->select, xxx_scan, ctx, file, VFS_FILE_READABLE);
+        if (ret <= 0) {
+            return ret;
         } else {
-            /*
-             * TODO: 阻塞任务
-             */
-            {
-
-            }
-
-            /*
-             * 如果等待被打断
-             */
-            if (0) {
-                seterrno(EINTR);
-                return -1;
-            }
+            goto __again;
         }
     }
 
@@ -185,11 +176,14 @@ static ssize_t xxx_read(void *ctx, file_t *file, void *buf, size_t len)
 static ssize_t xxx_write(void *ctx, file_t *file, const void *buf, size_t len)
 {
     privinfo_t *priv = ctx;
+    int ret;
 
     if (priv == NULL) {
         seterrno(EINVAL);
         return -1;
     }
+
+    __again:
     if (atomic_read(&priv->select.flags) & VFS_FILE_ERROR) {
         seterrno(EIO);
         return -1;
@@ -199,24 +193,11 @@ static ssize_t xxx_write(void *ctx, file_t *file, const void *buf, size_t len)
      * 如果没有空间可写
      */
     if (0) {
-        if (file->flags & O_NONBLOCK) {
-            seterrno(EAGAIN);
-            return 0;
+        ret = select_helper(&priv->select, xxx_scan, ctx, file, VFS_FILE_WRITEABLE);
+        if (ret <= 0) {
+            return ret;
         } else {
-            /*
-             * TODO: 阻塞任务
-             */
-            {
-
-            }
-
-            /*
-             * 如果等待被打断
-             */
-            if (0) {
-                seterrno(EINTR);
-                return -1;
-            }
+            goto __again;
         }
     }
 

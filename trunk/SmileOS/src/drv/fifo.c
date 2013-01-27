@@ -41,6 +41,7 @@
 #include "vfs/driver.h"
 #include "vfs/utils.h"
 #include "kern/kern.h"
+#include "kern/kfifo.h"
 #include <errno.h>
 #include <string.h>
 
@@ -49,10 +50,7 @@
  */
 typedef struct {
     VFS_DEVICE_MEMBERS;
-    unsigned char  *buffer;
-    unsigned int    size;
-    unsigned int    in;
-    unsigned int    out;
+    kfifo_t     fifo;
 } privinfo_t;
 
 static int fifo_scan(void *ctx, file_t *file, int flags);
@@ -75,12 +73,7 @@ static int fifo_open(void *ctx, file_t *file, int oflag, mode_t mode)
         /*
          * 第一次打开时的初始化代码
          */
-
-        priv->in   = 0;
-        priv->out  = 0;
-        priv->size = 1 * KB;
-        priv->buffer = kmalloc(1 * KB, GFP_KERNEL);
-        if (priv->buffer == NULL) {
+        if (kfifo_init(&priv->fifo, 1 * KB) < 0) {
             atomic_dec(&(((device_t *)file->ctx)->ref));
             seterrno(ENOMEM);
             return -1;
@@ -113,8 +106,7 @@ static int fifo_close(void *ctx, file_t *file)
         /*
          * 加上最后一次关闭时的清理代码
          */
-        kfree(priv->buffer);
-        priv->buffer = NULL;
+        kfifo_free(&priv->fifo);
     }
     atomic_dec(&(((device_t *)file->ctx)->ref));
     return 0;
@@ -142,7 +134,7 @@ static ssize_t fifo_read(void *ctx, file_t *file, void *buf, size_t len)
     /*
      * 如果没有数据可读
      */
-    if (priv->in == priv->out) {
+    if (kfifo_is_empty(&priv->fifo)) {
         ret = select_helper(&priv->select, fifo_scan, ctx, file, VFS_FILE_READABLE);
         if (ret <= 0) {
             return ret;
@@ -151,32 +143,11 @@ static ssize_t fifo_read(void *ctx, file_t *file, void *buf, size_t len)
         }
     }
 
-    {
-        /*
-         * 完成读操作
-         */
-        unsigned int l;
+    len = kfifo_get(&priv->fifo, buf, len);
 
-        len = min(len, priv->in - priv->out);
+    select_report(&priv->select, VFS_FILE_WRITEABLE);
 
-        /*
-         * first get the data from fifo->out until the end of the buffer
-         */
-        l = min(len, priv->size - (priv->out & (priv->size - 1)));
-
-        memcpy(buf, priv->buffer + (priv->out & (priv->size - 1)), l);
-
-        /*
-         * then get the rest (if any) from the beginning of the buffer
-         */
-        memcpy((char *)buf + l, priv->buffer, len - l);
-
-        priv->out += len;
-
-        select_report(&priv->select, VFS_FILE_WRITEABLE);
-
-        return len;
-    }
+    return len;
 }
 
 /*
@@ -201,7 +172,7 @@ static ssize_t fifo_write(void *ctx, file_t *file, const void *buf, size_t len)
     /*
      * 如果没有空间可写
      */
-    if (priv->size - priv->in + priv->out == 0) {
+    if (kfifo_is_full(&priv->fifo)) {
         ret = select_helper(&priv->select, fifo_scan, ctx, file, VFS_FILE_WRITEABLE);
         if (ret <= 0) {
             return ret;
@@ -210,32 +181,11 @@ static ssize_t fifo_write(void *ctx, file_t *file, const void *buf, size_t len)
         }
     }
 
-    {
-        /*
-         * 完成写操作
-         */
-        unsigned int l;
+    len = kfifo_put(&priv->fifo, buf, len);
 
-        len = min(len, priv->size - priv->in + priv->out);
+    select_report(&priv->select, VFS_FILE_READABLE);
 
-        /*
-         * first put the data starting from priv->in to buffer end
-         */
-        l = min(len, priv->size - (priv->in & (priv->size - 1)));
-
-        memcpy(priv->buffer + (priv->in & (priv->size - 1)), buf, l);
-
-        /*
-         * then put the rest (if any) at the beginning of the buffer
-         */
-        memcpy(priv->buffer, (const char *)buf + l, len - l);
-
-        priv->in += len;
-
-        select_report(&priv->select, VFS_FILE_READABLE);
-
-        return len;
-    }
+    return len;
 }
 
 /*
@@ -252,10 +202,10 @@ static int fifo_scan(void *ctx, file_t *file, int flags)
     }
 
     ret = 0;
-    if ((priv->in - priv->out > 0) && flags & VFS_FILE_READABLE) {
+    if ((!kfifo_is_empty(&priv->fifo)) && flags & VFS_FILE_READABLE) {
         ret |= VFS_FILE_READABLE;
     }
-    if ((priv->size - priv->in + priv->out > 0) && flags & VFS_FILE_WRITEABLE) {
+    if ((!kfifo_is_full(&priv->fifo)) && flags & VFS_FILE_WRITEABLE) {
         ret |= VFS_FILE_WRITEABLE;
     }
     if (atomic_read(&priv->select.flags) && flags & VFS_FILE_ERROR) {

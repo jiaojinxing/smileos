@@ -288,7 +288,7 @@ static mount_point_t *vfs_mount_point_lookup(char pathbuf[PATH_MAX], char **ppat
         /*
          * cwd 要以 / 号开头和结尾
          */
-        int32_t tid = gettid();
+        int tid = gettid();
         snprintf(pathbuf, PATH_MAX, "%s%s", infos[tid].cwd, path);      /*  在前面加入当前工作目录      */
     }
 
@@ -340,7 +340,7 @@ static mount_point_t *vfs_mount_point_lookup2(char pathbuf[PATH_MAX], char **ppa
         /*
          * cwd 要以 / 号开头和结尾
          */
-        int32_t tid = gettid();
+        int tid = gettid();
         snprintf(pathbuf, PATH_MAX, "%s%s", infos[tid].cwd, path);      /*  在前面加入当前工作目录      */
     }
 
@@ -2326,7 +2326,7 @@ int vfs_chdir(const char *path)
 {
     char    pathbuf[PATH_MAX];
     int     ret;
-    int32_t tid;
+    int     tid;
 
     if (path == NULL) {
         seterrno(EINVAL);
@@ -2364,7 +2364,7 @@ int vfs_chdir(const char *path)
 *********************************************************************************************************/
 char *vfs_getcwd(char *buf, size_t size)
 {
-    int32_t tid = gettid();
+    int tid = gettid();
 
     if (buf != NULL) {
         strlcpy(buf, infos[tid].cwd, size);
