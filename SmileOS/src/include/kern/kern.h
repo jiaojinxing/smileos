@@ -272,13 +272,17 @@ void kcomplain(const char *fmt, ...);
 ** input parameters:        func                调用者的函数名
 **                          line                调用者的行号
 **                          size                需要分配的大小
+**                          flags               分配标志
 ** output parameters:       NONE
 ** Returned value:          内存指针
 *********************************************************************************************************/
-void *__kmalloc(const char *func, int line, size_t size);
-#define GFP_KERNEL      0
-#define GFP_DMA         1
-#define kmalloc(a, b)   __kmalloc(__func__, __LINE__, a)
+void *__kmalloc(const char *func, int line, size_t size, int flags);
+#define GFP_ATOMIC      (0)
+#define GFP_KERNEL      GFP_ATOMIC
+#define GFP_DMA         (1 << 0)
+#define GFP_ZERO        (1 << 1)
+#define kmalloc(a, b)   __kmalloc(__func__, __LINE__, a, b)
+#define kzalloc(a, b)   __kmalloc(__func__, __LINE__, a, b | GFP_ZERO)
 /*********************************************************************************************************
 ** Function name:           __kfree
 ** Descriptions:            释放内存回内核内存堆
@@ -290,18 +294,6 @@ void *__kmalloc(const char *func, int line, size_t size);
 *********************************************************************************************************/
 void __kfree(const char *func, int line, void *ptr);
 #define kfree(a)        __kfree(__func__, __LINE__, a)
-/*********************************************************************************************************
-** Function name:           __kzalloc
-** Descriptions:            从内核内存堆里分配内存
-** input parameters:        func                调用者的函数名
-**                          line                调用者的行号
-**                          nelem               元素的个数
-**                          elsize              元素的大小
-** output parameters:       NONE
-** Returned value:          内存指针
-*********************************************************************************************************/
-void *__kzalloc(const char *func, int line, size_t nelem, size_t elsize);
-#define kzalloc(a, b)   __kzalloc(__func__, __LINE__, a, b)
 /*********************************************************************************************************
 ** Function name:           interrupt_enter
 ** Descriptions:            进入中断

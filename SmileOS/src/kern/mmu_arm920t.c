@@ -763,6 +763,14 @@ void mmu_init(void)
                    SECTION_ATTR(AP_USER_NO, DOMAIN_CHECK, CACHE_NO, BUFFER_NO));
 
     /*
+     * DMA 内存区不可 Cache 及 WriteBuffer
+     */
+    mmu_map_region(DMA_MEM_BASE,
+                   DMA_MEM_BASE,
+                   DMA_MEM_SIZE,
+                   SECTION_ATTR(AP_USER_NO, DOMAIN_CHECK, CACHE_NO, BUFFER_NO));
+
+    /*
      * 因为异常向量地址为 0xFFFF0000,
      * 将 0xFFF00000 映射到 INT_MEM_BASE,
      * 所以应该在 INT_MEM_BASE + 0xF0000 处(或 0xFFFF0000 处)放置异常向量跳转表

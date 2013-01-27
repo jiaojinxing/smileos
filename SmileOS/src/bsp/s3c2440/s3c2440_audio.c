@@ -170,7 +170,7 @@ static int uda1341_init(void)
     l3bus_write(0x10, 0);                                               /*  0,0,01,000,0  : ״̬0, 384fs, IIS-bus, no DC-filter */
 
     l3bus_write(0x14 + 2, 1);                                           /*  ״̬ģʽ(000101xx+10)       */
-    l3bus_write(0xc1, 0);                                               /*  1,0,0,0,0,0,01: ״̬1, ADC off, DAC on */
+    l3bus_write(0xC1, 0);                                               /*  1,0,0,0,0,0,01: ״̬1, ADC off, DAC on */
 
     return 0;
 }
