@@ -190,6 +190,12 @@ int select_helper(select_struct_t *select,
     } else {
         reg = interrupt_disable();
 
+        ret = scan(ctx, file, type);
+        if (ret & type) {
+            interrupt_resume(reg);
+            return 1;
+        }
+
         ret = select_select(select, file, type);
         if (ret < 0) {
             interrupt_resume(reg);

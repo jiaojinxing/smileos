@@ -132,8 +132,8 @@ void bsp_init(void)
 *********************************************************************************************************/
 int bsp_drivers_install(void)
 {
-    extern int ttyS0_init(void);
-    ttyS0_init();
+    extern int serial0_init(void);
+    serial0_init();
 
     extern void nand_init(void);
     nand_init();

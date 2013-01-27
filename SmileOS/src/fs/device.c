@@ -217,7 +217,7 @@ int device_create(const char *dev_name, const char *drv_name, void *ctx)
             strlcpy(dev->name, dev_name, sizeof(dev->name));
             dev->drv   = drv;
             dev->ctx   = ctx;
-            dev->devno = 0;
+            dev->devno = BKDRHash(drv_name);
             dev->key   = BKDRHash(dev_name);
             atomic_set(&dev->ref, 0);
             device_install(dev);
