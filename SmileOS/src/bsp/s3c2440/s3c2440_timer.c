@@ -37,8 +37,6 @@
 ** Descriptions:
 **
 *********************************************************************************************************/
-#include "kern/config.h"
-#include "kern/types.h"
 #include "kern/kern.h"
 #include "s3c2440.h"
 #include "s3c2440_clock.h"

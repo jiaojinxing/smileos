@@ -37,13 +37,11 @@
 ** Descriptions:
 **
 *********************************************************************************************************/
+#include "kern/kern.h"
+#include "kern/kfifo.h"
 #include "vfs/device.h"
 #include "vfs/driver.h"
 #include "vfs/utils.h"
-#include "kern/kern.h"
-#include "kern/kfifo.h"
-#include <errno.h>
-#include <string.h>
 
 /*
  * 私有信息
@@ -68,13 +66,13 @@ static int fifo_open(void *ctx, file_t *file, int oflag, mode_t mode)
         return -1;
     }
 
-    val = atomic_inc_return(&(((device_t *)file->ctx)->ref));
+    val = atomic_inc_return(dev_ref(file));
     if (val == 1) {
         /*
          * 第一次打开时的初始化代码
          */
         if (kfifo_init(&priv->fifo, 1 * KB) < 0) {
-            atomic_dec(&(((device_t *)file->ctx)->ref));
+            atomic_dec(dev_ref(file));
             seterrno(ENOMEM);
             return -1;
         }
@@ -85,7 +83,7 @@ static int fifo_open(void *ctx, file_t *file, int oflag, mode_t mode)
         /*
          * 如果设备不允许同时打开多次, 请使用如下代码:
          */
-        atomic_dec(&(((device_t *)file->ctx)->ref));
+        atomic_dec(dev_ref(file));
         seterrno(EBUSY);
         return -1;
     }
@@ -102,13 +100,14 @@ static int fifo_close(void *ctx, file_t *file)
         seterrno(EINVAL);
         return -1;
     }
-    if (atomic_read(&(((device_t *)file->ctx)->ref)) == 1) {
+
+    if (atomic_read(dev_ref(file)) == 1) {
         /*
          * 加上最后一次关闭时的清理代码
          */
         kfifo_free(&priv->fifo);
     }
-    atomic_dec(&(((device_t *)file->ctx)->ref));
+    atomic_dec(dev_ref(file));
     return 0;
 }
 
@@ -131,10 +130,7 @@ static ssize_t fifo_read(void *ctx, file_t *file, void *buf, size_t len)
         return -1;
     }
 
-    /*
-     * 如果没有数据可读
-     */
-    if (kfifo_is_empty(&priv->fifo)) {
+    if (kfifo_is_empty(&priv->fifo)) {                                  /*  如果没有数据可读            */
         ret = select_helper(&priv->select, fifo_scan, ctx, file, VFS_FILE_READABLE);
         if (ret <= 0) {
             return ret;
@@ -169,10 +165,7 @@ static ssize_t fifo_write(void *ctx, file_t *file, const void *buf, size_t len)
         return -1;
     }
 
-    /*
-     * 如果没有空间可写
-     */
-    if (kfifo_is_full(&priv->fifo)) {
+    if (kfifo_is_full(&priv->fifo)) {                                   /*  如果没有空间可写            */
         ret = select_helper(&priv->select, fifo_scan, ctx, file, VFS_FILE_WRITEABLE);
         if (ret <= 0) {
             return ret;
@@ -208,7 +201,7 @@ static int fifo_scan(void *ctx, file_t *file, int flags)
     if ((!kfifo_is_full(&priv->fifo)) && flags & VFS_FILE_WRITEABLE) {
         ret |= VFS_FILE_WRITEABLE;
     }
-    if (atomic_read(&priv->select.flags) && flags & VFS_FILE_ERROR) {
+    if (atomic_read(&priv->select.flags) & flags & VFS_FILE_ERROR) {
         ret |= VFS_FILE_ERROR;
     }
     return ret;
@@ -241,7 +234,7 @@ int fifo_init(void)
 /*********************************************************************************************************
 ** Function name:           fifo_create
 ** Descriptions:            创建 fifo
-** input parameters:        NONE
+** input parameters:        name                fifo 设备路径
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/

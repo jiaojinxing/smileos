@@ -22,7 +22,7 @@
 ** File name:               module.c
 ** Last modified Date:      2012-7-18
 ** Last Version:            1.0.0
-** Descriptions:            内核模块支持
+** Descriptions:            内核模块
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing
@@ -42,16 +42,14 @@
 #include "kern/ipc.h"
 #include "vfs/utils.h"
 
-#include <stdlib.h>
-#include <stdio.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <string.h>
-#include <syslimits.h>
 
 #include "module/elf.h"
 #include "module/symbol_tool.h"
 #include "module/module.h"
+
 /*********************************************************************************************************
 ** ELF 文件格式请查看:
 **
@@ -71,11 +69,27 @@ static module_t    *mod_list;
  */
 static mutex_t      mod_mgr_lock;
 /*********************************************************************************************************
+** Function name:           module_init
+** Descriptions:            初始化模块子系统
+** input parameters:        NONE
+** output parameters:       NONE
+** Returned value:          0 OR -1
+*********************************************************************************************************/
+int module_init(void)
+{
+    extern int symbol_init(void);
+    symbol_init();
+
+    mod_list = NULL;
+
+    return mutex_new(&mod_mgr_lock);
+}
+/*********************************************************************************************************
 ** Function name:           arm_reloc_rel
 ** Descriptions:            对指定的 rel 条目进行重定位
 ** input parameters:        rel                 REL 条目
 **                          addr                地址
-**                          target              目录节区
+**                          target              目标节区
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
@@ -91,7 +105,7 @@ static int arm_reloc_rel(Elf32_Rel *rel, Elf32_Addr addr, uint8_t *target)
         break;
 
     case R_ARM_ABS32:
-        *where += (Elf32_Addr)addr;
+        *where += addr;
         break;
 
     case R_ARM_PC24:
@@ -184,14 +198,17 @@ static int module_probe(module_t *mod)
      */
     if (ehdr->e_shoff == 0) {
         printk("ehdr->e_shoff == 0\n");
+        return -1;
     }
 
     if (ehdr->e_shentsize == 0) {
         printk("ehdr->e_shentsize == 0\n");
+        return -1;
     }
 
     if (ehdr->e_shnum == 0) {
         printk("ehdr->e_shnum == 0\n");
+        return -1;
     }
 
     return 0;
@@ -240,7 +257,7 @@ static int module_reloc(module_t *mod)
          */
         if (strcmp(shdr->sh_name + shstrtab, ".bss") == 0) {
             bss_idx = i;
-            shdr->sh_offset = (Elf32_Off)kzalloc(1, shdr->sh_size);
+            shdr->sh_offset = (Elf32_Off)kzalloc(shdr->sh_size, GFP_KERNEL);
             if (shdr->sh_offset == 0) {
                 goto error1;
             }
@@ -313,9 +330,10 @@ static int module_reloc(module_t *mod)
                          * 获得这个符号在 ELF 文件里地址
                          */
                         if (sym->st_shndx == bss_idx) {                 /*  如果这个符号在 .bss 节区    */
-                            addr = (uint32_t)(shdrs[bss_idx]->sh_offset + sym->st_value);
+                            addr = (Elf32_Addr)(shdrs[bss_idx]->sh_offset + sym->st_value);
                         } else {
-                            addr = (uint32_t)(mod->elf + shdrs[sym->st_shndx]->sh_offset + sym->st_value);
+                            addr = (Elf32_Addr)(mod->elf +
+                                    shdrs[sym->st_shndx]->sh_offset + sym->st_value);
                         }
 
                         /*
@@ -398,6 +416,7 @@ static int module_reloc(module_t *mod)
 ** Function name:           module_exec
 ** Descriptions:            执行模块
 ** input parameters:        mod                 模块
+**                          func_name           函数名
 **                          argc                参数个数
 **                          argv                参数数组
 ** output parameters:       NONE
@@ -408,13 +427,10 @@ static int module_exec(module_t *mod, const char *func_name, int argc, char **ar
     int         i;
     Elf32_Ehdr *ehdr;
     Elf32_Shdr *shdr;
-    int (*entry)(int argc, char **argv);
+    int (*func)(int argc, char **argv);
 
     ehdr = (Elf32_Ehdr *)mod->elf;                                      /*  ELF 首部                    */
 
-    /*
-     * 执行 module_init 函数
-     */
     for (i = 0, shdr = mod->shdrs[0]; i < ehdr->e_shnum; i++, shdr = mod->shdrs[i]) {
 
         if (shdr->sh_type == SHT_SYMTAB) {
@@ -442,8 +458,9 @@ static int module_exec(module_t *mod, const char *func_name, int argc, char **ar
                 if (sym->st_shndx == mod->text_idx &&
                     ELF32_ST_TYPE(sym->st_info) == STT_FUNC) {
                     if (strcmp(sym->st_name + strtab, func_name) == 0) {
-                        entry = (int (*)(int, char **))(mod->elf + mod->shdrs[mod->text_idx]->sh_offset + sym->st_value);
-                        return entry(argc, argv);
+                        func = (int (*)(int, char **))(mod->elf +
+                                mod->shdrs[mod->text_idx]->sh_offset + sym->st_value);
+                        return func(argc, argv);
                     }
                 }
             }
@@ -469,7 +486,7 @@ static int module_install(module_t *mod)
 }
 /*********************************************************************************************************
 ** Function name:           module_remove
-** Descriptions:            删除模块从模块链表
+** Descriptions:            从模块链表删除模块
 ** input parameters:        mod                 模块
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
@@ -513,7 +530,7 @@ static int module_remove(module_t *mod)
 module_t *module_lookup(const char *name)
 {
     module_t *mod;
-    unsigned int key;
+    uint32_t key;
 
     if (name == NULL) {
         return NULL;
@@ -540,7 +557,7 @@ module_t *module_lookup(const char *name)
 ** output parameters:       NONE
 ** Returned value:          模块 OR NULL
 *********************************************************************************************************/
-static module_t *module_lookup_by_key(unsigned int key)
+static module_t *module_lookup_by_key(uint32_t key)
 {
     module_t *mod;
 
@@ -558,7 +575,7 @@ static module_t *module_lookup_by_key(unsigned int key)
 }
 /*********************************************************************************************************
 ** Function name:           module_ref_by_addr
-** Descriptions:            引用模块通过模块的一个地址
+** Descriptions:            通过模块的一个地址引用模块
 ** input parameters:        addr                地址
 ** output parameters:       NONE
 ** Returned value:          模块 OR NULL
@@ -626,9 +643,9 @@ static int module_destroy(module_t *mod)
     return 0;
 }
 /*********************************************************************************************************
-** Function name:           module_exec
+** Function name:           module_load
 ** Descriptions:            加载 ELF 文件
-** input parameters:        module              模块
+** input parameters:        path                ELF 文件路径
 **                          argc                参数个数
 **                          argv                参数数组
 ** output parameters:       NONE
@@ -675,7 +692,7 @@ int module_load(const char *path, int argc, char **argv)
 
     strcpy(mod->name, path);
     mod->key  = BKDRHash(path);
-    buf          = (uint8_t *)mod + sizeof(module_t);
+    buf       = (uint8_t *)mod + sizeof(module_t);
     mod->elf  = buf;
     mod->size = st.st_size;
     atomic_set(&mod->ref, 0);

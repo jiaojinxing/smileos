@@ -37,12 +37,10 @@
 ** Descriptions:
 **
 *********************************************************************************************************/
+#include "kern/kern.h"
 #include "vfs/device.h"
 #include "vfs/driver.h"
 #include "vfs/utils.h"
-#include "kern/kern.h"
-#include <errno.h>
-#include <fcntl.h>
 
 /*
  * 私有信息
@@ -63,7 +61,7 @@ static int xxx_open(void *ctx, file_t *file, int oflag, mode_t mode)
         return -1;
     }
 
-    if (atomic_inc_return(&(((device_t *)file->ctx)->ref)) == 1) {
+    if (atomic_inc_return(dev_ref(file)) == 1) {
         /*
          * TODO: 加上第一次打开时的初始化代码
          */
@@ -72,7 +70,7 @@ static int xxx_open(void *ctx, file_t *file, int oflag, mode_t mode)
         /*
          * 如果设备不允许同时打开多次, 请使用如下代码:
          */
-        atomic_dec(&(((device_t *)file->ctx)->ref));
+        atomic_dec(dev_ref(file));
         seterrno(EBUSY);
         return -1;
     }
@@ -89,12 +87,13 @@ static int xxx_close(void *ctx, file_t *file)
         seterrno(EINVAL);
         return -1;
     }
-    if (atomic_read(&(((device_t *)file->ctx)->ref)) == 1) {
+
+    if (atomic_read(dev_ref(file)) == 1) {
         /*
          * TODO: 加上最后一次关闭时的清理代码
          */
     }
-    atomic_dec(&(((device_t *)file->ctx)->ref));
+    atomic_dec(dev_ref(file));
     return 0;
 }
 
@@ -113,6 +112,7 @@ static int xxx_ioctl(void *ctx, file_t *file, int cmd, void *arg)
         seterrno(EIO);
         return -1;
     }
+
     return 0;
 }
 
@@ -127,6 +127,7 @@ static int xxx_isatty(void *ctx, file_t *file)
         seterrno(EINVAL);
         return -1;
     }
+
     return 0;
 }
 
@@ -150,10 +151,7 @@ static ssize_t xxx_read(void *ctx, file_t *file, void *buf, size_t len)
         return -1;
     }
 
-    /*
-     * 如果没有数据可读
-     */
-    if (0) {
+    if (0) {                                                            /*  如果没有数据可读            */
         ret = select_helper(&priv->select, xxx_scan, ctx, file, VFS_FILE_READABLE);
         if (ret <= 0) {
             return ret;
@@ -189,10 +187,7 @@ static ssize_t xxx_write(void *ctx, file_t *file, const void *buf, size_t len)
         return -1;
     }
 
-    /*
-     * 如果没有空间可写
-     */
-    if (0) {
+    if (0) {                                                            /*  如果没有空间可写            */
         ret = select_helper(&priv->select, xxx_scan, ctx, file, VFS_FILE_WRITEABLE);
         if (ret <= 0) {
             return ret;

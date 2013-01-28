@@ -37,8 +37,6 @@
 ** Descriptions:
 **
 *********************************************************************************************************/
-#include "kern/config.h"
-#include "kern/types.h"
 #include "kern/kern.h"
 #include "kern/ipc.h"
 #include "lwip/sys.h"

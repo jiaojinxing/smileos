@@ -37,8 +37,6 @@
 ** Descriptions:
 **
 *********************************************************************************************************/
-#include "kern/config.h"
-#include "kern/types.h"
 #include "kern/kern.h"
 #include "vfs/vfs.h"
 #include "lwip/tcpip.h"
@@ -147,6 +145,9 @@ int main(void)
     kernel_init();
 
     vfs_init();
+
+    extern int module_init(void);
+    module_init();
 
     sys_drivers_install();
 

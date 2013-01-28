@@ -40,8 +40,10 @@
 #ifndef MODULE_H_
 #define MODULE_H_
 
+#include "kern/types.h"
 #include "module/elf.h"
 #include "kern/atomic.h"
+#include <syslimits.h>
 
 /*
  * 模块
@@ -49,7 +51,7 @@
 typedef struct module {
     struct module  *next;                                               /*  后趋                      　*/
     char            name[PATH_MAX];                                     /*  名字                        */
-    unsigned int    key;                                                /*  名字 key                    */
+    uint32_t        key;                                                /*  名字 key                    */
     atomic_t        ref;                                                /*  引用计数                    */
     uint8_t        *elf;                                                /*  ELF 文件                    */
     size_t          size;                                               /*  文件大小                    */
@@ -58,9 +60,9 @@ typedef struct module {
     int             text_idx;                                           /*  TEXT 段索引                 */
 } module_t;
 /*********************************************************************************************************
-** Function name:           module_exec
+** Function name:           module_load
 ** Descriptions:            加载 ELF 文件
-** input parameters:        module              模块
+** input parameters:        path                ELF 文件路径
 **                          argc                参数个数
 **                          argv                参数数组
 ** output parameters:       NONE
@@ -77,7 +79,7 @@ int module_load(const char *path, int argc, char **argv);
 int module_unload(const char *path);
 /*********************************************************************************************************
 ** Function name:           module_ref_by_addr
-** Descriptions:            引用模块通过模块的一个地址
+** Descriptions:            通过模块的一个地址引用模块
 ** input parameters:        addr                地址
 ** output parameters:       NONE
 ** Returned value:          模块 OR NULL
