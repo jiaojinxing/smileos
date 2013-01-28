@@ -37,11 +37,10 @@
 ** Descriptions:
 **
 *********************************************************************************************************/
+#include "kern/kern.h"
 #include "vfs/device.h"
 #include "vfs/driver.h"
 #include "vfs/utils.h"
-#include "kern/kern.h"
-#include <errno.h>
 #include <fcntl.h>
 #include "s3c2440.h"
 #include "drv/fb.h"

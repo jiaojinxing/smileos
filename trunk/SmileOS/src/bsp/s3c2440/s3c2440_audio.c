@@ -342,7 +342,7 @@ static int audio_open(void *ctx, file_t *file, int oflag, mode_t mode)
         return -1;
     }
 
-    if (atomic_inc_return(&(((device_t *)file->ctx)->ref)) == 1) {
+    if (atomic_inc_return(dev_ref(file)) == 1) {
         /*
          * 第一次打开时的初始化代码
          */
@@ -372,7 +372,7 @@ static int audio_open(void *ctx, file_t *file, int oflag, mode_t mode)
         /*
          * 如果设备不允许同时打开多次, 请使用如下代码:
          */
-        atomic_dec(&(((device_t *)file->ctx)->ref));
+        atomic_dec(dev_ref(file));
         seterrno(EBUSY);
         return -1;
     }
@@ -469,7 +469,7 @@ static int audio_close(void *ctx, file_t *file)
 
     sem_free(&priv->done);
 
-    atomic_dec(&(((device_t *)file->ctx)->ref));
+    atomic_dec(dev_ref(file));
 
     return 0;
 }

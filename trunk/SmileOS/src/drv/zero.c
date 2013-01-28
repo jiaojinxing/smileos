@@ -19,10 +19,10 @@
 ** Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 **
 **--------------------------------------------------------------------------------------------------------
-** File name:               null.c
+** File name:               zero.c
 ** Last modified Date:      2012-3-27
 ** Last Version:            1.0.0
-** Descriptions:            NULL 驱动和设备
+** Descriptions:            ZERO 驱动和设备
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing
@@ -41,7 +41,6 @@
 #include "vfs/device.h"
 #include "vfs/driver.h"
 #include "vfs/utils.h"
-#include <fcntl.h>
 
 /*
  * 私有信息
@@ -51,9 +50,9 @@ typedef struct {
 } privinfo_t;
 
 /*
- * 打开 null
+ * 打开 zero
  */
-static int null_open(void *ctx, file_t *file, int oflag, mode_t mode)
+static int zero_open(void *ctx, file_t *file, int oflag, mode_t mode)
 {
     privinfo_t *priv = ctx;
 
@@ -67,9 +66,9 @@ static int null_open(void *ctx, file_t *file, int oflag, mode_t mode)
 }
 
 /*
- * 关闭 null
+ * 关闭 zero
  */
-static int null_close(void *ctx, file_t *file)
+static int zero_close(void *ctx, file_t *file)
 {
     privinfo_t *priv = ctx;
 
@@ -83,9 +82,9 @@ static int null_close(void *ctx, file_t *file)
 }
 
 /*
- * 读 null
+ * 读 zero
  */
-static ssize_t null_read(void *ctx, file_t *file, void *buf, size_t len)
+static ssize_t zero_read(void *ctx, file_t *file, void *buf, size_t len)
 {
     privinfo_t *priv = ctx;
 
@@ -94,37 +93,15 @@ static ssize_t null_read(void *ctx, file_t *file, void *buf, size_t len)
         return -1;
     }
 
-    if (!(file->flags & O_NONBLOCK)) {
-        /*
-         * TODO: 阻塞任务
-         */
-        seterrno(EAGAIN);
-        return 0;
-    } else {
-        seterrno(EAGAIN);
-        return 0;
-    }
-}
-
-/*
- * 写 null
- */
-static ssize_t null_write(void *ctx, file_t *file, const void *buf, size_t len)
-{
-    privinfo_t *priv = ctx;
-
-    if (priv == NULL) {
-        seterrno(EINVAL);
-        return -1;
-    }
+    memset(buf, 0, len);
 
     return len;
 }
 
 /*
- * 扫描 null
+ * 扫描
  */
-static int null_scan(void *ctx, file_t *file, int flags)
+static int zero_scan(void *ctx, file_t *file, int flags)
 {
     privinfo_t *priv = ctx;
     int ret;
@@ -138,42 +115,38 @@ static int null_scan(void *ctx, file_t *file, int flags)
     if (flags & VFS_FILE_READABLE) {
         ret |= VFS_FILE_READABLE;
     }
-    if (flags & VFS_FILE_WRITEABLE) {
-        ret |= VFS_FILE_WRITEABLE;
-    }
     return ret;
 }
 
 /*
- * null 驱动
+ * zero 驱动
  */
-static driver_t null_drv = {
-        .name     = "null",
-        .open     = null_open,
-        .write    = null_write,
-        .read     = null_read,
-        .close    = null_close,
-        .scan     = null_scan,
+static driver_t zero_drv = {
+        .name     = "zero",
+        .open     = zero_open,
+        .read     = zero_read,
+        .close    = zero_close,
+        .scan     = zero_scan,
         .select   = select_select,
         .unselect = select_unselect,
 };
 /*********************************************************************************************************
-** Function name:           null_init
-** Descriptions:            初始化 NULL
+** Function name:           zero_init
+** Descriptions:            初始化 ZERO
 ** input parameters:        NONE
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-int null_init(void)
+int zero_init(void)
 {
     privinfo_t *priv;
 
-    driver_install(&null_drv);
+    driver_install(&zero_drv);
 
     priv = kmalloc(sizeof(privinfo_t), GFP_KERNEL);
     if (priv != NULL) {
         device_init(priv);
-        if (device_create("/dev/null", "null", priv) < 0) {
+        if (device_create("/dev/zero", "zero", priv) < 0) {
             kfree(priv);
             return -1;
         }

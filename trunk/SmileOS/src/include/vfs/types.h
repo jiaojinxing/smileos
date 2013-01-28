@@ -149,6 +149,9 @@ struct device {
     atomic_t                ref;
 };
 
+#define file_to_dev(file)   ((device_t *)(file->ctx))
+#define dev_ref(file)       &((device_t *)(file->ctx))->ref
+
 /*
  * 文件系统
  */

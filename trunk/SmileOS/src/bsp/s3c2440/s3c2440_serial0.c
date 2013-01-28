@@ -37,13 +37,11 @@
 ** Descriptions:
 **
 *********************************************************************************************************/
+#include "kern/kern.h"
 #include "vfs/device.h"
 #include "vfs/driver.h"
 #include "vfs/utils.h"
-#include "kern/kern.h"
 #include "kern/kfifo.h"
-#include <errno.h>
-#include <fcntl.h>
 
 #include "s3c2440.h"
 #include "s3c2440_clock.h"
@@ -149,19 +147,19 @@ static int serial0_open(void *ctx, file_t *file, int oflag, mode_t mode)
         return -1;
     }
 
-    if (atomic_inc_return(&(((device_t *)file->ctx)->ref)) == 1) {
+    if (atomic_inc_return(dev_ref(file)) == 1) {
         /*
          * 第一次打开时的初始化代码
          */
         if (kfifo_init(&priv->iq, 1 * KB) < 0) {
-            atomic_dec(&(((device_t *)file->ctx)->ref));
+            atomic_dec(dev_ref(file));
             seterrno(ENOMEM);
             return -1;
         }
 
         if (kfifo_init(&priv->oq, 1 * KB) < 0) {
             kfifo_free(&priv->iq);
-            atomic_dec(&(((device_t *)file->ctx)->ref));
+            atomic_dec(dev_ref(file));
             seterrno(ENOMEM);
             return -1;
         }
@@ -224,7 +222,7 @@ static int serial0_open(void *ctx, file_t *file, int oflag, mode_t mode)
         /*
          * 如果设备不允许同时打开多次, 请使用如下代码:
          */
-        atomic_dec(&(((device_t *)file->ctx)->ref));
+        atomic_dec(dev_ref(file));
         seterrno(EBUSY);
         return -1;
     }
@@ -245,7 +243,7 @@ static int serial0_close(void *ctx, file_t *file)
         seterrno(EINVAL);
         return -1;
     }
-    if (atomic_read(&(((device_t *)file->ctx)->ref)) == 1) {
+    if (atomic_read(dev_ref(file)) == 1) {
         /*
          * 最后一次关闭时的清理代码
          */
@@ -257,7 +255,7 @@ static int serial0_close(void *ctx, file_t *file)
         kfifo_free(&priv->iq);
         kfifo_free(&priv->oq);
     }
-    atomic_dec(&(((device_t *)file->ctx)->ref));
+    atomic_dec(dev_ref(file));
     return 0;
 }
 /*********************************************************************************************************

@@ -37,12 +37,10 @@
 ** Descriptions:
 **
 *********************************************************************************************************/
+#include "kern/kern.h"
 #include "vfs/device.h"
 #include "vfs/driver.h"
 #include "vfs/utils.h"
-#include "kern/kern.h"
-#include <errno.h>
-#include <fcntl.h>
 #include <string.h>
 
 #define DISK_SZ     (1440 * KB)                                         /*  磁盘大小                    */
@@ -69,7 +67,7 @@ static int ramdisk_open(void *ctx, file_t *file, int oflag, mode_t mode)
         return -1;
     }
 
-    if (atomic_inc_return(&(((device_t *)file->ctx)->ref)) == 1) {
+    if (atomic_inc_return(dev_ref(file)) == 1) {
         /*
          * 第一次打开时的初始化代码
          */
@@ -78,7 +76,7 @@ static int ramdisk_open(void *ctx, file_t *file, int oflag, mode_t mode)
         /*
          * 如果设备不允许同时打开多次, 请使用如下代码:
          */
-        atomic_dec(&(((device_t *)file->ctx)->ref));
+        atomic_dec(dev_ref(file));
         seterrno(EBUSY);
         return -1;
     }
@@ -95,12 +93,12 @@ static int ramdisk_close(void *ctx, file_t *file)
         seterrno(EINVAL);
         return -1;
     }
-    if (atomic_read(&(((device_t *)file->ctx)->ref)) == 1) {
+    if (atomic_read(dev_ref(file)) == 1) {
         /*
          * 加上最后一次关闭时的清理代码
          */
     }
-    atomic_dec(&(((device_t *)file->ctx)->ref));
+    atomic_dec(dev_ref(file));
     return 0;
 }
 
@@ -148,8 +146,9 @@ static int ramdisk_ioctl(void *ctx, file_t *file, int cmd, void *arg)
         break;
 
     case BLKDEV_CMD_ERASE:
-        memset(priv->buf + *(int *)arg * SECT_SZ, 0,
-                (*((int *)arg + 1) - *(int *)arg + 1)* SECT_SZ);
+        memset(priv->buf + *(int *)arg * SECT_SZ,
+               0,
+               (*((int *)arg + 1) - *(int *)arg + 1)* SECT_SZ);
         break;
 
     default:
@@ -174,7 +173,9 @@ static ssize_t ramdisk_readblk(void *ctx, file_t *file, size_t blk_no, size_t bl
         seterrno(EIO);
         return -1;
     }
+
     memcpy(buf, priv->buf + blk_no * SECT_SZ, blk_cnt * SECT_SZ);
+
     return blk_cnt * SECT_SZ;
 }
 
@@ -193,7 +194,9 @@ static ssize_t ramdisk_writeblk(void *ctx, file_t *file, size_t blk_no, size_t b
         seterrno(EIO);
         return -1;
     }
+
     memcpy(priv->buf + blk_no * SECT_SZ, buf, blk_cnt * SECT_SZ);
+
     return blk_cnt * SECT_SZ;
 }
 

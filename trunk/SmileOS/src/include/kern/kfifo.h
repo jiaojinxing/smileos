@@ -46,7 +46,7 @@
  * FIFO
  */
 typedef struct {
-    unsigned char  *buffer;
+    unsigned char  *buf;
     unsigned int    size;
     unsigned int    mask;
     unsigned int    in;
@@ -59,14 +59,14 @@ static inline int kfifo_init(kfifo_t *f, unsigned int size)
     f->out  = 0;
     f->mask = size - 1;
     f->size = size;
-    f->buffer = kmalloc(size, GFP_KERNEL);
-    return f->buffer ? 0 : -1;
+    f->buf  = kmalloc(size, GFP_KERNEL);
+    return f->buf ? 0 : -1;
 }
 
 static inline void kfifo_free(kfifo_t *f)
 {
-    kfree(f->buffer);
-    f->buffer = NULL;
+    kfree(f->buf);
+    f->buf = NULL;
 }
 
 static inline unsigned int kfifo_len(kfifo_t *f)
@@ -110,12 +110,12 @@ static inline unsigned int kfifo_put(kfifo_t *f, const void *buf, unsigned int l
      */
     l = min(len, f->size - (f->in & f->mask));
 
-    memcpy(f->buffer + (f->in & f->mask), buf, l);
+    memcpy(f->buf + (f->in & f->mask), buf, l);
 
     /*
      * then put the rest (if any) at the beginning of the buffer
      */
-    memcpy(f->buffer, (const char *)buf + l, len - l);
+    memcpy(f->buf, (const char *)buf + l, len - l);
 
     f->in += len;
 
@@ -137,12 +137,12 @@ static inline unsigned int kfifo_get(kfifo_t *f, void *buf, unsigned int len)
      */
     l = min(len, f->size - (f->out & f->mask));
 
-    memcpy(buf, f->buffer + (f->out & f->mask), l);
+    memcpy(buf, f->buf + (f->out & f->mask), l);
 
     /*
      * then get the rest (if any) from the beginning of the buffer
      */
-    memcpy((char *)buf + l, f->buffer, len - l);
+    memcpy((char *)buf + l, f->buf, len - l);
 
     f->out += len;
 
