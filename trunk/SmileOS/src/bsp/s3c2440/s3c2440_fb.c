@@ -47,6 +47,7 @@
 #include <fcntl.h>
 #include "s3c2440.h"
 #include "drv/fb.h"
+#include "kern/mmu.h"
 /*********************************************************************************************************
 ** LCD 型号配置
 *********************************************************************************************************/
@@ -99,7 +100,7 @@
 /*********************************************************************************************************
 ** 全局变量
 *********************************************************************************************************/
-static uint16_t     framebuffer[LINEVAL][HOZVAL];                       /*  视频帧缓冲                  */
+static uint16_t    *framebuffer;                                        /*  视频帧缓冲                  */
 
 static atomic_t     fb_ref;                                             /*  打开计数                    */
 /*********************************************************************************************************
@@ -220,8 +221,8 @@ static int fb_ioctl(void *ctx, file_t *file, int cmd, void *arg)
 
     case FBIOGET_FSCREENINFO:
         fix = va_to_mva(arg);
-        fix->smem_start     = framebuffer;
-        fix->smem_len       = sizeof(framebuffer);
+        fix->smem_start     = (void *)FB_MEM_VBASE;
+        fix->smem_len       = sizeof(uint16_t) * LCD_WIDTH * LCD_HEIGHT;
         fix->xpanstep       = 0;
         fix->ypanstep       = 0;
         fix->ywrapstep      = 0;
@@ -258,7 +259,7 @@ static int fb_close(void *ctx, file_t *file)
 *********************************************************************************************************/
 static int fb_fstat(void *ctx, file_t *file, struct stat *buf)
 {
-    buf->st_size = sizeof(framebuffer);
+    buf->st_size = sizeof(uint16_t) * LCD_WIDTH * LCD_HEIGHT;
 
     return 0;
 }
@@ -284,6 +285,8 @@ int fb_init(void)
     driver_install(&fb_drv);
 
     atomic_set(&fb_ref, 0);
+
+    framebuffer = (uint16_t *)FB_MEM_BASE;
 
     return device_create("/dev/fb0", "fb", NULL);
 }

@@ -42,7 +42,7 @@
 #include "lwip/tcpip.h"
 /*********************************************************************************************************
 ** Function name:           tcpip_init_done
-** Descriptions:            LwIP 初始化完成处理函数
+** Descriptions:            lwIP 初始化完成处理函数
 ** input parameters:        arg                 参数
 ** output parameters:       NONE
 ** Returned value:          NONE
