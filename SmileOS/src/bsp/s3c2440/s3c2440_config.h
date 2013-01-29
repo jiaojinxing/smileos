@@ -67,9 +67,13 @@
 #define DMA_MEM_SIZE        (1 * MB)                                    /*  DMA 内存大小                */
 #define DMA_MEM_BASE        (INT_MEM_BASE + INT_MEM_SIZE)               /*  DMA 内存基址                */
 
+#define FB_MEM_SIZE         (1 * MB)                                    /*  FB 内存大小                 */
+#define FB_MEM_BASE         (DMA_MEM_BASE + DMA_MEM_SIZE)               /*  FB 内存基址                 */
+#define FB_MEM_VBASE        (FB_MEM_BASE)                               /*  FB 内存基址                 */
+
                                                                         /*  VMM 内存大小                */
-#define VMM_MEM_SIZE        (PHY_MEM_SIZE - KERN_MEM_SIZE - INT_MEM_SIZE - DMA_MEM_SIZE)
-#define VMM_MEM_BASE        (DMA_MEM_BASE + DMA_MEM_SIZE)               /*  VMM 内存基址                */
+#define VMM_MEM_SIZE        (PHY_MEM_SIZE - KERN_MEM_SIZE - INT_MEM_SIZE - DMA_MEM_SIZE - FB_MEM_SIZE)
+#define VMM_MEM_BASE        (FB_MEM_BASE + FB_MEM_SIZE)                 /*  VMM 内存基址                */
 #define VMM_FRAME_SIZE      (PAGE_SIZE)                                 /*  页框大小                    */
 #define VMM_FRAME_NR        (VMM_MEM_SIZE / VMM_FRAME_SIZE)             /*  页框数                      */
 

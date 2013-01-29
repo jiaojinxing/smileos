@@ -87,6 +87,14 @@ void bsp_mem_map(void)
                    0x20000000,
                    1 * MB,
                    SECTION_ATTR(AP_USER_NO, DOMAIN_CHECK, CACHE_NO, BUFFER_NO));
+
+    /*
+     * FrameBuffer
+     */
+    mmu_map_region(FB_MEM_VBASE,
+                   FB_MEM_BASE,
+                   FB_MEM_SIZE,
+                   SECTION_ATTR(AP_USER_RW, DOMAIN_CHECK, CACHE_NO, BUFFER_NO));
 }
 /*********************************************************************************************************
 ** BSP ±£Áô¿Õ¼ä
@@ -99,6 +107,10 @@ const space_t bsp_resv_space[] = {
         {
             0x20000000,                                                 /*  DM9000                      */
             1 * MB
+        },
+        {
+            FB_MEM_VBASE,                                               /*  FrameBuffer                 */
+            FB_MEM_SIZE
         },
         {
             0,
