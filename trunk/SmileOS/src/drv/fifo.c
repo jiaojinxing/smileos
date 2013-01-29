@@ -67,26 +67,12 @@ static int fifo_open(void *ctx, file_t *file, int oflag, mode_t mode)
     }
 
     val = atomic_inc_return(dev_ref(file));
-    if (val == 1) {
-        /*
-         * 第一次打开时的初始化代码
-         */
-        if (kfifo_init(&priv->fifo, 1 * KB) < 0) {
-            atomic_dec(dev_ref(file));
-            seterrno(ENOMEM);
-            return -1;
-        }
-        return 0;
-    } else if (val == 2) {
-        return 0;
-    } else {
-        /*
-         * 如果设备不允许同时打开多次, 请使用如下代码:
-         */
+    if (val > 2) {
         atomic_dec(dev_ref(file));
         seterrno(EBUSY);
         return -1;
     }
+    return 0;
 }
 
 /*
@@ -101,12 +87,6 @@ static int fifo_close(void *ctx, file_t *file)
         return -1;
     }
 
-    if (atomic_read(dev_ref(file)) == 1) {
-        /*
-         * 加上最后一次关闭时的清理代码
-         */
-        kfifo_free(&priv->fifo);
-    }
     atomic_dec(dev_ref(file));
     return 0;
 }
@@ -141,7 +121,9 @@ static ssize_t fifo_read(void *ctx, file_t *file, void *buf, size_t len)
 
     len = kfifo_get(&priv->fifo, buf, len);
 
-    select_report(&priv->select, VFS_FILE_WRITEABLE);
+    if (len > 0) {
+        select_report(&priv->select, VFS_FILE_WRITEABLE);
+    }
 
     return len;
 }
@@ -176,7 +158,9 @@ static ssize_t fifo_write(void *ctx, file_t *file, const void *buf, size_t len)
 
     len = kfifo_put(&priv->fifo, buf, len);
 
-    select_report(&priv->select, VFS_FILE_READABLE);
+    if (len > 0) {
+        select_report(&priv->select, VFS_FILE_READABLE);
+    }
 
     return len;
 }
@@ -242,15 +226,27 @@ int fifo_create(const char *name)
 {
     privinfo_t *priv;
 
+    if (name == NULL) {
+        seterrno(EINVAL);
+        return -1;
+    }
+
     priv = kmalloc(sizeof(privinfo_t), GFP_KERNEL);
     if (priv != NULL) {
         device_init(priv);
+        if (kfifo_init(&priv->fifo, 1 * KB) < 0) {
+            kfree(priv);
+            seterrno(ENOMEM);
+            return -1;
+        }
         if (device_create(name, "fifo", priv) < 0) {
             kfree(priv);
             return -1;
         }
+        seterrno(0);
         return 0;
     } else {
+        seterrno(ENOMEM);
         return -1;
     }
 }

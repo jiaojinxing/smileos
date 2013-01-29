@@ -91,7 +91,7 @@ void bsp_mem_map(void)
 /*********************************************************************************************************
 ** BSP 保留空间
 *********************************************************************************************************/
-space_t bsp_resv_space[] = {
+const space_t bsp_resv_space[] = {
         {
             0x48000000,                                                 /*  特殊功能寄存器              */
             0x60000000 - 0x48000000
@@ -137,6 +137,9 @@ int bsp_drivers_install(void)
 
     extern void nand_init(void);
     nand_init();
+
+    extern int mtdblock_init(void);
+    mtdblock_init();
 
     extern int fb_init(void);
     fb_init();

@@ -90,10 +90,9 @@ static void init(void *arg)
 
     vfs_mkfs("/tmp", NULL);
 
-    vfs_mount(NULL, NULL, "yaffs", NULL);
+    vfs_mount("/kern",   "/dev/mtdblock0", "yaffs1", NULL);
 
-    extern void shell(void *arg);
-    kthread_create("shell", shell, NULL, 16 * KB, 10);
+    vfs_mount("/rootfs", "/dev/mtdblock1", "yaffs1", NULL);
 
     while (1) {
         sleep(10);
@@ -119,6 +118,9 @@ static int sys_drivers_install(void)
 
     extern int fifo_init(void);
     fifo_init();
+
+    extern int zero_init(void);
+    zero_init();
 
     return 0;
 }

@@ -51,7 +51,7 @@ typedef struct {
     char               *name;                                           /*  名字                        */
     char               *addr;                                           /*  地址                        */
     unsigned int        flags;                                          /*  标志                        */
-} SYMBOL;
+} symbol_t;
 
 #endif                                                                  /*  __SYMBOL_TOOL_H             */
 /*********************************************************************************************************

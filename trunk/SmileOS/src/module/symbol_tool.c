@@ -69,7 +69,8 @@ typedef struct {
 *********************************************************************************************************/
 static hash_tbl_t *hash_tbl_create(uint32_t size)
 {
-    hash_tbl_t *tbl = (hash_tbl_t *)kzalloc(sizeof(hash_tbl_t) + sizeof(node_t *) * (size - 1), GFP_KERNEL);
+    hash_tbl_t *tbl = (hash_tbl_t *)kzalloc(sizeof(hash_tbl_t) + sizeof(node_t *) * (size - 1),
+                                            GFP_KERNEL);
     if (tbl != NULL) {
         tbl->size = size;
     }
@@ -85,13 +86,7 @@ static hash_tbl_t *hash_tbl_create(uint32_t size)
 *********************************************************************************************************/
 static node_t *hash_tbl_lookup(hash_tbl_t *tbl, uint32_t key)
 {
-    node_t *node;
-
-    if (NULL == tbl) {
-        return NULL;
-    }
-
-    node = tbl->lists[key % tbl->size];
+    node_t *node = tbl->lists[key % tbl->size];
     while (node != NULL) {
         if (key == node->key) {
             return node;
@@ -111,28 +106,21 @@ static node_t *hash_tbl_lookup(hash_tbl_t *tbl, uint32_t key)
 *********************************************************************************************************/
 static int hash_tbl_insert(hash_tbl_t *tbl, uint32_t key, void *data)
 {
-    node_t *node;
-
-    if (NULL == tbl) {
-        return -1;
-    }
-
-    node = (node_t *)kzalloc(sizeof(node_t), GFP_KERNEL);
+    node_t *node = (node_t *)kzalloc(sizeof(node_t), GFP_KERNEL);
     if (node == NULL) {
         return -1;
     }
     node->key  = key;
     node->data = data;
-
     node->next = tbl->lists[key % tbl->size];
     tbl->lists[key % tbl->size] = node;
-
     return 0;
 }
 /*********************************************************************************************************
 ** 符号哈希表
 *********************************************************************************************************/
-static hash_tbl_t *symbol_hash_tbl;
+static hash_tbl_t *text_symbol_hash_tbl;                                /*  TEXT 段符号哈希表           */
+static hash_tbl_t *data_symbol_hash_tbl;                                /*  DATA 段符号哈希表           */
 /*********************************************************************************************************
 ** Function name:           symbol_lookup
 ** Descriptions:            查找符号
@@ -143,9 +131,10 @@ static hash_tbl_t *symbol_hash_tbl;
 *********************************************************************************************************/
 uint32_t symbol_lookup(const char *name, uint32_t type)
 {
-    node_t *node = hash_tbl_lookup(symbol_hash_tbl, BKDRHash(name));
+    node_t *node = hash_tbl_lookup(type == SYMBOL_TEXT ? text_symbol_hash_tbl : data_symbol_hash_tbl,
+                                   BKDRHash(name));
     if (node != NULL) {
-        SYMBOL *symbol = node->data;
+        symbol_t *symbol = node->data;
         return (uint32_t)symbol->addr;
     }
     return 0;
@@ -159,31 +148,43 @@ uint32_t symbol_lookup(const char *name, uint32_t type)
 *********************************************************************************************************/
 int symbol_init(void)
 {
-    SYMBOL  *symbol;
-    node_t  *node;
-    uint32_t key;
+    hash_tbl_t *tbl;
+    symbol_t   *symbol;
+    node_t     *node;
+    uint32_t    key;
 
-    symbol_hash_tbl = hash_tbl_create(127);                             /*  创建符号哈希表  　          */
-    if (symbol_hash_tbl == NULL) {
+    text_symbol_hash_tbl = hash_tbl_create(127);                        /*  创建 TEXT 段符号哈希表      */
+    if (text_symbol_hash_tbl == NULL) {
+        return -1;
+    }
+
+    data_symbol_hash_tbl = hash_tbl_create(127);                        /*  创建 DATA 段符号哈希表      */
+    if (data_symbol_hash_tbl == NULL) {
         return -1;
     }
 
     /*
-     * 将符号表中的符号加到符号哈希表
+     * 将符号表中的符号加到对应的符号哈希表中
      */
-    extern SYMBOL symbol_tbl[];
+    extern symbol_t symbol_tbl[];
     for (symbol = symbol_tbl; symbol->name != NULL; symbol++) {
+
+        tbl  = symbol->flags == SYMBOL_TEXT ? text_symbol_hash_tbl : data_symbol_hash_tbl;
+
         key  = BKDRHash(symbol->name);
-        node = hash_tbl_lookup(symbol_hash_tbl, key);
+
+        node = hash_tbl_lookup(tbl, key);                               /*  先查找该符号                */
         if (NULL != node) {
-            SYMBOL *temp = node->data;
+            symbol_t *temp = node->data;
             if (strcmp(temp->name, symbol->name) == 0) {                /*  符号重复了                　*/
                 continue;
             } else {                                                    /*  符号冲突了                  */
+                printk("%s: string hash error\n");
                 return -1;
             }
         }
-        if (hash_tbl_insert(symbol_hash_tbl, key, symbol) < 0) {        /*  将符号插入到符号哈希表      */
+
+        if (hash_tbl_insert(tbl, key, symbol) < 0) {                    /*  将符号插入到符号哈希表      */
             return -1;
         }
     }

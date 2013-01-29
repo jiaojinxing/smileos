@@ -63,6 +63,7 @@ static int devfs_open(mount_point_t *point, file_t *file, const char *path, int 
     int       ret;
 
     mutex_lock(&dev_mgr_lock, 0);
+
     dev = device_lookup(vfs_path_add_mount_point(path));
     if (dev == NULL) {
         mutex_unlock(&dev_mgr_lock);
@@ -78,7 +79,9 @@ static int devfs_open(mount_point_t *point, file_t *file, const char *path, int 
 
     file->ctx = dev;
     ret = dev->drv->open(dev->ctx, file, oflag, mode);
+
     mutex_unlock(&dev_mgr_lock);
+
     return ret;
 }
 
@@ -399,15 +402,18 @@ static int devfs_stat(mount_point_t *point, const char *path, struct stat *buf)
         device_t *dev;
 
         mutex_lock(&dev_mgr_lock, 0);
+
         dev = device_lookup(vfs_path_add_mount_point(path));
         if (dev != NULL) {
             file_t file = {0};
             int    ret;
-            atomic_inc(&dev->ref);
-            mutex_unlock(&dev_mgr_lock);
+
             file.ctx = dev;
+
             ret = devfs_fstat(point, &file, buf);
-            atomic_dec(&dev->ref);
+
+            mutex_unlock(&dev_mgr_lock);
+
             return ret;
         } else {
             mutex_unlock(&dev_mgr_lock);
@@ -424,11 +430,20 @@ static int devfs_access(mount_point_t *point, const char *path, int amode)
 
     ret = devfs_stat(point, path, &buf);
     if (ret == 0) {
-        if ((buf.st_mode & 0700) == (amode * 8 * 8)) {
-            return 0;
-        } else {
+        int access_ok = 1;
+
+        if ((amode & R_OK) && !(buf.st_mode & S_IRUSR))
+            access_ok = 0;
+        if ((amode & W_OK) && !(buf.st_mode & S_IWUSR))
+            access_ok = 0;
+        if ((amode & X_OK) && !(buf.st_mode & S_IXUSR))
+            access_ok = 0;
+
+        if (!access_ok) {
             seterrno(EACCES);
             return -1;
+        } else {
+            return 0;
         }
     } else {
         return ret;
@@ -474,11 +489,16 @@ static struct dirent *devfs_readdir(mount_point_t *point, file_t *file)
     }
 
     mutex_lock(&dev_mgr_lock, 0);
+
     dev = device_get(priv->loc);
     if (dev != NULL) {
+
         strcpy(priv->entry.d_name, dev->name + 5);                      /*  Ìø¹ý /dev/                  */
+
         mutex_unlock(&dev_mgr_lock);
+
         priv->entry.d_ino = priv->loc++;
+
         return &priv->entry;
     } else {
         mutex_unlock(&dev_mgr_lock);

@@ -164,6 +164,7 @@ struct file_system {
     /*
      * 文件系统接口
      */
+    int     (*init)(void);
     int     (*mount)(mount_point_t *point, device_t *dev, const char *dev_name, const char *param);
     int     (*unmount)(mount_point_t *point, const char *param);
     int     (*mkfs)(mount_point_t *point, const char *param);

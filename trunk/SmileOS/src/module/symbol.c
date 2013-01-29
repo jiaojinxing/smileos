@@ -20,7 +20,7 @@
 *********************************************************************************************************/	
 #include "module/symbol_tool.h"										
 														
-#define SYMBOL_TABLE_BEGIN SYMBOL symbol_tbl[] = {
+#define SYMBOL_TABLE_BEGIN symbol_t symbol_tbl[] = {
   														
 #define SYMBOL_TABLE_END   {0, 0, 0} };									
 														

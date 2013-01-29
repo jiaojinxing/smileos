@@ -39,17 +39,15 @@
 *********************************************************************************************************/
 #include "kern/kern.h"
 #include "s3c2440.h"
-
-/*
- * 中断数目
- */
-#define INTERRUPT_NR      INTGLOBAL
-
-/*
- * 中断服务程序及其参数表
- */
-static isr_t  isr_table[INTERRUPT_NR];
-static void  *isr_arg_table[INTERRUPT_NR];
+/*********************************************************************************************************
+** 定义
+*********************************************************************************************************/
+#define INTERRUPT_NR      INTGLOBAL                                     /*  中断数目                    */
+/*********************************************************************************************************
+** 全局变量
+*********************************************************************************************************/
+static isr_t  isr_table[INTERRUPT_NR];                                  /*  中断服务程序表              */
+static void  *isr_arg_table[INTERRUPT_NR];                              /*  中断服务程序参数表          */
 /*********************************************************************************************************
 ** Function name:           irq_c_handler
 ** Descriptions:            IRQ 中断处理程序
@@ -141,8 +139,11 @@ void interrupt_mask(uint32_t interrupt)
     uint32_t reg;
 
     if (interrupt < INTERRUPT_NR) {
+
         reg = interrupt_disable();
+
         INTMSK |= 1 << interrupt;
+
         interrupt_resume(reg);
     }
 }
@@ -158,8 +159,11 @@ void interrupt_unmask(uint32_t interrupt)
     uint32_t reg;
 
     if (interrupt < INTERRUPT_NR) {
+
         reg = interrupt_disable();
+
         INTMSK &= ~(1 << interrupt);
+
         interrupt_resume(reg);
     }
 }
@@ -177,6 +181,7 @@ int interrupt_install(uint32_t interrupt, isr_t new_isr, isr_t *old_isr, void *a
     uint32_t reg;
 
     if (interrupt < INTERRUPT_NR) {
+
         reg = interrupt_disable();
 
         if (old_isr != NULL) {
@@ -189,7 +194,9 @@ int interrupt_install(uint32_t interrupt, isr_t new_isr, isr_t *old_isr, void *a
         } else {
             isr_table[interrupt]     = (isr_t)isr_invaild;
         }
+
         interrupt_resume(reg);
+
         return 0;
     } else {
         return -1;

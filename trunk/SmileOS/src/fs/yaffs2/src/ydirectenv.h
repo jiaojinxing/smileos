@@ -34,6 +34,7 @@
 #define YBUG() assert(0)
 //#define YBUG() do { *((int *)0) =1;} while(0)
 
+
 #define YCHAR char
 #define YUCHAR unsigned char
 #define _Y(x) x
@@ -94,9 +95,6 @@ extern void printk(const char *fmt, ...);
     do { if ((mask) & (yaffs_traceMask| YAFFS_TRACE_ALWAYS)) \
         printk(KERN_WARNING "yaffs: " fmt, ## args); \
     } while (0)
-
-#define compile_time_assertion(assertion) \
-    ({ int x = __builtin_choose_expr(assertion, 0, (void)0); (void) x; })
 
 #endif
 

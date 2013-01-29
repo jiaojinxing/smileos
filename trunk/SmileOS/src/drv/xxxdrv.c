@@ -265,8 +265,10 @@ int xxx_init(void)
             kfree(priv);
             return -1;
         }
+        seterrno(0);
         return 0;
     } else {
+        seterrno(ENOMEM);
         return -1;
     }
 }

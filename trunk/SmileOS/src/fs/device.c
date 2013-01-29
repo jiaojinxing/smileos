@@ -47,17 +47,9 @@
 /*********************************************************************************************************
 ** 全局变量
 *********************************************************************************************************/
-/*
- * 设备链表
- */
-static device_t    *dev_list;
+static device_t    *dev_list;                                           /*  设备链表                    */
 
-/*
- * 设备管理锁
- */
-mutex_t             dev_mgr_lock;
-
-extern mutex_t      drv_mgr_lock;
+mutex_t             dev_mgr_lock;                                       /*  设备管理锁                  */
 /*********************************************************************************************************
 ** Function name:           device_install
 ** Descriptions:            安装设备
@@ -85,8 +77,8 @@ static int device_install(device_t *dev)
 *********************************************************************************************************/
 device_t *device_get(unsigned int index)
 {
-    int i;
     device_t *dev;
+    int i;
 
     mutex_lock(&dev_mgr_lock, 0);
 
@@ -116,6 +108,7 @@ device_t *device_lookup(const char *name)
     key = BKDRHash(name);
 
     mutex_lock(&dev_mgr_lock, 0);
+
     dev = dev_list;
     while (dev != NULL) {
         if (key == dev->key) {
@@ -123,6 +116,7 @@ device_t *device_lookup(const char *name)
         }
         dev = dev->next;
     }
+
     mutex_unlock(&dev_mgr_lock);
 
     return dev;
@@ -147,26 +141,27 @@ int device_remove(const char *name)
     key = BKDRHash(name);
 
     mutex_lock(&dev_mgr_lock, 0);
+
     prev = NULL;
     dev  = dev_list;
     while (dev != NULL) {
         if (key == dev->key) {
+            if (atomic_read(&dev->ref) == 0) {
+                if (prev != NULL) {
+                    prev->next = dev->next;
+                } else {
+                    dev_list   = dev->next;
+                }
+                atomic_dec(&dev->drv->ref);
+                kfree(dev);
+                ret = 0;
+            }
             break;
         }
         prev = dev;
         dev  = dev->next;
     }
 
-    if (dev != NULL && atomic_read(&dev->ref) == 0) {
-        if (prev != NULL) {
-            prev->next = dev->next;
-        } else {
-            dev_list = dev->next;
-        }
-        atomic_dec(&dev->drv->ref);
-        kfree(dev);
-        ret = 0;
-    }
     mutex_unlock(&dev_mgr_lock);
 
     return ret;
@@ -186,49 +181,52 @@ int device_create(const char *dev_name, const char *drv_name, void *ctx)
     device_t *dev;
 
     if (dev_name == NULL || drv_name == NULL) {
+        seterrno(EINVAL);
         return -1;
     }
 
     if (strncmp(dev_name, "/dev/", 5) != 0) {
+        seterrno(EINVAL);
         return -1;
     }
 
     if (dev_name[5] == '\0') {
+        seterrno(EINVAL);
         return -1;
     }
 
     mutex_lock(&dev_mgr_lock, 0);                                       /*  保证查找到安装之间是原子的  */
+
     if (device_lookup(dev_name) != NULL) {
         mutex_unlock(&dev_mgr_lock);
+        seterrno(EEXIST);
         return -1;
     }
 
-    mutex_lock(&drv_mgr_lock, 0);
-
-    drv = driver_lookup(drv_name);
-    if (drv != NULL) {
-
-        atomic_inc(&drv->ref);
-
-        mutex_unlock(&drv_mgr_lock);
-
-        dev = kmalloc(sizeof(device_t), GFP_KERNEL);
-        if (dev != NULL) {
-            strlcpy(dev->name, dev_name, sizeof(dev->name));
-            dev->drv   = drv;
-            dev->ctx   = ctx;
-            dev->devno = BKDRHash(drv_name);
-            dev->key   = BKDRHash(dev_name);
-            atomic_set(&dev->ref, 0);
-            device_install(dev);
-            mutex_unlock(&dev_mgr_lock);
-            return 0;
-        } else {
-            atomic_dec(&drv->ref);
-        }
+    drv = driver_ref_by_name(drv_name);
+    if (drv == NULL) {
+        mutex_unlock(&dev_mgr_lock);
+        seterrno(EINVAL);
+        return -1;
     }
-    mutex_unlock(&dev_mgr_lock);
-    return -1;
+
+    dev = kmalloc(sizeof(device_t), GFP_KERNEL);
+    if (dev != NULL) {
+        strlcpy(dev->name, dev_name, sizeof(dev->name));
+        dev->key   = BKDRHash(dev_name);
+        dev->drv   = drv;
+        dev->ctx   = ctx;
+        dev->devno = BKDRHash(drv_name);
+        atomic_set(&dev->ref, 0);
+        device_install(dev);
+        mutex_unlock(&dev_mgr_lock);
+        seterrno(0);
+        return 0;
+    } else {
+        atomic_dec(&drv->ref);
+        seterrno(ENOMEM);
+        return -1;
+    }
 }
 /*********************************************************************************************************
 ** Function name:           device_manager_init

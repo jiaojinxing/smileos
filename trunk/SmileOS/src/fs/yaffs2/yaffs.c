@@ -48,11 +48,78 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include "./src/yaffs_guts.h"
 #include "./src/yaffsfs.h"
+#include "./src/yaffscfg.h"
 
-static int __yaffs_mount(mount_point_t *point, device_t *dev, const char *dev_name, const char *param)
+void *yaffsfs_Mount(int yaffsVersion,
+                    const char *point_name,
+                    device_t *sb,
+                    const char *dev_name,
+                    const char *data_str);
+
+int yaffsfs_Unmount(void *ctx);
+
+static int __yaffs_init(void)
 {
-    return yaffs_StartUp();
+    extern void yaffsfs_LocalInitialisation(void);
+    yaffsfs_LocalInitialisation();
+
+    extern int yaffsfs_InitHandles(void);
+    yaffsfs_InitHandles();
+
+    return 0;
+}
+
+static int __yaffs1_mount(mount_point_t *point, device_t *dev, const char *dev_name, const char *param)
+{
+    void *ctx;
+
+    if (point == NULL || dev == NULL) {
+        seterrno(EINVAL);
+        return -1;
+    }
+
+    if (dev_name == NULL) {
+        dev_name = dev->name;
+    }
+
+    ctx = yaffsfs_Mount(1, point->name, dev, dev_name, param);
+    if (ctx != NULL) {
+        point->ctx = ctx;
+        return 0;
+    } else {
+        seterrno(EINVAL);
+        return -1;
+    }
+}
+
+static int __yaffs2_mount(mount_point_t *point, device_t *dev, const char *dev_name, const char *param)
+{
+    void *ctx;
+
+    if (point == NULL || dev == NULL) {
+        seterrno(EINVAL);
+        return -1;
+    }
+
+    if (dev_name == NULL) {
+        dev_name = dev->name;
+    }
+
+    ctx = yaffsfs_Mount(2, point->name, dev, dev_name, param);
+    if (ctx != NULL) {
+        point->ctx = ctx;
+        return 0;
+    } else {
+        seterrno(EINVAL);
+        return -1;
+    }
+}
+
+static int __yaffs_unmount(mount_point_t *point, const char *param)
+{
+    return yaffsfs_Unmount(point->ctx);
 }
 
 static int __yaffs_open(mount_point_t *point, file_t *file, const char *path, int oflag, mode_t mode)
@@ -301,9 +368,51 @@ static int __yaffs_mkfs(mount_point_t *point, const char *param)
     return -1;
 }
 
-file_system_t yaffs = {
-        .name       = "yaffs",
-        .mount      = __yaffs_mount,
+file_system_t yaffs1 = {
+        .name       = "yaffs1",
+        .init       = __yaffs_init,
+        .mount      = __yaffs1_mount,
+        .unmount    = __yaffs_unmount,
+        .stat       = __yaffs_stat,
+        .access     = __yaffs_access,
+
+        .link       = __yaffs_link,
+        .unlink     = __yaffs_unlink,
+        .mkdir      = __yaffs_mkdir,
+        .rmdir      = __yaffs_rmdir,
+        .rename     = __yaffs_rename,
+        .sync       = __yaffs_sync,
+        .truncate   = __yaffs_truncate,
+
+        .open       = __yaffs_open,
+        .dup        = __yaffs_dup,
+        .read       = __yaffs_read,
+        .write      = __yaffs_write,
+        .ioctl      = __yaffs_ioctl,
+        .close      = __yaffs_close,
+        .fcntl      = __yaffs_fcntl,
+        .fstat      = __yaffs_fstat,
+        .fsync      = __yaffs_fsync,
+        .fdatasync  = __yaffs_fdatasync,
+        .ftruncate  = __yaffs_ftruncate,
+        .lseek      = __yaffs_lseek,
+
+        .opendir    = __yaffs_opendir,
+        .readdir    = __yaffs_readdir,
+        .rewinddir  = __yaffs_rewinddir,
+        .seekdir    = __yaffs_seekdir,
+        .telldir    = __yaffs_telldir,
+        .closedir   = __yaffs_closedir,
+
+        .scan       = __yaffs_scan,
+
+        .mkfs       = __yaffs_mkfs,
+};
+
+file_system_t yaffs2 = {
+        .name       = "yaffs2",
+        .mount      = __yaffs2_mount,
+        .unmount    = __yaffs_unmount,
         .stat       = __yaffs_stat,
         .access     = __yaffs_access,
 

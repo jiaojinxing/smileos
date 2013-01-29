@@ -99,7 +99,8 @@ static int l3bus_init(void)
 /*********************************************************************************************************
 ** Function name:           l3bus_write
 ** Descriptions:            通过 L3 总线接口发送数据
-** input parameters:        NONE
+** input parameters:        data                数据
+**                          addr_mode           地址模式?
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
@@ -196,7 +197,9 @@ static int iis_init(void)
 /*********************************************************************************************************
 ** Function name:           iis_config
 ** Descriptions:            配置 IIS 接口
-** input parameters:        NONE
+** input parameters:        channels            声道数
+**                          bps                 采样精度
+**                          fs                  采样率
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
@@ -271,7 +274,8 @@ static int iis_config(uint32_t channels, uint32_t bps, uint32_t fs)
 /*********************************************************************************************************
 ** Function name:           audio_dma_isr
 ** Descriptions:            DMA2 通道中断服务函数
-** input parameters:        NONE
+** input parameters:        interrupt           中断号
+**                          arg                 参数
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
@@ -318,9 +322,11 @@ static int audio_dma_isr(uint32_t interrupt, void *arg)
     }
 
     if (priv->queue.len < AUDIO_OUT_QUEUE_SIZE) {
-        select_report(&priv->select, VFS_FILE_WRITEABLE);
+
+        select_report(&priv->select, VFS_FILE_WRITEABLE);               /*  可以写了                    */
+
         if (priv->queue.len == 0) {
-            sem_sync(&priv->done);
+            sem_sync(&priv->done);                                      /*  结束了                      */
         }
     }
 
@@ -329,7 +335,10 @@ static int audio_dma_isr(uint32_t interrupt, void *arg)
 /*********************************************************************************************************
 ** Function name:           audio_open
 ** Descriptions:            打开 audio
-** input parameters:        NONE
+** input parameters:        ctx                 私有信息
+**                          file                文件结构
+**                          oflag               打开标志
+**                          mode                模式
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
@@ -380,7 +389,7 @@ static int audio_open(void *ctx, file_t *file, int oflag, mode_t mode)
 /*********************************************************************************************************
 ** Function name:           audio_wait_done
 ** Descriptions:            等待音频结束
-** input parameters:        NONE
+** input parameters:        priv                私有信息
 ** output parameters:       NONE
 ** Returned value:          NONE
 *********************************************************************************************************/
@@ -390,7 +399,13 @@ static void audio_wait_done(privinfo_t *priv)
 
     while (priv->queue.len != 0) {
         interrupt_unmask(AUDIO_DMA_INT);
+
+        /*
+         * 假如在这里发生了中断, 调用了 sem_sync, 由于 sem_wait 是超时的, 所以不会有问题
+         */
+
         sem_wait(&priv->done, 10);
+
         interrupt_mask(AUDIO_DMA_INT);
     }
 
@@ -399,7 +414,10 @@ static void audio_wait_done(privinfo_t *priv)
 /*********************************************************************************************************
 ** Function name:           audio_ioctl
 ** Descriptions:            控制 audio
-** input parameters:        NONE
+** input parameters:        ctx                 私有信息
+**                          file                文件结构
+**                          cmd                 命令
+**                          arg                 参数
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
@@ -450,7 +468,8 @@ static int audio_ioctl(void *ctx, file_t *file, int cmd, void *arg)
 /*********************************************************************************************************
 ** Function name:           audio_close
 ** Descriptions:            关闭 audio
-** input parameters:        NONE
+** input parameters:        ctx                 私有信息
+**                          file                文件结构
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
@@ -478,9 +497,12 @@ static int audio_scan(void *ctx, file_t *file, int flags);
 /*********************************************************************************************************
 ** Function name:           audio_write
 ** Descriptions:            写 audio
-** input parameters:        NONE
+** input parameters:        ctx                 私有信息
+**                          file                文件结构
+**                          buf                 数据
+**                          len                 数据长度
 ** output parameters:       NONE
-** Returned value:          0 OR -1
+** Returned value:          成功写入的字节数
 *********************************************************************************************************/
 static ssize_t audio_write(void *ctx, file_t *file, const void *buf, size_t len)
 {
@@ -526,18 +548,13 @@ static ssize_t audio_write(void *ctx, file_t *file, const void *buf, size_t len)
 
     interrupt_mask(AUDIO_DMA_INT);
 
-    if (priv->queue.next != &priv->queue) {                             /*  如果 DMA 正在传输           */
-        priv->queue.prev->next = job;                                   /*  加 DMA 工作到队尾           */
-        job->prev              = priv->queue.prev;
-        job->next              = &priv->queue;
-        priv->queue.prev       = job;
-        priv->queue.len       += job->len;                              /*  所有 DMA 工作数据的总长度   */
-    } else {
-        priv->queue.prev->next = job;                                   /*  加 DMA 工作到队尾           */
-        job->prev              = priv->queue.prev;
-        job->next              = &priv->queue;
-        priv->queue.prev       = job;
-        priv->queue.len       += job->len;                              /*  所有 DMA 工作数据的总长度   */
+    priv->queue.prev->next = job;                                       /*  加 DMA 工作到队尾           */
+    job->prev              = priv->queue.prev;
+    job->next              = &priv->queue;
+    priv->queue.prev       = job;
+    priv->queue.len       += job->len;                                  /*  所有 DMA 工作数据的总长度   */
+
+    if (priv->queue.len == job->len) {
 
         DISRC2     = (uint32_t)job->buf;                                /*  DMA 传输源地址              */
 
@@ -572,10 +589,12 @@ static ssize_t audio_write(void *ctx, file_t *file, const void *buf, size_t len)
 }
 /*********************************************************************************************************
 ** Function name:           audio_scan
-** Descriptions:            扫描
-** input parameters:        NONE
+** Descriptions:            扫描 audio
+** input parameters:        ctx                 私有信息
+**                          file                文件结构
+**                          flags               可读写标志
 ** output parameters:       NONE
-** Returned value:          0 OR -1
+** Returned value:          可读写标志
 *********************************************************************************************************/
 static int audio_scan(void *ctx, file_t *file, int flags)
 {
@@ -628,6 +647,7 @@ int audio_init(void)
         }
         return 0;
     } else {
+        seterrno(ENOMEM);
         return -1;
     }
 }

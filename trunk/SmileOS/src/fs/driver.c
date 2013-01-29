@@ -46,15 +46,9 @@
 /*********************************************************************************************************
 ** 全局变量
 *********************************************************************************************************/
-/*
- * 驱动链表
- */
-static driver_t    *drv_list;
+static driver_t    *drv_list;                                           /*  驱动链表                    */
 
-/*
- * 驱动管理锁
- */
-mutex_t             drv_mgr_lock;
+static mutex_t      drv_mgr_lock;                                       /*  驱动管理锁                  */
 /*********************************************************************************************************
 ** Function name:           driver_lookup
 ** Descriptions:            查找驱动
@@ -71,6 +65,7 @@ driver_t *driver_lookup(const char *name)
     }
 
     mutex_lock(&drv_mgr_lock, 0);
+
     drv = drv_list;
     while (drv != NULL) {
         if (strcmp(drv->name, name) == 0) {
@@ -78,6 +73,29 @@ driver_t *driver_lookup(const char *name)
         }
         drv = drv->next;
     }
+
+    mutex_unlock(&drv_mgr_lock);
+
+    return drv;
+}
+/*********************************************************************************************************
+** Function name:           driver_ref_by_name
+** Descriptions:            通过名字引用驱动
+** input parameters:        name                驱动名
+** output parameters:       NONE
+** Returned value:          驱动
+*********************************************************************************************************/
+driver_t *driver_ref_by_name(const char *name)
+{
+    driver_t *drv;
+
+    mutex_lock(&drv_mgr_lock, 0);
+
+    drv = driver_lookup(name);
+    if (drv != NULL) {
+        atomic_inc(&drv->ref);
+    }
+
     mutex_unlock(&drv_mgr_lock);
 
     return drv;
@@ -103,22 +121,22 @@ int driver_remove(driver_t *drv)
     if (atomic_read(&drv->ref) == 0) {
         prev = NULL;
         temp = drv_list;
-        while (temp != NULL && temp != drv) {
+        while (temp != NULL) {
+            if (temp == drv) {
+                if (prev != NULL) {
+                    prev->next = drv->next;
+                } else {
+                    drv_list   = drv->next;
+                }
+                module_unref(drv->module);
+                ret = 0;
+                break;
+            }
             prev = temp;
             temp = temp->next;
         }
-
-        if (temp != NULL) {
-            if (prev != NULL) {
-                prev->next = drv->next;
-            } else {
-                drv_list = drv->next;
-            }
-            ret = 0;
-            module_unref(drv->module);
-            kfree(drv);
-        }
     }
+
     mutex_unlock(&drv_mgr_lock);
 
     return ret;
@@ -132,19 +150,17 @@ int driver_remove(driver_t *drv)
 *********************************************************************************************************/
 int driver_install(driver_t *drv)
 {
-    module_t *module;
-
     if (drv == NULL || drv->name == NULL) {
         return -1;
     }
 
-    module = module_ref_by_addr(drv);
-    drv->module = module;
+    drv->module = module_ref_by_addr(drv);
 
     mutex_lock(&drv_mgr_lock, 0);
+
     if (driver_lookup(drv->name) != NULL) {
         mutex_unlock(&drv_mgr_lock);
-        module_unref(module);
+        module_unref(drv->module);
         return -1;
     }
 
@@ -152,6 +168,7 @@ int driver_install(driver_t *drv)
 
     drv->next = drv_list;
     drv_list  = drv;
+
     mutex_unlock(&drv_mgr_lock);
 
     return 0;

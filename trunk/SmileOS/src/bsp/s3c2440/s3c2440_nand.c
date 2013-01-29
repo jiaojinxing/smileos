@@ -74,7 +74,9 @@
 /*********************************************************************************************************
 ** Function name:           s3c2440_cmd_ctrl
 ** Descriptions:            硬件控制
-** input parameters:        NONE
+** input parameters:        mtd                 MTD 块信息
+**                          cmd                 命令
+**                          ctrl                控制组合
 ** output parameters:       NONE
 ** Returned value:          NONE
 *********************************************************************************************************/
@@ -112,9 +114,9 @@ static void s3c2440_cmd_ctrl(struct mtd_info *mtd, int cmd, unsigned int ctrl)
 /*********************************************************************************************************
 ** Function name:           s3c2440_dev_ready
 ** Descriptions:            询问设备是否就绪
-** input parameters:        NONE
+** input parameters:        mtd                 MTD 块信息
 ** output parameters:       NONE
-** Returned value:          NONE
+** Returned value:          TRUE OR FALSE
 *********************************************************************************************************/
 static int s3c2440_dev_ready(struct mtd_info *mtd)
 {
@@ -123,13 +125,13 @@ static int s3c2440_dev_ready(struct mtd_info *mtd)
 /*********************************************************************************************************
 ** Function name:           board_nand_init
 ** Descriptions:            目标板 NAND FLASH 接口和芯片结构初始化
-** input parameters:        NONE
+** input parameters:        nand                NAND FLASH 芯片结构
 ** output parameters:       NONE
-** Returned value:          NONE
+** Returned value:          0 OR -1
 *********************************************************************************************************/
 int board_nand_init(struct nand_chip *nand)
 {
-    GPACON = (GPACON & ~(0x3F << 17)) | (0x3F << 17);
+    GPACON  = (GPACON & ~(0x3F << 17)) | (0x3F << 17);
 
     rNFCONF = (NAND_TACLS  << 12)                                       /*  HCLK x (TACLS)              */
             | (NAND_TWRPH0 <<  8)                                       /*  HCLK x (TWRPH0 + 1)         */

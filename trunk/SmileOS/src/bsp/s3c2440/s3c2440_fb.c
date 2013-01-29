@@ -36,6 +36,9 @@
 ** Version:
 ** Descriptions:
 **
+** 扩展阅读:
+** http://hi.baidu.com/760159/blog/item/b4c408894605c49ea4c272a3.html
+**
 *********************************************************************************************************/
 #include "kern/kern.h"
 #include "vfs/device.h"
@@ -44,11 +47,6 @@
 #include <fcntl.h>
 #include "s3c2440.h"
 #include "drv/fb.h"
-
-/*
- * 扩展阅读:
- * http://hi.baidu.com/760159/blog/item/b4c408894605c49ea4c272a3.html
- */
 /*********************************************************************************************************
 ** LCD 型号配置
 *********************************************************************************************************/
@@ -171,7 +169,10 @@ static int lcd_init(void)
 /*********************************************************************************************************
 ** Function name:           fb_open
 ** Descriptions:            打开 FrameBuffer
-** input parameters:        NONE
+** input parameters:        ctx                 私有信息
+**                          file                文件结构
+**                          oflag               打开标志
+**                          mode                模式
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
@@ -186,7 +187,10 @@ static int fb_open(void *ctx, file_t *file, int oflag, mode_t mode)
 /*********************************************************************************************************
 ** Function name:           fb_ioctl
 ** Descriptions:            控制 FrameBuffer
-** input parameters:        NONE
+** input parameters:        ctx                 私有信息
+**                          file                文件结构
+**                          cmd                 命令
+**                          arg                 参数
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
@@ -232,7 +236,8 @@ static int fb_ioctl(void *ctx, file_t *file, int cmd, void *arg)
 /*********************************************************************************************************
 ** Function name:           fb_close
 ** Descriptions:            关闭 FrameBuffer
-** input parameters:        NONE
+** input parameters:        ctx                 私有信息
+**                          file                文件结构
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
@@ -246,8 +251,9 @@ static int fb_close(void *ctx, file_t *file)
 /*********************************************************************************************************
 ** Function name:           fb_fstat
 ** Descriptions:            获得 FrameBuffer 状态
-** input parameters:        NONE
-** output parameters:       NONE
+** input parameters:        ctx                 私有信息
+**                          file                文件结构
+** output parameters:       buf                 状态结构
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
 static int fb_fstat(void *ctx, file_t *file, struct stat *buf)
