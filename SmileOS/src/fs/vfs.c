@@ -2423,8 +2423,11 @@ int vfs_init(void)
     extern file_system_t fatfs;
     file_system_install(&fatfs);
 
-    extern file_system_t yaffs;
-    file_system_install(&yaffs);
+    extern file_system_t yaffs1;
+    file_system_install(&yaffs1);
+
+    extern file_system_t yaffs2;
+    file_system_install(&yaffs2);
 
     vfs_mount("/",    NULL, "rootfs", NULL);
 

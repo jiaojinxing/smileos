@@ -98,6 +98,9 @@ typedef unsigned long           ulong;
 #define likely(x)	            __builtin_expect(!!(x), 1)
 #define unlikely(x)	            __builtin_expect(!!(x), 0)
 
+#define compile_time_assertion(assertion) \
+                                ({ int x = __builtin_choose_expr(assertion, 0, (void)0); (void) x; })
+
 #define IS_ERR_VALUE(x)         unlikely((x) >= (unsigned long)-__ELASTERROR)
 
 static inline void *ERR_PTR(long error)

@@ -39,7 +39,11 @@ static yaffsfs_DeviceConfiguration *yaffsfs_configurationList;
 
 /* Some forward references */
 static yaffs_Object *yaffsfs_FindObject(yaffs_Object *relativeDirectory, const YCHAR *path, int symDepth);
+#ifdef SMILEOS
+void yaffsfs_RemoveObjectCallback(yaffs_Object *obj);
+#else
 static void yaffsfs_RemoveObjectCallback(yaffs_Object *obj);
+#endif
 
 
 // Handle management.
@@ -68,7 +72,11 @@ static yaffsfs_Handle yaffsfs_handle[YAFFSFS_N_HANDLES];
 // yaffsfs_InitHandle
 /// Inilitalise handles on start-up.
 //
+#ifdef SMILEOS
+int yaffsfs_InitHandles(void)
+#else
 static int yaffsfs_InitHandles(void)
+#endif
 {
 	int i;
 	memset(yaffsfs_inode,0,sizeof(yaffsfs_inode));
@@ -250,6 +258,9 @@ int yaffsfs_IsPathDivider(YCHAR ch)
 	return 0;
 }
 
+#ifdef SMILEOS
+extern yaffs_Device *yaffsfs_FindDevice(const YCHAR *path, YCHAR **restOfPath);
+#else
 // yaffsfs_FindDevice
 // yaffsfs_FindRoot
 // Scan the configuration list to find the root.
@@ -314,6 +325,7 @@ static yaffs_Device *yaffsfs_FindDevice(const YCHAR *path, YCHAR **restOfPath)
 	}
 	return retval;
 }
+#endif
 
 #if 0
 static yaffs_Device *yaffsfs_FindDevice(const YCHAR *path, YCHAR **restOfPath)
@@ -1672,7 +1684,11 @@ static void yaffsfs_DirAdvance(yaffsfs_DirectorySearchContext *dsc)
 	}
 }
 
+#ifdef SMILEOS
+void yaffsfs_RemoveObjectCallback(yaffs_Object *obj)
+#else
 static void yaffsfs_RemoveObjectCallback(yaffs_Object *obj)
+#endif
 {
 
         struct ylist_head *i;

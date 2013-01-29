@@ -68,9 +68,6 @@ static int ramdisk_open(void *ctx, file_t *file, int oflag, mode_t mode)
     }
 
     if (atomic_inc_return(dev_ref(file)) == 1) {
-        /*
-         * 第一次打开时的初始化代码
-         */
         return 0;
     } else {
         /*
@@ -93,11 +90,7 @@ static int ramdisk_close(void *ctx, file_t *file)
         seterrno(EINVAL);
         return -1;
     }
-    if (atomic_read(dev_ref(file)) == 1) {
-        /*
-         * 加上最后一次关闭时的清理代码
-         */
-    }
+
     atomic_dec(dev_ref(file));
     return 0;
 }
@@ -108,6 +101,7 @@ static int ramdisk_close(void *ctx, file_t *file)
 static int ramdisk_ioctl(void *ctx, file_t *file, int cmd, void *arg)
 {
     privinfo_t *priv = ctx;
+    int *val = va_to_mva(arg);
 
     if (priv == NULL) {
         seterrno(EINVAL);
@@ -118,37 +112,31 @@ static int ramdisk_ioctl(void *ctx, file_t *file, int cmd, void *arg)
         return -1;
     }
 
-    arg = va_to_mva(arg);
-
     switch (cmd) {
     case BLKDEV_CMD_STATUS:
-        *(int *)arg = 0;
+        *val = 0;
         break;
 
     case BLKDEV_CMD_INIT:
-        printk("ramdisk: init\n");
         break;
 
     case BLKDEV_CMD_SYNC:
-        printk("ramdisk: sync\n");
         break;
 
     case BLKDEV_CMD_SECT_NR:
-        *(int *)arg = SECT_NR;
+        *val = SECT_NR;
         break;
 
     case BLKDEV_CMD_SECT_SZ:
-        *(int *)arg = SECT_SZ;
+        *val = SECT_SZ;
         break;
 
     case BLKDEV_CMD_BLK_SZ:
-        *(int *)arg = SECT_SZ;
+        *val = SECT_SZ;
         break;
 
     case BLKDEV_CMD_ERASE:
-        memset(priv->buf + *(int *)arg * SECT_SZ,
-               0,
-               (*((int *)arg + 1) - *(int *)arg + 1)* SECT_SZ);
+        memset(priv->buf + val[0] * SECT_SZ, 0, (val[1] - val[0] + 1) * SECT_SZ);
         break;
 
     default:
@@ -231,8 +219,10 @@ int ramdisk_init(void)
             kfree(priv);
             return -1;
         }
+        seterrno(0);
         return 0;
     } else {
+        seterrno(ENOMEM);
         return -1;
     }
 }

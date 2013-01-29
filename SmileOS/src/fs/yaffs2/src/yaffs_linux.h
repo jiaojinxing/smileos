@@ -22,18 +22,20 @@
 struct yaffs_LinuxContext {
 	struct ylist_head	contextList; /* List of these we have mounted */
 	struct yaffs_DeviceStruct *dev;
+#ifndef SMILEOS
 	struct super_block * superBlock;
 	struct task_struct *bgThread; /* Background thread for this device */
 	int bgRunning;
-#ifndef SMILEOS
         struct semaphore grossLock;     /* Gross locking semaphore */
 #endif
 	__u8 *spareBuffer;      /* For mtdif2 use. Don't know the size of the buffer
 				 * at compile time so we have to allocate it.
 				 */
 	struct mtd_info *mtd;
+#ifndef SMILEOS
 	struct ylist_head searchContexts;
 	void (*putSuperFunc)(struct super_block *sb);
+#endif
 };
 
 #define yaffs_DeviceToContext(dev) ((struct yaffs_LinuxContext *)((dev)->context))

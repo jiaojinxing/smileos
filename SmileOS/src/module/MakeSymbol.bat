@@ -71,7 +71,7 @@ echo ** 描        述: SmileOS 操作系统符号表. (此文件由 MakeSymbol 工具自动生成,
 echo *********************************************************************************************************/	>> symbol.c										>> symbol.c
 echo #include "module/symbol_tool.h"										>> symbol.c
 echo.														>> symbol.c
-echo #define SYMBOL_TABLE_BEGIN SYMBOL symbol_tbl[] = { 						>> symbol.c
+echo #define SYMBOL_TABLE_BEGIN symbol_t symbol_tbl[] = { 						>> symbol.c
 echo.  														>> symbol.c
 echo #define SYMBOL_TABLE_END   {0, 0, 0} };									>> symbol.c
 echo.														>> symbol.c

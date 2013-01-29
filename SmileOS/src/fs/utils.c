@@ -61,7 +61,7 @@ int select_select(select_struct_t *select, file_t *file, int type)
         return -1;
     }
 
-    node = kmalloc(sizeof(select_node_t), GFP_KERNEL);
+    node = kmalloc(sizeof(select_node_t), GFP_KERNEL);                  /*  分配节点                    */
     if (node == NULL) {
         seterrno(ENOMEM);
         return -1;
@@ -69,13 +69,13 @@ int select_select(select_struct_t *select, file_t *file, int type)
 
     reg = interrupt_disable();
 
-    node->select_type = type;
+    node->select_type = type;                                           /*  初始化节点                  */
     node->task        = current;
 
-    select->wait_list.next->prev = node;
-    node->next = select->wait_list.next;
-    select->wait_list.next = node;
-    node->prev = &select->wait_list;
+    select->wait_list.next->prev = node;                                /*  加到等待列表                */
+    node->next                   = select->wait_list.next;
+    select->wait_list.next       = node;
+    node->prev                   = &select->wait_list;
 
     file->select_node = node;
 
@@ -111,14 +111,14 @@ int select_unselect(select_struct_t *select, file_t *file, int type)
         return -1;
     }
 
-    node->next->prev = node->prev;
+    node->next->prev = node->prev;                                      /*  从等待列表中移除节点        */
     node->prev->next = node->next;
 
     file->select_node = NULL;
 
     interrupt_resume(reg);
 
-    kfree(node);
+    kfree(node);                                                        /*  释放节点                    */
 
     return 0;
 }
@@ -139,29 +139,37 @@ int select_report(select_struct_t *select, int type)
 
     reg = interrupt_disable();
 
-    select->flags.counter |= type;
+    select->flags.counter |= type;                                      /*  记录事件                    */
 
+    /*
+     * 恢复等待列表里有类型交集的任务
+     */
     node = select->wait_list.next;
     while (node != &select->wait_list) {
+
         task = node->task;
-        if ((type & node->select_type || type & VFS_FILE_ERROR) &&
-            task->resume_type != TASK_RESUME_INTERRUPT) {
+
+        if ((type & node->select_type) &&                               /*  回报类型与等待类型有交集    */
+            task->resume_type != TASK_RESUME_INTERRUPT) {               /*  如果任务被中断, 则忽略      */
+
             task->delay        = 0;
-            task->status       = TASK_RUNNING;
+            task->status       = TASK_RUNNING;                          /*  恢复任务                    */
             task->resume_type  = TASK_RESUME_SELECT_EVENT;
+
             if (!in_interrupt() &&
                 task->type == TASK_TYPE_KTHREAD &&
-                task->priority >= current->priority) {
+                task->priority > current->priority) {                   /*  如果需要重新任务调度        */
                 flag = TRUE;
             }
         }
+
         node = node->next;
     }
 
     interrupt_resume(reg);
 
     if (flag) {
-        schedule();
+        schedule();                                                     /*  任务调度                    */
     }
     return 0;
 }
@@ -178,47 +186,48 @@ int select_report(select_struct_t *select, int type)
 *********************************************************************************************************/
 int select_helper(select_struct_t *select,
                   int (*scan)(void *, file_t *, int),
-                  void *ctx, file_t *file, int type)
+                  void *ctx,
+                  file_t *file,
+                  int type)
 {
     uint32_t reg;
     int ret;
     int resume_type;
 
-    if (file->flags & O_NONBLOCK) {
+    if (file->flags & O_NONBLOCK) {                                     /*  上层不想阻塞                */
         seterrno(EAGAIN);
         return 0;
     } else {
         reg = interrupt_disable();
 
-        ret = scan(ctx, file, type);
+        ret = scan(ctx, file, type);                                    /*  扫描一下                    */
         if (ret & type) {
             interrupt_resume(reg);
             return 1;
         }
 
-        ret = select_select(select, file, type);
+        ret = select_select(select, file, type);                        /*  将当前任务加入到等待列表    */
         if (ret < 0) {
             interrupt_resume(reg);
-            seterrno(ENOMEM);
             return -1;
         }
 
         current->delay   = 0;
-        current->status  = TASK_SUSPEND;
+        current->status  = TASK_SUSPEND;                                /*  挂起当前任务              　*/
 
         current->resume_type = TASK_RESUME_UNKNOW;
 
-        schedule();
+        schedule();                                                     /*  任务调度                    */
 
-        select_unselect(select, file, type);
+        select_unselect(select, file, type);                            /*  将当前任务从等待列表中移除  */
 
         current->delay       = 0;
-        resume_type          = current->resume_type;
+        resume_type          = current->resume_type;                    /*  获得恢复类型                */
         current->resume_type = TASK_RESUME_UNKNOW;
 
-        if (resume_type & TASK_RESUME_SELECT_EVENT) {
+        if (resume_type & TASK_RESUME_SELECT_EVENT) {                   /*  被 select 事件恢复      　  */
 
-            ret = scan(ctx, file, type);
+            ret = scan(ctx, file, type);                                /*  扫描一下                    */
 
             interrupt_resume(reg);
 
@@ -230,7 +239,7 @@ int select_helper(select_struct_t *select,
             }
         } else {
             interrupt_resume(reg);
-            seterrno(EINTR);
+            seterrno(EINTR);                                            /*  select 被中断了　　         */
             return -1;
         }
     }
@@ -245,6 +254,7 @@ int select_helper(select_struct_t *select,
 int select_init(select_struct_t *select)
 {
     atomic_set(&select->flags, 0);
+
     select->wait_list.next = select->wait_list.prev = &select->wait_list;
 
     return 0;

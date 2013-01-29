@@ -43,11 +43,9 @@
 /*
  * 命令结构
  */
-typedef struct _cmd_t {
+typedef struct {
     char   *name;                                                       /*  名字                      　*/
-    int   (*cmd)(int, char *[]);                                        /*  命令功能函数              　*/
-    char   *usage;                                                      /*  使用帮助                    */
-    char   *help;                                                       /*  命令帮助                    */
+    int   (*main)(int, char *[]);                                       /*  命令功能函数              　*/
 } cmd_t;
 
 /*
@@ -58,8 +56,9 @@ typedef struct _cmd_t {
 /*
  * SmileOS 命令
  */
-#define SMILEOS_CMD(name, cmd, usage, help) \
-cmd_t   smileos_cmd_##name  cmd_attr = {#name, cmd, usage, help}
+#define SMILEOS_CMD(name) \
+extern int main_##name(int, char **); \
+cmd_t   smileos_cmd_##name  cmd_attr = {#name, main_##name}
 
 #endif                                                                  /*  CMDS_H_                     */
 /*********************************************************************************************************

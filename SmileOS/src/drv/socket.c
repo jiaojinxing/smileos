@@ -68,9 +68,6 @@ static int socket_open(void *ctx, file_t *file, int oflag, mode_t mode)
     }
 
     if (atomic_inc_return(dev_ref(file)) == 1) {
-        /*
-         * 第一次打开时的初始化代码
-         */
         return 0;
     } else {
         /*
@@ -95,17 +92,13 @@ static int socket_close(void *ctx, file_t *file)
         return -1;
     }
 
-    if (atomic_read(dev_ref(file)) == 1) {
-        /*
-         * 最后一次关闭时的清理代码
-         */
-        sprintf(name, "/dev/socket%d", priv->sock_fd);
-        device_remove(name);
+    sprintf(name, "/dev/socket%d", priv->sock_fd);
+    device_remove(name);
 
-        lwip_close(priv->sock_fd);
+    lwip_close(priv->sock_fd);
 
-        kfree(priv);
-    }
+    kfree(priv);
+
     atomic_dec(dev_ref(file));
     return 0;
 }
@@ -257,15 +250,16 @@ driver_t socket_drv = {
 ** Descriptions:            回报 socket 事件(供 lwIP 在安全环境下使用)
 ** input parameters:        sock_fd             socket 的私有文件描述符
 **                          type                事件类型
+**                          ctx                 上下文
 ** output parameters:       NONE
 ** Returned value:          NONE
 *********************************************************************************************************/
 void smileos_socket_report(int sock_fd, int type, void *ctx)
 {
-    device_t *dev = ctx;
+    privinfo_t *priv = ctx;
 
-    if (dev != NULL) {
-        select_report(&((privinfo_t *)dev->ctx)->select, type);
+    if (priv != NULL) {
+        select_report(&priv->select, type);
     }
 }
 /*********************************************************************************************************
@@ -306,22 +300,22 @@ int socket_attach(int sock_fd)
         if (device_create(name, "socket", priv) < 0) {
             interrupt_resume(reg);
             kfree(priv);
-            seterrno(ENOMEM);
             return -1;
         }
 
         extern int lwip_socket_set_ctx(int sock_fd, void *ctx);
-        lwip_socket_set_ctx(sock_fd, device_lookup(name));
+        lwip_socket_set_ctx(sock_fd, priv);
 
-        fd = open(name, O_RDWR, 0666);
+        fd = vfs_open(name, O_RDWR, 0666);
         if (fd < 0) {
-            interrupt_resume(reg);
             device_remove(name);
+            interrupt_resume(reg);
             kfree(priv);
             return -1;
         }
 
         interrupt_resume(reg);
+        seterrno(0);
         return fd;
     } else {
         seterrno(ENOMEM);

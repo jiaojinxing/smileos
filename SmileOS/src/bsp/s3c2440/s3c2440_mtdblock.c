@@ -19,14 +19,14 @@
 ** Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 **
 **--------------------------------------------------------------------------------------------------------
-** File name:               mount.c
-** Last modified Date:      2012-3-22
+** File name:               mtdblock.c
+** Last modified Date:      2012-3-27
 ** Last Version:            1.0.0
-** Descriptions:            挂载点管理
+** Descriptions:            MTD 块驱动和设备
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing
-** Created date:            2012-3-22
+** Created date:            2012-3-27
 ** Version:                 1.0.0
 ** Descriptions:            创建文件
 **
@@ -38,144 +38,138 @@
 **
 *********************************************************************************************************/
 #include "kern/kern.h"
-#include "kern/ipc.h"
-#include "vfs/config.h"
-#include "vfs/types.h"
 #include "vfs/device.h"
-#include "vfs/fs.h"
-#include <string.h>
-#include <stdio.h>
+#include "vfs/driver.h"
+#include "vfs/utils.h"
+#include <sys/stat.h>
 /*********************************************************************************************************
-** 全局变量
+** 私有信息
 *********************************************************************************************************/
-static mount_point_t   *point_list;                                     /*  挂载点链表                  */
-
-mount_point_t          *rootfs_point;                                   /*  根文件系统挂载点            */
-
-mutex_t                 point_mgr_lock;                                 /*  挂载点管理锁                */
+typedef struct {
+    VFS_DEVICE_MEMBERS;
+    int startBlock;                                     /* Start block we're allowed to use             */
+    int endBlock;                                       /* End block we're allowed to use               */
+    int nReservedBlocks;                                /* We want this tuneable so that we can reduce  */
+} privinfo_t;
 /*********************************************************************************************************
-** Function name:           mount_point_install
-** Descriptions:            安装挂载点
-** input parameters:        point               挂载点
+** Function name:           mtdblock_open
+** Descriptions:            打开 mtdblock
+** input parameters:        ctx                 私有信息
+**                          file                文件结构
+**                          oflag               打开标志
+**                          mode                模式
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-int mount_point_install(mount_point_t *point)
+static int mtdblock_open(void *ctx, file_t *file, int oflag, mode_t mode)
 {
-    mutex_lock(&point_mgr_lock, 0);
+    privinfo_t *priv = ctx;
 
-    point->next = point_list;
-    point_list  = point;
+    if (priv == NULL) {
+        seterrno(EINVAL);
+        return -1;
+    }
 
-    mutex_unlock(&point_mgr_lock);
+    atomic_inc(dev_ref(file));
+    return 0;
+}
+/*********************************************************************************************************
+** Function name:           mtdblock_close
+** Descriptions:            关闭 mtdblock
+** input parameters:        ctx                 私有信息
+**                          file                文件结构
+** output parameters:       NONE
+** Returned value:          0 OR -1
+*********************************************************************************************************/
+static int mtdblock_close(void *ctx, file_t *file)
+{
+    privinfo_t *priv = ctx;
+
+    if (priv == NULL) {
+        seterrno(EINVAL);
+        return -1;
+    }
+
+    atomic_dec(dev_ref(file));
+    return 0;
+}
+/*********************************************************************************************************
+** Function name:           mtdblock_fstat
+** Descriptions:            获得 mtdblock 状态
+** input parameters:        ctx                 私有信息
+**                          file                文件结构
+** output parameters:       buf                 状态结构
+** Returned value:          0 OR -1
+*********************************************************************************************************/
+static int mtdblock_fstat(void *ctx, file_t *file, struct stat *buf)
+{
+    privinfo_t *priv = ctx;
+
+    if (priv == NULL) {
+        seterrno(EINVAL);
+        return -1;
+    }
+
+    buf->st_blocks    = priv->endBlock - priv->startBlock + 1;
+    buf->st_spare4[0] = priv->nReservedBlocks;
+    buf->st_spare4[1] = priv->startBlock;
 
     return 0;
 }
 /*********************************************************************************************************
-** Function name:           mount_point_lookup
-** Descriptions:            查找挂载点
-** input parameters:        name                挂载点名
-** output parameters:       NONE
-** Returned value:          挂载点
+** mtdblock 驱动
 *********************************************************************************************************/
-mount_point_t *mount_point_lookup(const char *name)
-{
-    mount_point_t *point;
-
-    if (name == NULL) {
-        return NULL;
-    }
-
-    mutex_lock(&point_mgr_lock, 0);
-
-    point = point_list;
-    while (point != NULL) {
-        if (strcmp(point->name, name) == 0) {
-            break;
-        }
-        point = point->next;
-    }
-
-    mutex_unlock(&point_mgr_lock);
-
-    return point;
-}
+static driver_t mtdblock_drv = {
+        .name     = "mtdblock",
+        .open     = mtdblock_open,
+        .close    = mtdblock_close,
+        .fstat    = mtdblock_fstat,
+};
 /*********************************************************************************************************
-** Function name:           mount_point_remove
-** Descriptions:            删除挂载点
-** input parameters:        point               挂载点
-** output parameters:       NONE
-** Returned value:          0 OR -1
-*********************************************************************************************************/
-int mount_point_remove(mount_point_t *point)
-{
-    mount_point_t *prev, *temp;
-    int ret = -1;
-
-    if (point == NULL) {
-        return ret;
-    }
-
-    mutex_lock(&point_mgr_lock, 0);
-
-    if (atomic_read(&point->ref) == 0) {
-        prev = NULL;
-        temp = point_list;
-        while (temp != NULL) {
-            if (temp == point) {
-                if (prev != NULL) {
-                    prev->next = point->next;
-                } else {
-                    point_list = point->next;
-                }
-                kfree(point);
-                ret = 0;
-                break;
-            }
-            prev = temp;
-            temp = temp->next;
-        }
-    }
-
-    mutex_unlock(&point_mgr_lock);
-
-    return ret;
-}
-/*********************************************************************************************************
-** Function name:           mount_point_get
-** Descriptions:            获得挂载点
-** input parameters:        index               索引
-** output parameters:       NONE
-** Returned value:          挂载点
-*********************************************************************************************************/
-mount_point_t *mount_point_get(unsigned int index)
-{
-    int i;
-    mount_point_t *point;
-
-    mutex_lock(&point_mgr_lock, 0);
-
-    for (i = 0, point = point_list; i < index && point != NULL; i++, point = point->next) {
-    }
-
-    mutex_unlock(&point_mgr_lock);
-
-    return point;
-}
-/*********************************************************************************************************
-** Function name:           mount_point_manager_init
-** Descriptions:            初始化挂载点管理
+** Function name:           mtdblock_init
+** Descriptions:            初始化 MTD 块
 ** input parameters:        NONE
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-int mount_point_manager_init(void)
+int mtdblock_init(void)
 {
-    rootfs_point = NULL;
+    privinfo_t *priv;
 
-    point_list   = NULL;
+    driver_install(&mtdblock_drv);
 
-    return mutex_new(&point_mgr_lock);
+    priv = kmalloc(sizeof(privinfo_t), GFP_KERNEL);
+    if (priv != NULL) {
+        device_init(priv);
+        priv->nReservedBlocks = 2;
+        priv->startBlock      = 64;
+        priv->endBlock        = 255;
+        if (device_create("/dev/mtdblock0", "mtdblock", priv) < 0) {
+            kfree(priv);
+            return -1;
+        }
+    } else {
+        seterrno(ENOMEM);
+        return -1;
+    }
+
+    priv = kmalloc(sizeof(privinfo_t), GFP_KERNEL);
+    if (priv != NULL) {
+        device_init(priv);
+        priv->nReservedBlocks = 5;
+        priv->startBlock      = 256;
+        priv->endBlock        = 4095;
+        if (device_create("/dev/mtdblock1", "mtdblock", priv) < 0) {
+            kfree(priv);
+            return -1;
+        }
+    } else {
+        seterrno(ENOMEM);
+        return -1;
+    }
+
+    seterrno(0);
+    return 0;
 }
 /*********************************************************************************************************
 ** END FILE

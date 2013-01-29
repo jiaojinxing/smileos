@@ -258,7 +258,7 @@ int vspace_usable(uint32_t base, uint32_t size)
     /*
      * 虚拟地址空间不能和系统保留的虚拟地址空间重叠
      */
-    extern space_t sys_resv_space[];
+    extern const space_t sys_resv_space[];
     for (i = 0; sys_resv_space[i].size != 0; i++) {
         high = max(sys_resv_space[i].base, base);
         low  = min(sys_resv_space[i].base + sys_resv_space[i].size, end);
@@ -270,7 +270,7 @@ int vspace_usable(uint32_t base, uint32_t size)
     /*
      * 虚拟地址空间不能和 BSP 保留的虚拟地址空间重叠
      */
-    extern space_t bsp_resv_space[];
+    extern const space_t bsp_resv_space[];
     for (i = 0; bsp_resv_space[i].size != 0; i++) {
         high = max(bsp_resv_space[i].base, base);
         low  = min(bsp_resv_space[i].base + bsp_resv_space[i].size, end);

@@ -50,12 +50,14 @@
 *********************************************************************************************************/
 typedef struct {
     VFS_DEVICE_MEMBERS;
-    kfifo_t         iq;
-    kfifo_t         oq;
+    kfifo_t         iq;                                                 /*  输入队列                    */
+    kfifo_t         oq;                                                 /*  输出队列                    */
 } privinfo_t;
-
-#define TX_FIFO_SIZE        64
-#define RX_FIFO_SIZE        64
+/*********************************************************************************************************
+** 定义
+*********************************************************************************************************/
+#define TX_FIFO_SIZE        64                                          /*  发送 FIFO 大小              */
+#define RX_FIFO_SIZE        64                                          /*  接收 FIFO 大小              */
 
 static int serial0_scan(void *ctx, file_t *file, int flags);
 /*********************************************************************************************************
@@ -70,7 +72,7 @@ static int uart0_isr(uint32_t interrupt, void *arg)
 {
     char buf[max(RX_FIFO_SIZE, RX_FIFO_SIZE)];
     privinfo_t *priv = arg;
-    int reg = SUBSRCPND;
+    uint32_t reg = SUBSRCPND;
     int len;
     int i;
 
@@ -80,7 +82,7 @@ static int uart0_isr(uint32_t interrupt, void *arg)
                 buf[i] = URXH0;
             }
             kfifo_put(&priv->iq, buf, len);                             /*  放到输入队列              　*/
-            select_report(&priv->select, VFS_FILE_READABLE);
+            select_report(&priv->select, VFS_FILE_READABLE);            /*  通知可读                    */
         }
     }
 
@@ -89,7 +91,7 @@ static int uart0_isr(uint32_t interrupt, void *arg)
         if (len == 0) {                                                 /*  没有数据可发                */
             INTSUBMSK |= INTSUB_TXD0;                                   /*  禁能发送 FIFO 空中断     　 */
         } else {
-            select_report(&priv->select, VFS_FILE_WRITEABLE);
+            select_report(&priv->select, VFS_FILE_WRITEABLE);           /*  通知可写                    */
             for (i = 0; i < len; i++) {                                 /*  发送数据                    */
                 UTXH0 = buf[i];
             }
@@ -214,7 +216,7 @@ static int serial0_open(void *ctx, file_t *file, int oflag, mode_t mode)
 
         interrupt_unmask(INTUART0);
 
-        INTSUBMSK &= ~INTSUB_RXD0;
+        INTSUBMSK &= ~INTSUB_RXD0;                                      /*  使能接收中断             　 */
         INTSUBMSK |=  INTSUB_TXD0;                                      /*  禁能发送 FIFO 空中断     　 */
 
         return 0;
@@ -243,18 +245,15 @@ static int serial0_close(void *ctx, file_t *file)
         seterrno(EINVAL);
         return -1;
     }
-    if (atomic_read(dev_ref(file)) == 1) {
-        /*
-         * 最后一次关闭时的清理代码
-         */
-        INTSUBMSK |= INTSUB_TXD0;
-        INTSUBMSK |= INTSUB_RXD0;
 
-        interrupt_mask(INTUART0);
+    INTSUBMSK |= INTSUB_TXD0;
+    INTSUBMSK |= INTSUB_RXD0;
 
-        kfifo_free(&priv->iq);
-        kfifo_free(&priv->oq);
-    }
+    interrupt_mask(INTUART0);
+
+    kfifo_free(&priv->iq);
+    kfifo_free(&priv->oq);
+
     atomic_dec(dev_ref(file));
     return 0;
 }
@@ -326,10 +325,7 @@ static ssize_t serial0_read(void *ctx, file_t *file, void *buf, size_t len)
         return -1;
     }
 
-    /*
-     * 如果没有数据可读
-     */
-    if (kfifo_is_empty(&priv->iq)) {
+    if (kfifo_is_empty(&priv->iq)) {                                    /*  如果没有数据可读            */
         ret = select_helper(&priv->select, serial0_scan, ctx, file, VFS_FILE_READABLE);
         if (ret <= 0) {
             return ret;
@@ -366,7 +362,7 @@ static ssize_t serial0_write(void *ctx, file_t *file, const void *buf, size_t le
         return -1;
     }
 
-    if (kfifo_is_full(&priv->oq)) {
+    if (kfifo_is_full(&priv->oq)) {                                     /*  如果没有空间可写            */
         ret = select_helper(&priv->select, serial0_scan, ctx, file, VFS_FILE_WRITEABLE);
         if (ret <= 0) {
             return ret;
@@ -377,10 +373,7 @@ static ssize_t serial0_write(void *ctx, file_t *file, const void *buf, size_t le
 
     len = kfifo_put(&priv->oq, buf, len);
 
-    /*
-     * 启动写操作
-     */
-    serial0_start(priv);
+    serial0_start(priv);                                                /*  启动写操作                  */
 
     return len;
 }
@@ -449,6 +442,7 @@ int serial0_init(void)
         }
         return 0;
     } else {
+        seterrno(ENOMEM);
         return -1;
     }
 }

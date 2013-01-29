@@ -41,6 +41,7 @@
 #include "vfs/device.h"
 #include "vfs/driver.h"
 #include "vfs/utils.h"
+#include <string.h>
 
 /*
  * к╫сппео╒
@@ -150,8 +151,10 @@ int zero_init(void)
             kfree(priv);
             return -1;
         }
+        seterrno(0);
         return 0;
     } else {
+        seterrno(ENOMEM);
         return -1;
     }
 }

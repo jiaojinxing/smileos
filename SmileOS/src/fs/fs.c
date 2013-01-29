@@ -46,15 +46,9 @@
 /*********************************************************************************************************
 ** 全局变量
 *********************************************************************************************************/
-/*
- * 文件系统链表
- */
-static file_system_t   *fs_list;
+static file_system_t   *fs_list;                                        /*  文件系统链表                */
 
-/*
- * 文件系统管理锁
- */
-mutex_t                 fs_mgr_lock;
+mutex_t                 fs_mgr_lock;                                    /*  文件系统管理锁              */
 /*********************************************************************************************************
 ** Function name:           file_system_lookup
 ** Descriptions:            查找文件系统
@@ -71,6 +65,7 @@ file_system_t *file_system_lookup(const char *name)
     }
 
     mutex_lock(&fs_mgr_lock, 0);
+
     fs = fs_list;
     while (fs != NULL) {
         if (strcmp(fs->name, name) == 0) {
@@ -78,6 +73,7 @@ file_system_t *file_system_lookup(const char *name)
         }
         fs = fs->next;
     }
+
     mutex_unlock(&fs_mgr_lock);
 
     return fs;
@@ -103,22 +99,22 @@ int file_system_remove(file_system_t *fs)
     if (atomic_read(&fs->ref) == 0) {
         prev = NULL;
         temp = fs_list;
-        while (temp != NULL && temp != fs) {
+        while (temp != NULL) {
+            if (temp == fs) {
+                if (prev != NULL) {
+                    prev->next = fs->next;
+                } else {
+                    fs_list    = fs->next;
+                }
+                module_unref(fs->module);
+                ret = 0;
+                break;
+            }
             prev = temp;
             temp = temp->next;
         }
-
-        if (temp != NULL) {
-            if (prev != NULL) {
-                prev->next = fs->next;
-            } else {
-                fs_list = fs->next;
-            }
-            ret = 0;
-            module_unref(fs->module);
-            kfree(fs);
-        }
     }
+
     mutex_unlock(&fs_mgr_lock);
 
     return ret;
@@ -132,19 +128,17 @@ int file_system_remove(file_system_t *fs)
 *********************************************************************************************************/
 int file_system_install(file_system_t *fs)
 {
-    module_t *module;
-
     if (fs == NULL || fs->name == NULL || fs->mount == NULL) {
         return -1;
     }
 
-    module = module_ref_by_addr(fs);
-    fs->module = module;
+    fs->module = module_ref_by_addr(fs);
 
     mutex_lock(&fs_mgr_lock, 0);
+
     if (file_system_lookup(fs->name) != NULL) {
         mutex_unlock(&fs_mgr_lock);
-        module_unref(module);
+        module_unref(fs->module);
         return -1;
     }
 
@@ -152,7 +146,12 @@ int file_system_install(file_system_t *fs)
 
     fs->next = fs_list;
     fs_list  = fs;
+
     mutex_unlock(&fs_mgr_lock);
+
+    if (fs->init != NULL) {
+        fs->init();
+    }
 
     return 0;
 }
