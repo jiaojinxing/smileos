@@ -62,7 +62,7 @@ static mutex_t  yaffs_lock;                                             /*  锁  
 static YLIST_HEAD(yaffs_context_list);                                  /*  YAFFS 上下文链表            */
 /*********************************************************************************************************
 ** Function name:           yaffsfs_SetError
-** Descriptions:            设置 errno
+** Descriptions:            yaffs 设置 errno
 ** input parameters:        err                 错误码
 ** output parameters:       NONE
 ** Returned value:          NONE
@@ -73,7 +73,7 @@ void yaffsfs_SetError(int err)
 }
 /*********************************************************************************************************
 ** Function name:           yaffsfs_Lock
-** Descriptions:            上锁
+** Descriptions:            yaffs 上锁
 ** input parameters:        NONE
 ** output parameters:       NONE
 ** Returned value:          NONE
@@ -84,7 +84,7 @@ void yaffsfs_Lock(void)
 }
 /*********************************************************************************************************
 ** Function name:           yaffsfs_Unlock
-** Descriptions:            解锁
+** Descriptions:            yaffs 解锁
 ** input parameters:        NONE
 ** output parameters:       NONE
 ** Returned value:          NONE
@@ -95,7 +95,7 @@ void yaffsfs_Unlock(void)
 }
 /*********************************************************************************************************
 ** Function name:           yaffsfs_CurrentTime
-** Descriptions:            获得当前时间
+** Descriptions:            yaffs 获得当前时间
 ** input parameters:        NONE
 ** output parameters:       NONE
 ** Returned value:          当前时间
@@ -106,7 +106,7 @@ __u32 yaffsfs_CurrentTime(void)
 }
 /*********************************************************************************************************
 ** Function name:           yaffs_malloc
-** Descriptions:            分配内存
+** Descriptions:            yaffs 分配内存
 ** input parameters:        size                内存大小
 ** output parameters:       NONE
 ** Returned value:          内存指针
@@ -117,7 +117,7 @@ void *yaffs_malloc(size_t size)
 }
 /*********************************************************************************************************
 ** Function name:           yaffs_free
-** Descriptions:            释放内存
+** Descriptions:            yaffs 释放内存
 ** input parameters:        ptr                 内存指针
 ** output parameters:       NONE
 ** Returned value:          NONE
@@ -127,19 +127,24 @@ void yaffs_free(void *ptr)
     kfree(ptr);
 }
 /*********************************************************************************************************
-** Function name:           yaffsfs_LocalInitialisation
-** Descriptions:            本地初始化
+** Function name:           yaffsfs_Init
+** Descriptions:            初始化 yaffs
 ** input parameters:        NONE
 ** output parameters:       NONE
-** Returned value:          NONE
+** Returned value:          0 OR -1
 *********************************************************************************************************/
-void yaffsfs_LocalInitialisation(void)
+int yaffsfs_Init(void)
 {
     mutex_new(&yaffs_lock);
+
+    extern int yaffsfs_InitHandles(void);
+    yaffsfs_InitHandles();
+
+    return 0;
 }
 /*********************************************************************************************************
 ** Function name:           yaffsfs_FindDevice
-** Descriptions:            查找设备
+** Descriptions:            yaffs 查找设备
 ** input parameters:        path                路径
 ** output parameters:       restOfPath          余下的路径
 ** Returned value:          YAFFS 设备
@@ -222,9 +227,9 @@ typedef struct {
 } yaffs_options;
 /*********************************************************************************************************
 ** Function name:           yaffs_parse_options
-** Descriptions:            分析选项字符串
-** input parameters:        options_str         选项字符串
-** output parameters:       options             YAFFS 选项
+** Descriptions:            yaffs 分析挂载选项字符串
+** input parameters:        options_str         挂载选项字符串
+** output parameters:       options             YAFFS 挂载选项
 ** Returned value:          0 OR 1
 *********************************************************************************************************/
 #define MAX_OPT_LEN 30
@@ -292,11 +297,11 @@ static int yaffs_parse_options(yaffs_options *options, const char *options_str)
 /*********************************************************************************************************
 ** Function name:           yaffsfs_Mount
 ** Descriptions:            挂载 yaffs 文件系统
-** input parameters:        yaffsVersion        版本
+** input parameters:        yaffsVersion        yaffs 版本
 **                          point_name          挂载点名
 **                          sb                  块设备
 **                          dev_name            设备名
-**                          data_str            参数
+**                          data_str            挂载选项字符串
 ** output parameters:       NONE
 ** Returned value:          上下文
 *********************************************************************************************************/
@@ -585,6 +590,9 @@ void *yaffsfs_Mount(int yaffsVersion,
     param->skipCheckpointRead = options.skip_checkpoint_read;
     param->skipCheckpointWrite = options.skip_checkpoint_write;
 
+    /*
+     * 使用设备信息
+     */
     param->nReservedBlocks = st.st_spare4[0];
     param->startBlock = st.st_spare4[1];
     param->endBlock = st.st_spare4[1] + st.st_blocks - 1;

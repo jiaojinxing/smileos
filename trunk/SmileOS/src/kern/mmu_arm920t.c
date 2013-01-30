@@ -771,6 +771,20 @@ void mmu_init(void)
                    SECTION_ATTR(AP_USER_NO, DOMAIN_CHECK, CACHE_NO, BUFFER_NO));
 
     /*
+     * SHARE 内存区不可 Cache 及 WriteBuffer, 用户可读写
+     *
+     * SHARE 内存区作为 DMA 内存区的补充, DMA 内存区供硬件 DMA 使用, 所以不可 Cache 及 WriteBuffer
+     *
+     * 但 DMA 内存区不能供应用程序使用, 而 SHARE 内存区则可以
+     *
+     * 像共享内存设备驱动和 FrameBuffer 设备驱动都可以使用 SHARE 内存区
+     */
+    mmu_map_region(SHARE_MEM_BASE,
+                   SHARE_MEM_BASE,
+                   SHARE_MEM_SIZE,
+                   SECTION_ATTR(AP_USER_RW, DOMAIN_CHECK, CACHE_NO, BUFFER_NO));
+
+    /*
      * 因为异常向量地址为 0xFFFF0000,
      * 将 0xFFF00000 映射到 INT_MEM_BASE,
      * 所以应该在 INT_MEM_BASE + 0xF0000 处(或 0xFFFF0000 处)放置异常向量跳转表

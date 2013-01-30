@@ -64,11 +64,11 @@ device_t *device_lookup(const char *name);
 /*********************************************************************************************************
 ** Function name:           device_remove
 ** Descriptions:            删除设备
-** input parameters:        name                设备名
+** input parameters:        dev                 设备
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-int device_remove(const char *name);
+int device_remove(device_t *dev);
 /*********************************************************************************************************
 ** Function name:           device_create
 ** Descriptions:            创建设备

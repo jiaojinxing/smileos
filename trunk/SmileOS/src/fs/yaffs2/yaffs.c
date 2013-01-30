@@ -60,15 +60,11 @@ void *yaffsfs_Mount(int yaffsVersion,
 
 int yaffsfs_Unmount(void *ctx);
 
+int yaffsfs_Init(void);
+
 static int __yaffs_init(void)
 {
-    extern void yaffsfs_LocalInitialisation(void);
-    yaffsfs_LocalInitialisation();
-
-    extern int yaffsfs_InitHandles(void);
-    yaffsfs_InitHandles();
-
-    return 0;
+    return yaffsfs_Init();
 }
 
 static int __yaffs1_mount(mount_point_t *point, device_t *dev, const char *dev_name, const char *param)

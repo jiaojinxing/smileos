@@ -556,11 +556,23 @@ static int fatfs_access(mount_point_t *point, const char *path, int amode)
 
     ret = fatfs_stat(point, path, &buf);
     if (ret == 0) {
-        if ((buf.st_mode & 0700) == (amode * 8 * 8)) {
-            return 0;
-        } else {
+        int access_ok = 1;
+
+        if ((amode & R_OK) && !(buf.st_mode & S_IRUSR)) {
+            access_ok = 0;
+        }
+        if ((amode & W_OK) && !(buf.st_mode & S_IWUSR)) {
+            access_ok = 0;
+        }
+        if ((amode & X_OK) && !(buf.st_mode & S_IXUSR)) {
+            access_ok = 0;
+        }
+
+        if (!access_ok) {
             seterrno(EACCES);
             return -1;
+        } else {
+            return 0;
         }
     } else {
         return ret;

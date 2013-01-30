@@ -98,12 +98,15 @@ static int rootfs_access(mount_point_t *point, const char *path, int amode)
     if (ret == 0) {
         int access_ok = 1;
 
-        if ((amode & R_OK) && !(buf.st_mode & S_IRUSR))
+        if ((amode & R_OK) && !(buf.st_mode & S_IRUSR)) {
             access_ok = 0;
-        if ((amode & W_OK) && !(buf.st_mode & S_IWUSR))
+        }
+        if ((amode & W_OK) && !(buf.st_mode & S_IWUSR)) {
             access_ok = 0;
-        if ((amode & X_OK) && !(buf.st_mode & S_IXUSR))
+        }
+        if ((amode & X_OK) && !(buf.st_mode & S_IXUSR)) {
             access_ok = 0;
+        }
 
         if (!access_ok) {
             seterrno(EACCES);

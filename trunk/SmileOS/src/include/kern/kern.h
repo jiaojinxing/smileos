@@ -280,7 +280,8 @@ void *__kmalloc(const char *func, int line, size_t size, int flags);
 #define GFP_ATOMIC      (0)
 #define GFP_KERNEL      GFP_ATOMIC
 #define GFP_DMA         (1 << 0)
-#define GFP_ZERO        (1 << 1)
+#define GFP_SHARE       (1 << 1)
+#define GFP_ZERO        (1 << 8)
 #define kmalloc(a, b)   __kmalloc(__func__, __LINE__, a, b)
 #define kzalloc(a, b)   __kmalloc(__func__, __LINE__, a, b | GFP_ZERO)
 /*********************************************************************************************************
