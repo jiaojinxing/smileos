@@ -52,6 +52,7 @@ extern "C" {
 #define FBIOGET_VSCREENINFO      _IO('f', 'v')
 #define FBIOGET_FSCREENINFO      _IO('f', 's')
 #define FBIOPAN_DISPLAY          _IO('f', 'd')
+#define FBIOSET_VSCREENINFO      _IO('f', 'm')
 
 /*
  * 可变屏幕信息

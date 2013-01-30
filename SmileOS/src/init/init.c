@@ -78,6 +78,12 @@ static void tcpip_init_done(void *arg)
 *********************************************************************************************************/
 static void init(void *arg)
 {
+    extern int soc_drivers_install(void);
+    soc_drivers_install();
+
+    extern int soc_devices_create(void);
+    soc_devices_create();
+
     extern int bsp_drivers_install(void);
     bsp_drivers_install();
 
@@ -92,10 +98,6 @@ static void init(void *arg)
     vfs_mount("/tmp", "/dev/ramdisk", "fatfs", NULL);
 
     vfs_mkfs("/tmp", NULL);
-
-    vfs_mount("/kern",   "/dev/mtdblock0", "yaffs1", NULL);
-
-    vfs_mount("/rootfs", "/dev/mtdblock1", "yaffs1", NULL);
 
     while (1) {
         sleep(10);
@@ -124,6 +126,15 @@ static int sys_drivers_install(void)
 
     extern int zero_init(void);
     zero_init();
+
+    extern int mtdblock_init(void);
+    mtdblock_init();
+
+    extern int fb_init(void);
+    fb_init();
+
+    extern int sharemem_init(void);
+    sharemem_init();
 
     return 0;
 }

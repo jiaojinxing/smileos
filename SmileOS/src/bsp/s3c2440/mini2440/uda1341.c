@@ -19,10 +19,10 @@
 ** Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 **
 **--------------------------------------------------------------------------------------------------------
-** File name:               s3c2440_audio.c
+** File name:               uda1341.c
 ** Last modified Date:      2012-4-6
 ** Last Version:            1.0.0
-** Descriptions:            S3C2440 ÒôÆµÇý¶¯
+** Descriptions:            S3C2440 UDA1341 ÒôÆµÐ¾Æ¬Çý¶¯
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing
@@ -42,11 +42,11 @@
 #include "vfs/device.h"
 #include "vfs/driver.h"
 #include "vfs/utils.h"
-#include "s3c2440.h"
 #include "drv/audio.h"
 #include <string.h>
 #include <errno.h>
 #include <fcntl.h>
+#include "../s3c2440.h"
 /*********************************************************************************************************
 ** DMA ¹¤×÷
 *********************************************************************************************************/
@@ -442,6 +442,7 @@ static int audio_ioctl(void *ctx, file_t *file, int cmd, void *arg)
         value = (int)arg;
         if (iis_config(value, priv->bps, priv->fs) == 0) {
             priv->channels = value;
+            return 0;
         }
         break;
 
@@ -449,6 +450,7 @@ static int audio_ioctl(void *ctx, file_t *file, int cmd, void *arg)
         value = (int)arg;
         if (iis_config(priv->channels, value, priv->fs) == 0) {
             priv->bps = value;
+            return 0;
         }
         break;
 
@@ -456,14 +458,12 @@ static int audio_ioctl(void *ctx, file_t *file, int cmd, void *arg)
         value = (int)arg;
         if (iis_config(priv->channels, priv->bps, value) == 0) {
             priv->fs = value;
+            return 0;
         }
         break;
-
-    default:
-        seterrno(EINVAL);
-        return -1;
     }
-    return 0;
+    seterrno(EINVAL);
+    return -1;
 }
 /*********************************************************************************************************
 ** Function name:           audio_close

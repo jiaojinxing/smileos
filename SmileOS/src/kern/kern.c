@@ -43,6 +43,7 @@
 #include "kern/vmm.h"
 #include "kern/mmu.h"
 #include <string.h>
+#include <stdarg.h>
 /*********************************************************************************************************
 ** Function name:           kvars_init
 ** Descriptions:            初始化内核变量
@@ -78,8 +79,8 @@ static void kvars_init(void)
 *********************************************************************************************************/
 void kernel_init(void)
 {
-    extern void bsp_init(void);
-    bsp_init();                                                         /*  初始化 BSP                  */
+    extern void cpu_kernel_init(void);
+    cpu_kernel_init();                                                  /*  初始化 CPU                  */
 
     mmu_init();                                                         /*  初始化 MMU                  */
 
@@ -279,7 +280,98 @@ int vspace_usable(uint32_t base, uint32_t size)
         }
     }
 
+    /*
+     * 虚拟地址空间不能和 CPU 保留的虚拟地址空间重叠
+     */
+    extern const space_t cpu_resv_space[];
+    for (i = 0; cpu_resv_space[i].size != 0; i++) {
+        high = max(cpu_resv_space[i].base, base);
+        low  = min(cpu_resv_space[i].base + cpu_resv_space[i].size, end);
+        if (high < low) {
+            return FALSE;
+        }
+    }
+
     return TRUE;
+}
+/*********************************************************************************************************
+** Function name:           kcomplain
+** Descriptions:            内核抱怨(供不能使用 printk 时使用)
+** input parameters:        fmt                 格式字符串
+**                          ...                 其余参数
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
+void kcomplain(const char *fmt, ...)
+{
+    static const char digits[] = "0123456789abcdef";
+    va_list  va;
+    char     buf[10];
+    char    *s;
+    char     c;
+    unsigned u;
+    int      i, pad;
+
+    va_start(va, fmt);
+    while ((c = *fmt++) != '\0') {
+        if (c == '%') {
+            c = *fmt++;
+            /*
+             * ignore long
+             */
+            if (c == 'l') {
+                c = *fmt++;
+            }
+            switch (c) {
+            case 'c':
+                kputc(va_arg(va, int));
+                continue;
+
+            case 's':
+                s = va_arg(va, char *);
+                if (s == NULL) {
+                    s = "<NULL>";
+                }
+                for (; *s != '\0'; s++) {
+                    kputc(*s);
+                }
+                continue;
+
+            case 'd':
+                c = 'u';
+            case 'u':
+            case 'x':
+                u = va_arg(va, unsigned);
+                s = buf;
+                if (c == 'u') {
+                    do {
+                        *s++ = digits[u % 10U];
+                    } while (u /= 10U);
+                } else {
+                    pad = 0;
+                    for (i = 0; i < 8; i++) {
+                        if (pad) {
+                            *s++ = '0';
+                        } else {
+                            *s++ = digits[u % 16U];
+                            if ((u /= 16U) == 0) {
+                                pad = 1;
+                            }
+                        }
+                    }
+                }
+                while (--s >= buf) {
+                    kputc(*s);
+                }
+                continue;
+            }
+        }
+        if (c == '\n') {
+            kputc('\r');
+        }
+        kputc((int)c);
+    }
+    va_end(va);
 }
 /*********************************************************************************************************
 ** END FILE

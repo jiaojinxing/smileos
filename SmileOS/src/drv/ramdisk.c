@@ -22,7 +22,7 @@
 ** File name:               ramdisk.c
 ** Last modified Date:      2012-11-27
 ** Last Version:            1.0.0
-** Descriptions:            内存盘驱动和设备
+** Descriptions:            内存盘驱动
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing
@@ -42,6 +42,7 @@
 #include "vfs/driver.h"
 #include "vfs/utils.h"
 #include <string.h>
+#include <sys/stat.h>
 
 /*
  * 私有信息
@@ -222,6 +223,26 @@ static int ramdisk_unlink(void *ctx)
 }
 
 /*
+ * 获得 ramdisk 状态
+ */
+static int ramdisk_fstat(void *ctx, file_t *file, struct stat *buf)
+{
+    privinfo_t *priv = ctx;
+
+    if (priv == NULL) {
+        seterrno(EINVAL);
+        return -1;
+    }
+
+    buf->st_mode    = (buf->st_mode & (~S_IFMT)) | S_IFBLK;
+    buf->st_blocks  = SECT_NR;
+    buf->st_blksize = SECT_SZ;
+    buf->st_size    = DISK_SZ;
+
+    return 0;
+}
+
+/*
  * ramdisk 驱动
  */
 static driver_t ramdisk_drv = {
@@ -232,10 +253,11 @@ static driver_t ramdisk_drv = {
         .readblk  = ramdisk_readblk,
         .writeblk = ramdisk_writeblk,
         .unlink   = ramdisk_unlink,
+        .fstat    = ramdisk_fstat,
 };
 /*********************************************************************************************************
 ** Function name:           ramdisk_init
-** Descriptions:            初始化 ramdisk
+** Descriptions:            初始化内存盘驱动
 ** input parameters:        NONE
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
@@ -246,9 +268,9 @@ int ramdisk_init(void)
 }
 /*********************************************************************************************************
 ** Function name:           ramdisk_create
-** Descriptions:            创建 ramdisk
-** input parameters:        path                ramdisk 设备路径
-**                          size                ramdisk 大小
+** Descriptions:            创建内存盘设备
+** input parameters:        path                内存盘设备路径
+**                          size                内存盘大小
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
@@ -268,8 +290,10 @@ int ramdisk_create(const char *path, size_t size)
     priv = kmalloc(sizeof(privinfo_t) + size - 1, GFP_KERNEL);
     if (priv != NULL) {
         device_init(priv);
-        priv->size    = size;
-        priv->sect_nr = sect_nr;
+
+        DISK_SZ = size;
+        SECT_NR = sect_nr;
+
         if (device_create(path, "ramdisk", priv) < 0) {
             kfree(priv);
             return -1;

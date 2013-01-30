@@ -42,6 +42,7 @@
 #include "vfs/device.h"
 #include "vfs/driver.h"
 #include "vfs/utils.h"
+#include <sys/stat.h>
 
 /*
  * 私有信息
@@ -49,6 +50,7 @@
 typedef struct {
     VFS_DEVICE_MEMBERS;
     kfifo_t     fifo;
+    size_t      size;
 } privinfo_t;
 
 static int fifo_scan(void *ctx, file_t *file, int flags);
@@ -211,6 +213,24 @@ static int fifo_unlink(void *ctx)
 }
 
 /*
+ * 获得 fifo 状态
+ */
+static int fifo_fstat(void *ctx, file_t *file, struct stat *buf)
+{
+    privinfo_t *priv = ctx;
+
+    if (priv == NULL) {
+        seterrno(EINVAL);
+        return -1;
+    }
+
+    buf->st_mode = (buf->st_mode & (~S_IFMT)) | S_IFIFO;
+    buf->st_size = priv->size;
+
+    return 0;
+}
+
+/*
  * fifo 驱动
  */
 static driver_t fifo_drv = {
@@ -221,12 +241,13 @@ static driver_t fifo_drv = {
         .close    = fifo_close,
         .scan     = fifo_scan,
         .unlink   = fifo_unlink,
+        .fstat    = fifo_fstat,
         .select   = select_select,
         .unselect = select_unselect,
 };
 /*********************************************************************************************************
 ** Function name:           fifo_init
-** Descriptions:            初始化 fifo
+** Descriptions:            初始化 fifo 驱动
 ** input parameters:        NONE
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
@@ -237,16 +258,17 @@ int fifo_init(void)
 }
 /*********************************************************************************************************
 ** Function name:           fifo_create
-** Descriptions:            创建 fifo
+** Descriptions:            创建 fifo 设备
 ** input parameters:        path                fifo 设备路径
+**                          size                fifo 大小(必须是 2 的 n 次方)
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-int fifo_create(const char *path)
+int fifo_create(const char *path, size_t size)
 {
     privinfo_t *priv;
 
-    if (path == NULL) {
+    if (path == NULL || size == 0) {
         seterrno(EINVAL);
         return -1;
     }
@@ -254,11 +276,15 @@ int fifo_create(const char *path)
     priv = kmalloc(sizeof(privinfo_t), GFP_KERNEL);
     if (priv != NULL) {
         device_init(priv);
-        if (kfifo_init(&priv->fifo, 1 * KB) < 0) {
+
+        priv->size = size;
+
+        if (kfifo_init(&priv->fifo, size) < 0) {
             kfree(priv);
             seterrno(ENOMEM);
             return -1;
         }
+
         if (device_create(path, "fifo", priv) < 0) {
             kfree(priv);
             return -1;

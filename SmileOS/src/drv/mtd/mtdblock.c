@@ -22,7 +22,7 @@
 ** File name:               mtdblock.c
 ** Last modified Date:      2012-3-27
 ** Last Version:            1.0.0
-** Descriptions:            MTD 块驱动和设备
+** Descriptions:            MTD 块设备驱动
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing
@@ -38,19 +38,24 @@
 **
 *********************************************************************************************************/
 #include "kern/kern.h"
+#include "kern/ipc.h"
 #include "vfs/device.h"
 #include "vfs/driver.h"
 #include "vfs/utils.h"
 #include <sys/stat.h>
+#include <linux/mtd/mtd.h>
 /*********************************************************************************************************
 ** 私有信息
 *********************************************************************************************************/
 typedef struct {
     VFS_DEVICE_MEMBERS;
-    int startBlock;                                     /* Start block we're allowed to use             */
-    int endBlock;                                       /* End block we're allowed to use               */
-    int nReservedBlocks;                                /* We want this tuneable so that we can reduce  */
+    int                 start;                          /* Start block we're allowed to use             */
+    int                 end;                            /* End block we're allowed to use               */
+    int                 reserved;                       /* We want this tuneable so that we can reduce  */
+    struct mtd_info    *mtd;
 } privinfo_t;
+
+static mutex_t          mtd_lock;
 /*********************************************************************************************************
 ** Function name:           mtdblock_open
 ** Descriptions:            打开 mtdblock
@@ -110,9 +115,39 @@ static int mtdblock_fstat(void *ctx, file_t *file, struct stat *buf)
         return -1;
     }
 
-    buf->st_blocks    = priv->endBlock - priv->startBlock + 1;
-    buf->st_spare4[0] = priv->nReservedBlocks;
-    buf->st_spare4[1] = priv->startBlock;
+    buf->st_mode      = (buf->st_mode & (~S_IFMT)) | S_IFBLK;
+    buf->st_blocks    = priv->end - priv->start + 1;
+    buf->st_blksize   = priv->mtd->erasesize;
+    buf->st_size      = buf->st_blocks * buf->st_blksize;
+
+    buf->st_spare1    = (uint32_t)priv->mtd;
+    buf->st_spare2    = priv->reserved;
+    buf->st_spare4[0] = priv->start;
+    buf->st_spare4[1] = priv->end;
+
+    return 0;
+}
+/*********************************************************************************************************
+** Function name:           mtdblock_unlink
+** Descriptions:            删除 mtdblock
+** input parameters:        ctx                 私有信息
+** output parameters:       NONE
+** Returned value:          0 OR -1
+*********************************************************************************************************/
+static int mtdblock_unlink(void *ctx)
+{
+    privinfo_t *priv = ctx;
+
+    if (priv == NULL) {
+        seterrno(EINVAL);
+        return -1;
+    }
+
+    mutex_lock(&mtd_lock, 0);
+    put_mtd_device(priv->mtd);
+    mutex_unlock(&mtd_lock);
+
+    kfree(priv);
 
     return 0;
 }
@@ -124,52 +159,73 @@ static driver_t mtdblock_drv = {
         .open     = mtdblock_open,
         .close    = mtdblock_close,
         .fstat    = mtdblock_fstat,
+        .unlink   = mtdblock_unlink,
 };
 /*********************************************************************************************************
 ** Function name:           mtdblock_init
-** Descriptions:            初始化 MTD 块
+** Descriptions:            初始化 MTD 块驱动
 ** input parameters:        NONE
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
 int mtdblock_init(void)
 {
+    mutex_new(&mtd_lock);
+
+    return driver_install(&mtdblock_drv);
+}
+/*********************************************************************************************************
+** Function name:           mtdblock_create
+** Descriptions:            创建 MTD 块设备
+** input parameters:        path                MTD 块设备路径
+**                          mtd_no              MTD 设备号
+**                          start               开始块号
+**                          end                 结束块号
+**                          reserved            保留块数
+** output parameters:       NONE
+** Returned value:          0 OR -1
+*********************************************************************************************************/
+int mtdblock_create(const char *path, uint32_t mtd_no, uint32_t start, uint32_t end, uint32_t reserved)
+{
     privinfo_t *priv;
 
-    driver_install(&mtdblock_drv);
-
-    priv = kmalloc(sizeof(privinfo_t), GFP_KERNEL);
-    if (priv != NULL) {
-        device_init(priv);
-        priv->nReservedBlocks = 2;
-        priv->startBlock      = 64;
-        priv->endBlock        = 255;
-        if (device_create("/dev/mtdblock0", "mtdblock", priv) < 0) {
-            kfree(priv);
-            return -1;
-        }
-    } else {
-        seterrno(ENOMEM);
+    if (path == NULL) {
+        seterrno(EINVAL);
         return -1;
     }
 
     priv = kmalloc(sizeof(privinfo_t), GFP_KERNEL);
     if (priv != NULL) {
         device_init(priv);
-        priv->nReservedBlocks = 5;
-        priv->startBlock      = 256;
-        priv->endBlock        = 4095;
-        if (device_create("/dev/mtdblock1", "mtdblock", priv) < 0) {
+
+        priv->reserved = reserved;
+        priv->start    = start;
+        priv->end      = end;
+
+        mutex_lock(&mtd_lock, 0);
+        priv->mtd = get_mtd_device(NULL, mtd_no);
+        mutex_unlock(&mtd_lock);
+
+        if (priv->mtd == NULL) {
+
+            kfree(priv);
+            seterrno(EINVAL);
+            return -1;
+        }
+
+        if (device_create(path, "mtdblock", priv) < 0) {
+            mutex_lock(&mtd_lock, 0);
+            put_mtd_device(priv->mtd);
+            mutex_unlock(&mtd_lock);
             kfree(priv);
             return -1;
         }
+        seterrno(0);
+        return 0;
     } else {
         seterrno(ENOMEM);
         return -1;
     }
-
-    seterrno(0);
-    return 0;
 }
 /*********************************************************************************************************
 ** END FILE
