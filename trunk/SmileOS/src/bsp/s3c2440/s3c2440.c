@@ -41,15 +41,14 @@
 #include "kern/types.h"
 #include "kern/mmu.h"
 #include "s3c2440.h"
-#include "s3c2440_clock.h"
 /*********************************************************************************************************
-** Function name:           cpu_init
-** Descriptions:            初始化 CPU
+** Function name:           cpu_reset_init
+** Descriptions:            复位后初始化 CPU
 ** input parameters:        NONE
 ** output parameters:       NONE
 ** Returned value:          NONE
 *********************************************************************************************************/
-void cpu_init(void)
+void cpu_reset_init(void)
 {
     WTCON       = 0x00;                                                 /*  关闭看门狗                  */
 
@@ -64,13 +63,13 @@ void cpu_init(void)
     mmu_disable_icache();
 }
 /*********************************************************************************************************
-** Function name:           bsp_mem_map
-** Descriptions:            BSP 内存映射
+** Function name:           cpu_mem_map
+** Descriptions:            CPU 内存映射
 ** input parameters:        NONE
 ** output parameters:       NONE
 ** Returned value:          NONE
 *********************************************************************************************************/
-void bsp_mem_map(void)
+void cpu_mem_map(void)
 {
     /*
      * 特殊功能寄存器
@@ -79,26 +78,14 @@ void bsp_mem_map(void)
                    0x48000000,
                    0x60000000 - 0x48000000,
                    SECTION_ATTR(AP_USER_NO, DOMAIN_CHECK, CACHE_NO, BUFFER_NO));
-
-    /*
-     * DM9000
-     */
-    mmu_map_region(0x20000000,
-                   0x20000000,
-                   1 * MB,
-                   SECTION_ATTR(AP_USER_NO, DOMAIN_CHECK, CACHE_NO, BUFFER_NO));
 }
 /*********************************************************************************************************
-** BSP 保留空间
+** CPU 保留空间
 *********************************************************************************************************/
-const space_t bsp_resv_space[] = {
+const space_t cpu_resv_space[] = {
         {
             0x48000000,                                                 /*  特殊功能寄存器              */
             0x60000000 - 0x48000000
-        },
-        {
-            0x20000000,                                                 /*  DM9000                      */
-            1 * MB
         },
         {
             0,
@@ -106,13 +93,13 @@ const space_t bsp_resv_space[] = {
         }
 };
 /*********************************************************************************************************
-** Function name:           bsp_init
-** Descriptions:            初始化 BSP
+** Function name:           cpu_kernel_init
+** Descriptions:            内核初始化 CPU
 ** input parameters:        NONE
 ** output parameters:       NONE
 ** Returned value:          NONE
 *********************************************************************************************************/
-void bsp_init(void)
+void cpu_kernel_init(void)
 {
     extern void clock_init(void);
     clock_init();
@@ -124,13 +111,13 @@ void bsp_init(void)
     timer_init();
 }
 /*********************************************************************************************************
-** Function name:           bsp_drivers_install
-** Descriptions:            安装 BSP 驱动
+** Function name:           soc_drivers_install
+** Descriptions:            安装 SOC 驱动
 ** input parameters:        NONE
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-int bsp_drivers_install(void)
+int soc_drivers_install(void)
 {
     extern int serial0_init(void);
     serial0_init();
@@ -138,25 +125,16 @@ int bsp_drivers_install(void)
     extern void nand_init(void);
     nand_init();
 
-    extern int mtdblock_init(void);
-    mtdblock_init();
-
-    extern int fb_init(void);
-    fb_init();
-
-    extern int audio_init(void);
-    audio_init();
-
     return 0;
 }
 /*********************************************************************************************************
-** Function name:           bsp_devices_create
-** Descriptions:            创建 BSP 设备
+** Function name:           soc_devices_create
+** Descriptions:            创建 SOC 设备
 ** input parameters:        NONE
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-int bsp_devices_create(void)
+int soc_devices_create(void)
 {
     return 0;
 }

@@ -22,7 +22,7 @@
 ** File name:               sharemem.c
 ** Last modified Date:      2012-3-27
 ** Last Version:            1.0.0
-** Descriptions:            共享内存驱动和设备
+** Descriptions:            共享内存设备驱动
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing
@@ -132,7 +132,7 @@ static driver_t sharemem_drv = {
 };
 /*********************************************************************************************************
 ** Function name:           sharemem_init
-** Descriptions:            初始化共享内存
+** Descriptions:            初始化共享内存驱动
 ** input parameters:        NONE
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
@@ -143,7 +143,7 @@ int sharemem_init(void)
 }
 /*********************************************************************************************************
 ** Function name:           sharemem_create
-** Descriptions:            创建共享内存
+** Descriptions:            创建共享内存设备
 ** input parameters:        path                共享内存设备路径
 **                          size                共享内存大小
 ** output parameters:       NONE

@@ -795,6 +795,12 @@ void mmu_init(void)
                    SECTION_ATTR(AP_USER_NO, DOMAIN_CHECK, CACHE_EN, BUFFER_EN));
 
     /*
+     * CPU ÄÚ´æÓ³Éä
+     */
+    extern void cpu_mem_map(void);
+    cpu_mem_map();
+
+    /*
      * BSP ÄÚ´æÓ³Éä
      */
     extern void bsp_mem_map(void);

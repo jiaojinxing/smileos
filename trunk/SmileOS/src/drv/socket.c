@@ -22,7 +22,7 @@
 ** File name:               socket.c
 ** Last modified Date:      2012-3-28
 ** Last Version:            1.0.0
-** Descriptions:            socket 驱动和设备
+** Descriptions:            socket 设备驱动
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing
@@ -198,8 +198,7 @@ static int socket_fstat(void *ctx, file_t *file, struct stat *buf)
         return -1;
     }
 
-    buf->st_mode    = (buf->st_mode & (~S_IFMT)) | S_IFSOCK;
-    buf->st_blksize = 1;
+    buf->st_mode = (buf->st_mode & (~S_IFMT)) | S_IFSOCK;
 
     return 0;
 }
@@ -275,7 +274,7 @@ void smileos_socket_report(int sock_fd, int type, void *ctx)
 }
 /*********************************************************************************************************
 ** Function name:           socket_init
-** Descriptions:            初始化 socket
+** Descriptions:            初始化 socket 驱动
 ** input parameters:        NONE
 ** output parameters:       NONE
 ** Returned value:          0 OR -1

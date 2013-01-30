@@ -22,7 +22,7 @@
 ** File name:               null.c
 ** Last modified Date:      2012-3-27
 ** Last Version:            1.0.0
-** Descriptions:            NULL 驱动和设备
+** Descriptions:            NULL 设备驱动
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing
@@ -159,7 +159,7 @@ static driver_t null_drv = {
 };
 /*********************************************************************************************************
 ** Function name:           null_init
-** Descriptions:            初始化 NULL
+** Descriptions:            初始化 NULL 设备
 ** input parameters:        NONE
 ** output parameters:       NONE
 ** Returned value:          0 OR -1

@@ -54,7 +54,6 @@
 
 void *yaffsfs_Mount(int yaffsVersion,
                     const char *point_name,
-                    device_t *sb,
                     const char *dev_name,
                     const char *data_str);
 
@@ -80,7 +79,7 @@ static int __yaffs1_mount(mount_point_t *point, device_t *dev, const char *dev_n
         dev_name = dev->name;
     }
 
-    ctx = yaffsfs_Mount(1, point->name, dev, dev_name, param);
+    ctx = yaffsfs_Mount(1, point->name, dev_name, param);
     if (ctx != NULL) {
         point->ctx = ctx;
         return 0;
@@ -103,7 +102,7 @@ static int __yaffs2_mount(mount_point_t *point, device_t *dev, const char *dev_n
         dev_name = dev->name;
     }
 
-    ctx = yaffsfs_Mount(2, point->name, dev, dev_name, param);
+    ctx = yaffsfs_Mount(2, point->name, dev_name, param);
     if (ctx != NULL) {
         point->ctx = ctx;
         return 0;

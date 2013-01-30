@@ -19,10 +19,10 @@
 ** Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 **
 **--------------------------------------------------------------------------------------------------------
-** File name:               s3c2440_uart.c
+** File name:               s3c2440.c
 ** Last modified Date:      2012-2-2
 ** Last Version:            1.0.0
-** Descriptions:            S3C2440 UART
+** Descriptions:            S3C2440 初始化
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing
@@ -37,51 +37,77 @@
 ** Descriptions:
 **
 *********************************************************************************************************/
-#include "kern/kern.h"
-#include "s3c2440.h"
-#include "s3c2440_clock.h"
+#include "kern/config.h"
+#include "kern/types.h"
+#include "kern/mmu.h"
+#include "vfs/vfs.h"
 /*********************************************************************************************************
-** Function name:           uart_init
-** Descriptions:            初始化 UART
+** Function name:           bsp_mem_map
+** Descriptions:            BSP 内存映射
 ** input parameters:        NONE
 ** output parameters:       NONE
 ** Returned value:          NONE
 *********************************************************************************************************/
-void uart_init(void)
+void bsp_mem_map(void)
 {
-    GPHCON  = (GPHCON & (~(0x0F << 4))) | (0x0A << 4);
-
-    GPHUP  |= 0x0F;
-
-    UFCON0  = 0x00;
-
-    UMCON0  = 0x00;
-
-    ULCON0  = 0x03;
-
-    UCON0   = 0x245;
-
     /*
-     * (int)(UART clock / (baud rate x 16)) –1
+     * DM9000
      */
-    UBRD0   = ((uint32_t)(PCLK / 16.0 / UART_BAUD_RATE + 0.5) - 1);
+    mmu_map_region(0x20000000,
+                   0x20000000,
+                   1 * MB,
+                   SECTION_ATTR(AP_USER_NO, DOMAIN_CHECK, CACHE_NO, BUFFER_NO));
 }
 /*********************************************************************************************************
-** Function name:           kputc
-** Descriptions:            通过串口输出一个字符
-** input parameters:        c                   字符
-** output parameters:       NONE
-** Returned value:          NONE
+** BSP 保留空间
 *********************************************************************************************************/
-void kputc(unsigned char c)
+const space_t bsp_resv_space[] = {
+        {
+            0x20000000,                                                 /*  DM9000                      */
+            1 * MB
+        },
+        {
+            0,
+            0
+        }
+};
+/*********************************************************************************************************
+** Function name:           bsp_drivers_install
+** Descriptions:            安装 BSP 驱动
+** input parameters:        NONE
+** output parameters:       NONE
+** Returned value:          0 OR -1
+*********************************************************************************************************/
+int bsp_drivers_install(void)
 {
-#define TXD0READY   (1 << 1)
+    extern int audio_init(void);
+    audio_init();
 
-    while (!(USTAT0 & TXD0READY)) {
-        ;
-    }
+    extern int lcd_init(void);
+    lcd_init();
 
-    UTXH0 = c;
+    return 0;
+}
+/*********************************************************************************************************
+** Function name:           bsp_devices_create
+** Descriptions:            创建 BSP 设备
+** input parameters:        NONE
+** output parameters:       NONE
+** Returned value:          0 OR -1
+*********************************************************************************************************/
+int bsp_devices_create(void)
+{
+    extern int mtdblock_create(const char *path, uint32_t mtd_no, uint32_t start, uint32_t end, uint32_t reserved);
+
+    mtdblock_create("/dev/mtdblock0", 0, 64,  255,  2);
+
+    mtdblock_create("/dev/mtdblock1", 0, 256, 4095, 5);
+
+    vfs_mount("/kern",   "/dev/mtdblock0", "yaffs1", NULL);
+
+    vfs_mount("/rootfs", "/dev/mtdblock1", "yaffs1", NULL);
+
+    return 0;
 }
 /*********************************************************************************************************
 ** END FILE

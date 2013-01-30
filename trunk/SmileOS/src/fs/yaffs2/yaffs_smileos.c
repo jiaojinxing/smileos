@@ -299,7 +299,6 @@ static int yaffs_parse_options(yaffs_options *options, const char *options_str)
 ** Descriptions:            挂载 yaffs 文件系统
 ** input parameters:        yaffsVersion        yaffs 版本
 **                          point_name          挂载点名
-**                          sb                  块设备
 **                          dev_name            设备名
 **                          data_str            挂载选项字符串
 ** output parameters:       NONE
@@ -307,7 +306,6 @@ static int yaffs_parse_options(yaffs_options *options, const char *options_str)
 *********************************************************************************************************/
 void *yaffsfs_Mount(int yaffsVersion,
                     const char *point_name,
-                    device_t *sb,
                     const char *dev_name,
                     const char *data_str)
 {
@@ -319,9 +317,7 @@ void *yaffsfs_Mount(int yaffsVersion,
     yaffs_DeviceParam *param;
     int nBlocks;
 
-    printk(KERN_INFO "yaffs: dev is %d name is \"%s\"\n",
-            sb->devno,
-            dev_name);
+    printk(KERN_INFO "yaffs: dev name is \"%s\"\n", dev_name);
 
     if (data_str == NULL) {
         data_str = "";
@@ -336,50 +332,29 @@ void *yaffsfs_Mount(int yaffsVersion,
     }
 
     if (vfs_stat(dev_name, &st) < 0) {
-        T(YAFFS_TRACE_ALWAYS,
-          ("yaffs: MTD device \"%s\" doesn't appear to exist\n",
-                  dev_name));
+        T(YAFFS_TRACE_ALWAYS, ("yaffs: MTD device \"%s\" doesn't appear to exist\n", dev_name));
         return NULL;
     }
 
-    T(YAFFS_TRACE_OS, ("yaffs_read_super: Using yaffs%d\n", yaffsVersion));
-    T(YAFFS_TRACE_OS,
-      ("yaffs_read_super: block size %d\n", (int)(st.st_blksize)));
+    T(YAFFS_TRACE_OS, ("yaffs: Using yaffs%d\n", yaffsVersion));
+    T(YAFFS_TRACE_OS, ("yaffs: block size %d\n", (int)(st.st_blksize)));
 
 #ifdef CONFIG_YAFFS_DISABLE_WRITE_VERIFY
-    T(YAFFS_TRACE_OS,
-      ("yaffs: Write verification disabled. All guarantees "
-       "null and void\n"));
+    T(YAFFS_TRACE_OS, ("yaffs: Write verification disabled, All guarantees null and void\n"));
 #endif
 
-#define MAJOR(x)    x
-#define MINOR(x)    0
-
-    T(YAFFS_TRACE_ALWAYS, ("yaffs: Attempting MTD mount on %u.%u, "
-                   "\"%s\"\n",
-                   MAJOR(sb->devno), MINOR(sb->devno),
-                   dev_name));
-
-#undef MTD_BLOCK_MAJOR
-#define MTD_BLOCK_MAJOR MAJOR((dev_t)BKDRHash("mtdblock"))
-
-    /* Check it's an mtd device..... */
-    if (MAJOR(sb->devno) != MTD_BLOCK_MAJOR)
-        return NULL;    /* This isn't an mtd device */
+    T(YAFFS_TRACE_ALWAYS, ("yaffs: Attempting MTD mount on \"%s\"\n", dev_name));
 
     /* Get the device */
-    mtd = get_mtd_device(NULL, MINOR(sb->devno));
+    mtd = (struct mtd_info *)st.st_spare1;
     if (mtd == NULL) {
-        T(YAFFS_TRACE_ALWAYS,
-          ("yaffs: MTD device #%s doesn't appear to exist\n",
-                  dev_name));
+        T(YAFFS_TRACE_ALWAYS, ("yaffs: MTD device \"%s\" doesn't appear to exist\n", dev_name));
         return NULL;
     }
 
     /* Check it's NAND */
     if (mtd->type != MTD_NANDFLASH) {
-        T(YAFFS_TRACE_ALWAYS,
-          ("yaffs: MTD device is not NAND it's type %d\n", mtd->type));
+        T(YAFFS_TRACE_ALWAYS, ("yaffs: MTD device is not NAND, it's type %d\n", mtd->type));
         return NULL;
     }
 
@@ -395,11 +370,7 @@ void *yaffsfs_Mount(int yaffsVersion,
     T(YAFFS_TRACE_OS, (" %s %d\n", WRITE_SIZE_STR, WRITE_SIZE(mtd)));
     T(YAFFS_TRACE_OS, (" oobsize %d\n", mtd->oobsize));
     T(YAFFS_TRACE_OS, (" erasesize %d\n", mtd->erasesize));
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 29)
-    T(YAFFS_TRACE_OS, (" size %u\n", mtd->size));
-#else
-    T(YAFFS_TRACE_OS, (" size %lld\n", mtd->size));
-#endif
+    T(YAFFS_TRACE_OS, (" size %d\n", mtd->size));
 
 #ifdef CONFIG_YAFFS_AUTO_YAFFS2
 
@@ -429,18 +400,14 @@ void *yaffsfs_Mount(int yaffsVersion,
             !mtd->write_ecc ||
             !mtd->read_ecc || !mtd->read_oob || !mtd->write_oob) {
 #endif
-            T(YAFFS_TRACE_ALWAYS,
-              ("yaffs: MTD device does not support required "
-               "functions\n"));;
+            T(YAFFS_TRACE_ALWAYS, ("yaffs: MTD device does not support required functions\n"));;
             return NULL;
         }
 
         if ((WRITE_SIZE(mtd) < YAFFS_MIN_YAFFS2_CHUNK_SIZE ||
             mtd->oobsize < YAFFS_MIN_YAFFS2_SPARE_SIZE) &&
             !options.inband_tags) {
-            T(YAFFS_TRACE_ALWAYS,
-              ("yaffs: MTD device does not have the "
-               "right page sizes\n"));
+            T(YAFFS_TRACE_ALWAYS, ("yaffs: MTD device does not have the right page sizes\n"));
             return NULL;
         }
     } else {
@@ -454,17 +421,13 @@ void *yaffsfs_Mount(int yaffsVersion,
             !mtd->write_ecc ||
             !mtd->read_ecc || !mtd->read_oob || !mtd->write_oob) {
 #endif
-            T(YAFFS_TRACE_ALWAYS,
-              ("yaffs: MTD device does not support required "
-               "functions\n"));;
+            T(YAFFS_TRACE_ALWAYS, ("yaffs: MTD device does not support required functions\n"));;
             return NULL;
         }
 
         if (WRITE_SIZE(mtd) < YAFFS_BYTES_PER_CHUNK ||
             mtd->oobsize != YAFFS_BYTES_PER_SPARE) {
-            T(YAFFS_TRACE_ALWAYS,
-              ("yaffs: MTD device does not support have the "
-               "right page sizes\n"));
+            T(YAFFS_TRACE_ALWAYS, ("yaffs: MTD device does not support have the right page sizes\n"));
             return NULL;
         }
     }
@@ -476,9 +439,7 @@ void *yaffsfs_Mount(int yaffsVersion,
 
     dev = kzalloc(sizeof(yaffs_Device) + sizeof(struct yaffs_LinuxContext), GFP_KERNEL);
     if (dev == NULL) {
-        T(YAFFS_TRACE_ALWAYS,
-          ("yaffs: Failed trying to allocate "
-           "yaffs_Device. \n"));
+        T(YAFFS_TRACE_ALWAYS, ("yaffs: Failed trying to allocate yaffs_Device\n"));
         return NULL;
     }
 
@@ -593,9 +554,9 @@ void *yaffsfs_Mount(int yaffsVersion,
     /*
      * 使用设备信息
      */
-    param->nReservedBlocks = st.st_spare4[0];
-    param->startBlock = st.st_spare4[1];
-    param->endBlock = st.st_spare4[1] + st.st_blocks - 1;
+    param->nReservedBlocks = st.st_spare2;
+    param->startBlock = st.st_spare4[0];
+    param->endBlock = st.st_spare4[1];
 
     extern void yaffsfs_RemoveObjectCallback(yaffs_Object *obj);
     dev->param.removeObjectCallback = yaffsfs_RemoveObjectCallback;

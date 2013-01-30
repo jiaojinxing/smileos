@@ -247,7 +247,7 @@ static driver_t xxx_drv = {
 };
 /*********************************************************************************************************
 ** Function name:           xxx_init
-** Descriptions:            初始化 xxx
+** Descriptions:            初始化 xxx 设备
 ** input parameters:        NONE
 ** output parameters:       NONE
 ** Returned value:          0 OR -1

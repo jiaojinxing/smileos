@@ -22,7 +22,7 @@
 ** File name:               zero.c
 ** Last modified Date:      2012-3-27
 ** Last Version:            1.0.0
-** Descriptions:            ZERO 驱动和设备
+** Descriptions:            ZERO 设备驱动
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing
@@ -42,6 +42,7 @@
 #include "vfs/driver.h"
 #include "vfs/utils.h"
 #include <string.h>
+#include <sys/stat.h>
 
 /*
  * 私有信息
@@ -100,7 +101,24 @@ static ssize_t zero_read(void *ctx, file_t *file, void *buf, size_t len)
 }
 
 /*
- * 扫描
+ * 获得 zero 状态
+ */
+static int zero_fstat(void *ctx, file_t *file, struct stat *buf)
+{
+    privinfo_t *priv = ctx;
+
+    if (priv == NULL) {
+        seterrno(EINVAL);
+        return -1;
+    }
+
+    buf->st_size = (off_t)-1;
+
+    return 0;
+}
+
+/*
+ * 扫描 zero
  */
 static int zero_scan(void *ctx, file_t *file, int flags)
 {
@@ -127,13 +145,14 @@ static driver_t zero_drv = {
         .open     = zero_open,
         .read     = zero_read,
         .close    = zero_close,
+        .fstat    = zero_fstat,
         .scan     = zero_scan,
         .select   = select_select,
         .unselect = select_unselect,
 };
 /*********************************************************************************************************
 ** Function name:           zero_init
-** Descriptions:            初始化 ZERO
+** Descriptions:            初始化 ZERO 设备
 ** input parameters:        NONE
 ** output parameters:       NONE
 ** Returned value:          0 OR -1

@@ -19,10 +19,10 @@
 ** Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 **
 **--------------------------------------------------------------------------------------------------------
-** File name:               s3c2440_fb.c
+** File name:               n35_lcd.c
 ** Last modified Date:      2012-3-15
 ** Last Version:            1.0.0
-** Descriptions:            S3C2440 FrameBuffer 驱动
+** Descriptions:            S3C2440 LCD 屏幕驱动
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing
@@ -47,7 +47,7 @@
 #include <fcntl.h>
 #include <string.h>
 #include "drv/fb.h"
-#include "s3c2440.h"
+#include "../s3c2440.h"
 /*********************************************************************************************************
 ** LCD 型号配置
 *********************************************************************************************************/
@@ -98,22 +98,14 @@
 
 #endif
 /*********************************************************************************************************
-** 私有信息
-*********************************************************************************************************/
-typedef struct {
-    VFS_DEVICE_MEMBERS;
-    struct fb_var_screeninfo var;
-    struct fb_fix_screeninfo fix;
-    uint16_t                *framebuffer;                               /*  视频帧缓冲                  */
-} privinfo_t;
-/*********************************************************************************************************
-** Function name:           lcd_init
-** Descriptions:            初始化 LCD
-** input parameters:        NONE
+** Function name:           lcd_config
+** Descriptions:            配置 LCD
+** input parameters:        var                 可变屏幕信息
+**                          framebuffer         视频帧缓冲区
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-static int lcd_init(privinfo_t *priv)
+static int lcd_config(const struct fb_var_screeninfo *var, const struct fb_fix_screeninfo *fix, void *framebuffer)
 {
     GPGUP   = GPGUP  | (1 << 4);                                        /*  GPG4 关闭上拉电阻           */
     GPGCON  = (GPGCON & ~(0x3 << 8)) | 3 << 8;                          /*  GPG4 -> LCD_PWREN           */
@@ -153,13 +145,13 @@ static int lcd_init(privinfo_t *priv)
     LCDCON5 = (LCDCON5 & ~(1 <<  0)) | HWSWP     <<  0;                 /*  半字是否交换                */
 
     /* 视频帧缓冲区内存地址高位[30:22]  -> LCDSADDR1[29:21] */
-    LCDSADDR1 = (LCDSADDR1 & ~(0x1FF << 21)) | (((uint32_t)priv->framebuffer >> 22) & 0x1FF) << 21;
+    LCDSADDR1 = (LCDSADDR1 & ~(0x1FF << 21)) | (((uint32_t)framebuffer >> 22) & 0x1FF) << 21;
 
     /* 视频帧缓冲区内存地址低位[21:1]   -> LCDSADDR1[20:0] */
-    LCDSADDR1 = (LCDSADDR1 & ~(0x1FFFFF)) | (((uint32_t)priv->framebuffer >> 1) & 0x1FFFFF);
+    LCDSADDR1 = (LCDSADDR1 & ~(0x1FFFFF)) | (((uint32_t)framebuffer >> 1) & 0x1FFFFF);
 
     /* 视频帧缓冲区的结束地址低位[21:1] -> LCDSADDR2[20:0] */
-    LCDSADDR2 = (LCDSADDR2 & ~(0x1FFFFF)) | ((((uint32_t)priv->framebuffer + LINEVAL * HOZVAL * 2) >> 1) & 0x1FFFFF);
+    LCDSADDR2 = (LCDSADDR2 & ~(0x1FFFFF)) | ((((uint32_t)framebuffer + LINEVAL * HOZVAL * 2) >> 1) & 0x1FFFFF);
 
     LCDSADDR3 = (LCDSADDR3 & ~(0x7FF << 11)) | OFFSIZE << 11;           /*  虚拟屏幕偏移大小            */
     LCDSADDR3 = (LCDSADDR3 & ~(0x7FF)) | PAGEWIDTH;                     /*  虚拟屏幕宽度                */
@@ -171,180 +163,63 @@ static int lcd_init(privinfo_t *priv)
     return 0;
 }
 /*********************************************************************************************************
-** Function name:           fb_open
-** Descriptions:            打开 FrameBuffer
-** input parameters:        ctx                 私有信息
-**                          file                文件结构
-**                          oflag               打开标志
-**                          mode                模式
+** Function name:           video_check
+** Descriptions:            检查可变屏幕信息是否合法
+** input parameters:        var                 可变屏幕信息
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-static int fb_open(void *ctx, file_t *file, int oflag, mode_t mode)
+static int video_check(struct fb_var_screeninfo *var)
 {
-    privinfo_t *priv = ctx;
-
-    if (priv == NULL) {
-        seterrno(EINVAL);
-        return -1;
-    }
-
-    if (atomic_inc_return(dev_ref(file)) == 1) {
-        lcd_init(priv);
-        LCDCON1 = (LCDCON1 & ~(1)) | ENVID;                             /*  开启视频输出                */
-    }
     return 0;
 }
 /*********************************************************************************************************
-** Function name:           fb_ioctl
-** Descriptions:            控制 FrameBuffer
-** input parameters:        ctx                 私有信息
-**                          file                文件结构
-**                          cmd                 命令
-**                          arg                 参数
+** Function name:           video_onoff
+** Descriptions:            开关视频视频
+** input parameters:        NONE
 ** output parameters:       NONE
-** Returned value:          0 OR -1
+** Returned value:          NONE
 *********************************************************************************************************/
-static int fb_ioctl(void *ctx, file_t *file, int cmd, void *arg)
+static void video_onoff(int on)
 {
-    int ret = -1;
-    privinfo_t *priv = ctx;
-
-    if (priv == NULL) {
-        seterrno(EINVAL);
-        return -1;
-    }
-
-    switch (cmd) {
-    case FBIOGET_VSCREENINFO:
-        memcpy(va_to_mva(arg), &priv->var, sizeof(priv->var));
-        ret = 0;
-        break;
-
-    case FBIOGET_FSCREENINFO:
-        memcpy(va_to_mva(arg), &priv->fix, sizeof(priv->fix));
-        ret = 0;
-        break;
-
-    default:
-        break;
-    }
-    return ret;
-}
-/*********************************************************************************************************
-** Function name:           fb_close
-** Descriptions:            关闭 FrameBuffer
-** input parameters:        ctx                 私有信息
-**                          file                文件结构
-** output parameters:       NONE
-** Returned value:          0 OR -1
-*********************************************************************************************************/
-static int fb_close(void *ctx, file_t *file)
-{
-    privinfo_t *priv = ctx;
-
-    if (priv == NULL) {
-        seterrno(EINVAL);
-        return -1;
-    }
-
-    if (atomic_dec_return(dev_ref(file)) == 0) {
+    if (on) {
+        LCDCON1 = (LCDCON1 & ~(1)) | ENVID;                             /*  开启视频输出                */
+    } else {
         LCDCON1 = (LCDCON1 & ~(1)) | 0;                                 /*  关闭视频输出                */
     }
-    return 0;
 }
 /*********************************************************************************************************
-** Function name:           fb_fstat
-** Descriptions:            获得 FrameBuffer 状态
-** input parameters:        ctx                 私有信息
-**                          file                文件结构
-** output parameters:       buf                 状态结构
-** Returned value:          0 OR -1
-*********************************************************************************************************/
-static int fb_fstat(void *ctx, file_t *file, struct stat *buf)
-{
-    privinfo_t *priv = ctx;
-
-    if (priv == NULL) {
-        seterrno(EINVAL);
-        return -1;
-    }
-
-    buf->st_size = priv->fix.smem_len;
-
-    return 0;
-}
-/*********************************************************************************************************
-** FrameBuffer 驱动
-*********************************************************************************************************/
-driver_t fb_drv = {
-        .name  = "fb",
-        .open  = fb_open,
-        .ioctl = fb_ioctl,
-        .close = fb_close,
-        .fstat = fb_fstat,
-};
-/*********************************************************************************************************
-** Function name:           fb_init
-** Descriptions:            创建 FrameBuffer 设备
+** Function name:           lcd_init
+** Descriptions:            初始化 LCD
 ** input parameters:        NONE
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-int fb_init(void)
+int lcd_init(void)
 {
-    privinfo_t *priv;
-    struct fb_var_screeninfo *var;
-    struct fb_fix_screeninfo *fix;
+    struct fb_var_screeninfo var;
 
-    driver_install(&fb_drv);
+    var.xoffset        = 0;
+    var.yoffset        = 0;
+    var.xres           = LCD_WIDTH;
+    var.yres           = LCD_HEIGHT;
+    var.xres_virtual   = var.xres;
+    var.yres_virtual   = var.yres;
+    var.bits_per_pixel = LCD_BPP;
+    var.red.offset     = 11;
+    var.red.length     = 5;
+    var.green.offset   = 5;
+    var.green.length   = 6;
+    var.blue.offset    = 5;
+    var.blue.length    = 0;
 
-    priv = kmalloc(sizeof(privinfo_t), GFP_KERNEL);
-    if (priv != NULL) {
-        device_init(priv);
+    int fb_create(const char *path,
+                  const struct fb_var_screeninfo *var,
+                  int  (*video_config)(const struct fb_var_screeninfo *, const struct fb_fix_screeninfo *, void *),
+                  int  (*video_check)(struct fb_var_screeninfo *),
+                  void (*video_onoff)(int));
 
-        var = &priv->var;
-
-        var->xoffset        = 0;
-        var->yoffset        = 0;
-        var->xres           = LCD_WIDTH;
-        var->yres           = LCD_HEIGHT;
-        var->xres_virtual   = var->xres;
-        var->yres_virtual   = var->yres;
-        var->bits_per_pixel = LCD_BPP;
-        var->red.offset     = 11;
-        var->red.length     = 5;
-        var->green.offset   = 5;
-        var->green.length   = 6;
-        var->blue.offset    = 5;
-        var->blue.length    = 0;
-
-        fix = &priv->fix;
-
-        fix->smem_len       = sizeof(uint16_t) * var->xres * var->yres;
-
-        priv->framebuffer   = kmalloc(fix->smem_len, GFP_SHARE | GFP_DMA);
-        if (priv->framebuffer == NULL) {
-            kfree(priv);
-            seterrno(ENOMEM);
-            return -1;
-        }
-
-        fix->smem_start     = priv->framebuffer;
-        fix->xpanstep       = 0;
-        fix->ypanstep       = 0;
-        fix->ywrapstep      = 0;
-
-        if (device_create("/dev/fb0", "fb", priv) < 0) {
-            kfree(priv->framebuffer);
-            kfree(priv);
-            return -1;
-        }
-        return 0;
-    } else {
-        seterrno(ENOMEM);
-        return -1;
-    }
+    return fb_create("/dev/fb0", &var, lcd_config, video_check, video_onoff);
 }
 /*********************************************************************************************************
 ** END FILE

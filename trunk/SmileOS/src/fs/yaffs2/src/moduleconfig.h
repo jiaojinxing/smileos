@@ -19,6 +19,7 @@
 /* #ifdef YAFFS_OUT_OF_TREE */
 
 #define CONFIG_YAFFS_DIRECT
+#define CONFIG_YAFFS_AUTO_YAFFS2
 
 /* DO NOT UNSET THESE THREE. YAFFS2 will not compile if you do. */
 #define CONFIG_YAFFS_FS
