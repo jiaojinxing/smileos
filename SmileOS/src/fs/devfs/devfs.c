@@ -423,6 +423,48 @@ static int devfs_stat(mount_point_t *point, const char *path, struct stat *buf)
     }
 }
 
+static int devfs_unlink(mount_point_t *point, const char *path)
+{
+    if (VFS_PATH_IS_ROOT(path)) {
+        seterrno(EACCES);
+        return -1;
+    } else {
+        device_t *dev;
+
+        mutex_lock(&dev_mgr_lock, 0);
+
+        dev = device_lookup(vfs_path_add_mount_point(path));
+        if (dev != NULL) {
+            int ret;
+
+            if (atomic_read(&dev->ref) != 0) {
+                mutex_unlock(&dev_mgr_lock);
+                seterrno(EBUSY);
+                return -1;
+            }
+
+            if (dev->drv->unlink == NULL) {
+                mutex_unlock(&dev_mgr_lock);
+                seterrno(ENOSYS);
+                return -1;
+            }
+
+            ret = dev->drv->unlink(dev->ctx);
+            if (ret == 0) {
+                device_remove(dev);
+            }
+
+            mutex_unlock(&dev_mgr_lock);
+
+            return ret;
+        } else {
+            mutex_unlock(&dev_mgr_lock);
+            seterrno(ENOENT);
+            return -1;
+        }
+    }
+}
+
 static int devfs_access(mount_point_t *point, const char *path, int amode)
 {
     struct stat buf;
@@ -432,12 +474,15 @@ static int devfs_access(mount_point_t *point, const char *path, int amode)
     if (ret == 0) {
         int access_ok = 1;
 
-        if ((amode & R_OK) && !(buf.st_mode & S_IRUSR))
+        if ((amode & R_OK) && !(buf.st_mode & S_IRUSR)) {
             access_ok = 0;
-        if ((amode & W_OK) && !(buf.st_mode & S_IWUSR))
+        }
+        if ((amode & W_OK) && !(buf.st_mode & S_IWUSR)) {
             access_ok = 0;
-        if ((amode & X_OK) && !(buf.st_mode & S_IXUSR))
+        }
+        if ((amode & X_OK) && !(buf.st_mode & S_IXUSR)) {
             access_ok = 0;
+        }
 
         if (!access_ok) {
             seterrno(EACCES);
@@ -570,6 +615,7 @@ file_system_t devfs = {
         .mount      = devfs_mount,
         .stat       = devfs_stat,
         .access     = devfs_access,
+        .unlink     = devfs_unlink,
 
         .open       = devfs_open,
         .dup        = devfs_dup,

@@ -55,6 +55,8 @@ typedef struct {
     int             sock_fd;
 } privinfo_t;
 
+extern int lwip_socket_set_ctx(int sock_fd, void *ctx);
+
 /*
  * ´ò¿ª socket
  */
@@ -86,6 +88,7 @@ static int socket_close(void *ctx, file_t *file)
 {
     privinfo_t *priv = ctx;
     char name[PATH_MAX];
+    uint32_t reg;
 
     if (priv == NULL) {
         seterrno(EINVAL);
@@ -93,13 +96,21 @@ static int socket_close(void *ctx, file_t *file)
     }
 
     sprintf(name, "/dev/socket%d", priv->sock_fd);
-    device_remove(name);
+
+    reg = interrupt_disable();
+
+    atomic_dec(dev_ref(file));
+
+    vfs_unlink(name);
+
+    lwip_socket_set_ctx(priv->sock_fd, NULL);
+
+    interrupt_resume(reg);
 
     lwip_close(priv->sock_fd);
 
     kfree(priv);
 
-    atomic_dec(dev_ref(file));
     return 0;
 }
 
@@ -303,16 +314,15 @@ int socket_attach(int sock_fd)
             return -1;
         }
 
-        extern int lwip_socket_set_ctx(int sock_fd, void *ctx);
-        lwip_socket_set_ctx(sock_fd, priv);
-
         fd = vfs_open(name, O_RDWR, 0666);
         if (fd < 0) {
-            device_remove(name);
+            vfs_unlink(name);
             interrupt_resume(reg);
             kfree(priv);
             return -1;
         }
+
+        lwip_socket_set_ctx(sock_fd, priv);
 
         interrupt_resume(reg);
         seterrno(0);

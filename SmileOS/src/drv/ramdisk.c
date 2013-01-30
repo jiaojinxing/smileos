@@ -43,17 +43,19 @@
 #include "vfs/utils.h"
 #include <string.h>
 
-#define DISK_SZ     (1440 * KB)                                         /*  磁盘大小                    */
-#define SECT_SZ     (512)                                               /*  扇区大小                    */
-#define SECT_NR     (DISK_SZ / SECT_SZ)                                 /*  扇区数目                    */
-
 /*
  * 私有信息
  */
 typedef struct {
     VFS_DEVICE_MEMBERS;
-    unsigned char   buf[DISK_SZ];
+    size_t          size;
+    size_t          sect_nr;
+    unsigned char   buf[1];
 } privinfo_t;
+
+#define SECT_SZ     (512)                                               /*  扇区大小                    */
+#define DISK_SZ     (priv->size)                                        /*  磁盘大小                    */
+#define SECT_NR     (priv->sect_nr)                                     /*  扇区数目                    */
 
 /*
  * 打开 ramdisk
@@ -136,6 +138,10 @@ static int ramdisk_ioctl(void *ctx, file_t *file, int cmd, void *arg)
         break;
 
     case BLKDEV_CMD_ERASE:
+        if (val[0] >= SECT_NR || val[1] >= SECT_NR) {
+            seterrno(EINVAL);
+            return -1;
+        }
         memset(priv->buf + val[0] * SECT_SZ, 0, (val[1] - val[0] + 1) * SECT_SZ);
         break;
 
@@ -162,6 +168,11 @@ static ssize_t ramdisk_readblk(void *ctx, file_t *file, size_t blk_no, size_t bl
         return -1;
     }
 
+    if (blk_no >= SECT_NR || (blk_no + blk_cnt - 1) >= SECT_NR) {
+        seterrno(EINVAL);
+        return -1;
+    }
+
     memcpy(buf, priv->buf + blk_no * SECT_SZ, blk_cnt * SECT_SZ);
 
     return blk_cnt * SECT_SZ;
@@ -183,9 +194,31 @@ static ssize_t ramdisk_writeblk(void *ctx, file_t *file, size_t blk_no, size_t b
         return -1;
     }
 
+    if (blk_no >= SECT_NR || (blk_no + blk_cnt - 1) >= SECT_NR) {
+        seterrno(EINVAL);
+        return -1;
+    }
+
     memcpy(priv->buf + blk_no * SECT_SZ, buf, blk_cnt * SECT_SZ);
 
     return blk_cnt * SECT_SZ;
+}
+
+/*
+ * 删除 ramdisk
+ */
+static int ramdisk_unlink(void *ctx)
+{
+    privinfo_t *priv = ctx;
+
+    if (priv == NULL) {
+        seterrno(EINVAL);
+        return -1;
+    }
+
+    kfree(priv);
+
+    return 0;
 }
 
 /*
@@ -198,6 +231,7 @@ static driver_t ramdisk_drv = {
         .close    = ramdisk_close,
         .readblk  = ramdisk_readblk,
         .writeblk = ramdisk_writeblk,
+        .unlink   = ramdisk_unlink,
 };
 /*********************************************************************************************************
 ** Function name:           ramdisk_init
@@ -208,14 +242,35 @@ static driver_t ramdisk_drv = {
 *********************************************************************************************************/
 int ramdisk_init(void)
 {
+    return driver_install(&ramdisk_drv);
+}
+/*********************************************************************************************************
+** Function name:           ramdisk_create
+** Descriptions:            创建 ramdisk
+** input parameters:        path                ramdisk 设备路径
+**                          size                ramdisk 大小
+** output parameters:       NONE
+** Returned value:          0 OR -1
+*********************************************************************************************************/
+int ramdisk_create(const char *path, size_t size)
+{
     privinfo_t *priv;
+    size_t sect_nr;
 
-    driver_install(&ramdisk_drv);
+    if (path == NULL || size < SECT_SZ) {
+        seterrno(EINVAL);
+        return -1;
+    }
 
-    priv = kmalloc(sizeof(privinfo_t), GFP_KERNEL);
+    sect_nr = (size + SECT_SZ - 1) / SECT_SZ;
+    size    = sect_nr * SECT_SZ;
+
+    priv = kmalloc(sizeof(privinfo_t) + size - 1, GFP_KERNEL);
     if (priv != NULL) {
         device_init(priv);
-        if (device_create("/dev/ramdisk", "ramdisk", priv) < 0) {
+        priv->size    = size;
+        priv->sect_nr = sect_nr;
+        if (device_create(path, "ramdisk", priv) < 0) {
             kfree(priv);
             return -1;
         }

@@ -125,6 +125,7 @@ struct driver {
     int     (*scan)(void *ctx, file_t *file, int flags);
     int     (*select)(select_struct_t *select, file_t *file, int flags);
     int     (*unselect)(select_struct_t *select, file_t *file, int flags);
+    int     (*unlink)(void *ctx);
 
     /*
      * ¶ÁÐ´¿é

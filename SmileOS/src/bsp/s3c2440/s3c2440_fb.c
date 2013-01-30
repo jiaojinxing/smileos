@@ -45,9 +45,9 @@
 #include "vfs/driver.h"
 #include "vfs/utils.h"
 #include <fcntl.h>
-#include "s3c2440.h"
+#include <string.h>
 #include "drv/fb.h"
-#include "kern/mmu.h"
+#include "s3c2440.h"
 /*********************************************************************************************************
 ** LCD 型号配置
 *********************************************************************************************************/
@@ -98,11 +98,14 @@
 
 #endif
 /*********************************************************************************************************
-** 全局变量
+** 私有信息
 *********************************************************************************************************/
-static uint16_t    *framebuffer;                                        /*  视频帧缓冲                  */
-
-static atomic_t     fb_ref;                                             /*  打开计数                    */
+typedef struct {
+    VFS_DEVICE_MEMBERS;
+    struct fb_var_screeninfo var;
+    struct fb_fix_screeninfo fix;
+    uint16_t                *framebuffer;                               /*  视频帧缓冲                  */
+} privinfo_t;
 /*********************************************************************************************************
 ** Function name:           lcd_init
 ** Descriptions:            初始化 LCD
@@ -110,7 +113,7 @@ static atomic_t     fb_ref;                                             /*  打开
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-static int lcd_init(void)
+static int lcd_init(privinfo_t *priv)
 {
     GPGUP   = GPGUP  | (1 << 4);                                        /*  GPG4 关闭上拉电阻           */
     GPGCON  = (GPGCON & ~(0x3 << 8)) | 3 << 8;                          /*  GPG4 -> LCD_PWREN           */
@@ -150,13 +153,13 @@ static int lcd_init(void)
     LCDCON5 = (LCDCON5 & ~(1 <<  0)) | HWSWP     <<  0;                 /*  半字是否交换                */
 
     /* 视频帧缓冲区内存地址高位[30:22]  -> LCDSADDR1[29:21] */
-    LCDSADDR1 = (LCDSADDR1 & ~(0x1FF << 21)) | (((uint32_t)framebuffer >> 22) & 0x1FF) << 21;
+    LCDSADDR1 = (LCDSADDR1 & ~(0x1FF << 21)) | (((uint32_t)priv->framebuffer >> 22) & 0x1FF) << 21;
 
     /* 视频帧缓冲区内存地址低位[21:1]   -> LCDSADDR1[20:0] */
-    LCDSADDR1 = (LCDSADDR1 & ~(0x1FFFFF)) | (((uint32_t)framebuffer >> 1) & 0x1FFFFF);
+    LCDSADDR1 = (LCDSADDR1 & ~(0x1FFFFF)) | (((uint32_t)priv->framebuffer >> 1) & 0x1FFFFF);
 
     /* 视频帧缓冲区的结束地址低位[21:1] -> LCDSADDR2[20:0] */
-    LCDSADDR2 = (LCDSADDR2 & ~(0x1FFFFF)) | ((((uint32_t)framebuffer + LINEVAL * HOZVAL * 2) >> 1) & 0x1FFFFF);
+    LCDSADDR2 = (LCDSADDR2 & ~(0x1FFFFF)) | ((((uint32_t)priv->framebuffer + LINEVAL * HOZVAL * 2) >> 1) & 0x1FFFFF);
 
     LCDSADDR3 = (LCDSADDR3 & ~(0x7FF << 11)) | OFFSIZE << 11;           /*  虚拟屏幕偏移大小            */
     LCDSADDR3 = (LCDSADDR3 & ~(0x7FF)) | PAGEWIDTH;                     /*  虚拟屏幕宽度                */
@@ -179,8 +182,15 @@ static int lcd_init(void)
 *********************************************************************************************************/
 static int fb_open(void *ctx, file_t *file, int oflag, mode_t mode)
 {
-    if (atomic_inc_return(&fb_ref) == 1) {
-        lcd_init();
+    privinfo_t *priv = ctx;
+
+    if (priv == NULL) {
+        seterrno(EINVAL);
+        return -1;
+    }
+
+    if (atomic_inc_return(dev_ref(file)) == 1) {
+        lcd_init(priv);
         LCDCON1 = (LCDCON1 & ~(1)) | ENVID;                             /*  开启视频输出                */
     }
     return 0;
@@ -197,39 +207,26 @@ static int fb_open(void *ctx, file_t *file, int oflag, mode_t mode)
 *********************************************************************************************************/
 static int fb_ioctl(void *ctx, file_t *file, int cmd, void *arg)
 {
-    int ret = 0;
-    struct fb_var_screeninfo *var;
-    struct fb_fix_screeninfo *fix;
+    int ret = -1;
+    privinfo_t *priv = ctx;
+
+    if (priv == NULL) {
+        seterrno(EINVAL);
+        return -1;
+    }
 
     switch (cmd) {
     case FBIOGET_VSCREENINFO:
-        var = va_to_mva(arg);
-        var->xoffset        = 0;
-        var->yoffset        = 0;
-        var->xres           = LCD_WIDTH;
-        var->yres           = LCD_HEIGHT;
-        var->xres_virtual   = var->xres;
-        var->yres_virtual   = var->yres;
-        var->bits_per_pixel = LCD_BPP;
-        var->red.offset     = 11;
-        var->red.length     = 5;
-        var->green.offset   = 5;
-        var->green.length   = 6;
-        var->blue.offset    = 5;
-        var->blue.length    = 0;
+        memcpy(va_to_mva(arg), &priv->var, sizeof(priv->var));
+        ret = 0;
         break;
 
     case FBIOGET_FSCREENINFO:
-        fix = va_to_mva(arg);
-        fix->smem_start     = (void *)FB_MEM_VBASE;
-        fix->smem_len       = sizeof(uint16_t) * LCD_WIDTH * LCD_HEIGHT;
-        fix->xpanstep       = 0;
-        fix->ypanstep       = 0;
-        fix->ywrapstep      = 0;
+        memcpy(va_to_mva(arg), &priv->fix, sizeof(priv->fix));
+        ret = 0;
         break;
 
     default:
-        ret = -1;
         break;
     }
     return ret;
@@ -244,7 +241,14 @@ static int fb_ioctl(void *ctx, file_t *file, int cmd, void *arg)
 *********************************************************************************************************/
 static int fb_close(void *ctx, file_t *file)
 {
-    if (atomic_dec_return(&fb_ref) == 0) {
+    privinfo_t *priv = ctx;
+
+    if (priv == NULL) {
+        seterrno(EINVAL);
+        return -1;
+    }
+
+    if (atomic_dec_return(dev_ref(file)) == 0) {
         LCDCON1 = (LCDCON1 & ~(1)) | 0;                                 /*  关闭视频输出                */
     }
     return 0;
@@ -259,7 +263,14 @@ static int fb_close(void *ctx, file_t *file)
 *********************************************************************************************************/
 static int fb_fstat(void *ctx, file_t *file, struct stat *buf)
 {
-    buf->st_size = sizeof(uint16_t) * LCD_WIDTH * LCD_HEIGHT;
+    privinfo_t *priv = ctx;
+
+    if (priv == NULL) {
+        seterrno(EINVAL);
+        return -1;
+    }
+
+    buf->st_size = priv->fix.smem_len;
 
     return 0;
 }
@@ -282,13 +293,58 @@ driver_t fb_drv = {
 *********************************************************************************************************/
 int fb_init(void)
 {
+    privinfo_t *priv;
+    struct fb_var_screeninfo *var;
+    struct fb_fix_screeninfo *fix;
+
     driver_install(&fb_drv);
 
-    atomic_set(&fb_ref, 0);
+    priv = kmalloc(sizeof(privinfo_t), GFP_KERNEL);
+    if (priv != NULL) {
+        device_init(priv);
 
-    framebuffer = (uint16_t *)FB_MEM_BASE;
+        var = &priv->var;
 
-    return device_create("/dev/fb0", "fb", NULL);
+        var->xoffset        = 0;
+        var->yoffset        = 0;
+        var->xres           = LCD_WIDTH;
+        var->yres           = LCD_HEIGHT;
+        var->xres_virtual   = var->xres;
+        var->yres_virtual   = var->yres;
+        var->bits_per_pixel = LCD_BPP;
+        var->red.offset     = 11;
+        var->red.length     = 5;
+        var->green.offset   = 5;
+        var->green.length   = 6;
+        var->blue.offset    = 5;
+        var->blue.length    = 0;
+
+        fix = &priv->fix;
+
+        fix->smem_len       = sizeof(uint16_t) * var->xres * var->yres;
+
+        priv->framebuffer   = kmalloc(fix->smem_len, GFP_SHARE | GFP_DMA);
+        if (priv->framebuffer == NULL) {
+            kfree(priv);
+            seterrno(ENOMEM);
+            return -1;
+        }
+
+        fix->smem_start     = priv->framebuffer;
+        fix->xpanstep       = 0;
+        fix->ypanstep       = 0;
+        fix->ywrapstep      = 0;
+
+        if (device_create("/dev/fb0", "fb", priv) < 0) {
+            kfree(priv->framebuffer);
+            kfree(priv);
+            return -1;
+        }
+        return 0;
+    } else {
+        seterrno(ENOMEM);
+        return -1;
+    }
 }
 /*********************************************************************************************************
 ** END FILE

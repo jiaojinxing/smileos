@@ -124,29 +124,26 @@ device_t *device_lookup(const char *name)
 /*********************************************************************************************************
 ** Function name:           device_remove
 ** Descriptions:            删除设备
-** input parameters:        name                设备名
+** input parameters:        dev                 设备
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-int device_remove(const char *name)
+int device_remove(device_t *dev)
 {
-    device_t *dev, *prev;
-    unsigned int key;
+    device_t *temp, *prev;
     int ret = -1;
 
-    if (name == NULL) {
+    if (dev == NULL) {
         return ret;
     }
 
-    key = BKDRHash(name);
-
     mutex_lock(&dev_mgr_lock, 0);
 
-    prev = NULL;
-    dev  = dev_list;
-    while (dev != NULL) {
-        if (key == dev->key) {
-            if (atomic_read(&dev->ref) == 0) {
+    if (atomic_read(&dev->ref) == 0) {
+        prev = NULL;
+        temp = dev_list;
+        while (temp != NULL) {
+            if (dev == temp) {
                 if (prev != NULL) {
                     prev->next = dev->next;
                 } else {
@@ -155,11 +152,11 @@ int device_remove(const char *name)
                 atomic_dec(&dev->drv->ref);
                 kfree(dev);
                 ret = 0;
+                break;
             }
-            break;
+            prev = temp;
+            temp = temp->next;
         }
-        prev = dev;
-        dev  = dev->next;
     }
 
     mutex_unlock(&dev_mgr_lock);

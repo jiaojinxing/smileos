@@ -62,6 +62,7 @@
 *********************************************************************************************************/
 static heap_t       kern_heap;
 static heap_t       dma_heap;
+static heap_t       share_heap;
 /*********************************************************************************************************
 ** Function name:           __kmalloc
 ** Descriptions:            从内核内存堆里分配内存
@@ -77,19 +78,22 @@ void *__kmalloc(const char *func, int line, size_t size, int flags)
     void    *ptr;
     uint32_t reg;
 
-    if (flags & GFP_DMA) {
-        reg = interrupt_disable();
+    reg = interrupt_disable();
+
+    if (flags & GFP_SHARE) {
+
+        ptr = heap_alloc(&share_heap, func, line, size);
+
+    } else if (flags & GFP_DMA) {
 
         ptr = heap_alloc(&dma_heap, func, line, size);
 
-        interrupt_resume(reg);
     } else {
-        reg = interrupt_disable();
 
         ptr = heap_alloc(&kern_heap, func, line, size);
-
-        interrupt_resume(reg);
     }
+
+    interrupt_resume(reg);
 
     if (ptr != NULL) {
         if (flags & GFP_ZERO) {
@@ -113,12 +117,21 @@ void __kfree(const char *func, int line, void *ptr)
     uint32_t reg;
 
     reg = interrupt_disable();
+
     if (((uint32_t)ptr >= DMA_MEM_BASE) &&
         ((uint32_t)ptr <  DMA_MEM_BASE + DMA_MEM_SIZE)) {
+
         heap_free(&dma_heap, func, line, ptr);
+
+    } else if (((uint32_t)ptr >= SHARE_MEM_BASE) &&
+               ((uint32_t)ptr <  SHARE_MEM_BASE + SHARE_MEM_SIZE)) {
+
+        heap_free(&share_heap, func, line, ptr);
+
     } else {
         heap_free(&kern_heap, func, line, ptr);
     }
+
     interrupt_resume(reg);
 }
 /*********************************************************************************************************
@@ -246,6 +259,8 @@ void kheap_create(void)
     heap_init(&kern_heap, &_end, KERN_STACK_TOP - (uint32_t)&_end);
 
     heap_init(&dma_heap, DMA_MEM_BASE, DMA_MEM_SIZE);
+
+    heap_init(&share_heap, SHARE_MEM_BASE, SHARE_MEM_SIZE);
 }
 #else
 /*********************************************************************************************************

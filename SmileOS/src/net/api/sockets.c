@@ -285,6 +285,10 @@ alloc_socket(struct netconn *newconn, int accepted)
       sockets[i].errevent   = 0;
       sockets[i].err        = 0;
       sockets[i].select_waiting = 0;
+
+/*************************************** jiaojinxing1987@gmail.com **************************************/
+      sockets[i].ctx = NULL;
+/********************************************************************************************************/
       return i;
     }
     SYS_ARCH_UNPROTECT(lev);

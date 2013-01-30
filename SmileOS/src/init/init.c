@@ -86,6 +86,9 @@ static void init(void *arg)
 
     tcpip_init(tcpip_init_done, NULL);
 
+    int ramdisk_create(const char *path, size_t size);
+    ramdisk_create("/dev/ramdisk", 1440 * KB);
+
     vfs_mount("/tmp", "/dev/ramdisk", "fatfs", NULL);
 
     vfs_mkfs("/tmp", NULL);
