@@ -22,7 +22,7 @@
 ** File name:               s3c2440_nand.c
 ** Last modified Date:      2012-2-2
 ** Last Version:            1.0.0
-** Descriptions:            S3C2440 NAND 接口驱动
+** Descriptions:            S3C2440 NAND FLASH 接口驱动
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing
@@ -41,7 +41,7 @@
 #include <linux/mtd/nand.h>
 #include "s3c2440.h"
 /*********************************************************************************************************
-** NAND 接口寄存器定义
+** NAND FLASH 接口寄存器定义
 *********************************************************************************************************/
 #define NF_BASE             (0x4E000000)
 #define rNFCONF             (*(volatile unsigned *)0x4E000000)          /*  NAND Flash configuration    */
