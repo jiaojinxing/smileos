@@ -19,10 +19,10 @@
 ** Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 **
 **--------------------------------------------------------------------------------------------------------
-** File name:               s3c2440.c
+** File name:               mini2440.c
 ** Last modified Date:      2012-2-2
 ** Last Version:            1.0.0
-** Descriptions:            S3C2440 初始化
+** Descriptions:            mini2440 开发板初始化
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing
