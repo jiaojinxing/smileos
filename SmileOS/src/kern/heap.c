@@ -498,11 +498,15 @@ void *heap_alloc(heap_t *heap, const char *func, int line, size_t size)
         }
 
         if (blk == NULL) {                                              /*  没找到                      */
-            goto error0;
+            debug("%s: process %d heap %s low memory, call by %s() line %d\n",
+                    __func__, getpid(), heap->name, func, line);
+            goto error;
         }
 
-        if (blk->magic != MEM_BLOCK_MAGIC) {                            /*  没找到                      */
-            goto error0;
+        if (blk->magic != MEM_BLOCK_MAGIC) {                            /*  出错了                      */
+            debug("%s: process %d heap %s error, call by %s() line %d\n",
+                    __func__, getpid(), heap->name, func, line);
+            goto error;
         }
 
         if (blk->size <= MEM_ALIGN_SIZE(sizeof(mem_block_t)) + size) {  /*  如果内存块切割后, 剩余的大小*/
@@ -551,10 +555,7 @@ void *heap_alloc(heap_t *heap, const char *func, int line, size_t size)
         return (char *)new_blk + MEM_ALIGN_SIZE(sizeof(mem_block_t));
     }
 
-    error0:
-    debug("%s: process %d heap %s low memory, call by %s() line %d\n",
-            __func__, getpid(), heap->name, func, line);
-
+    error:
     return NULL;
 }
 /*********************************************************************************************************

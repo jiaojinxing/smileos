@@ -694,7 +694,7 @@ void GUIDEMO_Main(void) {
       _GUIDemoConfig.pGUI_VNC_X_StartServer(0, 0);
     }
   #endif
-  GUI_VNC_X_StartServer(0, 0);
+  //GUI_VNC_X_StartServer(0, 0);
   #if GUIDEMO_USE_AUTO_BK
     //
     // Determine if HW has enough memory to draw the gradient circle as background
