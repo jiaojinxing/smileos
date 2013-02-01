@@ -39,6 +39,7 @@
 ** ELF 文件格式请查看:
 **
 ** http://os.pku.edu.cn:8080/gaikuang/submission/TN05.ELF.Format.Summary.pdf
+**
 *********************************************************************************************************/
 #include "kern/kern.h"
 #include "kern/mmu.h"
@@ -160,7 +161,6 @@ static module_t *module_lookup_by_key(uint32_t key)
 *********************************************************************************************************/
 module_t *module_lookup(const char *name)
 {
-    module_t *mod;
     uint32_t key;
 
     if (name == NULL) {

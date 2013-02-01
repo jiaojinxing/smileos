@@ -117,7 +117,7 @@ Note:
 */
 
 void GUI_X_Log     (const char *s) {
-    //printk(KERN_INFO "%s", s);
+    printk(KERN_INFO "%s", s);
 }
 
 void GUI_X_Warn    (const char *s) {

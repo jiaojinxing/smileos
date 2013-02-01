@@ -45,6 +45,7 @@ extern "C" {
 #endif
 
 #include "kern/types.h"
+#include <syslimits.h>
 /*********************************************************************************************************
 ** 定义
 *********************************************************************************************************/
@@ -59,6 +60,7 @@ typedef struct mem_block mem_block_t;
  */
 typedef struct {
     uint16_t        magic;                                              /*  魔数                        */
+    char            name[NAME_MAX];                                     /*  名字                      　*/
     mem_block_t    *free_list;                                          /*  空闲内存块链表              */
     mem_block_t    *block_list;                                         /*  内存块链表                  */
     uint8_t        *base;                                               /*  基址                        */
@@ -72,12 +74,13 @@ typedef struct {
 ** Function name:           heap_init
 ** Descriptions:            创建内存堆
 ** input parameters:        heap                内存堆
+**                          name                名字
 **                          base                内存区基址
 **                          size                内存区大小
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-int heap_init(heap_t *heap, uint8_t *base, size_t size);
+int heap_init(heap_t *heap, const char *name, uint8_t *base, size_t size);
 /*********************************************************************************************************
 ** Function name:           heap_alloc
 ** Descriptions:            分配内存
@@ -100,6 +103,17 @@ void *heap_alloc(heap_t *heap, const char *func, int line, size_t size);
 ** Returned value:          NULL OR 内存指针
 *********************************************************************************************************/
 void *heap_free(heap_t *heap, const char *func, int line, void *ptr);
+/*********************************************************************************************************
+** Function name:           mem_size
+** Descriptions:            获得内存的大小
+** input parameters:        heap                内存堆
+**                          func                调用者的函数名
+**                          line                调用者的行号
+**                          ptr                 内存指针
+** output parameters:       NONE
+** Returned value:          内存的大小
+*********************************************************************************************************/
+size_t mem_size(heap_t *heap, const char *func, int line, void *ptr);
 
 #ifdef __cplusplus
 }
