@@ -43,7 +43,7 @@
 #define PHY_MEM_SIZE        (64 * MB)                                   /*  物理内存大小                */
 #define PHY_MEM_BASE        (0x30000000)                                /*  物理内存基址                */
 
-#define KERN_MEM_SIZE       (12 * MB)                                   /*  内核内存大小                */
+#define KERN_MEM_SIZE       (15 * MB)                                   /*  内核内存大小                */
 #define KERN_MEM_BASE       (PHY_MEM_BASE)                              /*  内核内存基址                */
 
 #define PAGE_TBL_SIZE       (1 * KB)                                    /*  页表大小                    */

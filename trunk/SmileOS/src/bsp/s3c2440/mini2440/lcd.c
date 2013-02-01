@@ -64,12 +64,12 @@
 #define ENVID       (1)                                                 /*  开启视频输出                */
 
 #define VBPD        (1)                                                 /*  垂直同步信号后肩            */
-#define LINEVAL     (240)                                               /*  垂直尺寸                    */
+#define LINEVAL     (320)                                               /*  垂直尺寸                    */
 #define VFPD        (5)                                                 /*  垂直同步信号前肩            */
 #define VSPW        (1)                                                 /*  垂直同步信号脉宽            */
 
 #define HBPD        (39)                                                /*  水平同步信号后肩            */
-#define HOZVAL      (320)                                               /*  水平尺寸                    */
+#define HOZVAL      (240)                                               /*  水平尺寸                    */
 #define HFPD        (14)                                                /*  水平同步信号前肩            */
 #define HSPW        (5)                                                 /*  水平同步信号脉宽            */
 

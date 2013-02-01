@@ -456,6 +456,8 @@ void interrupt_unmask(uint32_t interrupt);
 *********************************************************************************************************/
 int interrupt_install(uint32_t interrupt, isr_t new_isr, isr_t *old_isr, void *arg);
 
+int msleep(unsigned int mseconds);
+
 #endif
 
 #endif                                                                  /*  KERN_H_                     */

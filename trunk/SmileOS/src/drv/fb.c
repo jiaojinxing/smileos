@@ -252,7 +252,7 @@ int fb_create(const char *path,
         return -1;
     }
 
-    priv = kmalloc(sizeof(privinfo_t), GFP_KERNEL);
+    priv = kmalloc(sizeof(privinfo_t), GFP_SHARE | GFP_DMA);
     if (priv != NULL) {
         device_init(priv);
 
