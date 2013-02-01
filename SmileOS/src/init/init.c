@@ -99,6 +99,9 @@ static void init(void *arg)
 
     vfs_mkfs("/tmp", NULL);
 
+    extern void MainTask(void);
+    MainTask();
+
     while (1) {
         sleep(10);
     }
@@ -175,7 +178,7 @@ int main(void)
      * 现在已经进入了 idle 进程
      */
 
-    kthread_create("init", init, NULL, 4 * KB, 100);
+    kthread_create("init", init, NULL, 12 * KB, 100);
 
     while (1) {
     }
