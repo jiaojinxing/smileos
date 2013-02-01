@@ -178,7 +178,7 @@ int main(void)
      * 现在已经进入了 idle 进程
      */
 
-    kthread_create("init", init, NULL, 12 * KB, 100);
+    kthread_create("init", init, NULL, 16 * KB, 100);
 
     while (1) {
     }

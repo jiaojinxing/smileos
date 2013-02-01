@@ -256,11 +256,11 @@ void kheap_create(void)
 {
     extern unsigned char _end;
 
-    heap_init(&kern_heap, &_end, KERN_STACK_TOP - (uint32_t)&_end);
+    heap_init(&kern_heap, "kern", &_end, KERN_STACK_TOP - (uint32_t)&_end);
 
-    heap_init(&dma_heap, DMA_MEM_BASE, DMA_MEM_SIZE);
+    heap_init(&dma_heap, "dma", (void *)DMA_MEM_BASE, DMA_MEM_SIZE);
 
-    heap_init(&share_heap, SHARE_MEM_BASE, SHARE_MEM_SIZE);
+    heap_init(&share_heap, "share", (void *)SHARE_MEM_BASE, SHARE_MEM_SIZE);
 }
 #else
 /*********************************************************************************************************
@@ -404,73 +404,21 @@ struct mem_block {
 ** Function name:           heap_init
 ** Descriptions:            创建内存堆
 ** input parameters:        heap                内存堆
+**                          name                名字
 **                          base                内存区基址
 **                          size                内存区大小
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-size_t mem_size(heap_t *heap, const char *func, int line, void *ptr)
-{
-    mem_block_t *blk;
-    mem_block_t *prev;
-    mem_block_t *next;
-
-    if (heap == NULL) {
-        debug("%s: process %d heap=NULL, call by %s() line %d\n",
-                __func__, getpid(), func, line);
-        return 0;
-    }
-
-    if (heap->magic != MEM_BLOCK_MAGIC) {
-        debug("%s: process %d heap magic %d != %d, call by %s() line %d\n",
-                __func__, getpid(), heap->magic, MEM_BLOCK_MAGIC, func, line);
-        return 0;
-    }
-
-    if (ptr == NULL) {
-#ifdef SMILEOS_KERNEL
-        debug("%s: process %d memptr=NULL, call by %s() line %d\n",
-                __func__, getpid(), func, line);
-#endif
-        return 0;
-    }
-
-    if (ptr != MEM_ALIGN(ptr)) {
-        debug("%s: process %d memptr=0x%x is not aligned, call by %s() line %d\n",
-                __func__, getpid(), (uint32_t)ptr, func, line);
-        return 0;
-    }
-
-    if (((uint8_t *)ptr < (heap->base + MEM_ALIGN_SIZE(sizeof(mem_block_t)))) ||
-        ((uint8_t *)ptr > heap->base + heap->size - MEM_ALIGNMENT)) {
-        debug("%s: process %d memptr=0x%x dose not belong to this heap, call by %s() line %d\n",
-                __func__, getpid(), (uint32_t)ptr, func, line);
-        return 0;
-    }
-                                                                        /*  指针所在的内存块节点        */
-    blk  = (mem_block_t *)((char *)ptr - MEM_ALIGN_SIZE(sizeof(mem_block_t)));
-
-    if (blk->magic != MEM_BLOCK_MAGIC || blk->status != MEM_BLOCK_USED) {
-        debug("%s: process %d memptr=0x%x is invalid, call by %s() line %d\n",
-                __func__, getpid(), (uint32_t)ptr, func, line);
-        return 0;
-    }
-
-    return blk->size;
-}
-/*********************************************************************************************************
-** Function name:           heap_init
-** Descriptions:            创建内存堆
-** input parameters:        heap                内存堆
-**                          base                内存区基址
-**                          size                内存区大小
-** output parameters:       NONE
-** Returned value:          0 OR -1
-*********************************************************************************************************/
-int heap_init(heap_t *heap, uint8_t *base, size_t size)
+int heap_init(heap_t *heap, const char *name, uint8_t *base, size_t size)
 {
     if (heap == NULL) {
         debug("%s: process %d heap=NULL!\n", __func__, getpid());
+        return -1;
+    }
+
+    if (name == NULL) {
+        debug("%s: process %d name=NULL!\n", __func__, getpid());
         return -1;
     }
 
@@ -505,6 +453,8 @@ int heap_init(heap_t *heap, uint8_t *base, size_t size)
     heap->free_cnt              = 0;
 
     heap->magic                 = MEM_BLOCK_MAGIC;                      /*  加入魔数                    */
+
+    strlcpy(heap->name, name, sizeof(heap->name));
 
     return 0;
 }
@@ -548,6 +498,10 @@ void *heap_alloc(heap_t *heap, const char *func, int line, size_t size)
         }
 
         if (blk == NULL) {                                              /*  没找到                      */
+            goto error0;
+        }
+
+        if (blk->magic != MEM_BLOCK_MAGIC) {                            /*  没找到                      */
             goto error0;
         }
 
@@ -598,7 +552,8 @@ void *heap_alloc(heap_t *heap, const char *func, int line, size_t size)
     }
 
     error0:
-    debug("%s: process %d low memory, call by %s() line %d\n", __func__, getpid(), func, line);
+    debug("%s: process %d heap %s low memory, call by %s() line %d\n",
+            __func__, getpid(), heap->name, func, line);
 
     return NULL;
 }
@@ -632,30 +587,30 @@ void *heap_free(heap_t *heap, const char *func, int line, void *ptr)
 
     if (ptr == NULL) {
 #ifdef SMILEOS_KERNEL
-        debug("%s: process %d memptr=NULL, call by %s() line %d\n",
-                __func__, getpid(), func, line);
+        debug("%s: process %d heap %s memptr=NULL, call by %s() line %d\n",
+                __func__, getpid(), heap->name, func, line);
 #endif
         return ptr;
     }
 
     if (ptr != MEM_ALIGN(ptr)) {
-        debug("%s: process %d memptr=0x%x is not aligned, call by %s() line %d\n",
-                __func__, getpid(), (uint32_t)ptr, func, line);
+        debug("%s: process %d heap %s memptr=0x%x is not aligned, call by %s() line %d\n",
+                __func__, getpid(), heap->name, (uint32_t)ptr, func, line);
         return ptr;
     }
 
     if (((uint8_t *)ptr < (heap->base + MEM_ALIGN_SIZE(sizeof(mem_block_t)))) ||
         ((uint8_t *)ptr > heap->base + heap->size - MEM_ALIGNMENT)) {
-        debug("%s: process %d memptr=0x%x dose not belong to this heap, call by %s() line %d\n",
-                __func__, getpid(), (uint32_t)ptr, func, line);
+        debug("%s: process %d heap %s memptr=0x%x dose not belong to this heap, call by %s() line %d\n",
+                __func__, getpid(), heap->name, (uint32_t)ptr, func, line);
         return ptr;
     }
                                                                         /*  指针所在的内存块节点        */
     blk  = (mem_block_t *)((char *)ptr - MEM_ALIGN_SIZE(sizeof(mem_block_t)));
 
     if (blk->magic != MEM_BLOCK_MAGIC || blk->status != MEM_BLOCK_USED) {
-        debug("%s: process %d memptr=0x%x is invalid, call by %s() line %d\n",
-                __func__, getpid(), (uint32_t)ptr, func, line);
+        debug("%s: process %d heap %s memptr=0x%x is invalid, call by %s() line %d\n",
+                __func__, getpid(), heap->name, (uint32_t)ptr, func, line);
         return ptr;
     }
 
@@ -663,8 +618,8 @@ void *heap_free(heap_t *heap, const char *func, int line, void *ptr)
     next = blk->next;
 
     if (next != NULL && next->magic != MEM_BLOCK_MAGIC) {               /*  写缓冲区溢出                */
-        debug("%s: process %d write buffer over, memptr=0x%x, call by %s() line %d\n",
-                __func__, getpid(), (uint32_t)ptr, func, line);
+        debug("%s: process %d heap %s write buffer over, memptr=0x%x, call by %s() line %d\n",
+                __func__, getpid(), heap->name, (uint32_t)ptr, func, line);
         return ptr;
     }
 
@@ -744,6 +699,63 @@ void *heap_free(heap_t *heap, const char *func, int line, void *ptr)
     }
 
     return NULL;
+}
+/*********************************************************************************************************
+** Function name:           mem_size
+** Descriptions:            获得内存的大小
+** input parameters:        heap                内存堆
+**                          func                调用者的函数名
+**                          line                调用者的行号
+**                          ptr                 内存指针
+** output parameters:       NONE
+** Returned value:          内存的大小
+*********************************************************************************************************/
+size_t mem_size(heap_t *heap, const char *func, int line, void *ptr)
+{
+    mem_block_t *blk;
+
+    if (heap == NULL) {
+        debug("%s: process %d heap=NULL, call by %s() line %d\n",
+                __func__, getpid(), func, line);
+        return 0;
+    }
+
+    if (heap->magic != MEM_BLOCK_MAGIC) {
+        debug("%s: process %d heap magic %d != %d, call by %s() line %d\n",
+                __func__, getpid(), heap->magic, MEM_BLOCK_MAGIC, func, line);
+        return 0;
+    }
+
+    if (ptr == NULL) {
+#ifdef SMILEOS_KERNEL
+        debug("%s: process %d heap %s memptr=NULL, call by %s() line %d\n",
+                __func__, getpid(), heap->name, func, line);
+#endif
+        return 0;
+    }
+
+    if (ptr != MEM_ALIGN(ptr)) {
+        debug("%s: process %d heap %s memptr=0x%x is not aligned, call by %s() line %d\n",
+                __func__, getpid(), heap->name, (uint32_t)ptr, func, line);
+        return 0;
+    }
+
+    if (((uint8_t *)ptr < (heap->base + MEM_ALIGN_SIZE(sizeof(mem_block_t)))) ||
+        ((uint8_t *)ptr > heap->base + heap->size - MEM_ALIGNMENT)) {
+        debug("%s: process %d heap %s memptr=0x%x dose not belong to this heap, call by %s() line %d\n",
+                __func__, getpid(), heap->name, (uint32_t)ptr, func, line);
+        return 0;
+    }
+                                                                        /*  指针所在的内存块节点        */
+    blk  = (mem_block_t *)((char *)ptr - MEM_ALIGN_SIZE(sizeof(mem_block_t)));
+
+    if (blk->magic != MEM_BLOCK_MAGIC || blk->status != MEM_BLOCK_USED) {
+        debug("%s: process %d heap %s memptr=0x%x is invalid, call by %s() line %d\n",
+                __func__, getpid(), heap->name, (uint32_t)ptr, func, line);
+        return 0;
+    }
+
+    return blk->size;
 }
 /*********************************************************************************************************
 ** END FILE

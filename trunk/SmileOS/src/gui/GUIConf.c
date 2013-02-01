@@ -42,7 +42,7 @@ Purpose     : Display controller initialization
 //
 // Define the available number of bytes available for the GUI
 //
-#define GUI_NUMBYTES  (5 * MB)
+#define GUI_NUMBYTES  (4 * MB)
 
 //
 // Define the average block size
@@ -69,7 +69,7 @@ void GUI_X_Config(void) {
   //
   void *ptr = kmalloc(GUI_NUMBYTES, GFP_KERNEL);
   if (ptr == NULL) {
-      GUI_X_ErrorOut("failed to alloc emWin memory, serious error\n");
+      GUI_X_ErrorOut("emWin failed to alloc private memory, serious error\n");
       /*
        * TODO: ³ö´í´¦Àí
        */

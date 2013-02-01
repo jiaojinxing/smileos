@@ -134,7 +134,7 @@ void LCD_X_Config(void) {
     {
         lcd_info.fd = open("/dev/fb0", O_RDWR, 0666);
         if (lcd_info.fd < 0) {
-            GUI_X_ErrorOut("failed to open \"/dev/fb0\", serious error\n");
+            GUI_X_ErrorOut("emWin failed to open framebuffer device: \"/dev/fb0\", serious error\n");
             /*
              * TODO: ³ö´í´¦Àí
              */
