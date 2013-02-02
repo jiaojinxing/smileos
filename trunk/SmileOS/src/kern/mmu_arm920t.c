@@ -763,7 +763,7 @@ void mmu_init(void)
                    SECTION_ATTR(AP_USER_NO, DOMAIN_CHECK, CACHE_NO, BUFFER_NO));
 
     /*
-     * DMA 内存区不可 Cache 及 WriteBuffer
+     * DMA 内存区不可 Cache 及 WriteBuffer, 用户不可读写
      */
     mmu_map_region(DMA_MEM_BASE,
                    DMA_MEM_BASE,
@@ -771,18 +771,30 @@ void mmu_init(void)
                    SECTION_ATTR(AP_USER_NO, DOMAIN_CHECK, CACHE_NO, BUFFER_NO));
 
     /*
-     * SHARE 内存区不可 Cache 及 WriteBuffer, 用户可读写
+     * HW_SHARE 内存区不可 Cache 及 WriteBuffer, 用户可读写
      *
-     * SHARE 内存区作为 DMA 内存区的补充, DMA 内存区供硬件 DMA 使用, 所以不可 Cache 及 WriteBuffer
+     * HW_SHARE 内存区作为 DMA 内存区的补充, DMA 内存区供硬件 DMA 使用, 所以不可 Cache 及 WriteBuffer
      *
-     * 但 DMA 内存区不能供应用程序使用, 而 SHARE 内存区则可以
+     * 但 DMA 内存区不能供应用程序使用, 而 HW_SHARE 内存区则可以
      *
-     * 像共享内存设备驱动和 FrameBuffer 设备驱动都可以使用 SHARE 内存区
+     * 像 FrameBuffer 设备驱动可以使用 HW_SHARE 内存区
      */
-    mmu_map_region(SHARE_MEM_BASE,
-                   SHARE_MEM_BASE,
-                   SHARE_MEM_SIZE,
+    mmu_map_region(HW_SHARE_MEM_BASE,
+                   HW_SHARE_MEM_BASE,
+                   HW_SHARE_MEM_SIZE,
                    SECTION_ATTR(AP_USER_RW, DOMAIN_CHECK, CACHE_NO, BUFFER_NO));
+
+    /*
+     * SW_SHARE 内存区可 Cache 及 WriteBuffer, 用户可读写
+     *
+     * 像共享内存设备驱动可以使用 SW_SHARE 内存区
+     *
+     * SW_SHARE 内存区不必像 HW_SHARE 内存区那样虚拟地址=物理地址
+     */
+    mmu_map_region(SW_SHARE_MEM_BASE,
+                   SW_SHARE_MEM_BASE,
+                   SW_SHARE_MEM_SIZE,
+                   SECTION_ATTR(AP_USER_RW, DOMAIN_CHECK, CACHE_EN, BUFFER_EN));
 
     /*
      * 因为异常向量地址为 0xFFFF0000,

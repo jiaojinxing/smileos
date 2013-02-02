@@ -9,11 +9,21 @@
 *                                                                    *
 **********************************************************************
 
-** emWin V5.16 - Graphical user interface for embedded applications **
-emWin is protected by international copyright laws.   Knowledge of the
+** emWin V5.18 - Graphical user interface for embedded applications **
+All  Intellectual Property rights  in the Software belongs to  SEGGER.
+emWin is protected by  international copyright laws.  Knowledge of the
 source code may not be used to write a similar product.  This file may
-only be used in accordance with a license and should not be re-
-distributed in any way. We appreciate your understanding and fairness.
+only be used in accordance with the following terms:
+
+The software has been licensed to  NXP Semiconductors USA, Inc.  whose
+registered  office  is  situated  at  1109 McKay Dr, M/S 76, San Jose, 
+CA 95131, USA  solely for  the  purposes  of  creating  libraries  for 
+NXPs M0, M3/M4 and  ARM7/9 processor-based  devices,  sublicensed  and
+distributed under the terms and conditions of the NXP End User License
+Agreement.
+Full source code is available at: www.segger.com
+
+We appreciate your understanding and fairness.
 ----------------------------------------------------------------------
 File        : GUIDEMO_Cursor.c
 Purpose     : shows Cursor-API
@@ -200,3 +210,5 @@ void GUIDEMO_Cursor(void) {
 void GUIDEMO_Cursor(void) {}
 
 #endif
+
+/*************************** End of file ****************************/

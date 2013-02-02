@@ -9,21 +9,11 @@
 *                                                                    *
 **********************************************************************
 
-** emWin V5.18 - Graphical user interface for embedded applications **
-All  Intellectual Property rights  in the Software belongs to  SEGGER.
-emWin is protected by  international copyright laws.  Knowledge of the
+** emWin V5.16 - Graphical user interface for embedded applications **
+emWin is protected by international copyright laws.   Knowledge of the
 source code may not be used to write a similar product.  This file may
-only be used in accordance with the following terms:
-
-The software has been licensed to  NXP Semiconductors USA, Inc.  whose
-registered  office  is  situated  at  1109 McKay Dr, M/S 76, San Jose, 
-CA 95131, USA  solely for  the  purposes  of  creating  libraries  for 
-NXPs M0, M3/M4 and  ARM7/9 processor-based  devices,  sublicensed  and
-distributed under the terms and conditions of the NXP End User License
-Agreement.
-Full source code is available at: www.segger.com
-
-We appreciate your understanding and fairness.
+only be used in accordance with a license and should not be re-
+distributed in any way. We appreciate your understanding and fairness.
 ----------------------------------------------------------------------
 File        : GUIConf.c
 Purpose     : Display controller initialization
@@ -42,12 +32,12 @@ Purpose     : Display controller initialization
 //
 // Define the available number of bytes available for the GUI
 //
-#define GUI_NUMBYTES  (4 * MB)
+#define GUI_NUMBYTES  (8 * MB)
 
 //
 // Define the average block size
 //
-#define GUI_BLOCKSIZE 0x256
+#define GUI_BLOCKSIZE 0x128
 
 /*********************************************************************
 *
@@ -67,7 +57,9 @@ void GUI_X_Config(void) {
   //
   // Assign memory to emWin
   //
-  void *ptr = kmalloc(GUI_NUMBYTES, GFP_KERNEL);
+  void *ptr;
+
+  ptr = kmalloc(GUI_NUMBYTES, GFP_KERNEL);
   if (ptr == NULL) {
       GUI_X_ErrorOut("emWin failed to alloc private memory, serious error\n");
       /*

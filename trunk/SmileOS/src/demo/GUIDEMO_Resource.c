@@ -9,18 +9,27 @@
 *                                                                    *
 **********************************************************************
 
-** emWin V5.16 - Graphical user interface for embedded applications **
-emWin is protected by international copyright laws.   Knowledge of the
+** emWin V5.18 - Graphical user interface for embedded applications **
+All  Intellectual Property rights  in the Software belongs to  SEGGER.
+emWin is protected by  international copyright laws.  Knowledge of the
 source code may not be used to write a similar product.  This file may
-only be used in accordance with a license and should not be re-
-distributed in any way. We appreciate your understanding and fairness.
+only be used in accordance with the following terms:
+
+The software has been licensed to  NXP Semiconductors USA, Inc.  whose
+registered  office  is  situated  at  1109 McKay Dr, M/S 76, San Jose, 
+CA 95131, USA  solely for  the  purposes  of  creating  libraries  for 
+NXPs M0, M3/M4 and  ARM7/9 processor-based  devices,  sublicensed  and
+distributed under the terms and conditions of the NXP End User License
+Agreement.
+Full source code is available at: www.segger.com
+
+We appreciate your understanding and fairness.
 ----------------------------------------------------------------------
 File        : GUIDEMO_Resource.c
 Purpose     : Contains fonts and bitmaps used in the demo.
 ---------------------------END-OF-HEADER------------------------------
 */
 
-#include "GUI.h"
 #include "GUIDEMO.h"
 
 #ifndef GUI_CONST_STORAGE
@@ -36,6 +45,8 @@ Purpose     : Contains fonts and bitmaps used in the demo.
 /*********************************************************************
 *                                                                    *
 *       GUI_FontD6x8                                                 *
+*                                                                    *
+*  Used in GUIDEMO.c (PROGBAR)                                       *
 *                                                                    *
 **********************************************************************
 */
@@ -256,6 +267,11 @@ GUI_CONST_STORAGE GUI_FONT GUI_FontD6x8 = {
 /*********************************************************************
 *                                                                    *
 *       GUI_FontRounded16                                            *
+*                                                                    *
+*  Used in                                                           *
+*  - GUIDEMO_Automotive.c                                            *
+*  - GUIDEMO_Cursor.c                                                *
+*  - GUIDEMO_Speedometer.c                                           *
 *                                                                    *
 **********************************************************************
 */
@@ -1571,6 +1587,16 @@ GUI_CONST_STORAGE GUI_FONT GUI_FontRounded16 = {
 /*********************************************************************
 *                                                                    *
 *       GUI_FontRounded22                                            *
+*                                                                    *
+*  Used in                                                           *
+*  - GUIDEMO.c                                                       *
+*  - GUIDEMO_AntiAliasedText.c                                       *
+*  - GUIDEMO_Automotive.c                                            *
+*  - GUIDEMO_Bargraph.c                                              *
+*  - GUIDEMO_ColorBar.c                                              *
+*  - GUIDEMO_IconView.c                                              *
+*  - GUIDEMO_ImageFlow.c                                             *
+*  - GUIDEMO_Intro.c                                                 *
 *                                                                    *
 **********************************************************************
 */
@@ -3201,7 +3227,12 @@ GUI_CONST_STORAGE GUI_FONT GUI_FontRounded22 = {
 
 /*********************************************************************
 *                                                                    *
-*       Souvenir18                                                   *
+*       GUI_FontSouvenir18                                           *
+*                                                                    *
+*  Used in                                                           *
+*  - GUIDEMO.c                                                       *
+*  - GUIDEMO_ColorBar.c                                              *
+*  - GUIDEMO_Intro.c                                                 *
 *                                                                    *
 **********************************************************************
 */
@@ -4518,13 +4549,222 @@ GUI_CONST_STORAGE GUI_FONT GUI_FontSouvenir18 = {
 
 /*********************************************************************
 *                                                                    *
+*       GUI_FontAA4_32                                               *
+*                                                                    *
+*  Used in                                                           *
+*  - GUIDEMO_AntiAliasedText.c                                       *
+*                                                                    *
+**********************************************************************
+*/
+static GUI_CONST_STORAGE unsigned char acGUI_FontAA4_32_0041[180] = { /* code 0041, LATIN CAPITAL LETTER A */
+  0x00, 0x00, 0x00, 0x3F, 0xFF, 0x20, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x8F, 0xFF, 0x70, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0xEF, 0xFF, 0xD0, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x04, 0xFF, 0xFF, 0xF3, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x09, 0xFF, 0xEF, 0xF8, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x0E, 0xFF, 0x6F, 0xFD, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x5F, 0xFD, 0x0D, 0xFF, 0x40, 0x00, 0x00,
+  0x00, 0x00, 0xAF, 0xF7, 0x07, 0xFF, 0x90, 0x00, 0x00,
+  0x00, 0x01, 0xEF, 0xF2, 0x02, 0xFF, 0xE0, 0x00, 0x00,
+  0x00, 0x05, 0xFF, 0xC0, 0x00, 0xCF, 0xF5, 0x00, 0x00,
+  0x00, 0x0A, 0xFF, 0x70, 0x00, 0x7F, 0xFA, 0x00, 0x00,
+  0x00, 0x1F, 0xFF, 0x20, 0x00, 0x1F, 0xFF, 0x10, 0x00,
+  0x00, 0x6F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x50, 0x00,
+  0x00, 0xBF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xB0, 0x00,
+  0x02, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xF1, 0x00,
+  0x07, 0xFF, 0xB0, 0x00, 0x00, 0x00, 0xAF, 0xF6, 0x00,
+  0x0B, 0xFF, 0x50, 0x00, 0x00, 0x00, 0x5F, 0xFB, 0x00,
+  0x2F, 0xFF, 0x10, 0x00, 0x00, 0x00, 0x0E, 0xFF, 0x20,
+  0x7F, 0xFA, 0x00, 0x00, 0x00, 0x00, 0x0A, 0xFF, 0x70,
+  0xCF, 0xF5, 0x00, 0x00, 0x00, 0x00, 0x04, 0xFF, 0xC0
+};
+
+static GUI_CONST_STORAGE unsigned char acGUI_FontAA4_32_0042[140] = { /* code 0042, LATIN CAPITAL LETTER B */
+  0xFF, 0xFF, 0xFF, 0xFF, 0xFD, 0xB6, 0x00,
+  0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x90,
+  0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xF5,
+  0xFF, 0xF0, 0x00, 0x00, 0x13, 0xCF, 0xFC,
+  0xFF, 0xF0, 0x00, 0x00, 0x00, 0x2F, 0xFF,
+  0xFF, 0xF0, 0x00, 0x00, 0x00, 0x0F, 0xFF,
+  0xFF, 0xF0, 0x00, 0x00, 0x00, 0x3F, 0xFC,
+  0xFF, 0xF0, 0x00, 0x00, 0x14, 0xDF, 0xF7,
+  0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xB0,
+  0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x50,
+  0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xF2,
+  0xFF, 0xF0, 0x00, 0x00, 0x26, 0xEF, 0xF9,
+  0xFF, 0xF0, 0x00, 0x00, 0x00, 0x5F, 0xFD,
+  0xFF, 0xF0, 0x00, 0x00, 0x00, 0x0F, 0xFF,
+  0xFF, 0xF0, 0x00, 0x00, 0x00, 0x0F, 0xFF,
+  0xFF, 0xF0, 0x00, 0x00, 0x00, 0x4F, 0xFD,
+  0xFF, 0xF0, 0x00, 0x00, 0x14, 0xEF, 0xFA,
+  0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xF3,
+  0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x60,
+  0xFF, 0xFF, 0xFF, 0xFF, 0xFD, 0xB4, 0x00
+};
+
+static GUI_CONST_STORAGE unsigned char acGUI_FontAA4_32_0043[140] = { /* code 0043, LATIN CAPITAL LETTER C */
+  0x00, 0x00, 0x5B, 0xEF, 0xEB, 0x60, 0x00,
+  0x00, 0x1B, 0xFF, 0xFF, 0xFF, 0xFC, 0x10,
+  0x00, 0xBF, 0xFF, 0xFF, 0xFF, 0xFF, 0xC0,
+  0x07, 0xFF, 0xF7, 0x10, 0x3A, 0xFF, 0xF7,
+  0x0E, 0xFF, 0x50, 0x00, 0x00, 0xAF, 0xFD,
+  0x5F, 0xFB, 0x00, 0x00, 0x00, 0x2D, 0x83,
+  0x9F, 0xF6, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0xCF, 0xF3, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0xEF, 0xF1, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0xFF, 0xF0, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0xFF, 0xF0, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0xEF, 0xF1, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0xDF, 0xF3, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0xAF, 0xF6, 0x00, 0x00, 0x00, 0x2D, 0x83,
+  0x6F, 0xFB, 0x00, 0x00, 0x00, 0x7F, 0xFD,
+  0x1F, 0xFF, 0x40, 0x00, 0x01, 0xEF, 0xF8,
+  0x08, 0xFF, 0xE7, 0x10, 0x4D, 0xFF, 0xF2,
+  0x00, 0xCF, 0xFF, 0xFF, 0xFF, 0xFF, 0x80,
+  0x00, 0x1C, 0xFF, 0xFF, 0xFF, 0xF9, 0x00,
+  0x00, 0x00, 0x6B, 0xEF, 0xEA, 0x40, 0x00
+};
+
+static GUI_CONST_STORAGE GUI_CHARINFO_EXT GUI_FontAA4_32_CharInfo[3] = {
+   {  17,  20,   0,   6,  17, acGUI_FontAA4_32_0041 } /* code 0041, LATIN CAPITAL LETTER A */
+  ,{  14,  20,   2,   6,  17, acGUI_FontAA4_32_0042 } /* code 0042, LATIN CAPITAL LETTER B */
+  ,{  14,  20,   1,   6,  17, acGUI_FontAA4_32_0043 } /* code 0043, LATIN CAPITAL LETTER C */
+};
+
+static GUI_CONST_STORAGE GUI_FONT_PROP_EXT GUI_FontAA4_32_Prop1 = {
+   0x0041 /* first character */
+  ,0x0043 /* last character  */
+  ,&GUI_FontAA4_32_CharInfo[  0] /* address of first character */
+  ,(GUI_CONST_STORAGE GUI_FONT_PROP_EXT *)0 /* pointer to next GUI_FONT_PROP_EXT */
+};
+
+GUI_CONST_STORAGE GUI_FONT GUI_FontAA4_32 = {
+   GUI_FONTTYPE_PROP_AA4_EXT /* type of font    */
+  ,33 /* height of font  */
+  ,33 /* space of font y */
+  ,1 /* magnification x */
+  ,1 /* magnification y */
+  ,{&GUI_FontAA4_32_Prop1}
+  ,33 /* Baseline */
+  ,15 /* Height of lowercase characters */
+  ,20 /* Height of capital characters */
+};
+
+/*********************************************************************
+*                                                                    *
+*       GUI_FontAA2_32                                               *
+*                                                                    *
+*  Used in                                                           *
+*  - GUIDEMO_AntiAliasedText.c                                       *
+*                                                                    *
+**********************************************************************
+*/
+static GUI_CONST_STORAGE unsigned char acGUI_FontAA2_32_0041[100] = { /* code 0041, LATIN CAPITAL LETTER A */
+  0x00, 0x03, 0xF0, 0x00, 0x00,
+  0x00, 0x0B, 0xF4, 0x00, 0x00,
+  0x00, 0x0F, 0xFC, 0x00, 0x00,
+  0x00, 0x1F, 0xFC, 0x00, 0x00,
+  0x00, 0x2F, 0xFE, 0x00, 0x00,
+  0x00, 0x3F, 0x7F, 0x00, 0x00,
+  0x00, 0x7F, 0x3F, 0x40, 0x00,
+  0x00, 0xBD, 0x1F, 0x80, 0x00,
+  0x00, 0xFC, 0x0F, 0xC0, 0x00,
+  0x01, 0xFC, 0x0F, 0xD0, 0x00,
+  0x02, 0xF4, 0x07, 0xE0, 0x00,
+  0x03, 0xF0, 0x03, 0xF0, 0x00,
+  0x07, 0xFF, 0xFF, 0xF4, 0x00,
+  0x0B, 0xFF, 0xFF, 0xF8, 0x00,
+  0x0F, 0xFF, 0xFF, 0xFC, 0x00,
+  0x1F, 0x80, 0x00, 0xBD, 0x00,
+  0x3F, 0x40, 0x00, 0x7F, 0x00,
+  0x3F, 0x00, 0x00, 0x3F, 0x00,
+  0x7E, 0x00, 0x00, 0x2F, 0x40,
+  0xFD, 0x00, 0x00, 0x1F, 0xC0
+};
+
+static GUI_CONST_STORAGE unsigned char acGUI_FontAA2_32_0042[ 80] = { /* code 0042, LATIN CAPITAL LETTER B */
+  0xFF, 0xFF, 0xF9, 0x00,
+  0xFF, 0xFF, 0xFF, 0x80,
+  0xFF, 0xFF, 0xFF, 0xD0,
+  0xFC, 0x00, 0x0F, 0xF0,
+  0xFC, 0x00, 0x03, 0xF0,
+  0xFC, 0x00, 0x03, 0xF0,
+  0xFC, 0x00, 0x03, 0xF0,
+  0xFC, 0x00, 0x1F, 0xD0,
+  0xFF, 0xFF, 0xFF, 0xC0,
+  0xFF, 0xFF, 0xFF, 0x40,
+  0xFF, 0xFF, 0xFF, 0xC0,
+  0xFC, 0x00, 0x1F, 0xE0,
+  0xFC, 0x00, 0x07, 0xF0,
+  0xFC, 0x00, 0x03, 0xF0,
+  0xFC, 0x00, 0x03, 0xF0,
+  0xFC, 0x00, 0x07, 0xF0,
+  0xFC, 0x00, 0x1F, 0xE0,
+  0xFF, 0xFF, 0xFF, 0xC0,
+  0xFF, 0xFF, 0xFF, 0x40,
+  0xFF, 0xFF, 0xF9, 0x00
+};
+
+static GUI_CONST_STORAGE unsigned char acGUI_FontAA2_32_0043[ 80] = { /* code 0043, LATIN CAPITAL LETTER C */
+  0x00, 0x6F, 0xE4, 0x00,
+  0x02, 0xFF, 0xFF, 0x00,
+  0x0F, 0xFF, 0xFF, 0xC0,
+  0x1F, 0xD0, 0x2F, 0xD0,
+  0x3F, 0x40, 0x0B, 0xF0,
+  0x7E, 0x00, 0x03, 0x80,
+  0xBD, 0x00, 0x00, 0x00,
+  0xFC, 0x00, 0x00, 0x00,
+  0xFC, 0x00, 0x00, 0x00,
+  0xFC, 0x00, 0x00, 0x00,
+  0xFC, 0x00, 0x00, 0x00,
+  0xFC, 0x00, 0x00, 0x00,
+  0xFC, 0x00, 0x00, 0x00,
+  0xBD, 0x00, 0x03, 0x80,
+  0x7E, 0x00, 0x07, 0xF0,
+  0x3F, 0x40, 0x0F, 0xE0,
+  0x2F, 0xD0, 0x7F, 0xC0,
+  0x0F, 0xFF, 0xFF, 0x80,
+  0x03, 0xFF, 0xFE, 0x00,
+  0x00, 0x7F, 0xE0, 0x00
+};
+
+static GUI_CONST_STORAGE GUI_CHARINFO_EXT GUI_FontAA2_32_CharInfo[3] = {
+   {  17,  20,   0,   6,  17, acGUI_FontAA2_32_0041 } /* code 0041, LATIN CAPITAL LETTER A */
+  ,{  14,  20,   2,   6,  17, acGUI_FontAA2_32_0042 } /* code 0042, LATIN CAPITAL LETTER B */
+  ,{  14,  20,   1,   6,  17, acGUI_FontAA2_32_0043 } /* code 0043, LATIN CAPITAL LETTER C */
+};
+
+static GUI_CONST_STORAGE GUI_FONT_PROP_EXT GUI_FontAA2_32_Prop1 = {
+   0x0041 /* first character */
+  ,0x0043 /* last character  */
+  ,&GUI_FontAA2_32_CharInfo[  0] /* address of first character */
+  ,(GUI_CONST_STORAGE GUI_FONT_PROP_EXT *)0 /* pointer to next GUI_FONT_PROP_EXT */
+};
+
+GUI_CONST_STORAGE GUI_FONT GUI_FontAA2_32 = {
+   GUI_FONTTYPE_PROP_AA2_EXT /* type of font    */
+  ,33 /* height of font  */
+  ,33 /* space of font y */
+  ,1 /* magnification x */
+  ,1 /* magnification y */
+  ,{&GUI_FontAA2_32_Prop1}
+  ,33 /* Baseline */
+  ,15 /* Height of lowercase characters */
+  ,20 /* Height of capital characters */
+};
+
+/*********************************************************************
+*                                                                    *
 *       Bitmaps                                                      *
 *                                                                    *
 **********************************************************************
 */
 /*********************************************************************
 *                                                                    *
-*       SeggerLogo                                                   *
+*       bmSeggerLogo                                                 *
+*                                                                    *
+*  Used in                                                           *
+*  - GUIDEMO_Intro.c                                                 *
 *                                                                    *
 **********************************************************************
 */
@@ -4895,7 +5135,13 @@ GUI_CONST_STORAGE GUI_BITMAP bmSeggerLogo = {
 
 /*********************************************************************
 *                                                                    *
-*       SeggerLogo70x35                                              *
+*       bmSeggerLogo70x35                                            *
+*                                                                    *
+*  Used in                                                           *
+*  - GUIDEMO.c                                                       *
+*  - GUIDEMO_Automotive.c                                            *
+*  - GUIDEMO_BarGraph.c                                              *
+*  - GUIDEMO_Speed.c                                                 *
 *                                                                    *
 **********************************************************************
 */

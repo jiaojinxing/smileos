@@ -9,11 +9,21 @@
 *                                                                    *
 **********************************************************************
 
-** emWin V5.16 - Graphical user interface for embedded applications **
-emWin is protected by international copyright laws.   Knowledge of the
+** emWin V5.18 - Graphical user interface for embedded applications **
+All  Intellectual Property rights  in the Software belongs to  SEGGER.
+emWin is protected by  international copyright laws.  Knowledge of the
 source code may not be used to write a similar product.  This file may
-only be used in accordance with a license and should not be re-
-distributed in any way. We appreciate your understanding and fairness.
+only be used in accordance with the following terms:
+
+The software has been licensed to  NXP Semiconductors USA, Inc.  whose
+registered  office  is  situated  at  1109 McKay Dr, M/S 76, San Jose, 
+CA 95131, USA  solely for  the  purposes  of  creating  libraries  for 
+NXPs M0, M3/M4 and  ARM7/9 processor-based  devices,  sublicensed  and
+distributed under the terms and conditions of the NXP End User License
+Agreement.
+Full source code is available at: www.segger.com
+
+We appreciate your understanding and fairness.
 ----------------------------------------------------------------------
 File        : GUIDEMO_Skinning.c
 Purpose     : Plays with some dialogs and uses skinning
@@ -2204,9 +2214,14 @@ static void _cbDialogOrder(WM_MESSAGE * pMsg) {
         while ((_ReadyDialogOrder == 0) && (GUIDEMO_CheckCancel() == 0)) {
           GUI_Delay(100);
           if (_ReadyDialogSelect == 1) {
-            _ReadyDialogSelect++;
-            hItem = WM_GetDialogItem(hWin, GUI_ID_EDIT0);
-            EDIT_SetText(hItem, _acVehicle);
+            //
+            // Make sure the dialog is not deleted.
+            //
+            if (WM_IsWindow(hWin)) {
+              _ReadyDialogSelect++;
+              hItem = WM_GetDialogItem(hWin, GUI_ID_EDIT0);
+              EDIT_SetText(hItem, _acVehicle);
+            }
           }
         }
         if (WM_IsWindow(hDlg)) {
@@ -2215,6 +2230,10 @@ static void _cbDialogOrder(WM_MESSAGE * pMsg) {
         break;
       case GUI_ID_OK:
         hProg = GUI_CreateDialogBox(_aDialogProgress, GUI_COUNTOF(_aDialogProgress), &_cbDialogProgress, WM_HBKWIN, 0, 0);
+        //
+        // Make modal to avoid several creations of the progress window.
+        //
+        WM_MakeModal(hProg);
         FRAMEWIN_SetSkin(hProg, _DrawSkin);
         GUI_MEMDEV_FadeInWindow(hProg, 500);
         WM_InvalidateWindow(hWin);
@@ -2223,6 +2242,9 @@ static void _cbDialogOrder(WM_MESSAGE * pMsg) {
         // No break here...
         //
       case GUI_ID_CANCEL:
+        //
+        // Make sure the dialog is not deleted.
+        //
         if (WM_IsWindow(hWin)) {
           GUI_MEMDEV_FadeOutWindow(hWin, 500);
           GUI_EndDialog(hWin, 0);

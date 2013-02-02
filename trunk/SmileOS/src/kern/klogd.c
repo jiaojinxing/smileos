@@ -92,7 +92,7 @@ void klogd_create(void)
 {
     mqueue_new(&mqueue, 100);
 
-    kthread_create("klogd", klogd, NULL, 4 * KB, 100);
+    kthread_create("klogd", klogd, NULL, 16 * KB, 100);
 }
 /*********************************************************************************************************
 ** Function name:           printk
@@ -125,6 +125,15 @@ void printk(const char *fmt, ...)
 
     msg = kmalloc(sizeof(msg_t), GFP_KERNEL);
     if (msg == NULL) {
+        static char buf[LINE_MAX];
+        va_start(va, fmt);
+
+        vsnprintf(buf, sizeof(buf), fmt, va);
+
+        va_end(va);
+
+        kcomplain(buf);
+        kcomplain("\r\n");
         return;
     }
 

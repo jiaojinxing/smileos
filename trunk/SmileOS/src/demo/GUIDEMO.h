@@ -9,11 +9,21 @@
 *                                                                    *
 **********************************************************************
 
-** emWin V5.16 - Graphical user interface for embedded applications **
-emWin is protected by international copyright laws.   Knowledge of the
+** emWin V5.18 - Graphical user interface for embedded applications **
+All  Intellectual Property rights  in the Software belongs to  SEGGER.
+emWin is protected by  international copyright laws.  Knowledge of the
 source code may not be used to write a similar product.  This file may
-only be used in accordance with a license and should not be re-
-distributed in any way. We appreciate your understanding and fairness.
+only be used in accordance with the following terms:
+
+The software has been licensed to  NXP Semiconductors USA, Inc.  whose
+registered  office  is  situated  at  1109 McKay Dr, M/S 76, San Jose, 
+CA 95131, USA  solely for  the  purposes  of  creating  libraries  for 
+NXPs M0, M3/M4 and  ARM7/9 processor-based  devices,  sublicensed  and
+distributed under the terms and conditions of the NXP End User License
+Agreement.
+Full source code is available at: www.segger.com
+
+We appreciate your understanding and fairness.
 ----------------------------------------------------------------------
 File        : GUIDEMO.h
 Purpose     : Configuration file of GUIDemo
@@ -31,6 +41,8 @@ extern "C" {     /* Make sure we have C-declarations in C++ programs */
 
 #if GUI_WINSUPPORT
   #include "WM.h"
+
+  #include "CHECKBOX.h"
   #include "FRAMEWIN.h"
   #include "PROGBAR.h"
   #include "TEXT.h"
@@ -49,27 +61,29 @@ extern "C" {     /* Make sure we have C-declarations in C++ programs */
 *
 **********************************************************************
 */
-#define CONTROL_SIZE_X  80
-#define CONTROL_SIZE_Y  61
-#define INFO_SIZE_Y     65
-#define BUTTON_SIZE_X   32
-#define BUTTON_SIZE_Y   20
-#define PROGBAR_SIZE_X  66
-#define PROGBAR_SIZE_Y  12
-#define TEXT_SIZE_X     69
-#define TEXT_SIZE_Y     7
-#define SHOW_PROGBAR_AT 100
-#define GUI_ID_HALT     GUI_ID_USER + 0
-#define GUI_ID_NEXT     GUI_ID_USER + 1
+#define CONTROL_SIZE_X    80
+#define CONTROL_SIZE_Y    61
+#define INFO_SIZE_Y       65
+#define BUTTON_SIZE_X     32
+#define BUTTON_SIZE_Y     20
+#define PROGBAR_SIZE_X    66
+#define PROGBAR_SIZE_Y    12
+#define TEXT_SIZE_X       69
+#define TEXT_SIZE_Y       7
+#define SHOW_PROGBAR_AT   100
+#define GUI_ID_HALT       (GUI_ID_USER + 0)
+#define GUI_ID_NEXT       (GUI_ID_USER + 1)
 
-#define BK_COLOR_0      0xFF5555
-#define BK_COLOR_1      0x880000
+#define BK_COLOR_0        0xFF5555
+#define BK_COLOR_1        0x880000
 
-#define NUMBYTES_NEEDED 0x200000
+#define NUMBYTES_NEEDED   0x200000
 
-#define CIRCLE_RADIUS   100
+#define CIRCLE_RADIUS     100
 
-#define LOGO_DIST_BORDER 5
+#define LOGO_DIST_BORDER  5
+
+#define CHAR_READING_TIME 80
 
 /*********************************************************************
 *
@@ -77,7 +91,10 @@ extern "C" {     /* Make sure we have C-declarations in C++ programs */
 *
 **********************************************************************
 */
-#if 0 // Show all demos
+#if 1 // Show all demos
+#ifndef   SHOW_GUIDEMO_AATEXT
+  #define SHOW_GUIDEMO_AATEXT            (1)
+#endif
 #ifndef   SHOW_GUIDEMO_AUTOMOTIVE
   #define SHOW_GUIDEMO_AUTOMOTIVE        (1)
 #endif
@@ -107,6 +124,9 @@ extern "C" {     /* Make sure we have C-declarations in C++ programs */
 #endif
 #ifndef   SHOW_GUIDEMO_LISTVIEW
   #define SHOW_GUIDEMO_LISTVIEW          (1)
+#endif
+#ifndef   SHOW_GUIDEMO_RADIALMENU
+  #define SHOW_GUIDEMO_RADIALMENU        (1)
 #endif
 #ifndef   SHOW_GUIDEMO_SKINNING
   #define SHOW_GUIDEMO_SKINNING          (1)
@@ -133,59 +153,65 @@ extern "C" {     /* Make sure we have C-declarations in C++ programs */
   #define SHOW_GUIDEMO_ZOOMANDROTATE     (1)
 #endif
 #else // Choose a demo
+#ifndef   SHOW_GUIDEMO_AATEXT
+  #define SHOW_GUIDEMO_AATEXT            (0)
+#endif
 #ifndef   SHOW_GUIDEMO_AUTOMOTIVE
-  #define SHOW_GUIDEMO_AUTOMOTIVE        (1)
+  #define SHOW_GUIDEMO_AUTOMOTIVE        (0)
 #endif
 #ifndef   SHOW_GUIDEMO_BARGRAPH
-  #define SHOW_GUIDEMO_BARGRAPH          (1)
+  #define SHOW_GUIDEMO_BARGRAPH          (0)
 #endif
 #ifndef   SHOW_GUIDEMO_BITMAP
-  #define SHOW_GUIDEMO_BITMAP            (1)
+  #define SHOW_GUIDEMO_BITMAP            (0)
 #endif
 #ifndef   SHOW_GUIDEMO_COLORBAR
-  #define SHOW_GUIDEMO_COLORBAR          (1)
+  #define SHOW_GUIDEMO_COLORBAR          (0)
 #endif
 #ifndef   SHOW_GUIDEMO_CURSOR
-  #define SHOW_GUIDEMO_CURSOR            (1)
+  #define SHOW_GUIDEMO_CURSOR            (0)
 #endif
 #ifndef   SHOW_GUIDEMO_FADING
-  #define SHOW_GUIDEMO_FADING            (1)
+  #define SHOW_GUIDEMO_FADING            (0)
 #endif
 #ifndef   SHOW_GUIDEMO_GRAPH
-  #define SHOW_GUIDEMO_GRAPH             (1)
+  #define SHOW_GUIDEMO_GRAPH             (0)
 #endif
 #ifndef   SHOW_GUIDEMO_ICONVIEW
-  #define SHOW_GUIDEMO_ICONVIEW          (1)
+  #define SHOW_GUIDEMO_ICONVIEW          (0)
 #endif
 #ifndef   SHOW_GUIDEMO_IMAGEFLOW
-  #define SHOW_GUIDEMO_IMAGEFLOW         (1)
+  #define SHOW_GUIDEMO_IMAGEFLOW         (0)
 #endif
 #ifndef   SHOW_GUIDEMO_LISTVIEW
-  #define SHOW_GUIDEMO_LISTVIEW          (1)
+  #define SHOW_GUIDEMO_LISTVIEW          (0)
+#endif
+#ifndef   SHOW_GUIDEMO_RADIALMENU
+  #define SHOW_GUIDEMO_RADIALMENU        (1)
 #endif
 #ifndef   SHOW_GUIDEMO_SKINNING
   #define SHOW_GUIDEMO_SKINNING          (0)
 #endif
 #ifndef   SHOW_GUIDEMO_SPEED
-  #define SHOW_GUIDEMO_SPEED             (1)
+  #define SHOW_GUIDEMO_SPEED             (0)
 #endif
 #ifndef   SHOW_GUIDEMO_SPEEDOMETER
-  #define SHOW_GUIDEMO_SPEEDOMETER       (0)
+  #define SHOW_GUIDEMO_SPEEDOMETER       (1)
 #endif
 #ifndef   SHOW_GUIDEMO_TRANSPARENTDIALOG
-  #define SHOW_GUIDEMO_TRANSPARENTDIALOG (1)
+  #define SHOW_GUIDEMO_TRANSPARENTDIALOG (0)
 #endif
 #ifndef   SHOW_GUIDEMO_TREEVIEW
-  #define SHOW_GUIDEMO_TREEVIEW          (1)
+  #define SHOW_GUIDEMO_TREEVIEW          (0)
 #endif
 #ifndef   SHOW_GUIDEMO_VSCREEN
-  #define SHOW_GUIDEMO_VSCREEN           (1)
+  #define SHOW_GUIDEMO_VSCREEN           (0)
 #endif
 #ifndef   SHOW_GUIDEMO_WASHINGMACHINE
-  #define SHOW_GUIDEMO_WASHINGMACHINE    (1)
+  #define SHOW_GUIDEMO_WASHINGMACHINE    (0)
 #endif
 #ifndef   SHOW_GUIDEMO_ZOOMANDROTATE
-  #define SHOW_GUIDEMO_ZOOMANDROTATE     (0)
+  #define SHOW_GUIDEMO_ZOOMANDROTATE     (1)
 #endif
 #endif
 
@@ -199,7 +225,7 @@ extern "C" {     /* Make sure we have C-declarations in C++ programs */
   #define GUIDEMO_SHOW_SPRITES    (1)
 #endif
 #ifndef   GUIDEMO_USE_VNC
-  #define GUIDEMO_USE_VNC         (0)
+  #define GUIDEMO_USE_VNC         (1)
 #endif
 #ifndef   GUIDEMO_USE_AUTO_BK
   #define GUIDEMO_USE_AUTO_BK     (1)
@@ -240,6 +266,7 @@ int  GUIDEMO_GetTime          (void);
 void GUIDEMO_HideControlWin   (void);
 void GUIDEMO_HideInfoWin      (void);
 void GUIDEMO_NotifyStartNext  (void);
+void GUIDEMO_SetDrawLogo      (U8 OnOff);
 void GUIDEMO_ShowControlWin   (void);
 void GUIDEMO_ShowInfo         (const char * acInfo);
 void GUIDEMO_ShowInfoWin      (void);
@@ -254,6 +281,7 @@ void GUIDEMO_Main             (void);
 *
 **********************************************************************
 */
+void GUIDEMO_AntialiasedText  (void);
 void GUIDEMO_Automotive       (void);
 void GUIDEMO_BarGraph         (void);
 void GUIDEMO_Bitmap           (void);
@@ -265,6 +293,7 @@ void GUIDEMO_IconView         (void);
 void GUIDEMO_ImageFlow        (void);
 void GUIDEMO_Intro            (void);
 void GUIDEMO_Listview         (void);
+void GUIDEMO_RadialMenu       (void);
 void GUIDEMO_Skinning         (void);
 void GUIDEMO_Speed            (void);
 void GUIDEMO_Speedometer      (void);
@@ -287,6 +316,8 @@ extern GUI_CONST_STORAGE GUI_FONT   GUI_FontRounded16;
 extern GUI_CONST_STORAGE GUI_FONT   GUI_FontRounded22;
 extern GUI_CONST_STORAGE GUI_FONT   GUI_FontSouvenir18;
 extern GUI_CONST_STORAGE GUI_FONT   GUI_FontD6x8;
+extern GUI_CONST_STORAGE GUI_FONT   GUI_FontAA2_32;
+extern GUI_CONST_STORAGE GUI_FONT   GUI_FontAA4_32;
 
 
 #if defined(__cplusplus)
@@ -294,3 +325,5 @@ extern GUI_CONST_STORAGE GUI_FONT   GUI_FontD6x8;
 #endif
 
 #endif // avoid multiple inclusion
+
+/*************************** End of file ****************************/

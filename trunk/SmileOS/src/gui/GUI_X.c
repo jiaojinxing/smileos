@@ -1,16 +1,21 @@
 /*********************************************************************
-*                SEGGER MICROCONTROLLER SYSTEME GmbH                 *
+*                SEGGER Microcontroller GmbH & Co. KG                *
 *        Solutions for real time microcontroller applications        *
 **********************************************************************
 *                                                                    *
-*           (C) 1996    SEGGER Microcontroller Systeme GmbH          *
+*        (c) 1996 - 2012  SEGGER Microcontroller GmbH & Co. KG       *
 *                                                                    *
 *        Internet: www.segger.com    Support:  support@segger.com    *
 *                                                                    *
 **********************************************************************
 
+** emWin V5.16 - Graphical user interface for embedded applications **
+emWin is protected by international copyright laws.   Knowledge of the
+source code may not be used to write a similar product.  This file may
+only be used in accordance with a license and should not be re-
+distributed in any way. We appreciate your understanding and fairness.
 ----------------------------------------------------------------------
-File        : GUI_X.C
+File        : GUI_X.c
 Purpose     : Config / System dependent externals for GUI
 ---------------------------END-OF-HEADER------------------------------
 */
@@ -32,7 +37,8 @@ static mutex_t gui_lock;
 *                 GUI_X_Delay(int)
 
   Some timing dependent routines require a GetTime
-  and delay function. Default time unit (tick), normally is 1 ms.
+  and delay function. Default time unit (tick), normally is
+  1 ms.
 */
 
 int GUI_X_GetTime(void) {
@@ -100,6 +106,27 @@ void GUI_X_Lock(void)      {
 
 U32  GUI_X_GetTaskId(void) {
     return gettid();
+}
+
+/*********************************************************************
+*
+*      Event driving (optional with multitasking)
+*
+*                 GUI_X_WaitEvent()
+*                 GUI_X_WaitEventTimed()
+*                 GUI_X_SignalEvent()
+*/
+
+void GUI_X_WaitEvent(void)            {
+
+}
+
+void GUI_X_SignalEvent(void)          {
+
+}
+
+void GUI_X_WaitEventTimed(int Period) {
+
 }
 
 /*********************************************************************
