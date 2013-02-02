@@ -9,11 +9,21 @@
 *                                                                    *
 **********************************************************************
 
-** emWin V5.16 - Graphical user interface for embedded applications **
-emWin is protected by international copyright laws.   Knowledge of the
+** emWin V5.18 - Graphical user interface for embedded applications **
+All  Intellectual Property rights  in the Software belongs to  SEGGER.
+emWin is protected by  international copyright laws.  Knowledge of the
 source code may not be used to write a similar product.  This file may
-only be used in accordance with a license and should not be re-
-distributed in any way. We appreciate your understanding and fairness.
+only be used in accordance with the following terms:
+
+The software has been licensed to  NXP Semiconductors USA, Inc.  whose
+registered  office  is  situated  at  1109 McKay Dr, M/S 76, San Jose, 
+CA 95131, USA  solely for  the  purposes  of  creating  libraries  for 
+NXPs M0, M3/M4 and  ARM7/9 processor-based  devices,  sublicensed  and
+distributed under the terms and conditions of the NXP End User License
+Agreement.
+Full source code is available at: www.segger.com
+
+We appreciate your understanding and fairness.
 ----------------------------------------------------------------------
 File        : GUIDEMO.c
 Purpose     : Several GUIDEMO routines
@@ -59,6 +69,7 @@ static int     _HaltTimeStart;
 static int     _Halt;
 static int     _Next;
 static int     _Pressed;
+static U8      _DrawLogo;
 
 /*********************************************************************
 *
@@ -98,7 +109,8 @@ static void _DrawBkSimple(int DrawLogo) {
 *       _DrawBk
 */
 static void _DrawBk(int DrawLogo) {
-  int xSize, ySize;
+  int xSize;
+  int ySize;
 
   xSize = LCD_GetXSize();
   ySize = LCD_GetYSize();
@@ -113,10 +125,16 @@ static void _DrawBk(int DrawLogo) {
 *       _DrawBkCircle
 */
 static void _DrawBkCircle(int DrawLogo) {
-  static GUI_MEMDEV_Handle hMemStretch;
-  GUI_MEMDEV_Handle        hMemCircle, hMemGradient, hMemOld;
-  int   xSize, ySize, ySizeV, i, CircleWidth;
-  U32 * pData;
+  static GUI_MEMDEV_Handle   hMemStretch;
+  GUI_MEMDEV_Handle          hMemGradient;
+  GUI_MEMDEV_Handle          hMemCircle;
+  GUI_MEMDEV_Handle          hMemOld;
+  int                        CircleWidth;
+  int                        ySizeV;
+  int                        xSize;
+  int                        ySize;
+  int                        i;
+  U32                      * pData;
 
   xSize  = LCD_GetXSize();
   ySize  = LCD_GetYSize();
@@ -197,6 +215,9 @@ static void _cbBk(WM_MESSAGE * pMsg) {
   WM_KEY_INFO * pInfo;
 
   switch (pMsg->MsgId) {
+  case WM_PAINT:
+    _pfDrawBk(_DrawLogo);
+    break;
   case WM_SET_FOCUS:
     pMsg->Data.v = 0;
     break;
@@ -221,8 +242,8 @@ static void _cbBk(WM_MESSAGE * pMsg) {
 *       _cbEffect
 */
 static int _cbEffect(int TimeRem, void * pVoid) {
-  int           Pressed;
   GUI_PID_STATE State;
+  int           Pressed;
 
   GUI_USE_PARA(TimeRem);
   Pressed = *((int *)pVoid);
@@ -248,8 +269,10 @@ static int _cbEffect(int TimeRem, void * pVoid) {
 */
 static void _cbFrameWinControl(WM_MESSAGE * pMsg) {
   WM_HWIN hItem;
-  int     xSize, ySize;
-  int     Id,    NCode;
+  int     xSize;
+  int     ySize;
+  int     NCode;
+  int     Id;
 
   switch (pMsg->MsgId) {
   case WM_KEY:
@@ -307,7 +330,8 @@ static void _cbFrameWinControl(WM_MESSAGE * pMsg) {
 *       _cbFrameWinInfo
 */
 static void _cbFrameWinInfo(WM_MESSAGE * pMsg) {
-  int xSize, ySize;
+  int xSize;
+  int ySize;
 
   switch (pMsg->MsgId) {
   case WM_KEY:
@@ -348,7 +372,8 @@ static int _FRAMEWIN_DrawSkinFlex(const WIDGET_ITEM_DRAW_INFO * pDrawItemInfo) {
 *       _Main
 */
 static void _Main(void) {
-  int xSize, ySize;
+  int xSize;
+  int ySize;
 
   WM_SelectWindow(WM_HBKWIN);
   GUI_Clear();
@@ -379,7 +404,7 @@ static void _Main(void) {
     GUIDEMO_UpdateControlText();
     (*_GUIDemoConfig.apFunc[_iDemo])();
     _iDemoMinor = 0;
-    _Pressed = 0;
+    _Pressed    = 0;
   }
   _iDemo = 0;
   //
@@ -400,10 +425,20 @@ static void _Main(void) {
 */
 /*********************************************************************
 *
+*       GUIDEMO_SetDrawLogo
+*/
+void GUIDEMO_SetDrawLogo(U8 OnOff) {
+  _DrawLogo = OnOff ? 1 : 0;
+}
+
+/*********************************************************************
+*
 *       GUIDEMO_AddIntToString
 */
 void GUIDEMO_AddIntToString(char * pText, unsigned int Number) {
-  int TextLen, i, LenNum;
+  int TextLen;
+  int LenNum;
+  int i;
 
   TextLen = 0;
   while (*(pText + TextLen)) {
@@ -428,7 +463,9 @@ void GUIDEMO_AddIntToString(char * pText, unsigned int Number) {
 *       GUIDEMO_AddStringToString
 */
 void GUIDEMO_AddStringToString(char * pText, const char * acAdd) {
-  int i, j;
+  int i;
+  int j;
+
   i = 0;
   j = 0;
   while (*(pText + i)) {
@@ -481,8 +518,9 @@ void GUIDEMO_ClearText(char * pText) {
 */
 void GUIDEMO_Delay(int TimeDelay) {
   PROGBAR_Handle hProg;
-  U32            TimeStart, TimeDiff;
   int            NextState;
+  U32            TimeStart;
+  U32            TimeDiff;
 
   hProg = WM_GetDialogItem(_hDialogControl, GUI_ID_PROGBAR0);
   if (TimeDelay > SHOW_PROGBAR_AT) {
@@ -594,10 +632,18 @@ void GUIDEMO_ShowInfoWin(void) {
 *
 *       GUIDEMO_ShowIntro
 *
-*   This function has to be called by every sample
+*  Function description
+*    Shows the GUIDEMO introduction screen which display the title of
+*    the sample and a short description.
 */
 void GUIDEMO_ShowIntro(const char * acTitle, const char * acDescription) {
-  int xSize, ySize, xCenter, yCenter, FontDistY, TimeWait, i;
+  int FontDistY;
+  int TimeWait;
+  int xCenter;
+  int yCenter;
+  int xSize;
+  int ySize;
+  int i;
 
   xSize   = LCD_GetXSize();
   ySize   = LCD_GetYSize();
@@ -627,7 +673,7 @@ void GUIDEMO_ShowIntro(const char * acTitle, const char * acDescription) {
   while (acDescription[i]) {
     i++;
   }
-  TimeWait = i * 80;
+  TimeWait = i * CHAR_READING_TIME;
   GUIDEMO_Wait(TimeWait);
 }
 
@@ -694,7 +740,6 @@ void GUIDEMO_Main(void) {
       _GUIDemoConfig.pGUI_VNC_X_StartServer(0, 0);
     }
   #endif
-  //GUI_VNC_X_StartServer(0, 0);
   #if GUIDEMO_USE_AUTO_BK
     //
     // Determine if HW has enough memory to draw the gradient circle as background
@@ -712,6 +757,7 @@ void GUIDEMO_Main(void) {
     {
       _pfDrawBk = _DrawBkSimple;
     }
+  GUIDEMO_SetDrawLogo(1);
   while (1) {
     _Main();
   }

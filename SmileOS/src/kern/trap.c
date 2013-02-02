@@ -99,6 +99,8 @@ void undf_c_handler(uint32_t *regs)
 
     print_regs(regs);
 
+    while(1);
+
     kill(current->tid, SIGILL);                                         /*  杀死当前任务                */
 
     interrupt_exit();                                                   /*  退出中断                    */

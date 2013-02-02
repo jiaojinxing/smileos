@@ -382,13 +382,8 @@
 *********************************************************************************************************/
 
 #define TCPIP_THREAD_NAME               "lwIP"
-#define TCPIP_THREAD_STACKSIZE          (4 * __KB)
+#define TCPIP_THREAD_STACKSIZE          (16 * __KB)
 #define TCPIP_THREAD_PRIO               (50)
-
-#define NETIF_THREAD_NAME               "netif"
-#define NETIF_THREAD_STACKSIZE          (4 * __KB)
-#define NETIF_THREAD_PRIO               (100)
-
 
 #define TCPIP_MBOX_SIZE                 LWIP_CFG_MSG_SIZE
 

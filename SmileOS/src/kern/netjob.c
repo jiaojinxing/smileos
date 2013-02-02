@@ -81,7 +81,11 @@ void netjob_create(void)
 {
     mqueue_new(&mqueue, 100);
 
-    kthread_create("netjob", netjob, NULL, 8 * KB, 80);
+#define NETIF_THREAD_NAME               "netjob"
+#define NETIF_THREAD_STACKSIZE          (16 * KB)
+#define NETIF_THREAD_PRIO               (50)
+
+    kthread_create(NETIF_THREAD_NAME, netjob, NULL, NETIF_THREAD_STACKSIZE, NETIF_THREAD_PRIO);
 }
 /*********************************************************************************************************
 ** Function name:           netjob_add

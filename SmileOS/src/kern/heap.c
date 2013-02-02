@@ -62,7 +62,8 @@
 *********************************************************************************************************/
 static heap_t       kern_heap;
 static heap_t       dma_heap;
-static heap_t       share_heap;
+static heap_t       hw_share_heap;
+static heap_t       sw_share_heap;
 /*********************************************************************************************************
 ** Function name:           __kmalloc
 ** Descriptions:            从内核内存堆里分配内存
@@ -82,7 +83,11 @@ void *__kmalloc(const char *func, int line, size_t size, int flags)
 
     if (flags & GFP_SHARE) {
 
-        ptr = heap_alloc(&share_heap, func, line, size);
+        if (flags & GFP_DMA) {
+            ptr = heap_alloc(&hw_share_heap, func, line, size);
+        } else {
+            ptr = heap_alloc(&sw_share_heap, func, line, size);
+        }
 
     } else if (flags & GFP_DMA) {
 
@@ -123,10 +128,15 @@ void __kfree(const char *func, int line, void *ptr)
 
         heap_free(&dma_heap, func, line, ptr);
 
-    } else if (((uint32_t)ptr >= SHARE_MEM_BASE) &&
-               ((uint32_t)ptr <  SHARE_MEM_BASE + SHARE_MEM_SIZE)) {
+    } else if (((uint32_t)ptr >= HW_SHARE_MEM_BASE) &&
+               ((uint32_t)ptr <  HW_SHARE_MEM_BASE + HW_SHARE_MEM_SIZE)) {
 
-        heap_free(&share_heap, func, line, ptr);
+        heap_free(&hw_share_heap, func, line, ptr);
+
+    } else if (((uint32_t)ptr >= SW_SHARE_MEM_BASE) &&
+               ((uint32_t)ptr <  SW_SHARE_MEM_BASE + SW_SHARE_MEM_SIZE)) {
+
+        heap_free(&sw_share_heap, func, line, ptr);
 
     } else {
         heap_free(&kern_heap, func, line, ptr);
@@ -254,13 +264,15 @@ void *_calloc_r(struct _reent *reent, size_t nelem, size_t elsize)
 *********************************************************************************************************/
 void kheap_create(void)
 {
-    extern unsigned char _end;
+    extern unsigned char __bss_end;
 
-    heap_init(&kern_heap, "kern", &_end, KERN_STACK_TOP - (uint32_t)&_end);
+    heap_init(&kern_heap, "kern", &__bss_end + 1, KERN_STACK_TOP - (uint32_t)&__bss_end - 1);
 
     heap_init(&dma_heap, "dma", (void *)DMA_MEM_BASE, DMA_MEM_SIZE);
 
-    heap_init(&share_heap, "share", (void *)SHARE_MEM_BASE, SHARE_MEM_SIZE);
+    heap_init(&hw_share_heap, "hw_share", (void *)HW_SHARE_MEM_BASE, HW_SHARE_MEM_SIZE);
+
+    heap_init(&sw_share_heap, "sw_share", (void *)SW_SHARE_MEM_BASE, SW_SHARE_MEM_SIZE);
 }
 #else
 /*********************************************************************************************************
@@ -370,8 +382,8 @@ void uheap_create(void)
     /*
      * 在 __bss_end 后, 进程栈空间前, 建立内存堆
      */
-    heap_init(&user_heap, &__bss_end, PROCESS_SPACE_SIZE - (uint32_t)&__bss_end -
-                                      PROCESS_STACK_SIZE - PROCESS_PARAM_SIZE);
+    heap_init(&user_heap, &__bss_end + 1, PROCESS_SPACE_SIZE - (uint32_t)&__bss_end -
+                                          PROCESS_STACK_SIZE - PROCESS_PARAM_SIZE - 1);
 }
 #endif
 /*********************************************************************************************************
@@ -385,8 +397,8 @@ void uheap_create(void)
 /*
  * 内存块状态
  */
-#define MEM_BLOCK_FREE              0x0000
-#define MEM_BLOCK_USED              0xFFFF
+#define MEM_BLOCK_FREE              0x5566
+#define MEM_BLOCK_USED              0x7788
 
 /*
  * 内存块
@@ -399,7 +411,7 @@ struct mem_block {
     mem_block_t    *prev_free;                                          /*  空闲前趋                    */
     mem_block_t    *next_free;                                          /*  空闲后趋                    */
     size_t          size;                                               /*  大小                        */
-};
+} __attribute__((packed));
 /*********************************************************************************************************
 ** Function name:           heap_init
 ** Descriptions:            创建内存堆
@@ -454,9 +466,33 @@ int heap_init(heap_t *heap, const char *name, uint8_t *base, size_t size)
 
     heap->magic                 = MEM_BLOCK_MAGIC;                      /*  加入魔数                    */
 
-    strlcpy(heap->name, name, sizeof(heap->name));
+    strlcpy(heap->name, name, sizeof(heap->name));                      /*  名字                        */
 
     return 0;
+}
+
+static void blk_dump(heap_t *heap, mem_block_t *blk, const char *func, int line)
+{
+    mem_block_t *temp;
+    mem_block_t *prev;
+
+    debug("%s: process %d heap %s error: blk 0x%x magic=0x%x status=0x%x, call by %s() line %d\n",
+            __func__, getpid(), heap->name, blk, blk->magic, blk->status, func, line);
+    blk->magic  = MEM_BLOCK_MAGIC;
+    blk->status = MEM_BLOCK_FREE;
+
+    temp = heap->block_list;
+    prev = NULL;
+
+    while (temp && temp != blk) {
+        prev = temp;
+        temp = temp->next;
+    }
+
+    if (temp && prev) {
+        debug("%s: process %d heap %s error: prev blk 0x%x magic=0x%x status=0x%x, call by %s() line %d\n",
+                __func__, getpid(), heap->name, prev, prev->magic, prev->status, func, line);
+    }
 }
 /*********************************************************************************************************
 ** Function name:           heap_alloc
@@ -494,6 +530,10 @@ void *heap_alloc(heap_t *heap, const char *func, int line, size_t size)
 
         blk = heap->free_list;                                          /*  从空闲内存块链表里找出一个  */
         while (blk != NULL && blk->size < size) {                       /*  首次满足大小的空闲内存块    */
+            if (blk->magic != MEM_BLOCK_MAGIC || blk->status != MEM_BLOCK_FREE) {
+                blk_dump(heap, blk, func, line);
+                goto error;
+            }
             blk = blk->next_free;
         }
 
@@ -503,20 +543,19 @@ void *heap_alloc(heap_t *heap, const char *func, int line, size_t size)
             goto error;
         }
 
-        if (blk->magic != MEM_BLOCK_MAGIC) {                            /*  出错了                      */
-            debug("%s: process %d heap %s error, call by %s() line %d\n",
-                    __func__, getpid(), heap->name, func, line);
+        if (blk->magic != MEM_BLOCK_MAGIC || blk->status != MEM_BLOCK_FREE) {
+            blk_dump(heap, blk, func, line);
             goto error;
         }
 
         if (blk->size <= MEM_ALIGN_SIZE(sizeof(mem_block_t)) + size) {  /*  如果内存块切割后, 剩余的大小*/
                                                                         /*  不足或只够建立一个内存块节点*/
                                                                         /*  则整块分配出去              */
-            if (heap->free_list == blk) {                               /*  处理空闲内存块链表链头      */
+            if (heap->free_list == blk) {                               /*  从空闲内存块链表中删除内存块*/
                 heap->free_list = blk->next_free;
             }
 
-            if (blk->prev_free != NULL) {                               /*  从空闲内存块链表中删除内存块*/
+            if (blk->prev_free != NULL) {
                 blk->prev_free->next_free = blk->next_free;
             }
             if (blk->next_free != NULL) {
@@ -530,6 +569,10 @@ void *heap_alloc(heap_t *heap, const char *func, int line, size_t size)
         } else {
                                                                         /*  在内存块的高端地址处        */
             new_blk = (mem_block_t *)((char *)blk + blk->size - size);  /*  建立一个新的内存块          */
+            /*
+             * new_blk = (mem_block_t *)((char *)blk + MEM_ALIGN_SIZE(sizeof(mem_block_t)) +
+             *           blk->size - size - MEM_ALIGN_SIZE(sizeof(mem_block_t)));
+             */
 
             if (blk->next != NULL) {                                    /*  新内存块加入内存块链表      */
                 blk->next->prev = new_blk;
@@ -637,8 +680,9 @@ void *heap_free(heap_t *heap, const char *func, int line, void *ptr)
         }
         heap->block_nr--;
 
-        blk = prev;
         if (next != NULL && next->status == MEM_BLOCK_FREE) {           /*  后一个内存块空闲, 合并之    */
+
+            blk = prev;
 
             blk->size += MEM_ALIGN_SIZE(sizeof(mem_block_t)) + next->size;  /*  内存块变大              */
 
@@ -671,19 +715,24 @@ void *heap_free(heap_t *heap, const char *func, int line, void *ptr)
         }
         heap->block_nr--;
 
-        if (next->next_free != NULL) {                                  /*  从空闲块链表中删除后内存块  */
-            next->next_free->prev_free = blk;
+        if (heap->free_list == next) {                                  /*  从空闲块链表中删除后内存块  */
+            heap->free_list = next->next_free;
+        }
+
+        if (next->next_free != NULL) {
+            next->next_free->prev_free = next->prev_free;
         }
 
         if (next->prev_free != NULL) {
-            next->prev_free->next_free = blk;
+            next->prev_free->next_free = next->next_free;
         }
 
-        blk->prev_free = next->prev_free;                               /*  把内存块加入空闲内存块链表  */
-        blk->next_free = next->next_free;
-        if (heap->free_list == next) {
-            heap->free_list = blk;
+        blk->next_free = heap->free_list;                               /*  把内存块加入空闲内存块链表  */
+        blk->prev_free = NULL;
+        if (heap->free_list != NULL) {
+            heap->free_list->prev_free = blk;
         }
+        heap->free_list = blk;
     } else {
         /*
          * 把内存块加入空闲内存块链表的链头, 分配时尽可能使用已经使用过的内存,
