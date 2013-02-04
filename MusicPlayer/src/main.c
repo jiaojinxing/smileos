@@ -43,7 +43,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <drv/audio.h>
+#include <drivers/audio.h>
 
 #include "libavformat/avformat.h"
 #include "libavcodec/avcodec.h"
@@ -110,7 +110,7 @@ static void *player_thread(void *arg)
     }
 
     ioctl(audio, AUDIO_SAMPLE_RATE, codec_ctx->sample_rate);
-    ioctl(audio, AUDIO_CHANNEL_NR,  codec_ctx->channels);
+    ioctl(audio, AUDIO_CHANNELS_NR,  codec_ctx->channels);
     ioctl(audio, AUDIO_SAMPLE_BITS, codec_ctx->bits_per_raw_sample ? codec_ctx->bits_per_raw_sample : 16);
 
     samples = malloc(AVCODEC_MAX_AUDIO_FRAME_SIZE);

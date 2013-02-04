@@ -39,7 +39,7 @@
 *********************************************************************************************************/
 #include "vfs/device.h"
 #include "vfs/driver.h"
-#include "vfs/utils.h"
+#include "vfs/select.h"
 #include "kern/kern.h"
 #include <errno.h>
 
@@ -180,7 +180,7 @@ int module_init(int argc, char **argv)
 
     driver_install(&test_drv);
 
-    priv = kmalloc(sizeof(privinfo_t));
+    priv = kmalloc(sizeof(privinfo_t), GFP_KERNEL);
     if (priv != NULL) {
         device_init(priv);
         if (device_create("/dev/test", "test", priv) < 0) {

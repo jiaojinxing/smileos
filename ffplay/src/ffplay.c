@@ -41,7 +41,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <linux/fb.h>
+#include <drivers/fb.h>
 
 #include "libavformat/avformat.h"
 #include "libavcodec/avcodec.h"
