@@ -68,7 +68,7 @@
 							</tool>
 							<tool id="org.eclipse.cdt.cross.arm.gnu.yagarto.windows.elf.c.linker.debug.1618295496" name="ARM Yagarto Windows GCC C Linker" superClass="org.eclipse.cdt.cross.arm.gnu.yagarto.windows.elf.c.linker.debug"/>
 							<tool id="org.eclipse.cdt.cross.arm.gnu.yagarto.windows.elf.cpp.linker.debug.154081224" name="ARM Yagarto Windows GCC C++ Linker" superClass="org.eclipse.cdt.cross.arm.gnu.yagarto.windows.elf.cpp.linker.debug">
-								<option id="org.eclipse.cdt.cross.arm.gnu.cpp.link.option.scriptfile.834781608" name="Script file (-T)" superClass="org.eclipse.cdt.cross.arm.gnu.cpp.link.option.scriptfile" value="..\..\SmileOS\src\runtime\SMILEOS_PROCESS.ld" valueType="string"/>
+								<option id="org.eclipse.cdt.cross.arm.gnu.cpp.link.option.scriptfile.834781608" name="Script file (-T)" superClass="org.eclipse.cdt.cross.arm.gnu.cpp.link.option.scriptfile" value="..\..\SmileOS\src\runtime\arch\arm920t\SMILEOS_PROCESS.ld" valueType="string"/>
 								<option id="org.eclipse.cdt.cross.arm.gnu.cpp.link.option.nostart.1189818979" name="Do not use standard start files (-nostartfiles)" superClass="org.eclipse.cdt.cross.arm.gnu.cpp.link.option.nostart" value="true" valueType="boolean"/>
 								<option id="org.eclipse.cdt.cross.arm.gnu.cpp.link.option.libs.977620582" name="Libraries (-l)" superClass="org.eclipse.cdt.cross.arm.gnu.cpp.link.option.libs" valueType="libs">
 									<listOptionValue builtIn="false" value="ffmpeg"/>
@@ -79,7 +79,7 @@
 								<option id="org.eclipse.cdt.cross.arm.gnu.cpp.link.option.paths.887330914" name="Library search path (-L)" superClass="org.eclipse.cdt.cross.arm.gnu.cpp.link.option.paths" valueType="libPaths">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/libffmpeg}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/libz}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/SmileOS/src/runtime}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/SmileOS/src/runtime/arch/arm920t}&quot;"/>
 								</option>
 								<inputType id="org.eclipse.cdt.cross.arm.gnu.cpp.linker.input.450146874" superClass="org.eclipse.cdt.cross.arm.gnu.cpp.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>

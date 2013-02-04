@@ -68,8 +68,8 @@
 							<tool id="org.eclipse.cdt.cross.arm.gnu.yagarto.windows.elf.cpp.linker.debug.154081224" name="ARM Yagarto Windows GCC C++ Linker" superClass="org.eclipse.cdt.cross.arm.gnu.yagarto.windows.elf.cpp.linker.debug">
 								<option id="org.eclipse.cdt.cross.arm.gnu.cpp.link.option.scriptfile.834781608" name="Script file (-T)" superClass="org.eclipse.cdt.cross.arm.gnu.cpp.link.option.scriptfile" value="" valueType="string"/>
 								<option id="org.eclipse.cdt.cross.arm.gnu.cpp.link.option.nostart.1189818979" name="Do not use standard start files (-nostartfiles)" superClass="org.eclipse.cdt.cross.arm.gnu.cpp.link.option.nostart" value="true" valueType="boolean"/>
-								<option id="org.eclipse.cdt.cross.arm.gnu.cpp.link.option.libs.977620582" name="Libraries (-l)" superClass="org.eclipse.cdt.cross.arm.gnu.cpp.link.option.libs"/>
-								<option id="org.eclipse.cdt.cross.arm.gnu.cpp.link.option.paths.887330914" name="Library search path (-L)" superClass="org.eclipse.cdt.cross.arm.gnu.cpp.link.option.paths"/>
+								<option id="org.eclipse.cdt.cross.arm.gnu.cpp.link.option.libs.977620582" name="Libraries (-l)" superClass="org.eclipse.cdt.cross.arm.gnu.cpp.link.option.libs" valueType="libs"/>
+								<option id="org.eclipse.cdt.cross.arm.gnu.cpp.link.option.paths.887330914" name="Library search path (-L)" superClass="org.eclipse.cdt.cross.arm.gnu.cpp.link.option.paths" valueType="libPaths"/>
 								<option id="org.eclipse.cdt.cross.arm.gnu.cpp.link.option.otherflags.1936160187" name="Other flags" superClass="org.eclipse.cdt.cross.arm.gnu.cpp.link.option.otherflags" value="-r" valueType="string"/>
 								<option id="org.eclipse.cdt.cross.arm.gnu.cpp.link.option.nodeflibs.252232254" name="Do not use default libraries (-nodefaultlibs)" superClass="org.eclipse.cdt.cross.arm.gnu.cpp.link.option.nodeflibs" value="true" valueType="boolean"/>
 								<inputType id="org.eclipse.cdt.cross.arm.gnu.cpp.linker.input.450146874" superClass="org.eclipse.cdt.cross.arm.gnu.cpp.linker.input">
