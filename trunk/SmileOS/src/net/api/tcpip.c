@@ -502,6 +502,10 @@ pbuf_free_callback(struct pbuf *p)
  * @param m the heap memory to free
  * @return ERR_OK if callback could be enqueued, an err_t if not
  */
+#if MEM_LIBC_MALLOC
+#include <stdlib.h>
+#endif
+
 err_t
 mem_free_callback(void *m)
 {
