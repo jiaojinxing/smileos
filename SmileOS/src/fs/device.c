@@ -42,7 +42,6 @@
 #include "vfs/config.h"
 #include "vfs/types.h"
 #include "vfs/driver.h"
-#include "vfs/utils.h"
 #include <string.h>
 /*********************************************************************************************************
 ** 全局变量
@@ -105,7 +104,7 @@ device_t *device_lookup(const char *name)
         return NULL;
     }
 
-    key = BKDRHash(name);
+    key = bkdr_hash(name);
 
     mutex_lock(&dev_mgr_lock, 0);
 
@@ -210,10 +209,10 @@ int device_create(const char *dev_name, const char *drv_name, void *ctx)
     dev = kmalloc(sizeof(device_t), GFP_KERNEL);
     if (dev != NULL) {
         strlcpy(dev->name, dev_name, sizeof(dev->name));
-        dev->key   = BKDRHash(dev_name);
+        dev->key   = bkdr_hash(dev_name);
         dev->drv   = drv;
         dev->ctx   = ctx;
-        dev->devno = BKDRHash(drv_name);
+        dev->devno = bkdr_hash(drv_name);
         atomic_set(&dev->ref, 0);
         device_install(dev);
         mutex_unlock(&dev_mgr_lock);

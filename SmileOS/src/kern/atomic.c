@@ -48,8 +48,8 @@
 *********************************************************************************************************/
 int atomic_read(atomic_t *v)
 {
-    uint32_t reg;
-    int ret;
+    reg_t reg;
+    int   ret;
 
     reg = interrupt_disable();
 
@@ -69,7 +69,7 @@ int atomic_read(atomic_t *v)
 *********************************************************************************************************/
 void atomic_set(atomic_t *v, int i)
 {
-    uint32_t reg;
+    reg_t reg;
 
     reg = interrupt_disable();
 
@@ -87,7 +87,7 @@ void atomic_set(atomic_t *v, int i)
 *********************************************************************************************************/
 void atomic_add(atomic_t *v, int i)
 {
-    uint32_t reg;
+    reg_t reg;
 
     reg = interrupt_disable();
 
@@ -105,7 +105,7 @@ void atomic_add(atomic_t *v, int i)
 *********************************************************************************************************/
 void atomic_sub(atomic_t *v, int i)
 {
-    uint32_t reg;
+    reg_t reg;
 
     reg = interrupt_disable();
 
@@ -122,7 +122,7 @@ void atomic_sub(atomic_t *v, int i)
 *********************************************************************************************************/
 void atomic_inc(atomic_t *v)
 {
-    uint32_t reg;
+    reg_t reg;
 
     reg = interrupt_disable();
 
@@ -139,7 +139,7 @@ void atomic_inc(atomic_t *v)
 *********************************************************************************************************/
 void atomic_dec(atomic_t *v)
 {
-    uint32_t reg;
+    reg_t reg;
 
     reg = interrupt_disable();
 
@@ -157,8 +157,8 @@ void atomic_dec(atomic_t *v)
 *********************************************************************************************************/
 int atomic_sub_and_test(atomic_t *v, int i)
 {
-    uint32_t reg;
-    int ret;
+    reg_t reg;
+    int   ret;
 
     reg = interrupt_disable();
 
@@ -182,8 +182,8 @@ int atomic_sub_and_test(atomic_t *v, int i)
 *********************************************************************************************************/
 int atomic_dec_and_test(atomic_t *v)
 {
-    uint32_t reg;
-    int ret;
+    reg_t reg;
+    int   ret;
 
     reg = interrupt_disable();
 
@@ -207,8 +207,8 @@ int atomic_dec_and_test(atomic_t *v)
 *********************************************************************************************************/
 int atomic_inc_and_test(atomic_t *v)
 {
-    uint32_t reg;
-    int ret;
+    reg_t reg;
+    int   ret;
 
     reg = interrupt_disable();
 
@@ -233,8 +233,8 @@ int atomic_inc_and_test(atomic_t *v)
 *********************************************************************************************************/
 int atomic_sub_return(atomic_t *v, int i)
 {
-    uint32_t reg;
-    int ret;
+    reg_t reg;
+    int   ret;
 
     reg = interrupt_disable();
 
@@ -253,8 +253,8 @@ int atomic_sub_return(atomic_t *v, int i)
 *********************************************************************************************************/
 int atomic_inc_return(atomic_t *v)
 {
-    uint32_t reg;
-    int ret;
+    reg_t reg;
+    int   ret;
 
     reg = interrupt_disable();
 
@@ -273,8 +273,8 @@ int atomic_inc_return(atomic_t *v)
 *********************************************************************************************************/
 int atomic_dec_return(atomic_t *v)
 {
-    uint32_t reg;
-    int ret;
+    reg_t reg;
+    int   ret;
 
     reg = interrupt_disable();
 

@@ -41,24 +41,55 @@
 ** http://os.pku.edu.cn:8080/gaikuang/submission/TN05.ELF.Format.Summary.pdf
 **
 *********************************************************************************************************/
+#include "kern/func_config.h"
+#if CONFIG_MODULE_EN > 0
 #include "kern/kern.h"
-#include "kern/mmu.h"
 #include "kern/ipc.h"
-#include "vfs/utils.h"
-
-#include <unistd.h>
-#include <fcntl.h>
-#include <string.h>
+#include "kern/atomic.h"
 
 #include "module/elf.h"
 #include "module/symbol_tool.h"
 #include "module/module.h"
+
+#include <unistd.h>
+#include <fcntl.h>
+#include <string.h>
+/*********************************************************************************************************
+** 模块
+*********************************************************************************************************/
+struct module {
+    struct module  *next;                                               /*  后趋                      　*/
+    uint32_t        key;                                                /*  ELF 文件路径 key            */
+    atomic_t        ref;                                                /*  引用计数                    */
+    uint8_t        *elf;                                                /*  ELF 文件                    */
+    size_t          size;                                               /*  文件大小                    */
+    Elf32_Shdr    **shdrs;                                              /*  段首部数组指针              */
+    uint16_t        bss_idx;                                            /*  BSS 段索引                  */
+    uint16_t        text_idx;                                           /*  TEXT 段索引                 */
+};
 /*********************************************************************************************************
 ** 全局变量
 *********************************************************************************************************/
 static module_t    *mod_list;                                           /*  模块链表                    */
 
 static mutex_t      mod_mgr_lock;                                       /*  模块管理锁                  */
+/*********************************************************************************************************
+** Function name:           symbol_lookup
+** Descriptions:            查找符号
+** input parameters:        name                符号名
+**                          type                符号类型
+** output parameters:       NONE
+** Returned value:          符号地址
+*********************************************************************************************************/
+void *symbol_lookup(const char *name, uint8_t type);
+/*********************************************************************************************************
+** Function name:           symbol_init
+** Descriptions:            初始化符号表
+** input parameters:        NONE
+** output parameters:       NONE
+** Returned value:          0 OR -1
+*********************************************************************************************************/
+int symbol_init(void);
 /*********************************************************************************************************
 ** Function name:           module_init
 ** Descriptions:            初始化内核模块子系统
@@ -68,7 +99,6 @@ static mutex_t      mod_mgr_lock;                                       /*  模块
 *********************************************************************************************************/
 int module_init(void)
 {
-    extern int symbol_init(void);
     symbol_init();                                                      /*  初始化符号表                */
 
     mod_list = NULL;                                                    /*  初始化模块链表              */
@@ -130,7 +160,7 @@ static int module_remove(module_t *mod)
 /*********************************************************************************************************
 ** Function name:           module_lookup_by_key
 ** Descriptions:            查找模块
-** input parameters:        key                 模块名 KEY
+** input parameters:        key                 ELF 文件路径 KEY
 ** output parameters:       NONE
 ** Returned value:          模块 OR NULL
 *********************************************************************************************************/
@@ -155,19 +185,19 @@ static module_t *module_lookup_by_key(uint32_t key)
 /*********************************************************************************************************
 ** Function name:           module_lookup
 ** Descriptions:            查找模块
-** input parameters:        name                模块名
+** input parameters:        path                ELF 文件路径
 ** output parameters:       NONE
 ** Returned value:          模块 OR NULL
 *********************************************************************************************************/
-module_t *module_lookup(const char *name)
+module_t *module_lookup(const char *path)
 {
     uint32_t key;
 
-    if (name == NULL) {
+    if (path == NULL) {
         return NULL;
     }
 
-    key = BKDRHash(name);
+    key = bkdr_hash(path);
 
     return module_lookup_by_key(key);
 }
@@ -231,8 +261,7 @@ static module_t *module_alloc(const char *path, size_t size)
         /*
          * 初始化模块
          */
-        strlcpy(mod->name, path, sizeof(mod->name));
-        mod->key        = BKDRHash(mod->name);
+        mod->key        = bkdr_hash(path);
         mod->elf        = (uint8_t *)mod + sizeof(module_t);
         mod->size       = size;
         mod->bss_idx    = SHN_UNDEF;
@@ -262,48 +291,6 @@ static int module_free(module_t *mod)
 
     kfree(mod);
 
-    return 0;
-}
-/*********************************************************************************************************
-** Function name:           arm_reloc_rel
-** Descriptions:            对指定的 rel 条目进行重定位
-** input parameters:        rel                 REL 条目
-**                          addr                地址
-**                          target              目标节区
-** output parameters:       NONE
-** Returned value:          0 OR -1
-*********************************************************************************************************/
-static int arm_reloc_rel(Elf32_Rel *rel, Elf32_Addr addr, uint8_t *target)
-{
-    Elf32_Addr *where, tmp;
-    Elf32_Sword addend;
-
-    where = (Elf32_Addr *)(target + rel->r_offset);
-
-    switch (ELF32_R_TYPE(rel->r_info)) {
-    case R_ARM_NONE:
-        break;
-
-    case R_ARM_ABS32:
-        *where += addr;
-        break;
-
-    case R_ARM_PC24:
-    case R_ARM_PLT32:
-    case R_ARM_CALL:
-    case R_ARM_JUMP24:
-        addend = *where & 0x00ffffff;
-        if (addend & 0x00800000) {
-            addend |= 0xff000000;
-        }
-        tmp    = addr - (Elf32_Addr)where + (addend << 2);
-        tmp  >>= 2;
-        *where = (*where & 0xff000000) | (tmp & 0x00ffffff);
-        break;
-
-    default:
-        return -1;
-    }
     return 0;
 }
 /*********************************************************************************************************
@@ -350,10 +337,12 @@ static int module_probe(module_t *mod)
         return -1;
     }
 
+#if 0
     if (ehdr->e_machine != EM_ARM) {                                    /*  体系结构类型: 必须是 ARM    */
         printk("ehdr->e_machine != EM_ARM\n");
         return -1;
     }
+#endif
 
     /*
      * 保证不存在程序首部表格相关的东西
@@ -459,7 +448,7 @@ static int module_reloc(module_t *mod)
         Elf32_Shdr *strtab_shdr;
         char       *strtab;
         uint8_t    *symtab;
-        uint8_t    *target;
+        char       *target;
 
         if (shdr->sh_type == SHT_REL || shdr->sh_type == SHT_RELA) {    /*  该节区需要重定位            */
 
@@ -479,7 +468,7 @@ static int module_reloc(module_t *mod)
             strtab_shdr = shdrs[symtab_shdr->sh_link];                  /*  字符串表节区首部            */
 
             symtab      = mod->elf + symtab_shdr->sh_offset;            /*  符号表                      */
-            target      = mod->elf + target_shdr->sh_offset;            /*  目标节区                    */
+            target      = (char *)mod->elf + target_shdr->sh_offset;    /*  目标节区                    */
             strtab      = (char *)mod->elf + strtab_shdr->sh_offset;    /*  字符串表                    */
         }
 
@@ -512,14 +501,13 @@ static int module_reloc(module_t *mod)
                         if (sym->st_shndx == bss_idx) {                 /*  如果这个符号在 .bss 节区    */
                             addr = (Elf32_Addr)(shdrs[bss_idx]->sh_offset + sym->st_value);
                         } else {
-                            addr = (Elf32_Addr)(mod->elf +
-                                    shdrs[sym->st_shndx]->sh_offset + sym->st_value);
+                            addr = (Elf32_Addr)(mod->elf + shdrs[sym->st_shndx]->sh_offset + sym->st_value);
                         }
 
                         /*
                          * 对该的 rel 条目进行重定位
                          */
-                        ret = arm_reloc_rel(rel, addr, target);
+                        ret = arch_relocate_rel(rel, addr, target);
                         if (ret < 0) {
                             goto error1;
                         }
@@ -527,8 +515,7 @@ static int module_reloc(module_t *mod)
                         /*
                          * 在系统里查找这个符号
                          */
-                        extern uint32_t symbol_lookup(const char *name, uint32_t type);
-                        addr = symbol_lookup(sym->st_name + strtab,
+                        addr = (Elf32_Addr)symbol_lookup(sym->st_name + strtab,
                                 ELF32_ST_TYPE(sym->st_info) == STT_FUNC ? SYMBOL_TEXT : SYMBOL_DATA);
                         if (addr == 0) {
                             printk("symbol %s no found\n", sym->st_name + strtab);
@@ -537,7 +524,7 @@ static int module_reloc(module_t *mod)
                             /*
                              * 对该的 rel 条目进行重定位
                              */
-                            ret = arm_reloc_rel(rel, addr, target);
+                            ret = arch_relocate_rel(rel, addr, target);
                             if (ret < 0) {
                                 goto error1;
                             }
@@ -555,8 +542,6 @@ static int module_reloc(module_t *mod)
     mod->shdrs    = shdrs;
     mod->bss_idx  = bss_idx;
     mod->text_idx = text_idx;
-
-    //dcache_clean_invalidate(mod->elf, mod->size);
 
     return 0;
 
@@ -731,7 +716,7 @@ int module_load(const char *path, int argc, char **argv)
 /*********************************************************************************************************
 ** Function name:           module_unload
 ** Descriptions:            卸载模块
-** input parameters:        module              模块
+** input parameters:        path                ELF 文件路径
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
@@ -768,6 +753,7 @@ int module_unload(const char *path)
 
     return 0;
 }
+#endif
 /*********************************************************************************************************
 ** END FILE
 *********************************************************************************************************/

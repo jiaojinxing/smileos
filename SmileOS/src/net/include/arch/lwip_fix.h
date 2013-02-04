@@ -73,6 +73,15 @@ static inline u32_t __HTONL(u32_t x)
 /*********************************************************************************************************
 ** 调试输出
 *********************************************************************************************************/
+#define U16_F                       "u"
+#define U32_F                       "u"
+#define S16_F                       "d"
+#define S32_F                       "d"
+#define X16_F                       "X"
+#define X32_F                       "X"
+#define SZT_F                       "u"
+#define X8_F                        "02X"
+
 #ifdef SMILEOS_KERNEL
 extern void printk(const char *fmt, ...);
 #define LWIP_PLATFORM_DIAG(x)       { printk x; }
@@ -85,9 +94,9 @@ extern void printk(const char *fmt, ...);
 /*********************************************************************************************************
 ** 临界区保护
 *********************************************************************************************************/
-typedef uint32_t sys_prot_t;
-extern  uint32_t interrupt_disable(void);
-extern  void     interrupt_resume(register uint32_t reg);
+typedef reg_t    sys_prot_t;
+extern  reg_t    interrupt_disable(void);
+extern  void     interrupt_resume(register reg_t reg);
 
 #define sys_arch_protect            interrupt_disable
 #define sys_arch_unprotect          interrupt_resume

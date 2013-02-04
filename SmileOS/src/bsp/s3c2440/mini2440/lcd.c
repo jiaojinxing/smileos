@@ -41,12 +41,8 @@
 **
 *********************************************************************************************************/
 #include "kern/kern.h"
-#include "vfs/device.h"
-#include "vfs/driver.h"
-#include "vfs/utils.h"
-#include <fcntl.h>
-#include <string.h>
-#include "drv/fb.h"
+#include "kern/addr_config.h"
+#include "drivers/fb.h"
 #include "../s3c2440.h"
 /*********************************************************************************************************
 ** LCD 型号配置
@@ -73,9 +69,6 @@
 #define HFPD        (14)                                                /*  水平同步信号前肩            */
 #define HSPW        (5)                                                 /*  水平同步信号脉宽            */
 
-#define OFFSIZE     (0)                                                 /*  虚拟屏幕偏移大小(单位半字)  */
-#define PAGEWIDTH   (HOZVAL)                                            /*  虚拟屏幕宽度(单位半字)      */
-
 #define FRM565      (1)                                                 /*  16 BPP 视频数据格式: RGB565 */
 #define PWREN       (1)                                                 /*  使能 LCD_PWREN 输出信号     */
 #define ENLEND      (0)                                                 /*  禁能 LEND 输出信号          */
@@ -92,9 +85,9 @@
 #define INVPWREN    (0)                                                 /*  不反转 PWREN                */
 #define INVLEND     (0)                                                 /*  不反转 LEND                 */
 
-#define LCD_WIDTH   (HOZVAL)
-#define LCD_HEIGHT  (LINEVAL)
-#define LCD_BPP     16
+#define LCD_WIDTH   (240)
+#define LCD_HEIGHT  (320)
+#define LCD_BPP     (16)
 
 #endif
 /*********************************************************************************************************
@@ -107,58 +100,77 @@
 *********************************************************************************************************/
 static int lcd_config(const struct fb_var_screeninfo *var, const struct fb_fix_screeninfo *fix, void *framebuffer)
 {
-    GPGUP   = GPGUP  | (1 << 4);                                        /*  GPG4 关闭上拉电阻           */
-    GPGCON  = (GPGCON & ~(0x3 << 8)) | 3 << 8;                          /*  GPG4 -> LCD_PWREN           */
-    GPGDAT  = GPGDAT | (1 << 4);                                        /*  打开 LCD 电源               */
+    uint32_t lcdbaseu, offsize, pagewidth, lcdbasel;
+    static int init = FALSE;
 
-    GPCCON  = 0xAAAAAAAA;                                               /*  LCD 功能                    */
-    GPDCON  = 0xAAAAAAAA;                                               /*  LCD 功能                    */
+    if (!init) {
+        init = TRUE;
 
-    LCDCON1 = (LCDCON1 & ~(0x3FF << 8)) | CLKVAL  << 8;                 /*  LCD 频率                    */
-    LCDCON1 = (LCDCON1 & ~(0x3   << 5)) | PNRMODE << 5;                 /*  显示模式                    */
-    LCDCON1 = (LCDCON1 & ~(0xF   << 1)) | BPPMODE << 1;                 /*  BPP 模式(每像素点字节数)    */
-    LCDCON1 = (LCDCON1 & ~(1)) | 0;                                     /*  关闭视频输出                */
+        GPGUP   = GPGUP  | (1 << 4);                                        /*  GPG4 关闭上拉电阻           */
+        GPGCON  = (GPGCON & ~(0x3 << 8)) | 3 << 8;                          /*  GPG4 -> LCD_PWREN           */
+        GPGDAT  = GPGDAT | (1 << 4);                                        /*  打开 LCD 电源               */
 
-    LCDCON2 = (LCDCON2 & ~(0xFF  << 24)) | VBPD << 24;                  /*  垂直同步信号后肩            */
-    LCDCON2 = (LCDCON2 & ~(0x3FF << 14)) | (LINEVAL - 1) << 14;         /*  垂直尺寸                    */
-    LCDCON2 = (LCDCON2 & ~(0xFF  <<  6)) | VFPD << 6;                   /*  垂直同步信号前肩            */
-    LCDCON2 = (LCDCON2 & ~(0x3F)) | VSPW;                               /*  垂直同步信号脉宽            */
+        GPCCON  = 0xAAAAAAAA;                                               /*  LCD 功能                    */
+        GPDCON  = 0xAAAAAAAA;                                               /*  LCD 功能                    */
 
-    LCDCON3 = (LCDCON3 & ~(0x7F  << 19)) | HBPD << 19;                  /*  水平同步信号后肩            */
-    LCDCON3 = (LCDCON3 & ~(0x7FF <<  8)) | (HOZVAL - 1) << 8;           /*  水平尺寸                    */
-    LCDCON3 = (LCDCON3 & ~(0xFF)) | HFPD;                               /*  水平同步信号前肩            */
+        LCDCON1 = (LCDCON1 & ~(0x3FF << 8)) | CLKVAL  << 8;                 /*  LCD 频率                    */
+        LCDCON1 = (LCDCON1 & ~(0x3   << 5)) | PNRMODE << 5;                 /*  显示模式                    */
+        LCDCON1 = (LCDCON1 & ~(0xF   << 1)) | BPPMODE << 1;                 /*  BPP 模式(每像素点字节数)    */
+        LCDCON1 = (LCDCON1 & ~(1)) | 0;                                     /*  关闭视频输出                */
 
-    LCDCON4 = (LCDCON4 & ~(0xFF)) | HSPW;                               /*  水平同步信号脉宽            */
+        LCDCON2 = (LCDCON2 & ~(0xFF  << 24)) | VBPD << 24;                  /*  垂直同步信号后肩            */
+        LCDCON2 = (LCDCON2 & ~(0x3FF << 14)) | (LINEVAL - 1) << 14;         /*  垂直尺寸                    */
+        LCDCON2 = (LCDCON2 & ~(0xFF  <<  6)) | VFPD << 6;                   /*  垂直同步信号前肩            */
+        LCDCON2 = (LCDCON2 & ~(0x3F)) | VSPW;                               /*  垂直同步信号脉宽            */
 
-    LCDCON5 = (LCDCON5 & ~(1 << 12)) | BPP24BL   << 12;                 /*  24 BPP 视频数据字节序       */
-    LCDCON5 = (LCDCON5 & ~(1 << 11)) | FRM565    << 11;                 /*  16 BPP 视频数据格式         */
-    LCDCON5 = (LCDCON5 & ~(1 << 10)) | INVVCLK   << 10;                 /*  VCLK 有效边沿               */
-    LCDCON5 = (LCDCON5 & ~(1 <<  9)) | INVVLINE  <<  9;                 /*  是否反转 VLINE              */
-    LCDCON5 = (LCDCON5 & ~(1 <<  8)) | INVVFRAME <<  8;                 /*  是否反转 VFRAME             */
-    LCDCON5 = (LCDCON5 & ~(1 <<  7)) | INVVD     <<  7;                 /*  是否反转 VD                 */
-    LCDCON5 = (LCDCON5 & ~(1 <<  6)) | INVVDEN   <<  6;                 /*  是否反转 VDEN               */
-    LCDCON5 = (LCDCON5 & ~(1 <<  5)) | INVPWREN  <<  5;                 /*  是否反转 PWREN              */
-    LCDCON5 = (LCDCON5 & ~(1 <<  4)) | INVLEND   <<  4;                 /*  是否反转 LEND               */
-    LCDCON5 = (LCDCON5 & ~(1 <<  3)) | PWREN     <<  3;                 /*  是否使能 LCD_PWREN 输出信号 */
-    LCDCON5 = (LCDCON5 & ~(1 <<  2)) | ENLEND    <<  2;                 /*  是否使能 LEND 输出信号      */
-    LCDCON5 = (LCDCON5 & ~(1 <<  1)) | BSWP      <<  1;                 /*  字节是否交换                */
-    LCDCON5 = (LCDCON5 & ~(1 <<  0)) | HWSWP     <<  0;                 /*  半字是否交换                */
+        LCDCON3 = (LCDCON3 & ~(0x7F  << 19)) | HBPD << 19;                  /*  水平同步信号后肩            */
+        LCDCON3 = (LCDCON3 & ~(0x7FF <<  8)) | (HOZVAL - 1) << 8;           /*  水平尺寸                    */
+        LCDCON3 = (LCDCON3 & ~(0xFF)) | HFPD;                               /*  水平同步信号前肩            */
 
-    /* 视频帧缓冲区内存地址高位[30:22]  -> LCDSADDR1[29:21] */
-    LCDSADDR1 = (LCDSADDR1 & ~(0x1FF << 21)) | (((uint32_t)framebuffer >> 22) & 0x1FF) << 21;
+        LCDCON4 = (LCDCON4 & ~(0xFF)) | HSPW;                               /*  水平同步信号脉宽            */
 
-    /* 视频帧缓冲区内存地址低位[21:1]   -> LCDSADDR1[20:0] */
-    LCDSADDR1 = (LCDSADDR1 & ~(0x1FFFFF)) | (((uint32_t)framebuffer >> 1) & 0x1FFFFF);
+        LCDCON5 = (LCDCON5 & ~(1 << 12)) | BPP24BL   << 12;                 /*  24 BPP 视频数据字节序       */
+        LCDCON5 = (LCDCON5 & ~(1 << 11)) | FRM565    << 11;                 /*  16 BPP 视频数据格式         */
+        LCDCON5 = (LCDCON5 & ~(1 << 10)) | INVVCLK   << 10;                 /*  VCLK 有效边沿               */
+        LCDCON5 = (LCDCON5 & ~(1 <<  9)) | INVVLINE  <<  9;                 /*  是否反转 VLINE              */
+        LCDCON5 = (LCDCON5 & ~(1 <<  8)) | INVVFRAME <<  8;                 /*  是否反转 VFRAME             */
+        LCDCON5 = (LCDCON5 & ~(1 <<  7)) | INVVD     <<  7;                 /*  是否反转 VD                 */
+        LCDCON5 = (LCDCON5 & ~(1 <<  6)) | INVVDEN   <<  6;                 /*  是否反转 VDEN               */
+        LCDCON5 = (LCDCON5 & ~(1 <<  5)) | INVPWREN  <<  5;                 /*  是否反转 PWREN              */
+        LCDCON5 = (LCDCON5 & ~(1 <<  4)) | INVLEND   <<  4;                 /*  是否反转 LEND               */
+        LCDCON5 = (LCDCON5 & ~(1 <<  3)) | PWREN     <<  3;                 /*  是否使能 LCD_PWREN 输出信号 */
+        LCDCON5 = (LCDCON5 & ~(1 <<  2)) | ENLEND    <<  2;                 /*  是否使能 LEND 输出信号      */
+        LCDCON5 = (LCDCON5 & ~(1 <<  1)) | BSWP      <<  1;                 /*  字节是否交换                */
+        LCDCON5 = (LCDCON5 & ~(1 <<  0)) | HWSWP     <<  0;                 /*  半字是否交换                */
+
+        LCDINTMSK = (LCDINTMSK & ~(0x3)) | 0;                               /*  屏蔽中断                    */
+        LPCSEL    = (LPCSEL & ~(1)) | 0;                                    /*  禁能 LPC3600/LCC3600 模式   */
+        TPAL      = 0x00;                                                   /*  不使用调色板                */
+
+        /* 视频帧缓冲区内存地址高位[30:22]  -> LCDSADDR1[29:21] */
+        LCDSADDR1 = (LCDSADDR1 & ~(0x1FF << 21)) | (((uint32_t)framebuffer >> 22) & 0x1FF) << 21;
+
+        lcdbaseu  = (((uint32_t)framebuffer & 0x3FFFFF) >> 1);
+
+        /* 视频帧缓冲区内存地址低位[21:1]   -> LCDSADDR1[20:0] */
+        LCDSADDR1 = (LCDSADDR1 & ~(0x1FFFFF)) | lcdbaseu;
+    }
+
+    printk("set xoffset = %d, yoffset = %d\r\n", var->xoffset, var->yoffset);
+
+    lcdbaseu  = (((uint32_t)framebuffer & 0x3FFFFF) >> 1);
+
+    offsize   = (var->xoffset + (var->yoffset * HOZVAL)) * var->bits_per_pixel / 8 / 2;
+
+    pagewidth = HOZVAL * var->bits_per_pixel / 8 / 2;
+
+    lcdbasel  = lcdbaseu + (pagewidth + offsize) * LINEVAL;
 
     /* 视频帧缓冲区的结束地址低位[21:1] -> LCDSADDR2[20:0] */
-    LCDSADDR2 = (LCDSADDR2 & ~(0x1FFFFF)) | ((((uint32_t)framebuffer + LINEVAL * HOZVAL * 2) >> 1) & 0x1FFFFF);
+    LCDSADDR2 = (LCDSADDR2 & ~(0x1FFFFF)) | lcdbasel;
 
-    LCDSADDR3 = (LCDSADDR3 & ~(0x7FF << 11)) | OFFSIZE << 11;           /*  虚拟屏幕偏移大小            */
-    LCDSADDR3 = (LCDSADDR3 & ~(0x7FF)) | PAGEWIDTH;                     /*  虚拟屏幕宽度                */
-
-    LCDINTMSK = (LCDINTMSK & ~(0x3)) | 0;                               /*  屏蔽中断                    */
-    LPCSEL    = (LPCSEL & ~(1)) | 0;                                    /*  禁能 LPC3600/LCC3600 模式   */
-    TPAL      = 0x00;                                                   /*  不使用调色板                */
+    LCDSADDR3 = (LCDSADDR3 & ~(0x7FF << 11)) | (offsize) << 11;         /*  虚拟屏幕偏移大小            */
+    LCDSADDR3 = (LCDSADDR3 & ~(0x7FF)) | (pagewidth);                   /*  虚拟屏幕宽度                */
 
     return 0;
 }
@@ -203,8 +215,8 @@ int lcd_init(void)
     var.yoffset        = 0;
     var.xres           = LCD_WIDTH;
     var.yres           = LCD_HEIGHT;
-    var.xres_virtual   = var.xres;
-    var.yres_virtual   = var.yres;
+    var.xres_virtual   = LCD_WIDTH;
+    var.yres_virtual   = LCD_HEIGHT * 2;
     var.bits_per_pixel = LCD_BPP;
     var.red.offset     = 11;
     var.red.length     = 5;
@@ -214,12 +226,13 @@ int lcd_init(void)
     var.blue.length    = 0;
 
     int fb_create(const char *path,
+                  void *framebuffer,
                   const struct fb_var_screeninfo *var,
                   int  (*video_config)(const struct fb_var_screeninfo *, const struct fb_fix_screeninfo *, void *),
                   int  (*video_check)(struct fb_var_screeninfo *),
                   void (*video_onoff)(int));
 
-    return fb_create("/dev/fb0", &var, lcd_config, video_check, video_onoff);
+    return fb_create("/dev/fb0", (void *)FB_MEM_BASE, &var, lcd_config, video_check, video_onoff);
 }
 /*********************************************************************************************************
 ** END FILE

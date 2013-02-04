@@ -44,9 +44,7 @@
 extern "C" {
 #endif
 
-#include "syslimits.h"
-
-#define VFS_FILE_NR                 (100)                               /*  文件结构的个数              */
+#include <syslimits.h>
 
 #ifdef __cplusplus
 }

@@ -57,9 +57,9 @@
 
 #define	_USE_FASTSEEK	0                                               /*  不使用快速调整文件指针      */
 
-#define _CODE_PAGE	    437                                             /*  936 代码页                  */
+#define _CODE_PAGE	    437                                             /*  437 代码页                  */
 
-#define	_USE_LFN	    0                                               /*  使用长文件名                */
+#define	_USE_LFN	    0                                               /*  不使用长文件名              */
 
 #define	_MAX_LFN	    NAME_MAX                                        /*  长文件名的最大长度          */
 

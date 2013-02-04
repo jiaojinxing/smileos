@@ -47,11 +47,10 @@
 #endif
 
 KVAR task_t             tasks[TASK_NR];                                 /*  任务控制块                  */
+KVAR struct _reent      reents[1 + KTHREAD_NR];                         /*  可重入结构数组              */
 KVAR task_t            *current;                                        /*  指向当前运行的任务          */
-KVAR uint64_t           ticks;                                          /*  TICK                        */
 KVAR uint8_t            interrupt_nest;                                 /*  中断嵌套层次                */
-KVAR uint8_t            running;                                        /*  内核是否正在运行            */
-KVAR struct _reent      reents[KTHREAD_NR + 1];                         /*  可重入结构数组              */
+KVAR bool_t             os_started;                                     /*  内核是否正在运行            */
 
 #endif                                                                  /*  KVARS_H_                    */
 /*********************************************************************************************************

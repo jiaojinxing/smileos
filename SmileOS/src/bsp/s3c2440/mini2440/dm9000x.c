@@ -1115,7 +1115,7 @@ static void dm9000_isr(struct netif *netif)
      * Received the coming packet
      */
     if (int_status & ISR_PRS) {
-        netjob_add((void (*)(void *))dm9000_recv, netif);
+        workqueue_add(NULL, (void (*)(void *))dm9000_recv, netif);
         /*
          * 关闭接收中断
          */
@@ -1152,7 +1152,7 @@ static void dm9000_isr(struct netif *netif)
 ** Modified date:
 **--------------------------------------------------------------------------------------------------------
 *********************************************************************************************************/
-static int eint47_isr(uint32_t interrupt, void *arg)
+static int eint47_isr(intno_t interrupt, void *arg)
 {
     uint32_t  sub_interrupt;
 

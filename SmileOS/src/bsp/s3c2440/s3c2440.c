@@ -37,18 +37,16 @@
 ** Descriptions:
 **
 *********************************************************************************************************/
-#include "kern/config.h"
-#include "kern/types.h"
-#include "kern/mmu.h"
+#include "arch/arm920t/mmu.h"
 #include "s3c2440.h"
 /*********************************************************************************************************
-** Function name:           cpu_reset_init
+** Function name:           cpu_init
 ** Descriptions:            复位后初始化 CPU
 ** input parameters:        NONE
 ** output parameters:       NONE
 ** Returned value:          NONE
 *********************************************************************************************************/
-void cpu_reset_init(void)
+void cpu_init(void)
 {
     WTCON       = 0x00;                                                 /*  关闭看门狗                  */
 
@@ -82,7 +80,7 @@ void cpu_mem_map(void)
 /*********************************************************************************************************
 ** CPU 保留空间
 *********************************************************************************************************/
-const space_t cpu_resv_space[] = {
+const mem_space_t cpu_resv_space[] = {
         {
             0x48000000,                                                 /*  特殊功能寄存器              */
             0x60000000 - 0x48000000
@@ -93,22 +91,19 @@ const space_t cpu_resv_space[] = {
         }
 };
 /*********************************************************************************************************
-** Function name:           cpu_kernel_init
+** Function name:           soc_init
 ** Descriptions:            内核初始化 CPU
 ** input parameters:        NONE
 ** output parameters:       NONE
 ** Returned value:          NONE
 *********************************************************************************************************/
-void cpu_kernel_init(void)
+void soc_init(void)
 {
     extern void clock_init(void);
     clock_init();
 
-    extern void interrupt_init(void);
-    interrupt_init();
-
-    extern void timer_init(void);
-    timer_init();
+    extern void interrupt_mode_init(void);
+    interrupt_mode_init();
 }
 /*********************************************************************************************************
 ** Function name:           soc_drivers_install
@@ -124,6 +119,9 @@ int soc_drivers_install(void)
 
     extern void nand_init(void);
     nand_init();
+
+    extern void touch_init(void);
+    touch_init();
 
     return 0;
 }

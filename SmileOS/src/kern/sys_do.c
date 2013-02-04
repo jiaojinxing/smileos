@@ -39,12 +39,27 @@
 *********************************************************************************************************/
 #include "kern/kern.h"
 #include "kern/kvars.h"
-#include "vfs/vfs.h"
-#include <sys/socket.h>
-#include <dirent.h>
+#include "kern/func_config.h"
 #include <string.h>
-#include "kern/pinfo.h"
+#include <sys/time.h>
+
+extern void         task_cleanup(void);
+extern int          task_sleep(tick_t ticks);
+extern int32_t      task_getpid(void);
+extern void         task_schedule(void);
+
+#if CONFIG_SIGNAL_EN > 0
 #include <signal.h>
+extern int          signal_procmask(int how, const sigset_t *set, sigset_t *oset);
+extern int          signal_suspend(const sigset_t *set);
+
+extern int          signal_queue(int32_t tid, int sig);
+extern sighandler_t signal_signal(int sig, sighandler_t func);
+
+extern int          task_alarm(uint32_t secs);
+extern int          task_pause(void);
+#endif
+
 /*********************************************************************************************************
 ** Function name:           sys_do_enter
 ** Descriptions:            进入系统调用处理
@@ -79,7 +94,14 @@ static void do_exit(syscall_args_t *args)
 {
     sys_do_enter();
 
+#if CONFIG_SIGNAL_EN > 0
     kill(gettid(), SIGKILL);
+#else
+    /*
+     * TODO
+     */
+    task_cleanup();
+#endif
 
     sys_do_exit();
 }
@@ -92,43 +114,22 @@ static void do_exit(syscall_args_t *args)
 *********************************************************************************************************/
 static int do_msleep(syscall_args_t *args)
 {
-    uint32_t timeout;
+    tick_t timeout;
     int ret;
 
     sys_do_enter();
 
-    timeout = (uint32_t)args->arg0;
+    timeout = (unsigned int)args->arg0;
     if (timeout != 0) {
         if (timeout < 1000 / TICK_PER_SECOND) {
             timeout = 1;
         } else {
             timeout = timeout * TICK_PER_SECOND / 1000;
         }
-        extern int task_sleep(uint32_t ticks);
         ret = task_sleep(timeout);
     } else {
         ret = 0;
     }
-
-    sys_do_exit();
-
-    return ret;
-}
-/*********************************************************************************************************
-** Function name:           do_pause
-** Descriptions:            pause 系统调用处理函数
-** input parameters:        args                系统调用处理参数
-** output parameters:       NONE
-** Returned value:          0
-*********************************************************************************************************/
-static int do_pause(syscall_args_t *args)
-{
-    int ret;
-
-    sys_do_enter();
-
-    extern int task_pause(void);
-    ret = task_pause();
 
     sys_do_exit();
 
@@ -145,7 +146,7 @@ static int do_gettimeofday(syscall_args_t *args)
 {
     struct timeval *tv = args->arg0;
     //void *tzp = args->arg1;
-    uint64_t tick;
+    tick_t tick;
 
     sys_do_enter();
 
@@ -159,26 +160,6 @@ static int do_gettimeofday(syscall_args_t *args)
     return 0;
 }
 /*********************************************************************************************************
-** Function name:           do_getpid
-** Descriptions:            getpid 系统调用处理函数
-** input parameters:        NONE
-** output parameters:       NONE
-** Returned value:          PID
-*********************************************************************************************************/
-static int do_getpid(syscall_args_t *args)
-{
-    int ret;
-
-    sys_do_enter();
-
-    extern int32_t task_getpid(void);
-    ret = task_getpid();
-
-    sys_do_exit();
-
-    return ret;
-}
-/*********************************************************************************************************
 ** Function name:           do_schedule
 ** Descriptions:            schedule 系统调用处理函数
 ** input parameters:        NONE
@@ -189,7 +170,6 @@ static int do_schedule(syscall_args_t *args)
 {
     sys_do_enter();
 
-    extern void task_schedule(void);
     task_schedule();
 
     sys_do_exit();
@@ -207,12 +187,42 @@ static int do_bad(void)
 {
     sys_do_enter();
 
+#if CONFIG_SIGNAL_EN > 0
     kill(gettid(), SIGSYS);
+#else
+    /*
+     * TODO
+     */
+    task_cleanup();
+#endif
 
     sys_do_exit();
 
     return -1;
 }
+/*********************************************************************************************************
+** Function name:           do_getpid
+** Descriptions:            getpid 系统调用处理函数
+** input parameters:        NONE
+** output parameters:       NONE
+** Returned value:          PID
+*********************************************************************************************************/
+static int do_getpid(syscall_args_t *args)
+{
+    int ret;
+
+    sys_do_enter();
+
+    ret = task_getpid();
+
+    sys_do_exit();
+
+    return ret;
+}
+/*********************************************************************************************************
+** 信号相关系统调用处理
+*********************************************************************************************************/
+#if CONFIG_SIGNAL_EN > 0
 /*********************************************************************************************************
 ** Function name:           do_signal
 ** Descriptions:            错误系统调用处理函数
@@ -226,7 +236,6 @@ static sighandler_t do_signal(syscall_args_t *args)
 
     sys_do_enter();
 
-    extern sighandler_t signal_signal(int sig, sighandler_t func);
     ret = signal_signal((int)args->arg0, (sighandler_t)args->arg1);
 
     sys_do_exit();
@@ -246,10 +255,9 @@ static int do_sigprocmask(syscall_args_t *args)
 
     sys_do_enter();
 
-    extern int signal_procmask(int how, const sigset_t *set, sigset_t *oset);
     ret = signal_procmask((int)args->arg0,
-            (const sigset_t *)va_to_mva(args->arg1),
-            (sigset_t *)va_to_mva(args->arg2));
+            (const sigset_t *)ua_to_ka(args->arg1),
+            (sigset_t *)ua_to_ka(args->arg2));
 
     sys_do_exit();
 
@@ -268,49 +276,7 @@ static int do_sigsuspend(syscall_args_t *args)
 
     sys_do_enter();
 
-    extern int signal_suspend(const sigset_t *set);
-    ret = signal_suspend((const sigset_t *)va_to_mva(args->arg0));
-
-    sys_do_exit();
-
-    return ret;
-}
-/*********************************************************************************************************
-** Function name:           do_setpinfo
-** Descriptions:            setpinfo 系统调用处理函数
-** input parameters:        reent               可重入结构指针
-** output parameters:       NONE
-** Returned value:          0 OR -1
-*********************************************************************************************************/
-static int do_setpinfo(syscall_args_t *args)
-{
-    int ret;
-
-    sys_do_enter();
-
-    extern int task_setpinfo(pinfo_t *pinfo);
-    ret = task_setpinfo(va_to_mva(args->arg0));
-
-    sys_do_exit();
-
-    return ret;
-}
-/*********************************************************************************************************
-** Function name:           do_kill
-** Descriptions:            kill 系统调用处理函数
-** input parameters:        pid                 PID
-**                          sig                 信号
-** output parameters:       NONE
-** Returned value:          0 OR -1
-*********************************************************************************************************/
-static int do_kill(syscall_args_t *args)
-{
-    int ret;
-
-    sys_do_enter();
-
-    extern int signal_queue(int32_t tid, int sig);
-    ret = signal_queue((int32_t)args->arg0, (int)args->arg1);
+    ret = signal_suspend((const sigset_t *)ua_to_ka(args->arg0));
 
     sys_do_exit();
 
@@ -330,13 +296,93 @@ static int do_alarm(syscall_args_t *args)
 
     sys_do_enter();
 
-    extern int task_alarm(uint32_t ms);
     ret = task_alarm((uint32_t)args->arg0);
 
     sys_do_exit();
 
     return ret;
 }
+/*********************************************************************************************************
+** Function name:           do_pause
+** Descriptions:            pause 系统调用处理函数
+** input parameters:        args                系统调用处理参数
+** output parameters:       NONE
+** Returned value:          0
+*********************************************************************************************************/
+static int do_pause(syscall_args_t *args)
+{
+    int ret;
+
+    sys_do_enter();
+
+    ret = task_pause();
+
+    sys_do_exit();
+
+    return ret;
+}
+#endif
+
+/*********************************************************************************************************
+** Function name:           do_kill
+** Descriptions:            kill 系统调用处理函数
+** input parameters:        pid                 PID
+**                          sig                 信号
+** output parameters:       NONE
+** Returned value:          0 OR -1
+*********************************************************************************************************/
+static int do_kill(syscall_args_t *args)
+{
+    int ret;
+
+    sys_do_enter();
+
+#if CONFIG_SIGNAL_EN > 0
+    ret = signal_queue((int32_t)args->arg0, (int)args->arg1);
+#else
+    task_cleanup();
+#endif
+
+    sys_do_exit();
+
+    return ret;
+}
+/*********************************************************************************************************
+** 进程相关系统调用处理
+*********************************************************************************************************/
+#if CONFIG_PROCESS_EN > 0
+
+#include "kern/pinfo.h"
+
+/*********************************************************************************************************
+** Function name:           do_setpinfo
+** Descriptions:            setpinfo 系统调用处理函数
+** input parameters:        reent               可重入结构指针
+** output parameters:       NONE
+** Returned value:          0 OR -1
+*********************************************************************************************************/
+static int do_setpinfo(syscall_args_t *args)
+{
+    int ret;
+
+    sys_do_enter();
+
+//    extern int task_setpinfo(pinfo_t *pinfo);
+//    ret = task_setpinfo(ua_to_ka(args->arg0));
+
+    sys_do_exit();
+
+    return ret;
+}
+#endif
+/*********************************************************************************************************
+** 虚拟文件系统相关系统调用处理
+*********************************************************************************************************/
+#if CONFIG_VFS_EN > 0
+
+#include "vfs/vfs.h"
+#include <dirent.h>
+
 /*********************************************************************************************************
 ** Function name:           do_open
 ** Descriptions:            open 系统调用处理函数
@@ -352,7 +398,7 @@ static int do_open(syscall_args_t *args)
 
     sys_do_enter();
 
-    ret = vfs_open(va_to_mva(args->arg0), (int)args->arg1, (mode_t)args->arg2);
+    ret = vfs_open(ua_to_ka(args->arg0), (int)args->arg1, (mode_t)args->arg2);
 
     sys_do_exit();
 
@@ -373,7 +419,7 @@ static ssize_t do_read(syscall_args_t *args)
 
     sys_do_enter();
 
-    ret = vfs_read((int)args->arg0, va_to_mva(args->arg1), (size_t)args->arg2);
+    ret = vfs_read((int)args->arg0, ua_to_ka(args->arg1), (size_t)args->arg2);
 
     sys_do_exit();
 
@@ -394,7 +440,7 @@ static ssize_t do_write(syscall_args_t *args)
 
     sys_do_enter();
 
-    ret = vfs_write((int)args->arg0, va_to_mva(args->arg1), (size_t)args->arg2);
+    ret = vfs_write((int)args->arg0, ua_to_ka(args->arg1), (size_t)args->arg2);
 
     sys_do_exit();
 
@@ -453,7 +499,7 @@ static int do_fstat(syscall_args_t *args)
 
     sys_do_enter();
 
-    ret = vfs_fstat((int)args->arg0, va_to_mva(args->arg1));
+    ret = vfs_fstat((int)args->arg0, ua_to_ka(args->arg1));
 
     sys_do_exit();
 
@@ -515,7 +561,7 @@ static int do_ioctl(syscall_args_t *args)
     sys_do_enter();
 
     /*
-     * 注意 args->arg2 可能是一个指针或整型, 如果是指针, 里层函数应该调用 va_to_mva 将其转换一次
+     * 注意 args->arg2 可能是一个指针或整型, 如果是指针, 里层函数应该调用 ua_to_ka 将其转换一次
      */
     ret = vfs_ioctl((int)args->arg0, (int)args->arg1, args->arg2);
 
@@ -536,7 +582,7 @@ static DIR *do_opendir(syscall_args_t *args)
 
     sys_do_enter();
 
-    ret = vfs_opendir(va_to_mva(args->arg0));
+    ret = vfs_opendir(ua_to_ka(args->arg0));
 
     sys_do_exit();
 
@@ -580,18 +626,20 @@ static struct dirent *do_readdir(syscall_args_t *args)
      * 所以拷贝到进程提供的"缓冲区"里, 然后返回"缓冲区"的地址
      */
     ret = vfs_readdir(args->arg0);
+#if CONFIG_PROCESS_EN > 0
     if (ret != NULL) {
-        uint32_t reg;
+        reg_t reg;
         pinfo_t *info;
 
         reg  = interrupt_disable();
         info = current->pinfo;
         if (info != NULL) {
             memcpy(&info->entry, ret, sizeof(struct dirent));
-            ret = mva_to_va(&info->entry);
+            ret = ka_to_ua(&info->entry);
         }
         interrupt_resume(reg);
     }
+#endif
 
     sys_do_exit();
 
@@ -674,19 +722,21 @@ static char *do_getcwd(syscall_args_t *args)
      *
      * 所以拷贝到进程提供的"缓冲区"里, 然后返回"缓冲区"的地址
      */
-    ret = vfs_getcwd(va_to_mva(args->arg0), (size_t)args->arg1);
+    ret = vfs_getcwd(ua_to_ka(args->arg0), (size_t)args->arg1);
+#if CONFIG_PROCESS_EN > 0
     if (ret != NULL) {
-        uint32_t reg;
+        reg_t reg;
         pinfo_t *info;
 
         reg  = interrupt_disable();
         info = current->pinfo;
         if (info != NULL) {
             strcpy(info->cwd, ret);
-            ret = mva_to_va(info->cwd);
+            ret = ka_to_ua(info->cwd);
         }
         interrupt_resume(reg);
     }
+#endif
     sys_do_exit();
 
     return ret;
@@ -704,7 +754,7 @@ static int do_chdir(syscall_args_t *args)
 
     sys_do_enter();
 
-    ret = vfs_chdir(va_to_mva(args->arg0));
+    ret = vfs_chdir(ua_to_ka(args->arg0));
 
     sys_do_exit();
 
@@ -724,7 +774,7 @@ static int do_rename(syscall_args_t *args)
 
     sys_do_enter();
 
-    ret = vfs_rename(va_to_mva(args->arg0), va_to_mva(args->arg1));
+    ret = vfs_rename(ua_to_ka(args->arg0), ua_to_ka(args->arg1));
 
     sys_do_exit();
 
@@ -743,7 +793,7 @@ static int do_unlink(syscall_args_t *args)
 
     sys_do_enter();
 
-    ret = vfs_unlink(va_to_mva(args->arg0));
+    ret = vfs_unlink(ua_to_ka(args->arg0));
 
     sys_do_exit();
 
@@ -763,7 +813,7 @@ static int do_link(syscall_args_t *args)
 
     sys_do_enter();
 
-    ret = vfs_link(va_to_mva(args->arg0), va_to_mva(args->arg1));
+    ret = vfs_link(ua_to_ka(args->arg0), ua_to_ka(args->arg1));
 
     sys_do_exit();
 
@@ -783,7 +833,7 @@ static int do_stat(syscall_args_t *args)
 
     sys_do_enter();
 
-    ret = vfs_stat(va_to_mva(args->arg0), va_to_mva(args->arg1));
+    ret = vfs_stat(ua_to_ka(args->arg0), ua_to_ka(args->arg1));
 
     sys_do_exit();
 
@@ -803,7 +853,7 @@ static int do_mkdir(syscall_args_t *args)
 
     sys_do_enter();
 
-    ret = vfs_mkdir(va_to_mva(args->arg0), (mode_t)args->arg1);
+    ret = vfs_mkdir(ua_to_ka(args->arg0), (mode_t)args->arg1);
 
     sys_do_exit();
 
@@ -822,7 +872,7 @@ static int do_rmdir(syscall_args_t *args)
 
     sys_do_enter();
 
-    ret = vfs_rmdir(va_to_mva(args->arg0));
+    ret = vfs_rmdir(ua_to_ka(args->arg0));
 
     sys_do_exit();
 
@@ -869,6 +919,34 @@ static int do_dup2(syscall_args_t *args)
 }
 
 /*
+ * do_select
+ */
+static int do_select(syscall_args_t *args)
+{
+    int ret;
+
+    sys_do_enter();
+
+    ret = vfs_select(
+            (int)args->arg0,
+            ua_to_ka(args->arg1),
+            ua_to_ka(args->arg2),
+            ua_to_ka(args->arg3),
+            ua_to_ka(args->arg4));
+
+    sys_do_exit();
+    return ret;
+}
+
+#endif
+/*********************************************************************************************************
+** 网络相关系统调用处理
+*********************************************************************************************************/
+#if CONFIG_NET_EN > 0
+
+#include <sys/socket.h>
+
+/*
  * do_socket
  */
 static int do_socket(syscall_args_t *args)
@@ -904,7 +982,7 @@ static int do_bind(syscall_args_t *args)
 
     int sock_fd = socket_priv_fd((int)args->arg0);
     if (sock_fd >= 0) {
-        ret = lwip_bind(sock_fd, va_to_mva(args->arg1), (socklen_t)args->arg2);
+        ret = lwip_bind(sock_fd, ua_to_ka(args->arg1), (socklen_t)args->arg2);
         sys_do_exit();
         return ret;
     } else {
@@ -924,7 +1002,7 @@ static int do_accept(syscall_args_t *args)
 
     sock_fd = socket_priv_fd((int)args->arg0);
     if (sock_fd >= 0) {
-        int new_sock_fd = lwip_accept(sock_fd, va_to_mva(args->arg1), va_to_mva(args->arg2));
+        int new_sock_fd = lwip_accept(sock_fd, ua_to_ka(args->arg1), ua_to_ka(args->arg2));
         if (new_sock_fd >= 0) {
             int fd = socket_attach(new_sock_fd);
             if (fd < 0) {
@@ -956,7 +1034,7 @@ static int do_connect(syscall_args_t *args)
 
     sock_fd = socket_priv_fd((int)args->arg0);
     if (sock_fd >= 0) {
-        ret = lwip_connect(sock_fd, va_to_mva(args->arg1), (socklen_t)args->arg2);
+        ret = lwip_connect(sock_fd, ua_to_ka(args->arg1), (socklen_t)args->arg2);
         sys_do_exit();
         return ret;
     } else {
@@ -986,25 +1064,6 @@ static int do_listen(syscall_args_t *args)
     }
 }
 
-/*
- * do_select
- */
-static int do_select(syscall_args_t *args)
-{
-    int ret;
-
-    sys_do_enter();
-
-    ret = vfs_select(
-            (int)args->arg0,
-            va_to_mva(args->arg1),
-            va_to_mva(args->arg2),
-            va_to_mva(args->arg3),
-            va_to_mva(args->arg4));
-
-    sys_do_exit();
-    return ret;
-}
 
 /*
  * do_recv
@@ -1020,7 +1079,7 @@ static int do_recv(syscall_args_t *args)
     if (sock_fd >= 0) {
         ret = lwip_recv(
                 sock_fd,
-                va_to_mva(args->arg1),
+                ua_to_ka(args->arg1),
                 (size_t)args->arg2,
                 (int)args->arg3);
         sys_do_exit();
@@ -1045,11 +1104,11 @@ static int do_recvfrom(syscall_args_t *args)
     if (sock_fd >= 0) {
         ret = lwip_recvfrom(
                 sock_fd,
-                va_to_mva(args->arg1),
+                ua_to_ka(args->arg1),
                 (size_t)args->arg2,
                 (int)args->arg3,
-                (struct sockaddr *)va_to_mva(args->arg4),
-                (socklen_t *)va_to_mva(args->arg5));
+                (struct sockaddr *)ua_to_ka(args->arg4),
+                (socklen_t *)ua_to_ka(args->arg5));
         sys_do_exit();
         return ret;
     } else {
@@ -1072,10 +1131,10 @@ static int do_sendto(syscall_args_t *args)
     if (sock_fd >= 0) {
         ret = lwip_sendto(
                 sock_fd,
-                va_to_mva(args->arg1),
+                ua_to_ka(args->arg1),
                 (size_t)args->arg2,
                 (int)args->arg3,
-                (const struct sockaddr *)va_to_mva(args->arg4),
+                (const struct sockaddr *)ua_to_ka(args->arg4),
                 (socklen_t)args->arg5);
         sys_do_exit();
         return ret;
@@ -1101,8 +1160,8 @@ static int do_getsockopt(syscall_args_t *args)
                 sock_fd,
                 (int)args->arg1,
                 (int)args->arg2,
-                va_to_mva(args->arg3),
-                (socklen_t *)va_to_mva(args->arg4));
+                ua_to_ka(args->arg3),
+                (socklen_t *)ua_to_ka(args->arg4));
         sys_do_exit();
         return ret;
     } else {
@@ -1125,7 +1184,7 @@ static int do_send(syscall_args_t *args)
     if (sock_fd >= 0) {
         ret = lwip_send(
                 sock_fd,
-                va_to_mva(args->arg1),
+                ua_to_ka(args->arg1),
                 (size_t)args->arg2,
                 (int)args->arg3);
         sys_do_exit();
@@ -1152,7 +1211,7 @@ static int do_setsockopt(syscall_args_t *args)
                 sock_fd,
                 (int)args->arg1,
                 (int)args->arg2,
-                va_to_mva(args->arg3),
+                ua_to_ka(args->arg3),
                 (socklen_t)args->arg4);
         sys_do_exit();
         return ret;
@@ -1182,6 +1241,7 @@ static int do_shutdown(syscall_args_t *args)
         return -1;
     }
 }
+#endif
 /*********************************************************************************************************
   系统调用处理表
 *********************************************************************************************************/
@@ -1196,15 +1256,25 @@ sys_do_t sys_do_table[] = {
         (sys_do_t)do_exit,
         (sys_do_t)do_msleep,
         (sys_do_t)do_schedule,
+#if CONFIG_SIGNAL_EN > 0
         (sys_do_t)do_pause,
+#else
+        NULL,
+#endif
 #define  SYSCALL_BAD        4
         (sys_do_t)do_bad,
 #define  SYSCALL_SIGNAL     5
 #define  SYSCALL_SIGPROCMASK 6
 #define  SYSCALL_SIGSUSPEND 7
+#if CONFIG_SIGNAL_EN > 0
         (sys_do_t)do_signal,
         (sys_do_t)do_sigprocmask,
         (sys_do_t)do_sigsuspend,
+#else
+        NULL,
+        NULL,
+        NULL,
+#endif
         NULL,
         NULL,
 #define  SYSCALL_GETTIME    10
@@ -1216,7 +1286,11 @@ sys_do_t sys_do_table[] = {
         (sys_do_t)do_getpid,
         (sys_do_t)do_setpinfo,
         (sys_do_t)do_kill,
+#if CONFIG_SIGNAL_EN > 0
         (sys_do_t)do_alarm,
+#else
+        NULL,
+#endif
         NULL,
         NULL,
         NULL,

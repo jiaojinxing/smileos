@@ -93,27 +93,19 @@
 #include <unistd.h>
 #include <errno.h>
 /*********************************************************************************************************
+** 配置
+*********************************************************************************************************/
+
+/*********************************************************************************************************
 ** 外部变量
 *********************************************************************************************************/
-/*
- * 挂载点管理锁
- */
-extern mutex_t          point_mgr_lock;
+extern mutex_t          point_mgr_lock;                                 /*  挂载点管理锁                */
 
-/*
- * 根文件系统挂载点
- */
-extern mount_point_t   *rootfs_point;
+extern mount_point_t   *rootfs_point;                                   /*  根文件系统挂载点            */
 
-/*
- * 设备管理锁
- */
-extern mutex_t          dev_mgr_lock;
+extern mutex_t          dev_mgr_lock;                                   /*  设备管理锁                  */
 
-/*
- * 文件系统管理锁
- */
-extern mutex_t          fs_mgr_lock;
+extern mutex_t          fs_mgr_lock;                                    /*  文件系统管理锁              */
 /*********************************************************************************************************
 ** 任务文件信息
 *********************************************************************************************************/
@@ -122,7 +114,7 @@ typedef struct {
     char                cwd[PATH_MAX];                                  /*  当前工作目录                */
 } vfs_info_t;
 
-static vfs_info_t       infos[TASK_NR];
+static vfs_info_t      *infos[TASK_NR];
 /*********************************************************************************************************
 ** 工具函数
 *********************************************************************************************************/
@@ -289,7 +281,7 @@ static mount_point_t *vfs_mount_point_lookup(char pathbuf[PATH_MAX], char **ppat
          * cwd 要以 / 号开头和结尾
          */
         int tid = gettid();
-        snprintf(pathbuf, PATH_MAX, "%s%s", infos[tid].cwd, path);      /*  在前面加入当前工作目录      */
+        snprintf(pathbuf, PATH_MAX, "%s%s", infos[tid]->cwd, path);     /*  在前面加入当前工作目录      */
     }
 
     if (vfs_path_normalization(pathbuf, FALSE) < 0) {                   /*  正常化 PATH                 */
@@ -341,7 +333,7 @@ static mount_point_t *vfs_mount_point_lookup2(char pathbuf[PATH_MAX], char **ppa
          * cwd 要以 / 号开头和结尾
          */
         int tid = gettid();
-        snprintf(pathbuf, PATH_MAX, "%s%s", infos[tid].cwd, path);      /*  在前面加入当前工作目录      */
+        snprintf(pathbuf, PATH_MAX, "%s%s", infos[tid]->cwd, path);     /*  在前面加入当前工作目录      */
     }
 
     if (vfs_path_normalization(pathbuf, FALSE) < 0) {
@@ -383,7 +375,7 @@ static mount_point_t *vfs_mount_point_lookup2(char pathbuf[PATH_MAX], char **ppa
             seterrno(EBADFD);                                                                             \
             return -1;                                                                                    \
         }                                                                                                 \
-        info = infos + tid;                                                                               \
+        info = infos[tid];                                                                                \
         file = &info->files[fd];                                        /*  获得文件结构                */\
         if (file->flags == VFS_FILE_TYPE_FREE) {                        /*  如果文件未打开              */\
             seterrno(EBADFD);                                                                             \
@@ -427,7 +419,7 @@ int vfs_open(const char *path, int oflag, mode_t mode)
 
     mutex_unlock(&point_mgr_lock);
                                                                         /*  查找一个空闲的文件描述符    */
-    info = infos + gettid();
+    info = infos[gettid()];
     for (fd = 0, file = &info->files[0]; fd < OPEN_MAX; fd++, file++) {
         if (file->flags == VFS_FILE_TYPE_FREE) {
             break;
@@ -900,6 +892,57 @@ int vfs_dup2(int fd, int to)
 
     return 0;
 }
+#if 0
+/*********************************************************************************************************
+** Function name:           vfs_mmap
+** Descriptions:            映射文件
+** input parameters:        addr                地址
+**                          len                 长度
+**                          prot                权限
+**                          flags               标志
+**                          fd                  文件描述符
+**                          off                 偏移
+** output parameters:       NONE
+** Returned value:          地址
+*********************************************************************************************************/
+int vfs_mmap(void *addr, size_t len, int prot, int flags, int fd, off_t off)
+{
+    void *ret;
+
+    vfs_file_begin(gettid());
+    if (point->fs->mmap == NULL) {
+        vfs_file_end(gettid());
+        seterrno(ENOSYS);
+        return -1;
+    }
+    seterrno(0);
+    ret = point->fs->mmap(point, file, addr, len, prot, flags, off);
+    if (ret != MAP_FAILED) {
+        if (vfs_mmap_add(file, ret) < 0) {
+            point->fs->munmap(point, file, ret, len);
+            ret = MAP_FAILED;
+        }
+    }
+    vfs_file_end(gettid());
+    return ret;
+}
+
+int munmap(void *addr, size_t len)
+{
+    file_t *file;
+
+    file = vfs_mmap_lookup_file(addr);
+    if (file != NULL) {
+        point = file->point;
+        ret = point->fs->munmap(point, file, addr, len);
+        if (ret == 0) {
+            vfs_mmap_remove(file, addr);
+        }
+    } else {
+        ret = -1;
+    }
+}
+#endif
 /*********************************************************************************************************
 ** select 实现
 *********************************************************************************************************/
@@ -1133,7 +1176,7 @@ int vfs_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds, st
     int         resume_type;
     int         nset;
     int         ret;
-    uint32_t    reg;
+    reg_t       reg;
 
     if (nfds < 0 || nfds > FD_SETSIZE) {                                /*  检查 nfds                   */
         seterrno(EINVAL);
@@ -1353,7 +1396,7 @@ int vfs_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds, st
             seterrno(EBADFD);                                                                             \
             return -1;                                                                                    \
         }                                                                                                 \
-        info = infos + tid;                                                                               \
+        info = infos[tid];                                                                                \
         file = &info->files[fd];                                        /*  获得文件结构                */\
         if (file->flags == VFS_FILE_TYPE_FREE) {                        /*  如果目录未打开              */\
             seterrno(EBADFD);                                                                             \
@@ -1395,7 +1438,7 @@ DIR *vfs_opendir(const char *path)
 
     mutex_unlock(&point_mgr_lock);
                                                                         /*  查找一个空闲的文件描述符    */
-    info = infos + gettid();
+    info = infos[gettid()];
     for (fd = 1, file = &info->files[1]; fd < OPEN_MAX; fd++, file++) {
         if (file->flags == 0) {
             break;
@@ -2276,7 +2319,12 @@ int vfs_task_init(pid_t tid)
         return -1;
     }
 
-    info = infos + tid;
+    info = kmalloc(sizeof(vfs_info_t), GFP_KERNEL);
+    if (info == NULL) {
+        return -1;
+    }
+
+    infos[tid] = info;
 
     strcpy(info->cwd, "/");
 
@@ -2301,7 +2349,7 @@ int vfs_task_cleanup(pid_t tid)
         return -1;
     }
 
-    info = infos + tid;
+    info = infos[tid];
 
     for (fd = 0, file = &info->files[0]; fd < OPEN_MAX; fd++, file++) {
         if (file->flags & VFS_FILE_TYPE_FILE) {
@@ -2310,6 +2358,10 @@ int vfs_task_cleanup(pid_t tid)
             __vfs_closedir(tid, (DIR *)fd);
         }
     }
+
+    kfree(info);
+    infos[tid] = NULL;
+
     return 0;
 }
 /*********************************************************************************************************
@@ -2338,14 +2390,14 @@ int vfs_chdir(const char *path)
     if (path[0] == '/') {                                               /*  如果是绝对路径              */
         strlcpy(pathbuf, path, sizeof(pathbuf));
     } else {                                                            /*  如果是相对路径              */
-        snprintf(pathbuf, sizeof(pathbuf), "%s%s", infos[tid].cwd, path);
+        snprintf(pathbuf, sizeof(pathbuf), "%s%s", infos[tid]->cwd, path);
     }
 
     ret = vfs_path_normalization(pathbuf, TRUE);
     if (ret == 0) {
         DIR *dir = vfs_opendir(pathbuf);
         if (dir != NULL) {
-            strlcpy(infos[tid].cwd, pathbuf, sizeof(infos[tid].cwd));
+            strlcpy(infos[tid]->cwd, pathbuf, sizeof(infos[tid]->cwd));
             vfs_closedir(dir);
         } else {
             ret = -1;
@@ -2367,9 +2419,9 @@ char *vfs_getcwd(char *buf, size_t size)
     int tid = gettid();
 
     if (buf != NULL) {
-        strlcpy(buf, infos[tid].cwd, size);
+        strlcpy(buf, infos[tid]->cwd, size);
     }
-    return infos[tid].cwd;
+    return infos[tid]->cwd;
 }
 /*********************************************************************************************************
 ** Function name:           vfs_get_file
@@ -2386,7 +2438,7 @@ file_t *vfs_get_file(int fd)
         return NULL;
     }
 
-    file = &infos[gettid()].files[fd];
+    file = &infos[gettid()]->files[fd];
     if (file->flags == VFS_FILE_TYPE_FREE) {                            /*  如果文件未打开              */
         return NULL;
     }

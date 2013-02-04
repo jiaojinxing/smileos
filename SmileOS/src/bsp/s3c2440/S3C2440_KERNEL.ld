@@ -17,7 +17,7 @@ SECTIONS
   /* first section is .text which is used for code */
   .text :
   {
-    *trap_arm920t.o (.text)    /* Startup code */
+    *crt0.o (.text)    /* Startup code */
     *(.text)                   /* remaining code */
     *(.rodata)                 /* read-only data (constants) */
     *(.rodata*)

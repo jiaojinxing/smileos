@@ -31,7 +31,6 @@
 								<option id="org.eclipse.cdt.cross.arm.gnu.assembler.option.preprocessor.def.636372707" name="Defined symbols (-D)" superClass="org.eclipse.cdt.cross.arm.gnu.assembler.option.preprocessor.def" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="SMILEOS"/>
 									<listOptionValue builtIn="false" value="SMILEOS_KERNEL"/>
-									<listOptionValue builtIn="false" value="S3C2440_BSP"/>
 								</option>
 								<option id="org.eclipse.cdt.cross.arm.gnu.assembler.option.include.paths.1762869078" name="Include paths (-I)" superClass="org.eclipse.cdt.cross.arm.gnu.assembler.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/include}&quot;"/>
@@ -43,15 +42,12 @@
 								<option id="org.eclipse.cdt.cross.arm.gnu.c.compiler.option.preprocessor.def.2047989164" name="Defined symbols (-D)" superClass="org.eclipse.cdt.cross.arm.gnu.c.compiler.option.preprocessor.def" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="SMILEOS"/>
 									<listOptionValue builtIn="false" value="SMILEOS_KERNEL"/>
-									<listOptionValue builtIn="false" value="S3C2440_BSP"/>
 									<listOptionValue builtIn="false" value="__LINUX_ERRNO_EXTENSIONS__"/>
 								</option>
 								<option id="org.eclipse.cdt.cross.arm.gnu.c.compiler.option.include.paths.2071869327" name="Include paths (-I)" superClass="org.eclipse.cdt.cross.arm.gnu.c.compiler.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/net/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/net/include/ipv4}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/include/emwin}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/include/modbus}&quot;"/>
 								</option>
 								<option id="org.eclipse.cdt.cross.arm.gnu.c.compiler.option.optimization.flags.356299630" name="Other optimization flags" superClass="org.eclipse.cdt.cross.arm.gnu.c.compiler.option.optimization.flags" value="" valueType="string"/>
 								<option id="org.eclipse.cdt.cross.arm.gnu.c.compiler.option.misc.signedchar.1325524343" name="'char' is signed (-fsigned-char)" superClass="org.eclipse.cdt.cross.arm.gnu.c.compiler.option.misc.signedchar" value="false" valueType="boolean"/>
@@ -64,7 +60,6 @@
 							<tool id="org.eclipse.cdt.cross.arm.gnu.yagarto.windows.elf.c.linker.debug.323309839" name="ARM Yagarto Windows GCC C Linker" superClass="org.eclipse.cdt.cross.arm.gnu.yagarto.windows.elf.c.linker.debug">
 								<option id="org.eclipse.cdt.cross.arm.gnu.c.link.option.scriptfile.1152078068" name="Script file (-T)" superClass="org.eclipse.cdt.cross.arm.gnu.c.link.option.scriptfile" value="..\src\bsp\s3c2440\S3C2440_KERNEL.ld" valueType="string"/>
 								<option id="org.eclipse.cdt.cross.arm.gnu.c.link.option.libs.1219707234" name="Libraries (-l)" superClass="org.eclipse.cdt.cross.arm.gnu.c.link.option.libs" valueType="libs">
-									<listOptionValue builtIn="false" value="emWin"/>
 									<listOptionValue builtIn="false" value="c"/>
 									<listOptionValue builtIn="false" value="m"/>
 									<listOptionValue builtIn="false" value="gcc"/>

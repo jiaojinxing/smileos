@@ -41,7 +41,6 @@
 #include "kern/ipc.h"
 #include "vfs/types.h"
 #include "vfs/vfs.h"
-#include "vfs/utils.h"
 #include "./src/yaffs_guts.h"
 #include "./src/yaffs_mtdif.h"
 #include "./src/yaffs_mtdif1.h"
@@ -135,12 +134,10 @@ void yaffs_free(void *ptr)
 *********************************************************************************************************/
 int yaffsfs_Init(void)
 {
-    mutex_new(&yaffs_lock);
-
     extern int yaffsfs_InitHandles(void);
     yaffsfs_InitHandles();
 
-    return 0;
+    return mutex_new(&yaffs_lock);
 }
 /*********************************************************************************************************
 ** Function name:           yaffsfs_FindDevice

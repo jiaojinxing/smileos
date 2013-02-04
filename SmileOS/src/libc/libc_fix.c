@@ -22,7 +22,7 @@
 ** File name:               libc_fix.c
 ** Last modified Date:      2012-4-18
 ** Last Version:            1.0.0
-** Descriptions:            libc 修正
+** Descriptions:            newlib 修正
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing
@@ -47,8 +47,98 @@
 #ifndef SMILEOS_KERNEL
 
 #include "kern/pinfo.h"
-
+#include "kern/addr_config.h"
+#include "mm/heap.h"
+#include <errno.h>
 #include <fcntl.h>
+/*********************************************************************************************************
+** 用户空间内存堆
+*********************************************************************************************************/
+static heap_t       user_heap;
+/*********************************************************************************************************
+** Function name:           _malloc_r
+** Descriptions:            malloc 桩函数
+** input parameters:        reent               可重入结构
+**                          size                需要分配的大小
+** output parameters:       NONE
+** Returned value:          内存指针
+*********************************************************************************************************/
+void *_malloc_r(struct _reent *reent, size_t size)
+{
+    void *ptr;
+    /*
+     * 因进程里使用非抢占的 pthread, 免锁免关中断, 下同
+     */
+    ptr = heap_alloc(&user_heap, __func__, __LINE__, size);
+    if (ptr != NULL) {
+        reent->_errno = 0;
+    } else {
+        reent->_errno = ENOMEM;
+    }
+    return ptr;
+}
+/*********************************************************************************************************
+** Function name:           _free_r
+** Descriptions:            free 桩函数
+** input parameters:        reent               可重入结构
+**                          ptr                 内存指针
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
+void _free_r(struct _reent *reent, void *ptr)
+{
+    heap_free(&user_heap, __func__, __LINE__, ptr);
+
+    reent->_errno = 0;
+}
+/*********************************************************************************************************
+** Function name:           _realloc_r
+** Descriptions:            realloc 桩函数
+** input parameters:        reent               可重入结构
+**                          ptr                 内存指针
+**                          newsize             新的大小
+** output parameters:       NONE
+** Returned value:          内存指针
+*********************************************************************************************************/
+void *_realloc_r(struct _reent *reent, void *ptr, size_t newsize)
+{
+    void *newptr;
+
+    newptr = heap_alloc(&user_heap, __func__, __LINE__, newsize);
+    if (newptr != NULL) {
+        if (ptr != NULL) {
+            memcpy(newptr, ptr, newsize);
+            heap_free(&user_heap, __func__, __LINE__, ptr);
+        }
+        reent->_errno = 0;
+    } else {
+        reent->_errno = ENOMEM;
+    }
+    return newptr;
+}
+/*********************************************************************************************************
+** Function name:           _calloc_r
+** Descriptions:            calloc 桩函数
+** input parameters:        reent               可重入结构
+**                          ptr                 内存
+**                          nelem               元素的个数
+**                          elsize              元素的大小
+** output parameters:       NONE
+** Returned value:          内存指针
+*********************************************************************************************************/
+void *_calloc_r(struct _reent *reent, size_t nelem, size_t elsize)
+{
+    void *ptr;
+
+    ptr = heap_alloc(&user_heap, __func__, __LINE__, nelem * MEM_ALIGN_SIZE(elsize));
+    if (ptr != NULL) {
+        memset(ptr, 0, nelem * MEM_ALIGN_SIZE(elsize));
+        reent->_errno = 0;
+    } else {
+        reent->_errno = ENOMEM;
+    }
+    return ptr;
+}
 /*********************************************************************************************************
 ** Function name:           libc_init
 ** Descriptions:            初始化 C 库
@@ -71,20 +161,112 @@ void libc_init(void)
     /*
      * 创建用户空间内存堆
      */
-    extern void uheap_create(void);
-    uheap_create();
+    extern unsigned char __bss_end;
+
+    /*
+     * 在 __bss_end 后, 进程栈空间前, 建立内存堆
+     */
+    heap_init(&user_heap, "user_heap", &__bss_end,
+            PROCESS_SPACE_SIZE - (uint32_t)&__bss_end - PROCESS_STACK_SIZE - PROCESS_PARAM_SIZE);
 
     /*
      * 打开三个标准文件
      */
-    open("/dev/null", O_RDONLY, 0666);
+    open("/dev/serial0", O_RDONLY, 0666);
     stdin  = fdopen(STDIN_FILENO,  "r");
 
-    open("/dev/null", O_WRONLY, 0666);
+    open("/dev/serial0", O_WRONLY, 0666);
     stdout = fdopen(STDOUT_FILENO, "w");
 
-    open("/dev/null", O_WRONLY, 0666);
+    open("/dev/serial0", O_WRONLY, 0666);
     stderr = fdopen(STDERR_FILENO, "w");
+}
+#else
+/*********************************************************************************************************
+** 内核定义
+*********************************************************************************************************/
+#include "kern/kern.h"
+/*********************************************************************************************************
+** Function name:           _malloc_r
+** Descriptions:            malloc 桩函数
+** input parameters:        reent               可重入结构
+**                          size                需要分配的大小
+** output parameters:       NONE
+** Returned value:          内存指针
+*********************************************************************************************************/
+void *_malloc_r(struct _reent *reent, size_t size)
+{
+    void    *ptr;
+
+    ptr = kmalloc(size, GFP_KERNEL);
+    if (ptr != NULL) {
+        reent->_errno = 0;
+    } else {
+        reent->_errno = ENOMEM;
+    }
+    return ptr;
+}
+/*********************************************************************************************************
+** Function name:           _free_r
+** Descriptions:            free 桩函数
+** input parameters:        reent               可重入结构
+**                          ptr                 内存指针
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
+void _free_r(struct _reent *reent, void *ptr)
+{
+    kfree(ptr);
+
+    reent->_errno = 0;
+}
+/*********************************************************************************************************
+** Function name:           _realloc_r
+** Descriptions:            realloc 桩函数
+** input parameters:        reent               可重入结构
+**                          ptr                 内存指针
+**                          newsize             新的大小
+** output parameters:       NONE
+** Returned value:          内存指针
+*********************************************************************************************************/
+void *_realloc_r(struct _reent *reent, void *ptr, size_t newsize)
+{
+    void    *newptr;
+
+    newptr = kmalloc(GFP_KERNEL, newsize);
+    if (newptr != NULL) {
+        if (ptr != NULL) {
+            memcpy(newptr, ptr, newsize);
+            kfree(ptr);
+        }
+        reent->_errno = 0;
+    } else {
+        reent->_errno = ENOMEM;
+    }
+    return newptr;
+}
+/*********************************************************************************************************
+** Function name:           _calloc_r
+** Descriptions:            calloc 桩函数
+** input parameters:        reent               可重入结构
+**                          ptr                 内存
+**                          nelem               元素的个数
+**                          elsize              元素的大小
+** output parameters:       NONE
+** Returned value:          内存指针
+*********************************************************************************************************/
+void *_calloc_r(struct _reent *reent, size_t nelem, size_t elsize)
+{
+    void    *ptr;
+
+    ptr = kmalloc(GFP_KERNEL, nelem * MEM_ALIGN_SIZE(elsize));
+    if (ptr != NULL) {
+        memset(ptr, 0, nelem * MEM_ALIGN_SIZE(elsize));
+        reent->_errno = 0;
+    } else {
+        reent->_errno = ENOMEM;
+    }
+    return ptr;
 }
 #endif
 /*********************************************************************************************************

@@ -36,18 +36,12 @@
 ** Version:
 ** Descriptions:
 **
+** 扩展阅读:
+** http://hi.baidu.com/ch314156/blog/item/027cdd62feb97f3caa184c29.html
+**
 *********************************************************************************************************/
 #include "kern/kern.h"
 #include "s3c2440.h"
-/*********************************************************************************************************
-** 定义
-*********************************************************************************************************/
-#define INTERRUPT_NR      INTGLOBAL                                     /*  中断数目                    */
-/*********************************************************************************************************
-** 全局变量
-*********************************************************************************************************/
-static isr_t  isr_table[INTERRUPT_NR];                                  /*  中断服务程序表              */
-static void  *isr_arg_table[INTERRUPT_NR];                              /*  中断服务程序参数表          */
 /*********************************************************************************************************
 ** Function name:           irq_c_handler
 ** Descriptions:            IRQ 中断处理程序
@@ -57,27 +51,18 @@ static void  *isr_arg_table[INTERRUPT_NR];                              /*  中断
 *********************************************************************************************************/
 void irq_c_handler(void)
 {
-    uint32_t interrupt;
-    isr_t    isr;
-
-    /*
-     * 扩展阅读:
-     * http://hi.baidu.com/ch314156/blog/item/027cdd62feb97f3caa184c29.html
-     */
+    intno_t interrupt;
 
     interrupt_enter();                                                  /*  进入中断                    */
 
     interrupt = INTOFFSET;                                              /*  获得中断号                  */
 
-    if (interrupt >= INTERRUPT_NR) {
+    if (interrupt >= INTGLOBAL) {
         interrupt_exit();                                               /*  退出中断                    */
         return;
     }
 
-    isr = isr_table[interrupt];                                         /*  调用中断服务程序            */
-    if (isr != NULL) {
-        isr(interrupt, isr_arg_table[interrupt]);
-    }
+    interrupt_exec(interrupt);
 
     SRCPND  = 1 << interrupt;                                           /*  清除中断源等待              */
 
@@ -86,30 +71,14 @@ void irq_c_handler(void)
     interrupt_exit();                                                   /*  退出中断                    */
 }
 /*********************************************************************************************************
-** Function name:           isr_invaild
-** Descriptions:            无效中断服务程序
-** input parameters:        interrupt           中断号
-**                          arg                 参数
-** output parameters:       NONE
-** Returned value:          0 OR -1
-*********************************************************************************************************/
-int isr_invaild(uint32_t interrupt, void *arg)
-{
-    printk("invaild interrupt %d!\n", interrupt);
-
-    return -1;
-}
-/*********************************************************************************************************
-** Function name:           interrupt_init
+** Function name:           interrupt_mode_init
 ** Descriptions:            初始化中断
 ** input parameters:        NONE
 ** output parameters:       NONE
 ** Returned value:          NONE
 *********************************************************************************************************/
-void interrupt_init(void)
+void interrupt_mode_init(void)
 {
-    int i;
-
     SRCPND      = 0x00;                                                 /*  清除所有中断源等待          */
 
     SUBSRCPND   = 0x00;                                                 /*  清除所有子中断源等待        */
@@ -121,11 +90,6 @@ void interrupt_init(void)
     INTSUBMSK   = BIT_SUB_ALLMSK;                                       /*  屏蔽所有子中断              */
 
     INTPND      = INTPND;                                               /*  清除所有中断等待            */
-
-    for (i = 0; i < INTERRUPT_NR; i++) {                                /*  初始化中断服务程序及其参数表*/
-        isr_table[i]     = (isr_t)isr_invaild;
-        isr_arg_table[i] = NULL;
-    }
 }
 /*********************************************************************************************************
 ** Function name:           interrupt_mask
@@ -134,11 +98,11 @@ void interrupt_init(void)
 ** output parameters:       NONE
 ** Returned value:          NONE
 *********************************************************************************************************/
-void interrupt_mask(uint32_t interrupt)
+void interrupt_mask(intno_t interrupt)
 {
-    uint32_t reg;
+    reg_t reg;
 
-    if (interrupt < INTERRUPT_NR) {
+    if (interrupt < INTGLOBAL) {
 
         reg = interrupt_disable();
 
@@ -154,52 +118,17 @@ void interrupt_mask(uint32_t interrupt)
 ** output parameters:       NONE
 ** Returned value:          NONE
 *********************************************************************************************************/
-void interrupt_unmask(uint32_t interrupt)
+void interrupt_unmask(intno_t interrupt)
 {
-    uint32_t reg;
+    reg_t reg;
 
-    if (interrupt < INTERRUPT_NR) {
+    if (interrupt < INTGLOBAL) {
 
         reg = interrupt_disable();
 
         INTMSK &= ~(1 << interrupt);
 
         interrupt_resume(reg);
-    }
-}
-/*********************************************************************************************************
-** Function name:           interrupt_install
-** Descriptions:            安装中断服务程序
-** input parameters:        interrupt           中断号
-**                          new_isr             新的中断服务程序
-**                          arg                 中断服务程序参数
-** output parameters:       old_isr             旧的中断服务程序
-** Returned value:          NONE
-*********************************************************************************************************/
-int interrupt_install(uint32_t interrupt, isr_t new_isr, isr_t *old_isr, void *arg)
-{
-    uint32_t reg;
-
-    if (interrupt < INTERRUPT_NR) {
-
-        reg = interrupt_disable();
-
-        if (old_isr != NULL) {
-            *old_isr = isr_table[interrupt];
-        }
-
-        if (new_isr != NULL) {
-            isr_table[interrupt]     = new_isr;
-            isr_arg_table[interrupt] = arg;
-        } else {
-            isr_table[interrupt]     = (isr_t)isr_invaild;
-        }
-
-        interrupt_resume(reg);
-
-        return 0;
-    } else {
-        return -1;
     }
 }
 /*********************************************************************************************************

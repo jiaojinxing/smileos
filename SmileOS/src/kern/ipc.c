@@ -41,6 +41,11 @@
 #include "kern/ipc.h"
 #include "kern/kvars.h"
 /*********************************************************************************************************
+** 配置
+*********************************************************************************************************/
+#define MQUEUE_MIN_SIZE             (10)                                /*  消息队列的最小容量          */
+#define MQUEUE_MAX_SIZE             (10000)                             /*  消息队列的最大容量          */
+/*********************************************************************************************************
 ** 操作宏
 *********************************************************************************************************/
 /*
@@ -71,7 +76,7 @@
 /*
  * 等待事件直至超时
  */
-#define wait_event_timeout(__wait_list, __resume_type, __timeout, __ticks)   \
+#define wait_event_timeout(__wait_list, __resume_type, __timeout, __tick)   \
                     if (__wait_list == NULL) {                      \
                         __wait_list = current;                      \
                     } else {                                        \
@@ -87,9 +92,9 @@
                     current->status = TASK_SLEEPING;                \
                     current->wait_list = &__wait_list;              \
                     current->resume_type = TASK_RESUME_UNKNOW;      \
-                    __ticks = getticks();                           \
+                    __tick = getticks();                            \
                     schedule();                                     \
-                    __ticks = getticks() - __ticks;                 \
+                    __tick = getticks() - __tick;                   \
                     current->wait_list = NULL;                      \
                     current->next = NULL;                           \
                     current->delay = 0;                             \
@@ -106,9 +111,7 @@
                     __task->wait_list = NULL;                       \
                     __task->next = NULL;                            \
                     __task->resume_type = __resume_type;            \
-                    if (!in_interrupt() &&                          \
-                        __task->type == TASK_TYPE_KTHREAD &&        \
-                        __task->priority >= current->priority) {    \
+                    if (!in_interrupt()) {                          \
                         schedule();                                 \
                     }
 /*********************************************************************************************************
@@ -125,10 +128,10 @@ typedef enum {
 *********************************************************************************************************/
 struct mutex {
     ipc_type_t  type;                                                   /*  IPC 类型                    */
-    int         valid;                                                  /*  有效性                      */
+    bool_t      valid;                                                  /*  有效性                      */
+    uint32_t    lock;                                                   /*  上锁层次                    */
     task_t     *wait_list;                                              /*  等待链表                    */
     task_t     *owner;                                                  /*  拥有者                      */
-    uint32_t    lock;                                                   /*  上锁层次                    */
 };
 /*********************************************************************************************************
 ** Function name:           mutex_new
@@ -166,7 +169,7 @@ int mutex_new(mutex_t *mutex)
 int mutex_trylock(mutex_t *mutex)
 {
     struct mutex *m;
-    uint32_t reg;
+    reg_t reg;
 
     if (in_interrupt()) {
         return -1;
@@ -201,12 +204,12 @@ int mutex_trylock(mutex_t *mutex)
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-int mutex_lock(mutex_t *mutex, uint32_t timeout)
+int mutex_lock(mutex_t *mutex, tick_t timeout)
 {
     struct mutex *m;
-    uint32_t reg;
-    uint32_t resume_type;
-    uint64_t ticks;
+    reg_t reg;
+    uint8_t resume_type;
+    tick_t tick;
 
     if (in_interrupt()) {
         return -1;
@@ -223,20 +226,20 @@ int mutex_lock(mutex_t *mutex, uint32_t timeout)
             } else if (m->owner == current) {
                 m->lock++;
             } else {
-                printk("%s: %s lock mutex, %s wait it\n", __func__, m->owner->name, current->name);
+                printk(KERN_DEBUG"%s: %s lock mutex, %s wait it\n", __func__, m->owner->name, current->name);
                 if (timeout != 0) {
-                    wait_event_timeout(m->wait_list, resume_type, timeout, ticks);
+                    wait_event_timeout(m->wait_list, resume_type, timeout, tick);
                 } else {
                     wait_event_forever(m->wait_list, resume_type);
                 }
-                if (resume_type & TASK_RESUME_INTERRUPT || resume_type & TASK_RESUME_TIMEOUT) {
+                if (resume_type == TASK_RESUME_INTERRUPT || resume_type == TASK_RESUME_TIMEOUT) {
                     goto error;
                 } else {
                     if (timeout != 0) {
-                        if (timeout <= ticks) {
+                        if (timeout <= tick) {
                             goto error;
                         }
-                        timeout -= ticks;
+                        timeout -= tick;
                     }
                     goto again;
                 }
@@ -261,7 +264,7 @@ int mutex_unlock(mutex_t *mutex)
 {
     struct mutex *m;
     task_t *task;
-    uint32_t reg;
+    reg_t reg;
 
     if (in_interrupt()) {
         return -1;
@@ -275,6 +278,7 @@ int mutex_unlock(mutex_t *mutex)
                 if (m->owner == current) {
                     m->lock--;
                     if (!m->lock) {
+                        m->owner = NULL;
                         task = m->wait_list;
                         if (task) {
                             resume_task(task, m->wait_list, TASK_RESUME_MUTEX_COME);
@@ -282,7 +286,11 @@ int mutex_unlock(mutex_t *mutex)
                     }
                     interrupt_resume(reg);
                     return 0;
+                } else {
+
                 }
+            } else {
+
             }
         }
     }
@@ -300,7 +308,7 @@ int mutex_abort(mutex_t *mutex)
 {
     struct mutex *m;
     task_t *task;
-    uint32_t reg;
+    reg_t reg;
 
     reg = interrupt_disable();
     if (mutex) {
@@ -326,7 +334,7 @@ int mutex_abort(mutex_t *mutex)
 int mutex_free(mutex_t *mutex)
 {
     struct mutex *m;
-    uint32_t reg;
+    reg_t reg;
 
     reg = interrupt_disable();
     if (mutex) {
@@ -352,11 +360,11 @@ int mutex_free(mutex_t *mutex)
 ** output parameters:       NONE
 ** Returned value:          TRUE OR FALSE
 *********************************************************************************************************/
-int mutex_valid(mutex_t *mutex)
+bool_t mutex_valid(mutex_t *mutex)
 {
     struct mutex *m;
-    uint32_t reg;
-    int valid = FALSE;
+    reg_t reg;
+    bool_t valid = FALSE;
 
     reg = interrupt_disable();
     if (mutex) {
@@ -372,14 +380,14 @@ int mutex_valid(mutex_t *mutex)
 ** Function name:           mutex_set_valid
 ** Descriptions:            设置互斥量的有效性
 ** input parameters:        mutex               互斥量
-**                          valid               <= 0 : 无效, > 0 : 有效
+**                          valid               有效性
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-int mutex_set_valid(mutex_t *mutex, int valid)
+int mutex_set_valid(mutex_t *mutex, bool_t valid)
 {
     struct mutex *m;
-    uint32_t reg;
+    reg_t reg;
 
     reg = interrupt_disable();
     if (mutex) {
@@ -398,9 +406,9 @@ int mutex_set_valid(mutex_t *mutex, int valid)
 *********************************************************************************************************/
 struct sem {
     ipc_type_t  type;                                                   /*  IPC 类型                    */
-    int         valid;                                                  /*  有效性                      */
-    task_t     *wait_list;                                              /*  等待链表                    */
+    bool_t      valid;                                                  /*  有效性                      */
     uint32_t    count;                                                  /*  信号计数                    */
+    task_t     *wait_list;                                              /*  等待链表                    */
 };
 /*********************************************************************************************************
 ** Function name:           sem_new
@@ -437,7 +445,7 @@ int sem_new(sem_t *sem, uint32_t count)
 int sem_trywait(sem_t *sem)
 {
     struct sem *s;
-    uint32_t reg;
+    reg_t reg;
 
     reg = interrupt_disable();
     if (sem) {
@@ -465,12 +473,12 @@ int sem_trywait(sem_t *sem)
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-int sem_wait(sem_t *sem, uint32_t timeout)
+int sem_wait(sem_t *sem, tick_t timeout)
 {
     struct sem *s;
-    uint32_t reg;
-    uint32_t resume_type;
-    uint64_t ticks;
+    reg_t reg;
+    uint8_t resume_type;
+    tick_t tick;
 
     if (in_interrupt()) {
         return sem_trywait(sem);
@@ -487,18 +495,18 @@ int sem_wait(sem_t *sem, uint32_t timeout)
                 return 0;
             } else {
                 if (timeout != 0) {
-                    wait_event_timeout(s->wait_list, resume_type, timeout, ticks);
+                    wait_event_timeout(s->wait_list, resume_type, timeout, tick);
                 } else {
                     wait_event_forever(s->wait_list, resume_type);
                 }
-                if (resume_type & TASK_RESUME_INTERRUPT || resume_type & TASK_RESUME_TIMEOUT) {
+                if (resume_type == TASK_RESUME_INTERRUPT || resume_type == TASK_RESUME_TIMEOUT) {
                     goto error;
                 } else {
                     if (timeout != 0) {
-                        if (timeout <= ticks) {
+                        if (timeout <= tick) {
                             goto error;
                         }
-                        timeout -= ticks;
+                        timeout -= tick;
                     }
                     goto again;
                 }
@@ -521,7 +529,7 @@ int sem_signal(sem_t *sem)
 {
     struct sem *s;
     task_t *task;
-    uint32_t reg;
+    reg_t reg;
 
     reg = interrupt_disable();
     if (sem) {
@@ -550,7 +558,7 @@ int sem_sync(sem_t *sem)
 {
     struct sem *s;
     task_t *task;
-    uint32_t reg;
+    reg_t reg;
 
     reg = interrupt_disable();
     if (sem) {
@@ -579,7 +587,7 @@ int sem_abort(sem_t *sem)
 {
     struct sem *s;
     task_t *task;
-    uint32_t reg;
+    reg_t reg;
 
     reg = interrupt_disable();
     if (sem) {
@@ -605,7 +613,7 @@ int sem_abort(sem_t *sem)
 int sem_free(sem_t *sem)
 {
     struct sem *s;
-    uint32_t reg;
+    reg_t reg;
 
     reg = interrupt_disable();
     if (sem) {
@@ -631,11 +639,11 @@ int sem_free(sem_t *sem)
 ** output parameters:       NONE
 ** Returned value:          TRUE OR FALSE
 *********************************************************************************************************/
-int sem_valid(sem_t *sem)
+bool_t sem_valid(sem_t *sem)
 {
     struct sem *s;
-    uint32_t reg;
-    int valid = FALSE;
+    reg_t reg;
+    bool_t valid = FALSE;
 
     reg = interrupt_disable();
     if (sem) {
@@ -651,14 +659,14 @@ int sem_valid(sem_t *sem)
 ** Function name:           sem_set_valid
 ** Descriptions:            设置信号量的有效性
 ** input parameters:        sem                 信号量
-**                          valid               <= 0 : 无效, > 0 : 有效
+**                          valid               有效性
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-int sem_set_valid(sem_t *sem, int valid)
+int sem_set_valid(sem_t *sem, bool_t valid)
 {
     struct sem *s;
-    uint32_t reg;
+    reg_t reg;
 
     reg = interrupt_disable();
     if (sem) {
@@ -677,13 +685,13 @@ int sem_set_valid(sem_t *sem, int valid)
 *********************************************************************************************************/
 struct mqueue {
     ipc_type_t  type;                                                   /*  IPC 类型                    */
-    int         valid;                                                  /*  有效性                      */
+    bool_t      valid;                                                  /*  有效性                      */
     task_t     *r_wait_list;                                            /*  读消息队列等待链表          */
     task_t     *w_wait_list;                                            /*  写消息队列等待链表          */
-    uint32_t    size;                                                   /*  消息队列的大小              */
-    uint32_t    nr;                                                     /*  消息队列里的未读消息数      */
-    uint32_t    in;                                                     /*  入队点                      */
-    uint32_t    out;                                                    /*  出队点                      */
+    size_t      size;                                                   /*  消息队列的大小              */
+    size_t      nr;                                                     /*  消息队列里的未读消息数      */
+    size_t      in;                                                     /*  入队点                      */
+    size_t      out;                                                    /*  出队点                      */
     void       *msg[1];                                                 /*  消息队列                    */
 };
 /*********************************************************************************************************
@@ -693,12 +701,16 @@ struct mqueue {
 ** output parameters:       mqueue              消息队列
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-int mqueue_new(mqueue_t *mqueue, uint32_t size)
+int mqueue_new(mqueue_t *mqueue, size_t size)
 {
     struct mqueue *q;
 
-    if (size < 10) {
-        size = 10;
+    if (size < MQUEUE_MIN_SIZE) {
+        size = MQUEUE_MIN_SIZE;
+    }
+
+    if (size > MQUEUE_MAX_SIZE) {
+        size = MQUEUE_MAX_SIZE;
     }
 
     q = kmalloc(sizeof(struct mqueue) + (size - 1) * sizeof(void *), GFP_KERNEL);
@@ -731,7 +743,7 @@ int mqueue_trypost(mqueue_t *mqueue, void *msg)
 {
     struct mqueue *q;
     task_t *task;
-    uint32_t reg;
+    reg_t reg;
 
     reg = interrupt_disable();
     if (mqueue) {
@@ -764,13 +776,13 @@ int mqueue_trypost(mqueue_t *mqueue, void *msg)
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-int mqueue_post(mqueue_t *mqueue, void *msg, uint32_t timeout)
+int mqueue_post(mqueue_t *mqueue, void *msg, tick_t timeout)
 {
     struct mqueue *q;
     task_t *task;
-    uint32_t reg;
-    uint32_t resume_type;
-    uint64_t ticks;
+    reg_t reg;
+    uint8_t resume_type;
+    tick_t tick;
 
     if (in_interrupt()) {
         return mqueue_trypost(mqueue, msg);
@@ -795,18 +807,18 @@ int mqueue_post(mqueue_t *mqueue, void *msg, uint32_t timeout)
                 return 0;
             } else {
                 if (timeout != 0) {
-                    wait_event_timeout(q->w_wait_list, resume_type, timeout, ticks);
+                    wait_event_timeout(q->w_wait_list, resume_type, timeout, tick);
                 } else {
                     wait_event_forever(q->w_wait_list, resume_type);
                 }
-                if (resume_type & TASK_RESUME_INTERRUPT || resume_type & TASK_RESUME_TIMEOUT) {
+                if (resume_type == TASK_RESUME_INTERRUPT || resume_type == TASK_RESUME_TIMEOUT) {
                     goto error;
                 } else {
                     if (timeout != 0) {
-                        if (timeout <= ticks) {
+                        if (timeout <= tick) {
                             goto error;
                         }
-                        timeout -= ticks;
+                        timeout -= tick;
                     }
                     goto again;
                 }
@@ -829,7 +841,7 @@ int mqueue_tryfetch(mqueue_t *mqueue, void **msg)
 {
     struct mqueue *q;
     task_t *task;
-    uint32_t reg;
+    reg_t reg;
 
     reg = interrupt_disable();
     if (mqueue) {
@@ -861,13 +873,13 @@ int mqueue_tryfetch(mqueue_t *mqueue, void **msg)
 ** output parameters:       msg                 消息
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-int mqueue_fetch(mqueue_t *mqueue, void **msg, uint32_t timeout)
+int mqueue_fetch(mqueue_t *mqueue, void **msg, tick_t timeout)
 {
     struct mqueue *q;
     task_t *task;
-    uint32_t reg;
-    uint32_t resume_type;
-    uint64_t ticks;
+    reg_t reg;
+    uint8_t resume_type;
+    tick_t tick;
 
     if (in_interrupt()) {
         return mqueue_tryfetch(mqueue, msg);
@@ -892,18 +904,18 @@ int mqueue_fetch(mqueue_t *mqueue, void **msg, uint32_t timeout)
                 return 0;
             } else {
                 if (timeout != 0) {
-                    wait_event_timeout(q->r_wait_list, resume_type, timeout, ticks);
+                    wait_event_timeout(q->r_wait_list, resume_type, timeout, tick);
                 } else {
                     wait_event_forever(q->r_wait_list, resume_type);
                 }
-                if (resume_type & TASK_RESUME_INTERRUPT || resume_type & TASK_RESUME_TIMEOUT) {
+                if (resume_type == TASK_RESUME_INTERRUPT || resume_type == TASK_RESUME_TIMEOUT) {
                     goto error;
                 } else {
                     if (timeout != 0) {
-                        if (timeout <= ticks) {
+                        if (timeout <= tick) {
                             goto error;
                         }
-                        timeout -= ticks;
+                        timeout -= tick;
                     }
                     goto again;
                 }
@@ -926,7 +938,7 @@ int mqueue_flush(mqueue_t *mqueue)
 {
     struct mqueue *q;
     task_t *task;
-    uint32_t reg;
+    reg_t reg;
     int i;
 
     reg = interrupt_disable();
@@ -957,7 +969,7 @@ int mqueue_flush(mqueue_t *mqueue)
 int mqueue_msg_nr(mqueue_t *mqueue)
 {
     struct mqueue *q;
-    uint32_t reg;
+    reg_t reg;
     uint32_t nr;
 
     reg = interrupt_disable();
@@ -983,7 +995,7 @@ int mqueue_abort_fetch(mqueue_t *mqueue)
 {
     struct mqueue *q;
     task_t *task;
-    uint32_t reg;
+    reg_t reg;
 
     reg = interrupt_disable();
     if (mqueue) {
@@ -1011,7 +1023,7 @@ int mqueue_abort_post(mqueue_t *mqueue)
 {
     struct mqueue *q;
     task_t *task;
-    uint32_t reg;
+    reg_t reg;
 
     reg = interrupt_disable();
     if (mqueue) {
@@ -1039,7 +1051,7 @@ int mqueue_abort(mqueue_t *mqueue)
 {
     struct mqueue *q;
     task_t *task;
-    uint32_t reg;
+    reg_t reg;
 
     reg = interrupt_disable();
     if (mqueue) {
@@ -1070,7 +1082,7 @@ int mqueue_abort(mqueue_t *mqueue)
 int mqueue_free(mqueue_t *mqueue)
 {
     struct mqueue *q;
-    uint32_t reg;
+    reg_t reg;
 
     reg = interrupt_disable();
     if (mqueue) {
@@ -1096,11 +1108,11 @@ int mqueue_free(mqueue_t *mqueue)
 ** output parameters:       NONE
 ** Returned value:          TRUE OR FALSE
 *********************************************************************************************************/
-int mqueue_valid(mqueue_t *mqueue)
+bool_t mqueue_valid(mqueue_t *mqueue)
 {
     struct mqueue *q;
-    uint32_t reg;
-    int valid = FALSE;
+    reg_t reg;
+    bool_t valid = FALSE;
 
     reg = interrupt_disable();
     if (mqueue) {
@@ -1116,14 +1128,14 @@ int mqueue_valid(mqueue_t *mqueue)
 ** Function name:           mqueue_set_valid
 ** Descriptions:            设置消息队列的有效性
 ** input parameters:        mqueue              消息队列
-**                          valid               <= 0 : 无效, > 0 : 有效
+**                          valid               有效性
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-int mqueue_set_valid(mqueue_t *mqueue, int valid)
+int mqueue_set_valid(mqueue_t *mqueue, bool_t valid)
 {
     struct mqueue *q;
-    uint32_t reg;
+    reg_t reg;
 
     reg = interrupt_disable();
     if (mqueue) {

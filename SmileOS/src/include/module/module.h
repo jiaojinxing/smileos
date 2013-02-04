@@ -22,7 +22,7 @@
 ** File name:               module.h
 ** Last modified Date:      2012-7-18
 ** Last Version:            1.0.0
-** Descriptions:            内核模块支持
+** Descriptions:            内核模块
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing
@@ -39,26 +39,11 @@
 *********************************************************************************************************/
 #ifndef MODULE_H_
 #define MODULE_H_
-
-#include "kern/types.h"
-#include "module/elf.h"
-#include "kern/atomic.h"
-#include <syslimits.h>
-
-/*
- * 模块
- */
-typedef struct module {
-    struct module  *next;                                               /*  后趋                      　*/
-    char            name[PATH_MAX];                                     /*  名字                        */
-    uint32_t        key;                                                /*  名字 key                    */
-    atomic_t        ref;                                                /*  引用计数                    */
-    uint8_t        *elf;                                                /*  ELF 文件                    */
-    size_t          size;                                               /*  文件大小                    */
-    Elf32_Shdr    **shdrs;                                              /*  段首部数组指针              */
-    int             bss_idx;                                            /*  BSS 段索引                  */
-    int             text_idx;                                           /*  TEXT 段索引                 */
-} module_t;
+/*********************************************************************************************************
+** 模块
+*********************************************************************************************************/
+struct module;
+typedef struct module module_t;
 /*********************************************************************************************************
 ** Function name:           module_load
 ** Descriptions:            加载 ELF 文件
@@ -72,7 +57,7 @@ int module_load(const char *path, int argc, char **argv);
 /*********************************************************************************************************
 ** Function name:           module_unload
 ** Descriptions:            卸载模块
-** input parameters:        module              模块
+** input parameters:        path                ELF 文件路径
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
@@ -96,11 +81,11 @@ int module_unref(module_t *mod);
 /*********************************************************************************************************
 ** Function name:           module_lookup
 ** Descriptions:            查找模块
-** input parameters:        name                模块名
+** input parameters:        path                ELF 文件路径
 ** output parameters:       NONE
 ** Returned value:          模块 OR NULL
 *********************************************************************************************************/
-module_t *module_lookup(const char *name);
+module_t *module_lookup(const char *path);
 
 #endif                                                                  /*  MODULE_H_                   */
 /*********************************************************************************************************

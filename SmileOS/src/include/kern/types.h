@@ -64,6 +64,13 @@ typedef unsigned long long          uint64_t;
 typedef          long long          int64_t;
 #endif
 
+typedef uint8_t                     u8_t;
+typedef int8_t                      s8_t;
+typedef uint16_t                    u16_t;
+typedef int16_t                     s16_t;
+typedef uint32_t                    u32_t;
+typedef int32_t                     s32_t;
+
 #ifndef NULL
 #define NULL                        0
 #endif
@@ -83,35 +90,8 @@ typedef          long long          int64_t;
 #endif
 
 /*
- * 地址空间
+ * 字节序
  */
-typedef struct {
-    uint32_t                        base;
-    uint32_t                        size;
-} space_t;
-/*********************************************************************************************************
-** 为了更好地移植 lwIP, 加入以下数据类型定义
-*********************************************************************************************************/
-typedef uint8_t                     u8_t;
-typedef int8_t                      s8_t;
-typedef uint16_t                    u16_t;
-typedef int16_t                     s16_t;
-typedef uint32_t                    u32_t;
-typedef int32_t                     s32_t;
-
-typedef uint32_t                    mem_ptr_t;
-
-#define U16_F                       "u"
-#define U32_F                       "u"
-#define S16_F                       "d"
-#define S32_F                       "d"
-#define X16_F                       "X"
-#define X32_F                       "X"
-#define SZT_F                       "u"
-#define X8_F                        "02X"
-/*********************************************************************************************************
-** 字节序
-*********************************************************************************************************/
 #ifndef LITTLE_ENDIAN
 #define LITTLE_ENDIAN               1234
 #endif
@@ -120,41 +100,56 @@ typedef uint32_t                    mem_ptr_t;
 #define BIG_ENDIAN                  4321
 #endif
 
-#define BYTE_ORDER                  LITTLE_ENDIAN
+#include "arch/types.h"
+
+typedef mem_ptr_t                   mem_size_t;
+
+/*
+ * 内存空间
+ */
+typedef struct {
+    mem_ptr_t                       base;
+    mem_size_t                      size;
+} mem_space_t;
+
+/*
+ * TICK 数据类型
+ */
+typedef uint64_t                    tick_t;
 /*********************************************************************************************************
-** 处理内存对齐
+** 系统数据类型定义
 *********************************************************************************************************/
-#define MEM_ALIGNMENT               4
+/*
+ * 处理内存对齐
+ */
 #define MEM_ALIGN_SIZE(size)        (((size) + MEM_ALIGNMENT - 1) & ~(MEM_ALIGNMENT - 1))
 #define MEM_ALIGN_SIZE_LESS(size)   (((size) & ~(MEM_ALIGNMENT - 1)))
-#define MEM_ALIGN(addr)             ((void *)(((uint32_t)(addr) + MEM_ALIGNMENT - 1) & ~(uint32_t)(MEM_ALIGNMENT - 1)))
-#define MEM_ALIGN_LESS(addr)        ((void *)(((uint32_t)(addr)) & ~(uint32_t)(MEM_ALIGNMENT - 1)))
-/*********************************************************************************************************
-** 编译器结构缩排
-*********************************************************************************************************/
+#define MEM_ALIGN(addr)             ((void *)(((mem_ptr_t)(addr) + MEM_ALIGNMENT - 1) & ~(mem_ptr_t)(MEM_ALIGNMENT - 1)))
+#define MEM_ALIGN_LESS(addr)        ((void *)(((mem_ptr_t)(addr)) & ~(mem_ptr_t)(MEM_ALIGNMENT - 1)))
+
+/*
+ * 编译器结构缩排
+ */
 #define PACK_STRUCT_FIELD(x)        x
 #define PACK_STRUCT_STRUCT          __attribute__((packed))
 #define PACK_STRUCT_BEGIN                                               /*  单字节缩排结构体            */
 #define PACK_STRUCT_END                                                 /*  结束单字节缩排结构体        */
-/*********************************************************************************************************
-** 获得母体结构的地址
-*********************************************************************************************************/
-#define struct_addr(node, type, member) \
-                                    ((type *)((char *)(node) - (unsigned long)(&((type *)0)->member)))
-/*********************************************************************************************************
-** 求最大和最小值
-*********************************************************************************************************/
+
+/*
+ * 求最大和最小值
+ */
 #define max(a, b)                   (a) > (b) ? (a) : (b)
 #define min(a, b)                   (a) < (b) ? (a) : (b)
-/*********************************************************************************************************
-** 读写地址
-*********************************************************************************************************/
-#define writeb(d, r)                (*(volatile u8_t  *)r) = (d)
-#define writew(d, r)                (*(volatile u16_t *)r) = (d)
-#define writel(d, r)                (*(volatile u32_t *)r) = (d)
-#define readb(r)                    (*(volatile u8_t  *)r)
-#define readw(r)                    (*(volatile u16_t *)r)
-#define readl(r)                    (*(volatile u32_t *)r)
+
+/*
+ * 读写内存地址
+ */
+#define writeb(d, r)                (*(volatile uint8_t  *)r) = (d)
+#define writew(d, r)                (*(volatile uint16_t *)r) = (d)
+#define writel(d, r)                (*(volatile uint32_t *)r) = (d)
+#define readb(r)                    (*(volatile uint8_t  *)r)
+#define readw(r)                    (*(volatile uint16_t *)r)
+#define readl(r)                    (*(volatile uint8_t  *)r)
 
 #ifdef __cplusplus
 }

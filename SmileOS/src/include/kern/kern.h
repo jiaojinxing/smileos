@@ -39,14 +39,20 @@
 *********************************************************************************************************/
 #ifndef KERN_H_
 #define KERN_H_
-
-#include "kern/config.h"
+/*********************************************************************************************************
+** 用户程序不需要知道内核的配置和数据类型及接口
+*********************************************************************************************************/
 #include "kern/types.h"
 
 #if defined(SMILEOS_KERNEL) || defined(SMILEOS_MODULE)
+
+#include "kern/config.h"
+
 /*********************************************************************************************************
-  内核数据类型
+** 内核数据类型
 *********************************************************************************************************/
+#define HZ                          (TICK_PER_SECOND)                   /*  HZ                          */
+
 /*
  * 任务类型
  */
@@ -56,7 +62,7 @@
 /*
  * 任务状态
  */
-#define TASK_UNALLOCATE             ((uint32_t)-1)                      /*  未分配                      */
+#define TASK_UNALLOCATE             ((uint8_t)-1)                       /*  未分配                      */
 #define TASK_RUNNING                0                                   /*  就绪                        */
 #define TASK_SLEEPING               1                                   /*  休睡                        */
 #define TASK_SUSPEND                2                                   /*  挂起                        */
@@ -64,36 +70,21 @@
 /*
  * 任务恢复类型
  */
-#define TASK_RESUME_UNKNOW          0                                   /*  未知                        */
-#define TASK_RESUME_MUTEX_COME      (1 << 1)                            /*  互斥量到达                  */
-#define TASK_RESUME_SEM_COME        (1 << 2)                            /*  信号到达                    */
-#define TASK_RESUME_TIMEOUT         (1 << 3)                            /*  超时                        */
-#define TASK_RESUME_MSG_COME        (1 << 4)                            /*  消息到达                    */
-#define TASK_RESUME_MSG_OUT         (1 << 5)                            /*  消息被读取                  */
-#define TASK_RESUME_INTERRUPT       (1 << 6)                            /*  等待被中断                  */
-#define TASK_RESUME_SELECT_EVENT    (1 << 7)                            /*  select 事件                 */
-#define TASK_RESUME_AGAIN           (1 << 8)                            /*  需要重新试一次              */
+#define TASK_RESUME_UNKNOW          (0)                                   /*  未知                        */
+#define TASK_RESUME_MUTEX_COME      (1)                            /*  互斥量到达                  */
+#define TASK_RESUME_SEM_COME        (2)                            /*  信号到达                    */
+#define TASK_RESUME_SELECT_EVENT    (7)                            /*  select 事件                 */
+#define TASK_RESUME_MSG_COME        (4)                            /*  消息到达                    */
+#define TASK_RESUME_MSG_OUT         (5)                            /*  消息被读取                  */
 
-#include <signal.h>
-/*
- * 信号上下文
- */
-typedef struct _signal_ctx_t {
-    int                     ref;
-    int                     sig;                                        /*  信号                        */
-    struct _signal_ctx_t   *sig_int;
-    uint32_t                regs[20];                                   /*  上下文                      */
-    uint32_t                stack[SIG_USR_STACK_SIZE];                  /*  普通栈                      */
-    uint32_t                kstack[SIG_KERN_STACK_SIZE];                /*  内核栈                      */
-} signal_ctx_t;
+#define TASK_RESUME_TIMEOUT         (6)                            /*  超时                        */
+#define TASK_RESUME_INTERRUPT       (7)                            /*  等待被中断                  */
 
 /*
  * 设置 errno
  */
 #include <errno.h>
-#define seterrno(err)       errno = (err)
-
-struct vmm_frame;
+#define seterrno(err)               errno = (err)
 
 #include <sys/reent.h>                                                  /*  for struct _reent           */
 
@@ -107,57 +98,45 @@ typedef struct task {
      */
     int32_t                 pid;                                        /*  进程 ID                     */
     int32_t                 tid;                                        /*  任务 ID                     */
-    uint32_t                status;                                     /*  状态                        */
-    uint32_t                timeslice;                                  /*  剩余时间片                  */
-    uint32_t                delay;                                      /*  休睡剩余 TICK 数            */
-    uint32_t                priority;                                   /*  优先级                      */
-    uint32_t                regs[20];                                   /*  上下文                      */
-    uint32_t                kstack[KERN_STACK_SIZE];                    /*  内核栈                      */
-    uint32_t                type;                                       /*  任务类型                    */
-    uint32_t                resume_type;                                /*  恢复类型                    */
-    uint32_t                cpu_usage;                                  /*  CPU 占用率                  */
-    uint32_t                ticks;                                      /*  任务被定时器中断的次数      */
-    char                    name[NAME_MAX];                             /*  名字                        */
-    uint32_t                dabt_cnt;                                   /*  数据访问中止次数            */
-    struct _reent          *reent;                                      /*  可重入结构指针              */
+#if CPU_REGS_SIZE > 0
+    reg_t                   regs[CPU_REGS_SIZE];                        /*  上下文                      */
+#endif
+#if KERN_STACK_SIZE > 0
+    reg_t                   kstack[KERN_STACK_SIZE];                    /*  内核栈                      */
+#endif
+    uint8_t                 type;                                       /*  任务类型                    */
 /********************************************************************************************************/
+    uint8_t                 status;                                     /*  状态                        */
+    uint8_t                 priority;                                   /*  优先级                      */
+    uint8_t                 timeslice;                                  /*  剩余时间片                  */
+    tick_t                  delay;                                      /*  休睡剩余 TICK 数            */
+    uint8_t                 resume_type;                                /*  恢复类型                    */
+    char                    name[NAME_MAX];                             /*  名字                        */
+    struct _reent          *reent;                                      /*  可重入结构指针              */
+
     /*
      * 内核线程专属信息
      */
     void                  (*thread)(void *arg);                         /*  线程函数                    */
     void                   *arg;                                        /*  线程参数                    */
-    uint32_t                stack_base;                                 /*  线程栈基址                  */
-    uint32_t                stack_size;                                 /*  线程栈大小                  */
+    void                   *stack_base;                                 /*  线程栈基址                  */
+    size_t                  stack_size;                                 /*  线程栈大小                  */
 
     /*
-     * 进程专属信息
-     */
-    uint32_t                frame_nr;                                   /*  页框数                      */
-    uint32_t                page_tbl_nr;                                /*  页表数                      */
-    struct vmm_frame       *frame_list;                                 /*  页框链表                    */
-    uint32_t                mmu_backup[PROCESS_SPACE_SIZE / SECTION_SIZE];  /*  一级段表备份            */
-    uint32_t                file_size;                                  /*  进程二进制文件大小          */
-    void                   *pinfo;                                      /*  进程信息指针                */
-
-    /*
-     * IPC
+     * IPC 专属信息
      */
     struct task            *next;                                       /*  后趋                        */
     struct task           **wait_list;                                  /*  等待链表                    */
 
     /*
-     * 信号
+     * PROCESS 专属信息
      */
-    sigset_t                sigset_pend;                                /*  未决信号                    */
-    sigset_t                sigset_mask;                                /*  未决信号                    */
-    sigset_t                sigset_old;
-    void                   *signal_queue;                               /*  信号队列                    */
-    signal_ctx_t           *signal_ctx;                                 /*  信号上下文                  */
-    struct sigaction        signal_action[NSIG];
-    signal_ctx_t           *signal_current;
-    uint32_t                signal_status;
-    uint32_t                signal_delay;
-    uint32_t                signal_resume;
+    void                   *pinfo;                                      /*  进程信息指针                */
+
+    /*
+     * VMM 专属信息
+     */
+    void                   *vmm;
 } task_t;
 
 /*
@@ -211,13 +190,13 @@ void kernel_timer(void);
 ** Function name:           process_create
 ** Descriptions:            创建进程
 ** input parameters:        path                进程二进制文件 PATH
-**                          priority            进程时间片
+**                          timeslice           时间片
 **                          argc                参数个数
 **                          argv                参数数组
 ** output parameters:       NONE
 ** Returned value:          进程 PID
 *********************************************************************************************************/
-int32_t process_create(const char *path, uint32_t priority, int argc, char **argv);
+int32_t process_create(const char *path, uint8_t timeslice, int argc, char **argv);
 /*********************************************************************************************************
 ** Function name:           kthread_create
 ** Descriptions:            创建内核线程
@@ -229,11 +208,14 @@ int32_t process_create(const char *path, uint32_t priority, int argc, char **arg
 ** output parameters:       NONE
 ** Returned value:          内核线程 TID
 *********************************************************************************************************/
-int32_t kthread_create(const char *name, void (*func)(void *), void *arg, uint32_t stack_size, uint32_t priority);
+int32_t kthread_create(const char *name,
+                       void (*func)(void *),
+                       void *arg,
+                       size_t stack_size,
+                       uint8_t priority);
 /*********************************************************************************************************
 ** Function name:           printk
-** Descriptions:            因为里面用了 kmalloc, 所以不能用在 kmalloc 失败之后,
-**                          终止内核前的报警也不能使用
+** Descriptions:            终止内核前的报警也不能使用
 ** input parameters:        fmt                 格式字符串
 **                          ...                 其余参数
 ** output parameters:       NONE
@@ -248,24 +230,6 @@ void printk(const char *fmt, ...);
 #define KERN_NOTICE     "<5>"
 #define KERN_INFO       "<6>"
 #define KERN_DEBUG      "<7>"
-/*********************************************************************************************************
-** Function name:           netjob_add
-** Descriptions:            增加一个网络工作
-** input parameters:        func                网络工作函数
-**                          arg                 网络工作函数参数
-** output parameters:       NONE
-** Returned value:          0 OR -1
-*********************************************************************************************************/
-int netjob_add(void (*func)(void *), void *arg);
-/*********************************************************************************************************
-** Function name:           kcomplain
-** Descriptions:            内核抱怨(供不能使用 printk 时使用)
-** input parameters:        fmt                 格式字符串
-**                          ...                 其余参数
-** output parameters:       NONE
-** Returned value:          NONE
-*********************************************************************************************************/
-void kcomplain(const char *fmt, ...);
 /*********************************************************************************************************
 ** Function name:           __kmalloc
 ** Descriptions:            从内核内存堆里分配内存
@@ -296,6 +260,34 @@ void *__kmalloc(const char *func, int line, size_t size, int flags);
 void __kfree(const char *func, int line, void *ptr);
 #define kfree(a)        __kfree(__func__, __LINE__, a)
 /*********************************************************************************************************
+** Function name:           getticks
+** Descriptions:            获得 TICK
+** input parameters:        NONE
+** output parameters:       NONE
+** Returned value:          TICK
+*********************************************************************************************************/
+tick_t getticks(void);
+/*********************************************************************************************************
+** Function name:           schedule
+** Descriptions:            重新调度
+** input parameters:        NONE
+** output parameters:       NONE
+** Returned value:          0 OR -1
+*********************************************************************************************************/
+int schedule(void);
+/*********************************************************************************************************
+** 中断服务程序类型
+*********************************************************************************************************/
+typedef int (*isr_t)(intno_t interrupt, void *arg);
+/*********************************************************************************************************
+** Function name:           in_interrupt
+** Descriptions:            判断是否在中断处理程序中
+** input parameters:        NONE
+** output parameters:       NONE
+** Returned value:          TRUE OR FALSE
+*********************************************************************************************************/
+bool_t in_interrupt(void);
+/*********************************************************************************************************
 ** Function name:           interrupt_enter
 ** Descriptions:            进入中断
 ** input parameters:        NONE
@@ -312,107 +304,6 @@ void interrupt_enter(void);
 *********************************************************************************************************/
 void interrupt_exit(void);
 /*********************************************************************************************************
-** Function name:           getticks
-** Descriptions:            获得 TICK
-** input parameters:        NONE
-** output parameters:       NONE
-** Returned value:          TICK
-*********************************************************************************************************/
-uint64_t getticks(void);
-/*********************************************************************************************************
-** Function name:           gettid
-** Descriptions:            获得当前任务的 TID
-** input parameters:        NONE
-** output parameters:       NONE
-** Returned value:          当前任务的 TID
-*********************************************************************************************************/
-int32_t gettid(void);
-/*********************************************************************************************************
-** Function name:           in_interrupt
-** Descriptions:            判断是否在中断处理程序中
-** input parameters:        NONE
-** output parameters:       NONE
-** Returned value:          TRUE OR FALSE
-*********************************************************************************************************/
-int in_interrupt(void);
-/*********************************************************************************************************
-** Function name:           schedule
-** Descriptions:            重新调度
-** input parameters:        NONE
-** output parameters:       NONE
-** Returned value:          0 OR -1
-*********************************************************************************************************/
-int schedule(void);
-/*********************************************************************************************************
-** Function name:           in_kernel
-** Descriptions:            判断是否在内核模式
-** input parameters:        NONE
-** output parameters:       NONE
-** Returned value:          TRUE OR FALSE
-*********************************************************************************************************/
-int in_kernel(void);
-/*********************************************************************************************************
-** Function name:           interrupt_disable
-** Descriptions:            进入临界区域
-** input parameters:        NONE
-** output parameters:       NONE
-** Returned value:          进入临界区域前的 CPSR
-*********************************************************************************************************/
-uint32_t interrupt_disable(void);
-/*********************************************************************************************************
-** Function name:           interrupt_resume
-** Descriptions:            退出临界区域
-** input parameters:        reg                 进入临界区域前的 CPSR
-** output parameters:       NONE
-** Returned value:          NONE
-*********************************************************************************************************/
-void interrupt_resume(register uint32_t reg);
-/*********************************************************************************************************
-** Function name:           kputc
-** Descriptions:            通过串口输出一个字符
-** input parameters:        c                   字符
-** output parameters:       NONE
-** Returned value:          NONE
-*********************************************************************************************************/
-void kputc(unsigned char c);
-/*********************************************************************************************************
-** Function name:           kgetc
-** Descriptions:            通过串口读取一个字符
-** input parameters:        NONE
-** output parameters:       NONE
-** Returned value:          一个字符
-*********************************************************************************************************/
-unsigned char kgetc(void);
-/*********************************************************************************************************
-** Function name:           va_to_mva
-** Descriptions:            将进程空间的虚拟地址转换为修改后的虚拟地址
-** input parameters:        VA                  进程空间的虚拟地址
-** output parameters:       NONE
-** Returned value:          修改后的虚拟地址
-*********************************************************************************************************/
-void *va_to_mva(const void *VA);
-/*********************************************************************************************************
-** Function name:           mva_to_va
-** Descriptions:            将修改后的虚拟地址转换为进程空间的虚拟地址
-** input parameters:        MVA                 修改后的虚拟地址
-** output parameters:       NONE
-** Returned value:          进程空间的虚拟地址
-*********************************************************************************************************/
-void *mva_to_va(const void *MVA);
-/*********************************************************************************************************
-** Function name:           vspace_usable
-** Descriptions:            判断虚拟地址空间是否可用
-** input parameters:        base                虚拟地址空间的基址
-**                          size                虚拟地址空间的大小
-** output parameters:       NONE
-** Returned value:          TRUE OR FALSE
-*********************************************************************************************************/
-int vspace_usable(uint32_t base, uint32_t size);
-/*********************************************************************************************************
-** 中断服务程序类型
-*********************************************************************************************************/
-typedef int (*isr_t)(uint32_t interrupt, void *arg);
-/*********************************************************************************************************
 ** Function name:           isr_invaild
 ** Descriptions:            无效中断服务程序
 ** input parameters:        interrupt           中断号
@@ -420,31 +311,7 @@ typedef int (*isr_t)(uint32_t interrupt, void *arg);
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-int isr_invaild(uint32_t interrupt, void *arg);
-/*********************************************************************************************************
-** Function name:           interrupt_init
-** Descriptions:            初始化中断
-** input parameters:        NONE
-** output parameters:       NONE
-** Returned value:          NONE
-*********************************************************************************************************/
-void interrupt_init(void);
-/*********************************************************************************************************
-** Function name:           interrupt_mask
-** Descriptions:            屏蔽中断
-** input parameters:        interrupt           中断号
-** output parameters:       NONE
-** Returned value:          NONE
-*********************************************************************************************************/
-void interrupt_mask(uint32_t interrupt);
-/*********************************************************************************************************
-** Function name:           interrupt_unmask
-** Descriptions:            取消屏蔽中断
-** input parameters:        interrupt           中断号
-** output parameters:       NONE
-** Returned value:          NONE
-*********************************************************************************************************/
-void interrupt_unmask(uint32_t interrupt);
+int isr_invaild(intno_t interrupt, void *arg);
 /*********************************************************************************************************
 ** Function name:           interrupt_install
 ** Descriptions:            安装中断服务程序
@@ -454,9 +321,70 @@ void interrupt_unmask(uint32_t interrupt);
 ** output parameters:       old_isr             旧的中断服务程序
 ** Returned value:          NONE
 *********************************************************************************************************/
-int interrupt_install(uint32_t interrupt, isr_t new_isr, isr_t *old_isr, void *arg);
-
+int interrupt_install(intno_t interrupt, isr_t new_isr, isr_t *old_isr, void *arg);
+/*********************************************************************************************************
+** Function name:           interrupt_exec
+** Descriptions:            执行中断服务程序
+** input parameters:        interrupt           中断号
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
+void interrupt_exec(intno_t interrupt);
+/*********************************************************************************************************
+** Function name:           msleep
+** Descriptions:            休眠指定的毫秒数
+** input parameters:        mseconds            毫秒数
+** output parameters:       NONE
+** Returned value:          0 OR -1
+**
+** 因为系统滴嗒是毫秒级, 所以提供该系统调用
+**
+*********************************************************************************************************/
 int msleep(unsigned int mseconds);
+/*********************************************************************************************************
+** Function name:           gettid
+** Descriptions:            获得当前任务的 TID
+** input parameters:        NONE
+** output parameters:       NONE
+** Returned value:          当前任务的 TID
+*********************************************************************************************************/
+int32_t gettid(void);
+/*********************************************************************************************************
+** Function name:           bkdr_hash
+** Descriptions:            BKDR Hash Function
+**                          各种字符串 Hash 函数比较
+**                          http://www.byvoid.com/blog/string-hash-compare/
+** input parameters:        str                 字符串
+** output parameters:       NONE
+** Returned value:          BKDR Hash
+*********************************************************************************************************/
+unsigned int bkdr_hash(const char *str);
+/*********************************************************************************************************
+** 工作队列
+*********************************************************************************************************/
+struct workqueue;
+typedef struct workqueue workqueue_t;
+/*********************************************************************************************************
+** Function name:           workqueue_create
+** Descriptions:            创建工作队列
+** input parameters:        name                名字
+**                          size                大小
+** output parameters:       wq                  工作队列
+** Returned value:          0 OR -1
+*********************************************************************************************************/
+int workqueue_create(workqueue_t *wq, const char *name, size_t size);
+/*********************************************************************************************************
+** Function name:           workqueue_add
+** Descriptions:            增加一个工作
+** input parameters:        wq                  工作队列
+**                          func                工作函数
+**                          arg                 工作函数参数
+** output parameters:       NONE
+** Returned value:          0 OR -1
+*********************************************************************************************************/
+int workqueue_add(workqueue_t *wq, void (*func)(void *), void *arg);
+
+#include "arch/if.h"
 
 #endif
 

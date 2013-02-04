@@ -40,8 +40,9 @@
 #include "kern/kern.h"
 #include "vfs/device.h"
 #include "vfs/driver.h"
-#include "vfs/utils.h"
+#include "vfs/select.h"
 #include "kern/kfifo.h"
+#include "kern/ipc.h"
 
 #include "s3c2440.h"
 #include "s3c2440_clock.h"
@@ -52,6 +53,8 @@ typedef struct {
     VFS_DEVICE_MEMBERS;
     kfifo_t         iq;                                                 /*  输入队列                    */
     kfifo_t         oq;                                                 /*  输出队列                    */
+    mutex_t         write_lock;
+    mutex_t         read_lock;
 } privinfo_t;
 /*********************************************************************************************************
 ** 定义
@@ -68,7 +71,7 @@ static int serial0_scan(void *ctx, file_t *file, int flags);
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-static int uart0_isr(uint32_t interrupt, void *arg)
+static int uart0_isr(intno_t interrupt, void *arg)
 {
     char buf[max(RX_FIFO_SIZE, RX_FIFO_SIZE)];
     privinfo_t *priv = arg;
@@ -98,7 +101,7 @@ static int uart0_isr(uint32_t interrupt, void *arg)
         }
     }
 
-    SUBSRCPND = BIT_SUB_RXD0 | BIT_SUB_TXD0;                            /*  清除中断                    */
+    SUBSRCPND |= BIT_SUB_RXD0 | BIT_SUB_TXD0;                           /*  清除中断                    */
 
     return 0;
 }
@@ -221,12 +224,7 @@ static int serial0_open(void *ctx, file_t *file, int oflag, mode_t mode)
 
         return 0;
     } else {
-        /*
-         * 如果设备不允许同时打开多次, 请使用如下代码:
-         */
-        atomic_dec(dev_ref(file));
-        seterrno(EBUSY);
-        return -1;
+        return 0;
     }
 }
 /*********************************************************************************************************
@@ -246,15 +244,20 @@ static int serial0_close(void *ctx, file_t *file)
         return -1;
     }
 
-    INTSUBMSK |= INTSUB_TXD0;
-    INTSUBMSK |= INTSUB_RXD0;
+    if (atomic_read(dev_ref(file)) == 1) {
+        /*
+         * TODO: 加上最后一次关闭时的清理代码
+         */
+        INTSUBMSK |= INTSUB_TXD0;
+        INTSUBMSK |= INTSUB_RXD0;
 
-    interrupt_mask(INTUART0);
+        interrupt_mask(INTUART0);
 
-    kfifo_free(&priv->iq);
-    kfifo_free(&priv->oq);
-
+        kfifo_free(&priv->iq);
+        kfifo_free(&priv->oq);
+    }
     atomic_dec(dev_ref(file));
+
     return 0;
 }
 /*********************************************************************************************************
@@ -325,16 +328,24 @@ static ssize_t serial0_read(void *ctx, file_t *file, void *buf, size_t len)
         return -1;
     }
 
+    mutex_lock(&priv->read_lock, 0);
+
     if (kfifo_is_empty(&priv->iq)) {                                    /*  如果没有数据可读            */
         ret = select_helper(&priv->select, serial0_scan, ctx, file, VFS_FILE_READABLE);
         if (ret <= 0) {
+            mutex_unlock(&priv->read_lock);
             return ret;
         } else {
+            mutex_unlock(&priv->read_lock);
             goto __again;
         }
     }
 
-    return kfifo_get(&priv->iq, buf, len);
+    len = kfifo_get(&priv->iq, buf, len);
+
+    mutex_unlock(&priv->read_lock);
+
+    return len;
 }
 /*********************************************************************************************************
 ** Function name:           serial0_write
@@ -362,11 +373,15 @@ static ssize_t serial0_write(void *ctx, file_t *file, const void *buf, size_t le
         return -1;
     }
 
+    mutex_lock(&priv->write_lock, 0);
+
     if (kfifo_is_full(&priv->oq)) {                                     /*  如果没有空间可写            */
         ret = select_helper(&priv->select, serial0_scan, ctx, file, VFS_FILE_WRITEABLE);
         if (ret <= 0) {
+            mutex_unlock(&priv->write_lock);
             return ret;
         } else {
+            mutex_unlock(&priv->write_lock);
             goto __again;
         }
     }
@@ -374,6 +389,8 @@ static ssize_t serial0_write(void *ctx, file_t *file, const void *buf, size_t le
     len = kfifo_put(&priv->oq, buf, len);
 
     serial0_start(priv);                                                /*  启动写操作                  */
+
+    mutex_unlock(&priv->write_lock);
 
     return len;
 }
@@ -436,6 +453,10 @@ int serial0_init(void)
     priv = kmalloc(sizeof(privinfo_t), GFP_KERNEL);
     if (priv != NULL) {
         device_init(priv);
+
+        mutex_new(&priv->write_lock);
+        mutex_new(&priv->read_lock);
+
         if (device_create("/dev/serial0", "serial0", priv) < 0) {
             kfree(priv);
             return -1;
