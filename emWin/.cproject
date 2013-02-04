@@ -90,8 +90,33 @@
 							<tool id="org.eclipse.cdt.cross.arm.gnu.yagarto.windows.elf.printsize.debug.1819709524" name="ARM Yagarto Windows GNU Print Size" superClass="org.eclipse.cdt.cross.arm.gnu.yagarto.windows.elf.printsize.debug"/>
 						</toolChain>
 					</folderInfo>
+					<folderInfo id="org.eclipse.cdt.cross.arm.gnu.yagarto.windows.elf.debug.1138626366.1622692366" name="/" resourcePath="src/demo">
+						<toolChain id="org.eclipse.cdt.cross.arm.gnu.yagarto.windows.elf.toolchain.debug.714210620" name="ARM Windows GCC (Yagarto)" superClass="org.eclipse.cdt.cross.arm.gnu.yagarto.windows.elf.toolchain.debug" unusedChildren="">
+							<option id="org.eclipse.cdt.cross.arm.gnu.yagarto.windows.option.debugging.level.1706918114.1268729363" name="Debug level" superClass="org.eclipse.cdt.cross.arm.gnu.yagarto.windows.option.debugging.level.1706918114"/>
+							<option id="org.eclipse.cdt.cross.arm.gnu.yagarto.windows.option.target.processor.1993704211.798736" name="Processor" superClass="org.eclipse.cdt.cross.arm.gnu.yagarto.windows.option.target.processor.1993704211"/>
+							<option id="org.eclipse.cdt.cross.arm.gnu.yagarto.windows.option.target.thumb.1066974946.903793645" name="Thumb (-mthumb)" superClass="org.eclipse.cdt.cross.arm.gnu.yagarto.windows.option.target.thumb.1066974946"/>
+							<option id="org.eclipse.cdt.cross.arm.gnu.yagarto.windows.option.addtools.createlisting.303530697.459535698" name="Create Extended Listing" superClass="org.eclipse.cdt.cross.arm.gnu.yagarto.windows.option.addtools.createlisting.303530697"/>
+							<option id="org.eclipse.cdt.cross.arm.gnu.yagarto.windows.option.addtools.createflash.2088543250.1013909423" name="Create Flash Image" superClass="org.eclipse.cdt.cross.arm.gnu.yagarto.windows.option.addtools.createflash.2088543250"/>
+							<option id="org.eclipse.cdt.cross.arm.gnu.yagarto.windows.option.debugging.level.326968979" superClass="org.eclipse.cdt.cross.arm.gnu.yagarto.windows.option.debugging.level" value="org.eclipse.cdt.cross.arm.gnu.base.option.debugging.level.max" valueType="enumerated"/>
+							<tool id="org.eclipse.cdt.cross.arm.gnu.yagarto.windows.elf.assembler.debug.1186675253" name="ARM Yagarto Windows GCC Assembler" superClass="org.eclipse.cdt.cross.arm.gnu.yagarto.windows.elf.assembler.debug.1800248458">
+								<inputType id="org.eclipse.cdt.cross.arm.gnu.yagarto.windows.assembler.base.input.678386378" superClass="org.eclipse.cdt.cross.arm.gnu.yagarto.windows.assembler.base.input"/>
+							</tool>
+							<tool id="org.eclipse.cdt.cross.arm.gnu.yagarto.windows.elf.c.compiler.debug.1297583132" name="ARM Yagarto Windows GCC C Compiler" superClass="org.eclipse.cdt.cross.arm.gnu.yagarto.windows.elf.c.compiler.debug.736938957">
+								<inputType id="org.eclipse.cdt.cross.arm.gnu.yagarto.windows.c.compiler.base.input.1732807645" superClass="org.eclipse.cdt.cross.arm.gnu.yagarto.windows.c.compiler.base.input"/>
+							</tool>
+							<tool id="org.eclipse.cdt.cross.arm.gnu.yagarto.windows.elf.cpp.compiler.debug.382251818" name="ARM Yagarto Windows GCC C++ Compiler" superClass="org.eclipse.cdt.cross.arm.gnu.yagarto.windows.elf.cpp.compiler.debug.1928231222">
+								<inputType id="org.eclipse.cdt.cross.arm.gnu.yagarto.windows.cpp.compiler.base.input.235368259" superClass="org.eclipse.cdt.cross.arm.gnu.yagarto.windows.cpp.compiler.base.input"/>
+							</tool>
+							<tool id="org.eclipse.cdt.cross.arm.gnu.yagarto.windows.elf.c.linker.debug.1496762450" name="ARM Yagarto Windows GCC C Linker" superClass="org.eclipse.cdt.cross.arm.gnu.yagarto.windows.elf.c.linker.debug.1618295496"/>
+							<tool id="org.eclipse.cdt.cross.arm.gnu.yagarto.windows.elf.cpp.linker.debug.867588730" name="ARM Yagarto Windows GCC C++ Linker" superClass="org.eclipse.cdt.cross.arm.gnu.yagarto.windows.elf.cpp.linker.debug.154081224"/>
+							<tool id="org.eclipse.cdt.cross.arm.gnu.yagarto.windows.archiver.base.1851875028" name="ARM Yagarto Windows GCC Archiver" superClass="org.eclipse.cdt.cross.arm.gnu.yagarto.windows.archiver.base.155015791"/>
+							<tool id="org.eclipse.cdt.cross.arm.gnu.yagarto.windows.elf.createflash.debug.1869444806" name="ARM Yagarto Windows GNU Create Flash Image" superClass="org.eclipse.cdt.cross.arm.gnu.yagarto.windows.elf.createflash.debug.1554350135"/>
+							<tool id="org.eclipse.cdt.cross.arm.gnu.yagarto.windows.elf.createlisting.debug.281828304" name="ARM Yagarto Windows GNU Create Listing" superClass="org.eclipse.cdt.cross.arm.gnu.yagarto.windows.elf.createlisting.debug.1107766520"/>
+							<tool id="org.eclipse.cdt.cross.arm.gnu.yagarto.windows.elf.printsize.debug.259722617" name="ARM Yagarto Windows GNU Print Size" superClass="org.eclipse.cdt.cross.arm.gnu.yagarto.windows.elf.printsize.debug.1819709524"/>
+						</toolChain>
+					</folderInfo>
 					<sourceEntries>
-						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name=""/>
+						<entry excluding="src/demo" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
