@@ -12,7 +12,7 @@ nm %srcfile% | find " C "    >> obj.txt
 nm %srcfile% | find " W "    >> obj.txt
 nm %srcfile% | find " V "    >> obj.txt
 
-set srcfile=../runtime/libgcc.a
+set srcfile=../runtime/arch/arm920t/libgcc.a
 
 nm %srcfile% | find " T "    >> func.txt
 nm %srcfile% | find " D "    >> obj.txt
@@ -23,7 +23,7 @@ nm %srcfile% | find " C "    >> obj.txt
 nm %srcfile% | find " W "    >> obj.txt
 nm %srcfile% | find " V "    >> obj.txt
 
-set srcfile=../runtime/libm.a
+set srcfile=../runtime/arch/arm920t/libm.a
 
 nm %srcfile% | find " T "    >> func.txt
 nm %srcfile% | find " D "    >> obj.txt
@@ -34,7 +34,7 @@ nm %srcfile% | find " C "    >> obj.txt
 nm %srcfile% | find " W "    >> obj.txt
 nm %srcfile% | find " V "    >> obj.txt
 
-set srcfile=../runtime/libc.a
+set srcfile=../runtime/arch/arm920t/libc.a
 
 nm %srcfile% | find " T "    >> func.txt
 nm %srcfile% | find " D "    >> obj.txt
