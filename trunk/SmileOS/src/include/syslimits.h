@@ -44,19 +44,6 @@
 extern "C" {
 #endif
 
-#ifndef KB
-#define KB                          (1024)
-#define MB                          (1024 * KB)
-#define GB                          (1024 * MB)
-#endif
-
-#define SECTION_SIZE                (1 * MB)                            /*  段大小                      */
-#define SECTION_OFFSET              (20)                                /*  段大小偏移                  */
-#define SECTION_NR                  (4096)                              /*  段数                        */
-
-#define PAGE_SIZE                   (4096)                              /*  页面的大小                  */
-#define PAGE_OFFSET                 (12)                                /*  页面大小的偏移              */
-
 #define MAX_INPUT                   (256)                               /*  输入的最大长度              */
 
 #define LINE_MAX                    (256)                               /*  行的最大长度                */

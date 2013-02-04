@@ -40,10 +40,12 @@
 #include "kern/kern.h"
 #define KVARS_INC
 #include "kern/kvars.h"
-#include "kern/vmm.h"
-#include "kern/mmu.h"
 #include <string.h>
 #include <stdarg.h>
+/*********************************************************************************************************
+** 内部变量
+*********************************************************************************************************/
+static tick_t               os_ticks;                                   /*  TICK                        */
 /*********************************************************************************************************
 ** Function name:           kvars_init
 ** Descriptions:            初始化内核变量
@@ -56,9 +58,9 @@ static void kvars_init(void)
     task_t *task;
     int     i;
 
-    running        = FALSE;                                             /*  内核还没启动                */
+    os_started     = FALSE;                                             /*  内核还没启动                */
+    os_ticks       = 0;                                                 /*  TICK 为 0                   */
     interrupt_nest = 0;                                                 /*  中断嵌套层次为 0            */
-    ticks          = 0;                                                 /*  TICK 为 0                   */
     current        = &tasks[0];                                         /*  当前任务为进程 0            */
     _impure_ptr    = &reents[0];                                        /*  初始化 _impure_ptr 指针     */
 
@@ -79,12 +81,12 @@ static void kvars_init(void)
 *********************************************************************************************************/
 void kernel_init(void)
 {
-    extern void cpu_kernel_init(void);
-    cpu_kernel_init();                                                  /*  初始化 CPU                  */
-
-    mmu_init();                                                         /*  初始化 MMU                  */
+    arch_mmu_init();                                                    /*  初始化 MMU                  */
 
     kvars_init();                                                       /*  初始化内核变量              */
+
+    extern void interrupt_init(void);
+    interrupt_init();                                                   /*  初始化中断                  */
 
     extern void kheap_create(void);
     kheap_create();                                                     /*  创建内核内存堆              */
@@ -95,12 +97,10 @@ void kernel_init(void)
     extern void klogd_create(void);
     klogd_create();                                                     /*  创建内核日志线程            */
 
-    extern void alarmd_create(void);
-    alarmd_create();                                                    /*  创建 alarm 线程             */
+    extern void default_workqueue_create(void);
+    default_workqueue_create();                                         /*  创建缺省工作队列            */
 
-    extern void netjob_create(void);
-    netjob_create();                                                    /*  创建网络工作线程            */
-
+    extern void vmm_init(void);
     vmm_init();                                                         /*  初始化虚拟内存管理          */
 }
 /*********************************************************************************************************
@@ -112,11 +112,11 @@ void kernel_init(void)
 *********************************************************************************************************/
 void kernel_start(void)
 {
-    if (!running) {
-        running = TRUE;                                                 /*  内核已经启动                */
-
-        extern void process0_enter(register uint32_t sp_svc);
-        process0_enter(current->regs[0]);                               /*  进入进程 0 (空闲进程)       */
+    if (!os_started) {
+        os_started = TRUE;                                              /*  内核已经启动                */
+        arch_switch_context_to(NULL, current);
+    } else {
+        printk(KERN_ERR"os error: kernel has started at %s %d\n", __func__, __LINE__);
     }
 }
 /*********************************************************************************************************
@@ -128,28 +128,17 @@ void kernel_start(void)
 *********************************************************************************************************/
 void kernel_timer(void)
 {
-    uint32_t reg;
+    reg_t    reg;
     int      i;
     task_t  *task;
 
     reg = interrupt_disable();
 
-    ticks++;                                                            /*  内核 TICK 加一              */
-
-    current->ticks++;                                                   /*  当前任务被中断的次数加一    */
+    os_ticks++;                                                         /*  内核 TICK 加一              */
 
     if (current->type == TASK_TYPE_PROCESS) {                           /*  如果当前任务是进程类型      */
         if (current->timeslice > 0) {                                   /*  如果当前进程还有剩余时间片  */
             current->timeslice--;                                       /*  当前进程的剩余时间片减一    */
-        }
-    }
-
-    if (ticks % TICK_PER_SECOND == 0) {                                 /*  如果已经过去了一秒          */
-        for (i = 0, task = tasks; i < TASK_NR; i++, task++) {           /*  遍历所有任务                */
-            if (task->status != TASK_UNALLOCATE) {                      /*  如果任务有效                */
-                task->cpu_usage = task->ticks;                          /*  统计任务的 CPU 占用率       */
-                task->ticks     = 0;                                    /*  重置该任务被定时器中断的次数*/
-            }
         }
     }
 
@@ -174,204 +163,39 @@ void kernel_timer(void)
 ** output parameters:       NONE
 ** Returned value:          TICK
 *********************************************************************************************************/
-uint64_t getticks(void)
+tick_t getticks(void)
 {
-    uint64_t ret;
-    uint32_t reg;
+    tick_t ret;
+    reg_t  reg;
 
     reg = interrupt_disable();
 
-    ret = ticks;
+    ret = os_ticks;
 
     interrupt_resume(reg);
 
     return ret;
 }
 /*********************************************************************************************************
-** Function name:           gettid
-** Descriptions:            获得当前任务的 TID
-** input parameters:        NONE
+** Function name:           bkdr_hash
+** Descriptions:            BKDR Hash Function
+**                          各种字符串 Hash 函数比较
+**                          http://www.byvoid.com/blog/string-hash-compare/
+** input parameters:        str                 字符串
 ** output parameters:       NONE
-** Returned value:          当前任务的 TID
+** Returned value:          BKDR Hash
 *********************************************************************************************************/
-int32_t gettid(void)
+unsigned int bkdr_hash(const char *str)
 {
-    int32_t  ret;
-    uint32_t reg;
+    unsigned int seed = 131;                                            /*  31 131 1313 13131 131313 etc*/
+    unsigned int hash = 0;
+    char ch;
 
-    reg = interrupt_disable();
-
-    ret = current->tid;
-
-    interrupt_resume(reg);
-
-    return ret;
-}
-/*********************************************************************************************************
-** Function name:           va_to_mva
-** Descriptions:            将进程空间的虚拟地址转换为修改后的虚拟地址
-** input parameters:        VA                  进程空间的虚拟地址
-** output parameters:       NONE
-** Returned value:          修改后的虚拟地址
-*********************************************************************************************************/
-void *va_to_mva(const void *VA)
-{
-    uint32_t reg;
-    void *ret;
-
-    reg = interrupt_disable();
-
-    if ((current->pid != 0) && (uint32_t)VA < PROCESS_SPACE_SIZE && VA != NULL) {
-        ret = (uint8_t *)VA + current->pid * PROCESS_SPACE_SIZE;
-    } else {
-        ret = (void *)VA;
+    while ((ch = *str++) != 0) {
+        hash = hash * seed + ch;
     }
 
-    interrupt_resume(reg);
-
-    return ret;
-}
-/*********************************************************************************************************
-** Function name:           mva_to_va
-** Descriptions:            将修改后的虚拟地址转换为进程空间的虚拟地址
-** input parameters:        MVA                 修改后的虚拟地址
-** output parameters:       NONE
-** Returned value:          进程空间的虚拟地址
-*********************************************************************************************************/
-void *mva_to_va(const void *MVA)
-{
-    return (void *)((uint32_t)MVA % PROCESS_SPACE_SIZE);
-}
-/*********************************************************************************************************
-** Function name:           vspace_usable
-** Descriptions:            判断虚拟地址空间是否可用
-** input parameters:        base                虚拟地址空间的基址
-**                          size                虚拟地址空间的大小
-** output parameters:       NONE
-** Returned value:          TRUE OR FALSE
-*********************************************************************************************************/
-int vspace_usable(uint32_t base, uint32_t size)
-{
-    uint32_t end = base + size;
-    uint32_t high, low;
-    int      i;
-
-    /*
-     * 虚拟地址空间不能和系统保留的虚拟地址空间重叠
-     */
-    extern const space_t sys_resv_space[];
-    for (i = 0; sys_resv_space[i].size != 0; i++) {
-        high = max(sys_resv_space[i].base, base);
-        low  = min(sys_resv_space[i].base + sys_resv_space[i].size, end);
-        if (high < low) {
-            return FALSE;
-        }
-    }
-
-    /*
-     * 虚拟地址空间不能和 BSP 保留的虚拟地址空间重叠
-     */
-    extern const space_t bsp_resv_space[];
-    for (i = 0; bsp_resv_space[i].size != 0; i++) {
-        high = max(bsp_resv_space[i].base, base);
-        low  = min(bsp_resv_space[i].base + bsp_resv_space[i].size, end);
-        if (high < low) {
-            return FALSE;
-        }
-    }
-
-    /*
-     * 虚拟地址空间不能和 CPU 保留的虚拟地址空间重叠
-     */
-    extern const space_t cpu_resv_space[];
-    for (i = 0; cpu_resv_space[i].size != 0; i++) {
-        high = max(cpu_resv_space[i].base, base);
-        low  = min(cpu_resv_space[i].base + cpu_resv_space[i].size, end);
-        if (high < low) {
-            return FALSE;
-        }
-    }
-
-    return TRUE;
-}
-/*********************************************************************************************************
-** Function name:           kcomplain
-** Descriptions:            内核抱怨(供不能使用 printk 时使用)
-** input parameters:        fmt                 格式字符串
-**                          ...                 其余参数
-** output parameters:       NONE
-** Returned value:          NONE
-*********************************************************************************************************/
-void kcomplain(const char *fmt, ...)
-{
-    static const char digits[] = "0123456789abcdef";
-    va_list  va;
-    char     buf[10];
-    char    *s;
-    char     c;
-    unsigned u;
-    int      i, pad;
-
-    va_start(va, fmt);
-    while ((c = *fmt++) != '\0') {
-        if (c == '%') {
-            c = *fmt++;
-            /*
-             * ignore long
-             */
-            if (c == 'l') {
-                c = *fmt++;
-            }
-            switch (c) {
-            case 'c':
-                kputc(va_arg(va, int));
-                continue;
-
-            case 's':
-                s = va_arg(va, char *);
-                if (s == NULL) {
-                    s = "<NULL>";
-                }
-                for (; *s != '\0'; s++) {
-                    kputc(*s);
-                }
-                continue;
-
-            case 'd':
-                c = 'u';
-            case 'u':
-            case 'x':
-                u = va_arg(va, unsigned);
-                s = buf;
-                if (c == 'u') {
-                    do {
-                        *s++ = digits[u % 10U];
-                    } while (u /= 10U);
-                } else {
-                    pad = 0;
-                    for (i = 0; i < 8; i++) {
-                        if (pad) {
-                            *s++ = '0';
-                        } else {
-                            *s++ = digits[u % 16U];
-                            if ((u /= 16U) == 0) {
-                                pad = 1;
-                            }
-                        }
-                    }
-                }
-                while (--s >= buf) {
-                    kputc(*s);
-                }
-                continue;
-            }
-        }
-        if (c == '\n') {
-            kputc('\r');
-        }
-        kputc((int)c);
-    }
-    va_end(va);
+    return (hash & 0x7FFFFFFF);
 }
 /*********************************************************************************************************
 ** END FILE

@@ -82,7 +82,7 @@ int mutex_trylock(mutex_t *mutex);
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-int mutex_lock(mutex_t *mutex, uint32_t timeout);
+int mutex_lock(mutex_t *mutex, tick_t timeout);
 /*********************************************************************************************************
 ** Function name:           mutex_unlock
 ** Descriptions:            对互斥量进行解锁
@@ -114,16 +114,16 @@ int mutex_free(mutex_t *mutex);
 ** output parameters:       NONE
 ** Returned value:          TRUE OR FALSE
 *********************************************************************************************************/
-int mutex_valid(mutex_t *mutex);
+bool_t mutex_valid(mutex_t *mutex);
 /*********************************************************************************************************
 ** Function name:           mutex_set_valid
 ** Descriptions:            设置互斥量的有效性
 ** input parameters:        mutex               互斥量
-**                          valid               <= 0 : 无效, > 0 : 有效
+**                          valid               有效性
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-int mutex_set_valid(mutex_t *mutex, int valid);
+int mutex_set_valid(mutex_t *mutex, bool_t valid);
 /*********************************************************************************************************
 ** 信号量
 *********************************************************************************************************/
@@ -151,7 +151,7 @@ int sem_trywait(sem_t *sem);
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-int sem_wait(sem_t *sem, uint32_t timeout);
+int sem_wait(sem_t *sem, tick_t timeout);
 /*********************************************************************************************************
 ** Function name:           sem_signal
 ** Descriptions:            发送一个信号量
@@ -194,16 +194,16 @@ int sem_free(sem_t *sem);
 ** output parameters:       NONE
 ** Returned value:          TRUE OR FALSE
 *********************************************************************************************************/
-int sem_valid(sem_t *sem);
+bool_t sem_valid(sem_t *sem);
 /*********************************************************************************************************
 ** Function name:           sem_set_valid
 ** Descriptions:            设置信号量的有效性
 ** input parameters:        sem                 信号量
-**                          valid               <= 0 : 无效, > 0 : 有效
+**                          有效性
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-int sem_set_valid(sem_t *sem, int valid);
+int sem_set_valid(sem_t *sem, bool_t valid);
 /*********************************************************************************************************
 ** 消息队列
 *********************************************************************************************************/
@@ -233,7 +233,7 @@ int mqueue_trypost(mqueue_t *mqueue, void *msg);
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-int mqueue_post(mqueue_t *mqueue, void *msg, uint32_t timeout);
+int mqueue_post(mqueue_t *mqueue, void *msg, tick_t timeout);
 /*********************************************************************************************************
 ** Function name:           mqueue_tryfetch
 ** Descriptions:            尝试从消息队列里取出消息
@@ -250,7 +250,7 @@ int mqueue_tryfetch(mqueue_t *mqueue, void **msg);
 ** output parameters:       msg                 消息
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-int mqueue_fetch(mqueue_t *mqueue, void **msg, uint32_t timeout);
+int mqueue_fetch(mqueue_t *mqueue, void **msg, tick_t timeout);
 /*********************************************************************************************************
 ** Function name:           mqueue_flush
 ** Descriptions:            清空消息队列
@@ -306,16 +306,16 @@ int mqueue_free(mqueue_t *mqueue);
 ** output parameters:       NONE
 ** Returned value:          TRUE OR FALSE
 *********************************************************************************************************/
-int mqueue_valid(mqueue_t *mqueue);
+bool_t mqueue_valid(mqueue_t *mqueue);
 /*********************************************************************************************************
 ** Function name:           mqueue_set_valid
 ** Descriptions:            设置消息队列的有效性
 ** input parameters:        mqueue              消息队列
-**                          valid               <= 0 : 无效, > 0 : 有效
+**                          valid               有效性
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-int mqueue_set_valid(mqueue_t *mqueue, int valid);
+int mqueue_set_valid(mqueue_t *mqueue, bool_t valid);
 
 #ifdef __cplusplus
 }

@@ -39,20 +39,29 @@
 *********************************************************************************************************/
 #include "kern/kern.h"
 #include "kern/ipc.h"
+#include "kern/func_config.h"
 #include <stdio.h>
 #include <stdarg.h>
 #include <unistd.h>
 /*********************************************************************************************************
+** 配置
+*********************************************************************************************************/
+#define KLOGD_QUEUE_SIZE            (100)
+#define KLOGD_THREAD_STACKSIZE      (16 * KB)
+#define KLOGD_THREAD_PRIO           (20)
+#define KLOGD_LOG_LEVEL             (4)
+#define KLOGD_LOG_FILE              "/dev/serial0"
+/*********************************************************************************************************
 ** 内核日志消息队列
 *********************************************************************************************************/
-static mqueue_t     mqueue;
-static int          log_level = 4;
+static mqueue_t                     mqueue;
+static uint8_t                      log_level = KLOGD_LOG_LEVEL;
 /*********************************************************************************************************
 ** 内核日志消息
 *********************************************************************************************************/
 typedef struct {
-    int             len;
-    char            buf[LINE_MAX];
+    int                             len;
+    char                            buf[LINE_MAX];
 } msg_t;
 /*********************************************************************************************************
 ** Function name:           klogd
@@ -65,17 +74,25 @@ static void klogd(void *arg)
 {
     msg_t *msg;
 
-#if 0
+#if CONFIG_VFS_EN > 0
     fclose(stdout);
-    stdout = fopen("/dev/ttyS0", "w+");
+    stdout = NULL;
+    while (stdout == NULL) {
+        stdout = fopen(KLOGD_LOG_FILE, "w+");
+        sleep(1);
+    }
 #endif
 
     while (1) {
         if (mqueue_fetch(&mqueue, (void **)&msg, 0) == 0) {
-#if 0
-            write(STDOUT_FILENO, msg->buf, msg->len);
+
+#if CONFIG_VFS_EN > 0
+            fputs(msg->buf, stdout);
+            fputs("\r", stdout);
 #else
-            kcomplain(msg->buf);
+            /*
+             * TODO
+             */
 #endif
             kfree(msg);
         }
@@ -90,14 +107,13 @@ static void klogd(void *arg)
 *********************************************************************************************************/
 void klogd_create(void)
 {
-    mqueue_new(&mqueue, 100);
+    mqueue_new(&mqueue, KLOGD_QUEUE_SIZE);
 
-    kthread_create("klogd", klogd, NULL, 16 * KB, 100);
+    kthread_create("klogd", klogd, NULL, KLOGD_THREAD_STACKSIZE, KLOGD_THREAD_PRIO);
 }
 /*********************************************************************************************************
 ** Function name:           printk
-** Descriptions:            因为里面用了 kmalloc, 所以不能用在 kmalloc 失败之后,
-**                          终止内核前的报警也不能使用
+** Descriptions:            终止内核前的报警也不能使用
 ** input parameters:        fmt                 格式字符串
 **                          ...                 其余参数
 ** output parameters:       NONE
@@ -105,9 +121,9 @@ void klogd_create(void)
 *********************************************************************************************************/
 void printk(const char *fmt, ...)
 {
-    va_list va;
-    msg_t  *msg;
-    int     level;
+    va_list     va;
+    msg_t      *msg;
+    uint8_t     level;
 
     if (fmt == NULL) {
         return;
@@ -125,15 +141,9 @@ void printk(const char *fmt, ...)
 
     msg = kmalloc(sizeof(msg_t), GFP_KERNEL);
     if (msg == NULL) {
-        static char buf[LINE_MAX];
-        va_start(va, fmt);
-
-        vsnprintf(buf, sizeof(buf), fmt, va);
-
-        va_end(va);
-
-        kcomplain(buf);
-        kcomplain("\r\n");
+        /*
+         * TODO
+         */
         return;
     }
 

@@ -44,7 +44,7 @@
 extern "C" {
 #endif
 
-#include "vfs/config.h"
+#include <syslimits.h>
 #include <sys/types.h>
 
 struct stat;
@@ -138,7 +138,7 @@ struct driver {
  * …Ë±∏
  */
 struct device {
-    char                    name[PATH_MAX];
+    char                    name[NAME_MAX];
     unsigned int            key;
     driver_t               *drv;
     /*

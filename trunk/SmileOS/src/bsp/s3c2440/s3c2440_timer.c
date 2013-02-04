@@ -48,20 +48,20 @@
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-static int timer4_isr(uint32_t interrupt, void *arg)
+static int timer4_isr(intno_t interrupt, void *arg)
 {
     kernel_timer();
 
     return 0;
 }
 /*********************************************************************************************************
-** Function name:           timer_init
+** Function name:           soc_timer_init
 ** Descriptions:            初始化定时器
 ** input parameters:        NONE
 ** output parameters:       NONE
 ** Returned value:          NONE
 *********************************************************************************************************/
-void timer_init(void)
+void soc_timer_init(void)
 {
     /*
      * Timer input clock Frequency = PCLK / {prescaler value + 1} / {divider value}

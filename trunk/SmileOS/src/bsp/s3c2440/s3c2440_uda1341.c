@@ -41,8 +41,8 @@
 #include "kern/ipc.h"
 #include "vfs/device.h"
 #include "vfs/driver.h"
-#include "vfs/utils.h"
-#include "drv/audio.h"
+#include "vfs/select.h"
+#include "drivers/audio.h"
 #include <string.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -279,7 +279,7 @@ static int iis_config(uint32_t channels, uint32_t bps, uint32_t fs)
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-static int audio_dma_isr(uint32_t interrupt, void *arg)
+static int audio_dma_isr(intno_t interrupt, void *arg)
 {
     privinfo_t *priv = arg;
     dma_job_t  *head = priv->queue.next;                                /*  移除队头 DMA 工作           */

@@ -54,15 +54,13 @@
 #define MMU_TBL_SIZE        (16 * KB)                                   /*  MMU 转换表大小              */
 #define MMU_TBL_BASE        (PAGE_TBL_BASE - MMU_TBL_SIZE)              /*  MMU 转换表基址              */
 
-#define PROCESS0_STACK_BASE (MMU_TBL_BASE)                              /*  进程 0 栈空间基址           */
-#define PROCESS0_STACK_SIZE (16 * KB)                                   /*  进程 0 栈空间大小           */
+#define KERN_MEM_TOP        (MMU_TBL_BASE)
 
-#define KERN_STACK_TOP      (PROCESS0_STACK_BASE - PROCESS0_STACK_SIZE) /*  内核堆顶地址                */
-
-#define KERN_LOAD_ADDR      (KERN_MEM_BASE)                             /*  内核加载地址                */
+#define FB_MEM_SIZE         (4 * MB)                                    /*  中断内存大小                */
+#define FB_MEM_BASE         (KERN_MEM_BASE + KERN_MEM_SIZE)             /*  中断内存基址                */
 
 #define INT_MEM_SIZE        (1 * MB)                                    /*  中断内存大小                */
-#define INT_MEM_BASE        (KERN_MEM_BASE + KERN_MEM_SIZE)             /*  中断内存基址                */
+#define INT_MEM_BASE        (FB_MEM_BASE + FB_MEM_SIZE)                 /*  中断内存基址                */
 
 #define DMA_MEM_SIZE        (1 * MB)                                    /*  DMA 内存大小                */
 #define DMA_MEM_BASE        (INT_MEM_BASE + INT_MEM_SIZE)               /*  DMA 内存基址                */
@@ -74,11 +72,16 @@
 #define SW_SHARE_MEM_BASE   (HW_SHARE_MEM_BASE + HW_SHARE_MEM_SIZE)     /*  软件共享内存基址            */
 
                                                                         /*  VMM 内存大小                */
-#define VMM_MEM_SIZE        (PHY_MEM_SIZE - KERN_MEM_SIZE - \
-INT_MEM_SIZE - DMA_MEM_SIZE - HW_SHARE_MEM_SIZE - SW_SHARE_MEM_SIZE)
+#define VMM_MEM_SIZE        (PHY_MEM_SIZE - KERN_MEM_SIZE - FB_MEM_SIZE - \
+                             INT_MEM_SIZE - DMA_MEM_SIZE - HW_SHARE_MEM_SIZE - SW_SHARE_MEM_SIZE)
 #define VMM_MEM_BASE        (SW_SHARE_MEM_BASE + SW_SHARE_MEM_SIZE)     /*  VMM 内存基址                */
-#define VMM_FRAME_SIZE      (PAGE_SIZE)                                 /*  页框大小                    */
-#define VMM_FRAME_NR        (VMM_MEM_SIZE / VMM_FRAME_SIZE)             /*  页框数                      */
+#define VMM_PHY_PAGE_SIZE   (4096)                                      /*  物理页面大小                */
+#define VMM_PHY_PAGE_NR     (VMM_MEM_SIZE / VMM_PHY_PAGE_SIZE)             /*  物理页面数                  */
+
+#define VMM_PAGE_SIZE       (VMM_PHY_PAGE_SIZE)
+#define VMM_SECTION_NR      (4096)
+#define VMM_SECTION_SIZE    (1 * MB)
+#define VMM_SECTION_OFFSET  (20)
 
 #define VECTOR_V_ADDR       (0xFFFF0000)                                /*  向量虚拟地址                */
 #define VECTOR_P_ADDR       (INT_MEM_BASE + 0xF0000)                    /*  向量物理地址                */
@@ -88,19 +91,11 @@ INT_MEM_SIZE - DMA_MEM_SIZE - HW_SHARE_MEM_SIZE - SW_SHARE_MEM_SIZE)
 
 #define UART_BAUD_RATE      (115200)                                    /*  UART 波特率                 */
 
-#define TICK_PER_SECOND     (100)                                       /*  每秒 TICK 数                */
-
 #define SYS_CLK_FREQ        (12000000)                                  /*  Fin = 12.00MHz              */
 
-/*
- * MTD 配置
- */
-#define CONFIG_SYS_MAX_NAND_DEVICE  1
-#define CONFIG_SYS_NAND_BASE        0x4E000000
-#define CONFIG_MTD_DEVICE           1
-#define CONFIG_RELOC_FIXUP_WORKS    1
-#define CONFIG_MTD_DEBUG            1
-#define CONFIG_MTD_DEBUG_VERBOSE    0
+#define PROCESS_SPACE_SIZE  (32 * MB)
+#define PROCESS_PARAM_SIZE  (VMM_PAGE_SIZE)
+#define PROCESS_STACK_SIZE  (8 * VMM_PAGE_SIZE)
 
 #endif                                                                  /*  S3C2440_CONFIG_H_           */
 /*********************************************************************************************************

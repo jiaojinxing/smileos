@@ -37,8 +37,8 @@
 ** Descriptions:
 **
 *********************************************************************************************************/
-#ifndef MOUNT_H_
-#define MOUNT_H_
+#ifndef SYS_MOUNT_H_
+#define SYS_MOUNT_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -60,7 +60,7 @@ int vfs_mount(const char *point_name, const char *dev_name, const char *fs_name)
 }
 #endif
 
-#endif                                                                  /*  MOUNT_H_                    */
+#endif                                                                  /*  SYS_MOUNT_H_                */
 /*********************************************************************************************************
 ** END FILE
 *********************************************************************************************************/

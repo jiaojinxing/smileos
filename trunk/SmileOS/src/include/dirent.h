@@ -44,7 +44,7 @@
 extern "C" {
 #endif
 
-#include "vfs/config.h"
+#include <syslimits.h>
 #include "vfs/types.h"
 #include <sys/types.h>
 

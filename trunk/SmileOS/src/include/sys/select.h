@@ -37,8 +37,8 @@
 ** Descriptions:
 **
 *********************************************************************************************************/
-#ifndef SELECT_H_
-#define SELECT_H_
+#ifndef SYS_SELECT_H_
+#define SYS_SELECT_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -63,7 +63,7 @@ int select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *errorfds, struct
 }
 #endif
 
-#endif                                                                  /*  SELECT_H_                   */
+#endif                                                                  /*  SYS_SELECT_H_               */
 /*********************************************************************************************************
 ** END FILE
 *********************************************************************************************************/

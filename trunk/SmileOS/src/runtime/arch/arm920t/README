@@ -1,0 +1,44 @@
+
+注意：
+
+----------------------------------------------------------------------------------------------------------
+c 库的静态库文件 libc.a 是被我裁减过的，我也懒得编译重新编译一次 newlib 了，操作如下：
+
+ar -x libc.a
+
+delete 掉一些不需要的 .o 文件，如下：
+
+lib_a-fcntlr.o
+lib_a-freer.o
+lib_a-mallinfor.o
+lib_a-mallocr.o
+lib_a-malloptr.o
+lib_a-mstats.o
+lib_a-mtrim.o
+lib_a-raise.o
+lib_a-signal.o
+lib_a-signalr.o
+
+ar rs libc.a *.o
+
+ar 在 yagarto\arm-none-eabi\bin 目录下有！
+
+编译程序前请加上链接库搜索路径："${workspace_loc:/${ProjName}/src/runtime/arch/arm920}" ，
+
+优先使用被我裁减过的 libc.a 静态库文件！
+
+----------------------------------------------------------------------------------------------------------
+libemWin.a 是 NXP 公司提供的可以免费用于 NXP 公司芯片的 emWin 图形库，原文件名为：
+
+libemWin_518_LPCXpresso501_ARM7TDMI_LE.a
+
+虽然也有
+libemWin_518_LPCXpresso501_ARM926EJ-S_LE_Redlib.a
+
+但 arm920t 芯片属于 armv4 架构，而 arm926ej-s 芯片属于 armv5 架构，增加了 armv4 不支持的指令，
+
+所以在 arm920t 芯片上 ARM7TDMI 的库（同属 armv4 架构），而不是 ARM926EJ-S 的库，否则运行起来会有未定义指令异常。
+
+请勿将它用于使用其它公司芯片的商业项目中。
+
+----------------------------------------------------------------------------------------------------------

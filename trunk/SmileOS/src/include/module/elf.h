@@ -32,20 +32,12 @@
 #ifndef _SYS_ELF_H_
 #define _SYS_ELF_H_
 
+#include <stdint.h>
+
 #include <sys/cdefs.h>
 #include <machine/types.h>
 
-/*
- * Relocation type
- */
-#define R_ARM_NONE  0
-#define R_ARM_PC24  1
-#define R_ARM_ABS32 2
-#define R_ARM_PLT32 27
-#define R_ARM_CALL  28
-#define R_ARM_JUMP24    29
-
-typedef uint8_t	Elf_Byte;
+typedef uint8_t	    Elf_Byte;
 
 typedef uint32_t	Elf32_Addr;	/* Unsigned program address */
 typedef uint32_t	Elf32_Off;	/* Unsigned file offset */
@@ -467,8 +459,8 @@ struct elf_args {
 
 
 __BEGIN_DECLS
-int relocate_rel(Elf32_Rel *, Elf32_Addr, char *);
-int relocate_rela(Elf32_Rela *, Elf32_Addr, char *);
+int arch_relocate_rel(Elf32_Rel *, Elf32_Addr, char *);
+int arch_relocate_rela(Elf32_Rela *, Elf32_Addr, char *);
 __END_DECLS
 
 #endif /* _SYS_ELF_H_ */

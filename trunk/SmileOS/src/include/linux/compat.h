@@ -46,11 +46,12 @@ extern "C" {
 
 #include <kern/kern.h>
 #include <string.h>
+#include <unistd.h>
 
 typedef uint32_t                u_int32_t;
 typedef uint16_t                u16;
 typedef uint32_t                u32;
-typedef uint32_t                phys_addr_t;
+typedef mem_ptr_t               phys_addr_t;
 typedef long                    loff_t;
 typedef unsigned long           ulong;
 
