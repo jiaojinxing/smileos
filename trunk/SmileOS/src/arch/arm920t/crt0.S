@@ -133,6 +133,7 @@ swi_handler:
     CMP     R1, #SYSCALL_NR                 /*  系统调用号使用 R1                                       */
 
 bad_syscall:
+    MOVGE   R0, R1
     MOVGE   R1, #SYSCALL_BAD                /*  大于或等于 SYSCALL_NR 时置为 SYSCALL_BAD                */
 
     LDR     R2, =sys_do_table               /*  系统调用处理跳转表                                      */

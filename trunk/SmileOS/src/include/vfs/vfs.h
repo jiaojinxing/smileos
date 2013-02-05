@@ -80,7 +80,7 @@ int vfs_path_normalization(char path[PATH_MAX], int sprit_end);
 ** input parameters:        path                文件路径
 **                          oflag               标志
 **                          mode                模式
-** output parameters:       NULL
+** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
 int vfs_open(const char *path, int oflag, mode_t mode);
@@ -88,7 +88,7 @@ int vfs_open(const char *path, int oflag, mode_t mode);
 ** Function name:           vfs_close
 ** Descriptions:            关闭文件
 ** input parameters:        fd                  文件描述符
-** output parameters:       NULL
+** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
 int vfs_close(int fd);
@@ -98,7 +98,7 @@ int vfs_close(int fd);
 ** input parameters:        fd                  文件描述符
 **                          cmd                 命令
 **                          arg                 参数
-** output parameters:       NULL
+** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
 int vfs_fcntl(int fd, int cmd, int arg);
@@ -421,21 +421,23 @@ int vfs_unmount(const char *path, const char *param);
 *********************************************************************************************************/
 int vfs_init(void);
 /*********************************************************************************************************
-** Function name:           vfs_task_init
-** Descriptions:            初始化任务的文件信息
-** input parameters:        tid                 任务 ID
+** Function name:           vfs_process_init
+** Descriptions:            初始化进程的文件信息
+** input parameters:        pid                 进程 ID
+**                          tid                 任务 ID
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-int vfs_task_init(pid_t tid);
+int vfs_process_init(pid_t pid, pid_t tid, int open_max);
 /*********************************************************************************************************
-** Function name:           vfs_task_cleanup
-** Descriptions:            清理任务的文件信息
-** input parameters:        tid                 任务 ID
+** Function name:           vfs_process_cleanup
+** Descriptions:            清理进程的文件信息
+** input parameters:        pid                 进程 ID
+**                          tid                 任务 ID
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-int vfs_task_cleanup(pid_t tid);
+int vfs_process_cleanup(pid_t pid, pid_t tid);
 /*********************************************************************************************************
 ** Function name:           vfs_get_file
 ** Descriptions:            根据文件描述符获得文件结构

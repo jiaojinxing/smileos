@@ -129,6 +129,9 @@ typedef int32_t                     sys_thread_t;
 #define PERF_START
 #define PERF_STOP(x)
 
+
+#define socklen_t int
+
 #endif                                                                  /*  LWIP_FIX_H_                 */
 /*********************************************************************************************************
 ** END FILE

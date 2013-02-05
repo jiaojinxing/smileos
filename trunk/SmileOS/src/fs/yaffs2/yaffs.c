@@ -48,9 +48,9 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include "./src/yaffs_guts.h"
-#include "./src/yaffsfs.h"
-#include "./src/yaffscfg.h"
+#include "src/yaffs_guts.h"
+#include "src/yaffsfs.h"
+#include "src/yaffscfg.h"
 
 void *yaffsfs_Mount(int yaffsVersion,
                     const char *point_name,

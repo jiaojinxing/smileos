@@ -128,6 +128,7 @@ static int do_msleep(syscall_args_t *args)
         }
         ret = task_sleep(timeout);
     } else {
+        task_schedule();
         ret = 0;
     }
 
@@ -183,10 +184,11 @@ static int do_schedule(syscall_args_t *args)
 ** output parameters:       NONE
 ** Returned value:          NONE
 *********************************************************************************************************/
-static int do_bad(void)
+static int do_bad(int bad_syscall)
 {
     sys_do_enter();
 
+    printk("bad_syscall %d\n", bad_syscall);
 #if CONFIG_SIGNAL_EN > 0
     kill(gettid(), SIGSYS);
 #else
@@ -389,7 +391,7 @@ static int do_setpinfo(syscall_args_t *args)
 ** input parameters:        path                文件路径
 **                          oflag               标志
 **                          mode                模式
-** output parameters:       NULL
+** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
 static int do_open(syscall_args_t *args)
@@ -1221,6 +1223,27 @@ static int do_setsockopt(syscall_args_t *args)
     }
 }
 
+static int do_getsockname(syscall_args_t *args)
+{
+    int ret;
+    int sock_fd;
+
+    sys_do_enter();
+
+    sock_fd = socket_priv_fd((int)args->arg0);
+    if (sock_fd >= 0) {
+        ret = lwip_getsockname(
+                sock_fd,
+                ua_to_ka(args->arg1),
+                ua_to_ka(args->arg2));
+        sys_do_exit();
+        return ret;
+    } else {
+        sys_do_exit();
+        return -1;
+    }
+}
+
 /*
  * do_shutdown
  */
@@ -1374,6 +1397,7 @@ sys_do_t sys_do_table[] = {
 #define  SYSCALL_SEND       69
 #define  SYSCALL_SHUTDOWN   70
 #define  SYSCALL_SETSOCKOPT 71
+#define  SYSCALL_GETSOCKNAME 72
         (sys_do_t)do_socket,
         (sys_do_t)do_bind,
         (sys_do_t)do_accept,
@@ -1386,6 +1410,7 @@ sys_do_t sys_do_table[] = {
         (sys_do_t)do_send,
         (sys_do_t)do_shutdown,
         (sys_do_t)do_setsockopt,
+        (sys_do_t)do_getsockname,
 };
 /*********************************************************************************************************
 ** END FILE

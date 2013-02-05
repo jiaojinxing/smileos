@@ -40,6 +40,7 @@
 #include "kern/kern.h"
 #define KVARS_INC
 #include "kern/kvars.h"
+#include "kern/func_config.h"
 #include <string.h>
 #include <stdarg.h>
 /*********************************************************************************************************
@@ -91,6 +92,19 @@ void kernel_init(void)
     extern void kheap_create(void);
     kheap_create();                                                     /*  创建内核内存堆              */
 
+    extern void vmm_init(void);
+    vmm_init();                                                         /*  初始化虚拟内存管理          */
+
+#if CONFIG_MODULE_EN > 0
+    extern int module_init(void);
+    module_init();
+#endif
+
+#if CONFIG_VFS_EN > 0
+    extern int vfs_init(void);
+    vfs_init();
+#endif
+
     extern void kidle_create(void);
     kidle_create();                                                     /*  创建空闲进程                */
 
@@ -99,9 +113,6 @@ void kernel_init(void)
 
     extern void default_workqueue_create(void);
     default_workqueue_create();                                         /*  创建缺省工作队列            */
-
-    extern void vmm_init(void);
-    vmm_init();                                                         /*  初始化虚拟内存管理          */
 }
 /*********************************************************************************************************
 ** Function name:           kernel_start
@@ -113,7 +124,10 @@ void kernel_init(void)
 void kernel_start(void)
 {
     if (!os_started) {
+
+
         os_started = TRUE;                                              /*  内核已经启动                */
+
         arch_switch_context_to(NULL, current);
     } else {
         printk(KERN_ERR"os error: kernel has started at %s %d\n", __func__, __LINE__);

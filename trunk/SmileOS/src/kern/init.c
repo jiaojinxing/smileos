@@ -94,25 +94,6 @@ static void tcpip_init_done(void *arg)
 *********************************************************************************************************/
 static void init(void *arg)
 {
-#if CONFIG_VFS_EN > 0
-    extern int soc_drivers_install(void);
-    soc_drivers_install();
-
-    extern int soc_devices_create(void);
-    soc_devices_create();
-
-    extern int bsp_drivers_install(void);
-    bsp_drivers_install();
-
-    extern int bsp_devices_create(void);
-    bsp_devices_create();
-#endif
-
-#if CONFIG_MODULE_EN > 0
-    extern int module_init(void);
-    module_init();
-#endif
-
 #if CONFIG_VFS_EN > 0 && CONFIG_RAMDISK_EN > 0
     int ramdisk_create(const char *path, size_t size);
     ramdisk_create("/dev/ramdisk", 1440 * KB);
@@ -127,6 +108,14 @@ static void init(void *arg)
 #if CONFIG_NET_EN > 0
     tcpip_init(tcpip_init_done, NULL);
 #endif
+
+    int ftpdInit
+        (
+        int     port,
+        int     stackSize
+        );
+
+    ftpdInit(0, 0);
 
     while (1) {
         sleep(10);
@@ -216,11 +205,21 @@ int main(void)
     kernel_init();
 
 #if CONFIG_VFS_EN > 0
-    vfs_init();
-
     sys_drivers_install();
 
     sys_devices_create();
+
+    extern int soc_drivers_install(void);
+    soc_drivers_install();
+
+    extern int soc_devices_create(void);
+    soc_devices_create();
+
+    extern int bsp_drivers_install(void);
+    bsp_drivers_install();
+
+    extern int bsp_devices_create(void);
+    bsp_devices_create();
 #endif
 
     kthread_create("init", init, NULL, 16 * KB, 100);

@@ -73,7 +73,7 @@ echo #include "kern/func_config.h"                                          >> s
 echo #if CONFIG_MODULE_EN > 0                                        >> symbol.c
 echo #include "module/symbol_tool.h"										>> symbol.c
 echo.														>> symbol.c
-echo #define SYMBOL_TABLE_BEGIN symbol_t symbol_tbl[] = { 						>> symbol.c
+echo #define SYMBOL_TABLE_BEGIN const symbol_t symbol_tbl[] = { 						>> symbol.c
 echo.  														>> symbol.c
 echo #define SYMBOL_TABLE_END   {0, 0, 0} };									>> symbol.c
 echo.														>> symbol.c

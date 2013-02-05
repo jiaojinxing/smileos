@@ -74,21 +74,17 @@ static void klogd(void *arg)
 {
     msg_t *msg;
 
-#if CONFIG_VFS_EN > 0
-    fclose(stdout);
-    stdout = NULL;
-    while (stdout == NULL) {
-        stdout = fopen(KLOGD_LOG_FILE, "w+");
-        sleep(1);
-    }
-#endif
-
     while (1) {
         if (mqueue_fetch(&mqueue, (void **)&msg, 0) == 0) {
 
 #if CONFIG_VFS_EN > 0
-            fputs(msg->buf, stdout);
-            fputs("\r", stdout);
+            if (msg->buf[msg->len - 1] == '\n' && msg->buf[msg->len - 2] != '\r') {
+                msg->buf[msg->len - 1] = '\r';
+                msg->buf[msg->len]     = '\n';
+                write(fileno(stdout), msg->buf, msg->len + 1);
+            } else {
+                write(fileno(stdout), msg->buf, msg->len);
+            }
 #else
             /*
              * TODO

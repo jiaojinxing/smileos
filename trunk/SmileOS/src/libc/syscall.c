@@ -206,6 +206,7 @@ extern _ssize_t _write_r _PARAMS ((struct _reent *, int, const void *, size_t));
 #define  SYSCALL_SEND       69
 #define  SYSCALL_SHUTDOWN   70
 #define  SYSCALL_SETSOCKOPT 71
+#define  SYSCALL_GETSOCKNAME 72
 #define  SYSCALL_NR         100                                         /*  系统调用数                  */
 /*********************************************************************************************************
 ** 系统调用代码
@@ -523,7 +524,7 @@ int _rmdir_r(struct _reent *reent, const char *path)
 **                          path                文件路径
 **                          oflag               标志
 **                          mode                模式
-** output parameters:       NULL
+** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
 int _open_r(struct _reent *reent, const char *path, int oflag, int mode)
@@ -1051,6 +1052,17 @@ int setsockopt(int s, int level, int optname, const void *optval, socklen_t optl
 {
     int syscall = SYSCALL_SETSOCKOPT;
     syscall_args_t args = {(void *)s, (void *)level, (void *)optname, (void *)optval, (void *)optlen};
+
+    syscall_code();
+}
+
+/*
+ *
+ */
+int getsockname(int s, struct sockaddr *name, socklen_t *namelen)
+{
+    int syscall = SYSCALL_GETSOCKNAME;
+    syscall_args_t args = {(void *)s, (void *)name, (void *)namelen};
 
     syscall_code();
 }
