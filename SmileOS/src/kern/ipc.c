@@ -226,7 +226,7 @@ int mutex_lock(mutex_t *mutex, tick_t timeout)
             } else if (m->owner == current) {
                 m->lock++;
             } else {
-                printk(KERN_DEBUG"%s: %s lock mutex, %s wait it\n", __func__, m->owner->name, current->name);
+                printk(KERN_EMERG"%s: %s lock mutex, %s wait it, lock level=%d\n", __func__, m->owner->name, current->name, m->lock);
                 if (timeout != 0) {
                     wait_event_timeout(m->wait_list, resume_type, timeout, tick);
                 } else {
@@ -287,12 +287,16 @@ int mutex_unlock(mutex_t *mutex)
                     interrupt_resume(reg);
                     return 0;
                 } else {
-
+                    printk(KERN_EMERG"%s: mutex error1\n", __func__);
                 }
             } else {
-
+                printk(KERN_EMERG"%s: mutex error2\n", __func__);
             }
+        } else {
+            printk(KERN_EMERG"%s: mutex error3\n", __func__);
         }
+    } else {
+        printk(KERN_EMERG"%s: mutex error4\n", __func__);
     }
     interrupt_resume(reg);
     return -1;

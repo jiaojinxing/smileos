@@ -26,8 +26,8 @@
 #include <nand.h>
 #else
 #include "kern/kern.h"
-#include "./nand.h"
-#include "./nand_config.h"
+#include "nand.h"
+#include "nand_config.h"
 #include <stdio.h>
 #endif
 

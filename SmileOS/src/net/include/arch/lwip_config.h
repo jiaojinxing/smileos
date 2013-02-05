@@ -45,8 +45,8 @@
 #define __KB                            (1024)
 #define __MB                            (1024 * __KB)
 
-#define MEM_LIBC_MALLOC                 (1)
-#define MEMP_MEM_MALLOC                 (1)
+//#define MEM_LIBC_MALLOC                 (1)
+//#define MEMP_MEM_MALLOC                 (1)
 /*********************************************************************************************************
 *                                           lwIP …Ë÷√
 *

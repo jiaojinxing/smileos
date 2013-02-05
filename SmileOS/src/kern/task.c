@@ -64,28 +64,23 @@ extern int ipc_task_cleanup(task_t *task);
 *********************************************************************************************************/
 static void kthread_shell(task_t *task)
 {
-    if (task->tid == 0) {
-        task->thread(task->arg);                                        /*  进入真正的内核线程函数      */
-
-        _exit(0);                                                       /*  退出内核线程                */
-    } else {
 #if CONFIG_VFS_EN > 0
-        open("/dev/null", O_RDONLY);                                    /*  打开三个标准文件            */
-        stdin  = fdopen(STDIN_FILENO,  "r");
+    int fd = open("/dev/serial0", O_RDONLY);                            /*  打开三个标准文件            */
+    stdin  = fdopen(fd,  "r");
 
-        open("/dev/null", O_WRONLY);
-        stdout = fdopen(STDOUT_FILENO, "w");
+    open("/dev/serial0", O_WRONLY);
+    stdout = fdopen(fd, "w");
 
-        open("/dev/null", O_WRONLY);
-        stderr = fdopen(STDERR_FILENO, "w");
+    open("/dev/serial0", O_WRONLY);
+    stderr = fdopen(fd, "w");
 
-        putenv("PATH=/");                                               /*  设置环境变量                */
-        putenv("HOME=/");
+    putenv("PATH=/");                                                   /*  设置环境变量                */
+    putenv("HOME=/");
 #endif
-        task->thread(task->arg);                                        /*  进入真正的内核线程函数      */
 
-        _exit(0);                                                       /*  退出内核线程                */
-    }
+    task->thread(task->arg);                                            /*  进入真正的内核线程函数      */
+
+    _exit(0);                                                           /*  退出内核线程                */
 }
 /*********************************************************************************************************
 ** Function name:           __kthread_create
@@ -191,7 +186,7 @@ static int32_t __kthread_create(const char *name,
         goto __exit1;
     }
 
-    if (vfs_task_init(tid) < 0) {                                       /*  初始化任务的文件信息        */
+    if (vfs_process_init(task->pid, tid, 100) < 0) {               /*  初始化任务的文件信息        */
         goto __exit2;
     }
 
@@ -277,7 +272,7 @@ void task_cleanup(void)
 
     ipc_task_cleanup(task);                                             /*  清理任务的 IPC              */
 
-    vfs_task_cleanup(task->tid);                                        /*  清理任务的文件信息          */
+    vfs_process_cleanup(task->pid, task->tid);                          /*  清理任务的文件信息          */
 
     if (task->type == TASK_TYPE_PROCESS) {                              /*  如果任务是进程              */
 
@@ -382,9 +377,14 @@ void task_schedule(void)
 
     task = current;
     if (task == next) {                                                 /*  如果不需要切换任务          */
+        current->pid = 0;
         return;
     } else {
         current = next;                                                 /*  改写 current 指针           */
+
+        if (current->pid != 0) {
+            current->pid = 0;
+        }
 
         _impure_ptr = current->reent;                                   /*  改写 _impure_ptr 指针       */
     }

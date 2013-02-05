@@ -269,6 +269,7 @@ struct file {
     void                   *ctx1;
 #define select_node         ctx1
     mount_point_t          *point;
+    int                     type;
     int                     flags;
     struct file            *next;
 };
