@@ -76,8 +76,8 @@ static int uart0_isr(intno_t interrupt, void *arg)
     char buf[max(RX_FIFO_SIZE, RX_FIFO_SIZE)];
     privinfo_t *priv = arg;
     uint32_t reg = SUBSRCPND;
-    int len;
-    int i;
+    uint32_t len;
+    uint32_t i;
 
     if (reg & BIT_SUB_RXD0) {                                           /*  接收中断                    */
         while ((len = (UFSTAT0 & 0x3F)) > 0) {                          /*  接收数据                    */
@@ -115,8 +115,8 @@ static int uart0_isr(intno_t interrupt, void *arg)
 static void serial0_start(privinfo_t *priv)
 {
     char buf[max(RX_FIFO_SIZE, RX_FIFO_SIZE)];
-    int len;
-    int i;
+    unsigned int len;
+    unsigned int i;
 
     if ((((UFSTAT0) >> 8) & 0x3F) == 0) {                               /*  可以直接写入发送 FIFO       */
         len = kfifo_get(&priv->oq, buf, TX_FIFO_SIZE);                  /*  从输出队列提取数据          */
@@ -454,8 +454,8 @@ int serial0_init(void)
     if (priv != NULL) {
         device_init(priv);
 
-        mutex_new(&priv->write_lock);
-        mutex_new(&priv->read_lock);
+        mutex_create(&priv->write_lock);
+        mutex_create(&priv->read_lock);
 
         if (device_create("/dev/serial0", "serial0", priv) < 0) {
             kfree(priv);

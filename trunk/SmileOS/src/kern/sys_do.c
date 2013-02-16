@@ -41,9 +41,10 @@
 #include "kern/kvars.h"
 #include "kern/func_config.h"
 #include <string.h>
+#include <stdlib.h>
 #include <sys/time.h>
 
-extern void         task_cleanup(void);
+extern int          task_cleanup(int32_t tid);
 extern int          task_sleep(tick_t ticks);
 extern int32_t      task_getpid(void);
 extern void         task_schedule(void);
@@ -100,7 +101,7 @@ static void do_exit(syscall_args_t *args)
     /*
      * TODO
      */
-    task_cleanup();
+    task_cleanup(gettid());
 #endif
 
     sys_do_exit();
@@ -110,27 +111,17 @@ static void do_exit(syscall_args_t *args)
 ** Descriptions:            usleep 系统调用处理函数
 ** input parameters:        args                系统调用处理参数
 ** output parameters:       NONE
-** Returned value:          0
+** Returned value:          0 OR -1
 *********************************************************************************************************/
 static int do_msleep(syscall_args_t *args)
 {
-    tick_t timeout;
+    mseconds_t timeout;
     int ret;
 
     sys_do_enter();
 
-    timeout = (unsigned int)args->arg0;
-    if (timeout != 0) {
-        if (timeout < 1000 / TICK_PER_SECOND) {
-            timeout = 1;
-        } else {
-            timeout = timeout * TICK_PER_SECOND / 1000;
-        }
-        ret = task_sleep(timeout);
-    } else {
-        task_schedule();
-        ret = 0;
-    }
+    timeout = *(mseconds_t *)args->arg0;
+    ret = task_sleep(ms_to_tick(timeout));
 
     sys_do_exit();
 
@@ -140,7 +131,7 @@ static int do_msleep(syscall_args_t *args)
 ** Function name:           do_gettimeofday
 ** Descriptions:            gettimeofday 系统调用处理函数
 ** input parameters:        args                系统调用处理参数
-** output parameters:       tv                  时间值
+** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
 static int do_gettimeofday(syscall_args_t *args)
@@ -163,9 +154,9 @@ static int do_gettimeofday(syscall_args_t *args)
 /*********************************************************************************************************
 ** Function name:           do_schedule
 ** Descriptions:            schedule 系统调用处理函数
-** input parameters:        NONE
+** input parameters:        args                系统调用处理参数
 ** output parameters:       NONE
-** Returned value:          NONE
+** Returned value:          0 OR -1
 *********************************************************************************************************/
 static int do_schedule(syscall_args_t *args)
 {
@@ -180,32 +171,32 @@ static int do_schedule(syscall_args_t *args)
 /*********************************************************************************************************
 ** Function name:           do_bad
 ** Descriptions:            错误系统调用处理函数
-** input parameters:        NONE
+** input parameters:        bad_syscall         错误系统调用号
 ** output parameters:       NONE
-** Returned value:          NONE
+** Returned value:          0 OR -1
 *********************************************************************************************************/
 static int do_bad(int bad_syscall)
 {
+    int ret;
+
     sys_do_enter();
 
-    printk("bad_syscall %d\n", bad_syscall);
+    printk(KERN_ERR"%s: bad system call %d\n", __func__, bad_syscall);
+
 #if CONFIG_SIGNAL_EN > 0
-    kill(gettid(), SIGSYS);
+    ret = kill(gettid(), SIGSYS);
 #else
-    /*
-     * TODO
-     */
-    task_cleanup();
+    ret = task_cleanup(gettid());
 #endif
 
     sys_do_exit();
 
-    return -1;
+    return ret;
 }
 /*********************************************************************************************************
 ** Function name:           do_getpid
 ** Descriptions:            getpid 系统调用处理函数
-** input parameters:        NONE
+** input parameters:        args                系统调用处理参数
 ** output parameters:       NONE
 ** Returned value:          PID
 *********************************************************************************************************/
@@ -227,10 +218,10 @@ static int do_getpid(syscall_args_t *args)
 #if CONFIG_SIGNAL_EN > 0
 /*********************************************************************************************************
 ** Function name:           do_signal
-** Descriptions:            错误系统调用处理函数
-** input parameters:        NONE
+** Descriptions:            signal 系统调用处理函数
+** input parameters:        args                系统调用处理参数
 ** output parameters:       NONE
-** Returned value:          NONE
+** Returned value:          原信号处理函数
 *********************************************************************************************************/
 static sighandler_t do_signal(syscall_args_t *args)
 {
@@ -245,11 +236,11 @@ static sighandler_t do_signal(syscall_args_t *args)
     return ret;
 }
 /*********************************************************************************************************
-** Function name:           do_signal
-** Descriptions:            错误系统调用处理函数
-** input parameters:        NONE
+** Function name:           do_sigprocmask
+** Descriptions:            sigprocmask 系统调用处理函数
+** input parameters:        args                系统调用处理参数
 ** output parameters:       NONE
-** Returned value:          NONE
+** Returned value:          0 OR -1
 *********************************************************************************************************/
 static int do_sigprocmask(syscall_args_t *args)
 {
@@ -266,11 +257,11 @@ static int do_sigprocmask(syscall_args_t *args)
     return ret;
 }
 /*********************************************************************************************************
-** Function name:           do_signal
-** Descriptions:            错误系统调用处理函数
-** input parameters:        NONE
+** Function name:           do_sigsuspend
+** Descriptions:            sigsuspend 系统调用处理函数
+** input parameters:        args                系统调用处理参数
 ** output parameters:       NONE
-** Returned value:          NONE
+** Returned value:          0 OR -1
 *********************************************************************************************************/
 static int do_sigsuspend(syscall_args_t *args)
 {
@@ -287,8 +278,7 @@ static int do_sigsuspend(syscall_args_t *args)
 /*********************************************************************************************************
 ** Function name:           do_alarm
 ** Descriptions:            alarm 系统调用处理函数
-** input parameters:        pid                 PID
-**                          sig                 信号
+** input parameters:        args                系统调用处理参数
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
@@ -309,7 +299,7 @@ static int do_alarm(syscall_args_t *args)
 ** Descriptions:            pause 系统调用处理函数
 ** input parameters:        args                系统调用处理参数
 ** output parameters:       NONE
-** Returned value:          0
+** Returned value:          0 OR -1
 *********************************************************************************************************/
 static int do_pause(syscall_args_t *args)
 {
@@ -324,12 +314,10 @@ static int do_pause(syscall_args_t *args)
     return ret;
 }
 #endif
-
 /*********************************************************************************************************
 ** Function name:           do_kill
 ** Descriptions:            kill 系统调用处理函数
-** input parameters:        pid                 PID
-**                          sig                 信号
+** input parameters:        args                系统调用处理参数
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
@@ -342,7 +330,7 @@ static int do_kill(syscall_args_t *args)
 #if CONFIG_SIGNAL_EN > 0
     ret = signal_queue((int32_t)args->arg0, (int)args->arg1);
 #else
-    task_cleanup();
+    ret = task_cleanup((int32_t)args->arg0);
 #endif
 
     sys_do_exit();
@@ -359,13 +347,13 @@ static int do_kill(syscall_args_t *args)
 /*********************************************************************************************************
 ** Function name:           do_setpinfo
 ** Descriptions:            setpinfo 系统调用处理函数
-** input parameters:        reent               可重入结构指针
+** input parameters:        args                系统调用处理参数
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
 static int do_setpinfo(syscall_args_t *args)
 {
-    int ret;
+    int ret = -1;
 
     sys_do_enter();
 
@@ -388,9 +376,7 @@ static int do_setpinfo(syscall_args_t *args)
 /*********************************************************************************************************
 ** Function name:           do_open
 ** Descriptions:            open 系统调用处理函数
-** input parameters:        path                文件路径
-**                          oflag               标志
-**                          mode                模式
+** input parameters:        args                系统调用处理参数
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
@@ -409,10 +395,8 @@ static int do_open(syscall_args_t *args)
 /*********************************************************************************************************
 ** Function name:           do_read
 ** Descriptions:            read 系统调用处理函数
-** input parameters:        fd                  文件描述符
-**                          buf                 数据缓冲区
-**                          len                 新长度
-** output parameters:       buf                 数据
+** input parameters:        args                系统调用处理参数
+** output parameters:       NONE
 ** Returned value:          成功读取的字节数 OR -1
 *********************************************************************************************************/
 static ssize_t do_read(syscall_args_t *args)
@@ -430,9 +414,7 @@ static ssize_t do_read(syscall_args_t *args)
 /*********************************************************************************************************
 ** Function name:           do_write
 ** Descriptions:            write 系统调用处理函数
-** input parameters:        fd                  文件描述符
-**                          buf                 数据缓冲区
-**                          len                 新长度
+** input parameters:        args                系统调用处理参数
 ** output parameters:       NONE
 ** Returned value:          成功写入的字节数 OR -1
 *********************************************************************************************************/
@@ -451,9 +433,7 @@ static ssize_t do_write(syscall_args_t *args)
 /*********************************************************************************************************
 ** Function name:           do_fcntl
 ** Descriptions:            fcntl 系统调用处理函数
-** input parameters:        fd                  文件描述符
-**                          cmd                 命令
-**                          arg                 参数
+** input parameters:        args                系统调用处理参数
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
@@ -472,9 +452,9 @@ static int do_fcntl(syscall_args_t *args)
 /*********************************************************************************************************
 ** Function name:           do_isatty
 ** Descriptions:            isatty 系统调用处理函数
-** input parameters:        fd                  文件描述符
+** input parameters:        args                系统调用处理参数
 ** output parameters:       NONE
-** Returned value:          0 OR 1
+** Returned value:          0 OR 1 OR -1
 *********************************************************************************************************/
 static int do_isatty(syscall_args_t *args)
 {
@@ -491,8 +471,8 @@ static int do_isatty(syscall_args_t *args)
 /*********************************************************************************************************
 ** Function name:           do_fstat
 ** Descriptions:            fstat 系统调用处理函数
-** input parameters:        fd                  文件描述符
-** output parameters:       buf                 文件状态
+** input parameters:        args                系统调用处理参数
+** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
 static int do_fstat(syscall_args_t *args)
@@ -510,9 +490,7 @@ static int do_fstat(syscall_args_t *args)
 /*********************************************************************************************************
 ** Function name:           do_lseek
 ** Descriptions:            lseek 系统调用处理函数
-** input parameters:        fd                  文件描述符
-**                          offset              偏移
-**                          whence              调整的位置
+** input parameters:        args                系统调用处理参数
 ** output parameters:       NONE
 ** Returned value:          新的读写位置 OR -1
 *********************************************************************************************************/
@@ -531,7 +509,7 @@ static off_t do_lseek(syscall_args_t *args)
 /*********************************************************************************************************
 ** Function name:           do_close
 ** Descriptions:            close 系统调用处理函数
-** input parameters:        fd                  文件描述符
+** input parameters:        args                系统调用处理参数
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
@@ -550,9 +528,7 @@ static int do_close(syscall_args_t *args)
 /*********************************************************************************************************
 ** Function name:           do_ioctl
 ** Descriptions:            ioctl 系统调用处理函数
-** input parameters:        fd                  文件描述符
-**                          cmd                 命令
-**                          arg                 参数
+** input parameters:        args                系统调用处理参数
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
@@ -574,7 +550,7 @@ static int do_ioctl(syscall_args_t *args)
 /*********************************************************************************************************
 ** Function name:           do_opendir
 ** Descriptions:            opendir 系统调用处理函数
-** input parameters:        path                目录 PATH
+** input parameters:        args                系统调用处理参数
 ** output parameters:       NONE
 ** Returned value:          目录指针
 *********************************************************************************************************/
@@ -593,7 +569,7 @@ static DIR *do_opendir(syscall_args_t *args)
 /*********************************************************************************************************
 ** Function name:           do_closedir
 ** Descriptions:            closedir 系统调用处理函数
-** input parameters:        dir                 目录指针
+** input parameters:        args                系统调用处理参数
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
@@ -612,7 +588,7 @@ static int do_closedir(syscall_args_t *args)
 /*********************************************************************************************************
 ** Function name:           do_readdir
 ** Descriptions:            readdir 系统调用处理函数
-** input parameters:        dir                 目录指针
+** input parameters:        args                系统调用处理参数
 ** output parameters:       NONE
 ** Returned value:          目录项
 *********************************************************************************************************/
@@ -630,16 +606,17 @@ static struct dirent *do_readdir(syscall_args_t *args)
     ret = vfs_readdir(args->arg0);
 #if CONFIG_PROCESS_EN > 0
     if (ret != NULL) {
-        reg_t reg;
         pinfo_t *info;
+        reg_t reg;
 
         reg  = interrupt_disable();
         info = current->pinfo;
+        interrupt_resume(reg);
+
         if (info != NULL) {
             memcpy(&info->entry, ret, sizeof(struct dirent));
             ret = ka_to_ua(&info->entry);
         }
-        interrupt_resume(reg);
     }
 #endif
 
@@ -650,7 +627,7 @@ static struct dirent *do_readdir(syscall_args_t *args)
 /*********************************************************************************************************
 ** Function name:           do_rewinddir
 ** Descriptions:            rewinddir 系统调用处理函数
-** input parameters:        dir                 目录指针
+** input parameters:        args                系统调用处理参数
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
@@ -669,8 +646,7 @@ static int do_rewinddir(syscall_args_t *args)
 /*********************************************************************************************************
 ** Function name:           do_seekdir
 ** Descriptions:            seekdir 系统调用处理函数
-** input parameters:        dir                 目录指针
-**                          loc                 新的读点
+** input parameters:        args                系统调用处理参数
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
@@ -689,7 +665,7 @@ static int do_seekdir(syscall_args_t *args)
 /*********************************************************************************************************
 ** Function name:           do_telldir
 ** Descriptions:            telldir 系统调用处理函数
-** input parameters:        dir                 目录指针
+** input parameters:        args                系统调用处理参数
 ** output parameters:       NONE
 ** Returned value:          当前读点
 *********************************************************************************************************/
@@ -708,9 +684,8 @@ static long do_telldir(syscall_args_t *args)
 /*********************************************************************************************************
 ** Function name:           do_getcwd
 ** Descriptions:            getcwd 系统调用处理函数
-** input parameters:        size                buf 大小
-**                          buf                 当前工作目录缓冲
-** output parameters:       buf                 当前工作目录
+** input parameters:        args                系统调用处理参数
+** output parameters:       NONE
 ** Returned value:          当前工作目录
 *********************************************************************************************************/
 static char *do_getcwd(syscall_args_t *args)
@@ -726,17 +701,19 @@ static char *do_getcwd(syscall_args_t *args)
      */
     ret = vfs_getcwd(ua_to_ka(args->arg0), (size_t)args->arg1);
 #if CONFIG_PROCESS_EN > 0
-    if (ret != NULL) {
+    if (ret != NULL && args->arg0 == NULL) {
         reg_t reg;
         pinfo_t *info;
 
         reg  = interrupt_disable();
         info = current->pinfo;
+        interrupt_resume(reg);
+
         if (info != NULL) {
             strcpy(info->cwd, ret);
+            free(ret);
             ret = ka_to_ua(info->cwd);
         }
-        interrupt_resume(reg);
     }
 #endif
     sys_do_exit();
@@ -746,7 +723,7 @@ static char *do_getcwd(syscall_args_t *args)
 /*********************************************************************************************************
 ** Function name:           do_chdir
 ** Descriptions:            chdir 系统调用处理函数
-** input parameters:        path                目录 PATH
+** input parameters:        args                系统调用处理参数
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
@@ -765,8 +742,7 @@ static int do_chdir(syscall_args_t *args)
 /*********************************************************************************************************
 ** Function name:           do_rename
 ** Descriptions:            rename 系统调用处理函数
-** input parameters:        old                 源文件 PATH
-**                          _new                新文件 PATH
+** input parameters:        args                系统调用处理参数
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
@@ -785,7 +761,7 @@ static int do_rename(syscall_args_t *args)
 /*********************************************************************************************************
 ** Function name:           do_unlink
 ** Descriptions:            unlink 系统调用处理函数
-** input parameters:        path                文件 PATH
+** input parameters:        args                系统调用处理参数
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
@@ -804,8 +780,7 @@ static int do_unlink(syscall_args_t *args)
 /*********************************************************************************************************
 ** Function name:           do_link
 ** Descriptions:            link 系统调用处理函数
-** input parameters:        path1               文件 PATH
-**                          path2               新文件 PATH
+** input parameters:        args                系统调用处理参数
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
@@ -824,9 +799,8 @@ static int do_link(syscall_args_t *args)
 /*********************************************************************************************************
 ** Function name:           do_stat
 ** Descriptions:            stat 系统调用处理函数
-** input parameters:        path                文件 PATH
-**                          buf                 文件状态缓冲
-** output parameters:       buf                 文件状态
+** input parameters:        args                系统调用处理参数
+** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
 static int do_stat(syscall_args_t *args)
@@ -844,8 +818,7 @@ static int do_stat(syscall_args_t *args)
 /*********************************************************************************************************
 ** Function name:           do_mkdir
 ** Descriptions:            mkdir 系统调用处理函数
-** input parameters:        path                目录 PATH
-**                          mode                模式
+** input parameters:        args                系统调用处理参数
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
@@ -864,7 +837,7 @@ static int do_mkdir(syscall_args_t *args)
 /*********************************************************************************************************
 ** Function name:           do_rmdir
 ** Descriptions:            rmdir 系统调用处理函数
-** input parameters:        path                目录 PATH
+** input parameters:        args                系统调用处理参数
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
@@ -883,7 +856,7 @@ static int do_rmdir(syscall_args_t *args)
 /*********************************************************************************************************
 ** Function name:           do_dup
 ** Descriptions:            dup 系统调用处理函数
-** input parameters:        fd                  文件描述符
+** input parameters:        args                系统调用处理参数
 ** output parameters:       NONE
 ** Returned value:          新的文件描述符 OR -1
 *********************************************************************************************************/
@@ -902,8 +875,7 @@ static int do_dup(syscall_args_t *args)
 /*********************************************************************************************************
 ** Function name:           do_dup2
 ** Descriptions:            dup2 系统调用处理函数
-** input parameters:        fd                  文件描述符
-**                          to                  指定的文件描述符
+** input parameters:        args                系统调用处理参数
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
@@ -919,10 +891,13 @@ static int do_dup2(syscall_args_t *args)
 
     return ret;
 }
-
-/*
- * do_select
- */
+/*********************************************************************************************************
+** Function name:           do_select
+** Descriptions:            select 系统调用处理函数
+** input parameters:        args                系统调用处理参数
+** output parameters:       NONE
+** Returned value:          0 OR -1
+*********************************************************************************************************/
 static int do_select(syscall_args_t *args)
 {
     int ret;
@@ -979,12 +954,14 @@ static int do_socket(syscall_args_t *args)
 static int do_bind(syscall_args_t *args)
 {
     int ret;
+    void *ctx;
 
     sys_do_enter();
 
-    int sock_fd = socket_priv_fd((int)args->arg0);
+    int sock_fd = socket_priv_fd((int)args->arg0, &ctx);
     if (sock_fd >= 0) {
         ret = lwip_bind(sock_fd, ua_to_ka(args->arg1), (socklen_t)args->arg2);
+        socket_op_end(ctx);
         sys_do_exit();
         return ret;
     } else {
@@ -999,22 +976,26 @@ static int do_bind(syscall_args_t *args)
 static int do_accept(syscall_args_t *args)
 {
     int sock_fd;
+    void *ctx;
 
     sys_do_enter();
 
-    sock_fd = socket_priv_fd((int)args->arg0);
+    sock_fd = socket_priv_fd((int)args->arg0, &ctx);
     if (sock_fd >= 0) {
         int new_sock_fd = lwip_accept(sock_fd, ua_to_ka(args->arg1), ua_to_ka(args->arg2));
         if (new_sock_fd >= 0) {
             int fd = socket_attach(new_sock_fd);
             if (fd < 0) {
                 lwip_close(new_sock_fd);
+                socket_op_end(ctx);
                 sys_do_exit();
                 return -1;
             }
+            socket_op_end(ctx);
             sys_do_exit();
             return fd;
         } else {
+            socket_op_end(ctx);
             sys_do_exit();
             return -1;
         }
@@ -1031,12 +1012,14 @@ static int do_connect(syscall_args_t *args)
 {
     int ret;
     int sock_fd;
+    void *ctx;
 
     sys_do_enter();
 
-    sock_fd = socket_priv_fd((int)args->arg0);
+    sock_fd = socket_priv_fd((int)args->arg0, &ctx);
     if (sock_fd >= 0) {
         ret = lwip_connect(sock_fd, ua_to_ka(args->arg1), (socklen_t)args->arg2);
+        socket_op_end(ctx);
         sys_do_exit();
         return ret;
     } else {
@@ -1052,12 +1035,14 @@ static int do_listen(syscall_args_t *args)
 {
     int ret;
     int sock_fd;
+    void *ctx;
 
     sys_do_enter();
 
-    sock_fd = socket_priv_fd((int)args->arg0);
+    sock_fd = socket_priv_fd((int)args->arg0, &ctx);
     if (sock_fd >= 0) {
         ret = lwip_listen(sock_fd, (int)args->arg1);
+        socket_op_end(ctx);
         sys_do_exit();
         return ret;
     } else {
@@ -1074,16 +1059,18 @@ static int do_recv(syscall_args_t *args)
 {
     int ret;
     int sock_fd;
+    void *ctx;
 
     sys_do_enter();
 
-    sock_fd = socket_priv_fd((int)args->arg0);
+    sock_fd = socket_priv_fd((int)args->arg0, &ctx);
     if (sock_fd >= 0) {
         ret = lwip_recv(
                 sock_fd,
                 ua_to_ka(args->arg1),
                 (size_t)args->arg2,
                 (int)args->arg3);
+        socket_op_end(ctx);
         sys_do_exit();
         return ret;
     } else {
@@ -1099,10 +1086,11 @@ static int do_recvfrom(syscall_args_t *args)
 {
     int ret;
     int sock_fd;
+    void *ctx;
 
     sys_do_enter();
 
-    sock_fd = socket_priv_fd((int)args->arg0);
+    sock_fd = socket_priv_fd((int)args->arg0, &ctx);
     if (sock_fd >= 0) {
         ret = lwip_recvfrom(
                 sock_fd,
@@ -1111,6 +1099,7 @@ static int do_recvfrom(syscall_args_t *args)
                 (int)args->arg3,
                 (struct sockaddr *)ua_to_ka(args->arg4),
                 (socklen_t *)ua_to_ka(args->arg5));
+        socket_op_end(ctx);
         sys_do_exit();
         return ret;
     } else {
@@ -1126,10 +1115,11 @@ static int do_sendto(syscall_args_t *args)
 {
     int ret;
     int sock_fd;
+    void *ctx;
 
     sys_do_enter();
 
-    sock_fd = socket_priv_fd((int)args->arg0);
+    sock_fd = socket_priv_fd((int)args->arg0, &ctx);
     if (sock_fd >= 0) {
         ret = lwip_sendto(
                 sock_fd,
@@ -1138,6 +1128,7 @@ static int do_sendto(syscall_args_t *args)
                 (int)args->arg3,
                 (const struct sockaddr *)ua_to_ka(args->arg4),
                 (socklen_t)args->arg5);
+        socket_op_end(ctx);
         sys_do_exit();
         return ret;
     } else {
@@ -1153,10 +1144,11 @@ static int do_getsockopt(syscall_args_t *args)
 {
     int ret;
     int sock_fd;
+    void *ctx;
 
     sys_do_enter();
 
-    sock_fd = socket_priv_fd((int)args->arg0);
+    sock_fd = socket_priv_fd((int)args->arg0, &ctx);
     if (sock_fd >= 0) {
         ret = lwip_getsockopt(
                 sock_fd,
@@ -1164,6 +1156,7 @@ static int do_getsockopt(syscall_args_t *args)
                 (int)args->arg2,
                 ua_to_ka(args->arg3),
                 (socklen_t *)ua_to_ka(args->arg4));
+        socket_op_end(ctx);
         sys_do_exit();
         return ret;
     } else {
@@ -1179,16 +1172,18 @@ static int do_send(syscall_args_t *args)
 {
     int ret;
     int sock_fd;
+    void *ctx;
 
     sys_do_enter();
 
-    sock_fd = socket_priv_fd((int)args->arg0);
+    sock_fd = socket_priv_fd((int)args->arg0, &ctx);
     if (sock_fd >= 0) {
         ret = lwip_send(
                 sock_fd,
                 ua_to_ka(args->arg1),
                 (size_t)args->arg2,
                 (int)args->arg3);
+        socket_op_end(ctx);
         sys_do_exit();
         return ret;
     } else {
@@ -1204,10 +1199,11 @@ static int do_setsockopt(syscall_args_t *args)
 {
     int ret;
     int sock_fd;
+    void *ctx;
 
     sys_do_enter();
 
-    sock_fd = socket_priv_fd((int)args->arg0);
+    sock_fd = socket_priv_fd((int)args->arg0, &ctx);
     if (sock_fd >= 0) {
         ret = lwip_setsockopt(
                 sock_fd,
@@ -1215,6 +1211,7 @@ static int do_setsockopt(syscall_args_t *args)
                 (int)args->arg2,
                 ua_to_ka(args->arg3),
                 (socklen_t)args->arg4);
+        socket_op_end(ctx);
         sys_do_exit();
         return ret;
     } else {
@@ -1223,19 +1220,50 @@ static int do_setsockopt(syscall_args_t *args)
     }
 }
 
+/*
+ * do_getsockname
+ */
 static int do_getsockname(syscall_args_t *args)
 {
     int ret;
     int sock_fd;
+    void *ctx;
 
     sys_do_enter();
 
-    sock_fd = socket_priv_fd((int)args->arg0);
+    sock_fd = socket_priv_fd((int)args->arg0, &ctx);
     if (sock_fd >= 0) {
         ret = lwip_getsockname(
                 sock_fd,
                 ua_to_ka(args->arg1),
                 ua_to_ka(args->arg2));
+        socket_op_end(ctx);
+        sys_do_exit();
+        return ret;
+    } else {
+        sys_do_exit();
+        return -1;
+    }
+}
+
+/*
+ * do_getpeername
+ */
+static int do_getpeername(syscall_args_t *args)
+{
+    int ret;
+    int sock_fd;
+    void *ctx;
+
+    sys_do_enter();
+
+    sock_fd = socket_priv_fd((int)args->arg0, &ctx);
+    if (sock_fd >= 0) {
+        ret = lwip_getpeername(
+                sock_fd,
+                ua_to_ka(args->arg1),
+                ua_to_ka(args->arg2));
+        socket_op_end(ctx);
         sys_do_exit();
         return ret;
     } else {
@@ -1251,18 +1279,104 @@ static int do_shutdown(syscall_args_t *args)
 {
     int ret;
     int sock_fd;
+    void *ctx;
 
     sys_do_enter();
 
-    sock_fd = socket_priv_fd((int)args->arg0);
+    sock_fd = socket_priv_fd((int)args->arg0, &ctx);
     if (sock_fd >= 0) {
         ret = lwip_shutdown(sock_fd, (int)args->arg1);
+        socket_op_end(ctx);
         sys_do_exit();
         return ret;
     } else {
         sys_do_exit();
         return -1;
     }
+}
+
+#include "lwip/netdb.h"
+
+/*
+ * do_gethostbyname
+ */
+static struct hostent *do_gethostbyname(syscall_args_t *args)
+{
+    struct hostent *ret;
+
+    sys_do_enter();
+
+    ret = lwip_gethostbyname(ua_to_ka(args->arg1));
+
+    sys_do_exit();
+
+    return ret;
+}
+
+/*
+ * do_gethostbyname_r
+ */
+static int do_gethostbyname_r(syscall_args_t *args)
+{
+    const char *name;
+    struct hostent *ret;
+    char *buf;
+    size_t buflen;
+    struct hostent **result;
+    int *h_errnop;
+    int _ret;
+
+    sys_do_enter();
+
+    name     = ua_to_ka(args->arg0);
+    ret      = ua_to_ka(args->arg1);
+    buf      = ua_to_ka(args->arg2);
+    buflen   = (size_t)args->arg3;
+    result   = ua_to_ka(args->arg4);
+    h_errnop = ua_to_ka(args->arg5);
+
+    _ret = lwip_gethostbyname_r(name, ret, buf, buflen, result, h_errnop);
+
+    sys_do_exit();
+
+    return _ret;
+}
+
+/*
+ * do_freeaddrinfo
+ */
+static void do_freeaddrinfo(syscall_args_t *args)
+{
+    sys_do_enter();
+
+    lwip_freeaddrinfo(ua_to_ka(args->arg0));
+
+    sys_do_exit();
+}
+
+/*
+ * do_getaddrinfo
+ */
+static int do_getaddrinfo(syscall_args_t *args)
+{
+    int ret;
+    const char *nodename;
+    const char *servname;
+    const struct addrinfo *hints;
+    struct addrinfo **res;
+
+    sys_do_enter();
+
+    nodename = ua_to_ka(args->arg0);
+    servname = ua_to_ka(args->arg1);
+    hints    = ua_to_ka(args->arg2);
+    res      = ua_to_ka(args->arg3);
+
+    ret = lwip_getaddrinfo(nodename, servname, hints, res);
+
+    sys_do_exit();
+
+    return ret;
 }
 #endif
 /*********************************************************************************************************
@@ -1398,6 +1512,11 @@ sys_do_t sys_do_table[] = {
 #define  SYSCALL_SHUTDOWN   70
 #define  SYSCALL_SETSOCKOPT 71
 #define  SYSCALL_GETSOCKNAME 72
+#define  SYSCALL_GETPEERNAME 73
+#define  SYSCALL_GETHOSTBYNAME   74
+#define  SYSCALL_GETHOSTBYNAME_R 75
+#define  SYSCALL_FREEADDRINFO    76
+#define  SYSCALL_GETADDRINFO     77
         (sys_do_t)do_socket,
         (sys_do_t)do_bind,
         (sys_do_t)do_accept,
@@ -1411,6 +1530,11 @@ sys_do_t sys_do_table[] = {
         (sys_do_t)do_shutdown,
         (sys_do_t)do_setsockopt,
         (sys_do_t)do_getsockname,
+        (sys_do_t)do_getpeername,
+        (sys_do_t)do_gethostbyname,
+        (sys_do_t)do_gethostbyname_r,
+        (sys_do_t)do_freeaddrinfo,
+        (sys_do_t)do_getaddrinfo,
 };
 /*********************************************************************************************************
 ** END FILE

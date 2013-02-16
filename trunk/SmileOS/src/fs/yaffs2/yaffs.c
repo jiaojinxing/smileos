@@ -49,8 +49,8 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include "src/yaffs_guts.h"
-#include "src/yaffsfs.h"
-#include "src/yaffscfg.h"
+#include "src/direct/yaffsfs.h"
+#include "src/direct/yaffscfg.h"
 
 void *yaffsfs_Mount(int yaffsVersion,
                     const char *point_name,
@@ -127,16 +127,6 @@ static int __yaffs_open(mount_point_t *point, file_t *file, const char *path, in
     }
 }
 
-static int __yaffs_dup(mount_point_t *point, const file_t *src, file_t *dest)
-{
-    dest->ctx = (void *)yaffs_dup((int)src->ctx);
-    if (dest->ctx == (void *)-1) {
-        return -1;
-    } else {
-        return 0;
-    }
-}
-
 static int __yaffs_close(mount_point_t *point, file_t *file)
 {
     return yaffs_close((int)file->ctx);
@@ -168,13 +158,7 @@ static int __yaffs_fcntl(mount_point_t *point, file_t *file, int cmd, int arg)
             seterrno(EINVAL);
             return -1;
         }
-        if (file->flags & VFS_FILE_TYPE_FILE) {
-            arg        &= ~VFS_FILE_TYPE_DIR;
-            file->flags = arg | VFS_FILE_TYPE_FILE;
-        } else {
-            arg        &= ~VFS_FILE_TYPE_FILE;
-            file->flags = arg | VFS_FILE_TYPE_DIR;
-        }
+        file->flags = arg;
         return 0;
 
     default:
@@ -380,7 +364,6 @@ file_system_t yaffs1 = {
         .truncate   = __yaffs_truncate,
 
         .open       = __yaffs_open,
-        .dup        = __yaffs_dup,
         .read       = __yaffs_read,
         .write      = __yaffs_write,
         .ioctl      = __yaffs_ioctl,
@@ -420,7 +403,6 @@ file_system_t yaffs2 = {
         .truncate   = __yaffs_truncate,
 
         .open       = __yaffs_open,
-        .dup        = __yaffs_dup,
         .read       = __yaffs_read,
         .write      = __yaffs_write,
         .ioctl      = __yaffs_ioctl,

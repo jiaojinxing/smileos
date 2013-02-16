@@ -46,6 +46,8 @@ extern "C" {
 
 #include <syslimits.h>
 #include <sys/types.h>
+#include "kern/ipc.h"
+#include "kern/atomic.h"
 
 struct stat;
 struct dirent;
@@ -83,7 +85,6 @@ typedef struct _select_node {
     int                     select_type;
 } select_node_t;
 
-#include "kern/atomic.h"
 /*
  * select 成员
  */
@@ -151,7 +152,7 @@ struct device {
 };
 
 #define file_to_dev(file)   ((device_t *)(file->ctx))
-#define dev_ref(file)       &((device_t *)(file->ctx))->ref
+#define dev_ref(file)       (&(file_to_dev(file)->ref))
 
 /*
  * 文件系统
@@ -185,7 +186,6 @@ struct file_system {
      * 文件接口
      */
     int     (*open)(mount_point_t *point, file_t *file, const char *path, int oflag, mode_t mode);
-    int     (*dup)(mount_point_t *point, const file_t *src, file_t *dest);
     ssize_t (*read)(mount_point_t *point, file_t *file, void *buf, size_t len);
     ssize_t (*write)(mount_point_t *point, file_t *file, const void *buf, size_t len);
     int     (*ioctl)(mount_point_t *point, file_t *file, int cmd, void *arg);
@@ -227,13 +227,6 @@ struct mount_point {
     struct mount_point     *next;
 };
 
-/*
- * 文件类型
- */
-#define VFS_FILE_TYPE_FREE  (0)
-#define VFS_FILE_TYPE_FILE  (1 << 30)
-#define VFS_FILE_TYPE_DIR   (1 << 31)
-
 #if 0
 #define _FOPEN      (-1)    /* from sys/file.h, kernel use only */
 #define _FREAD      0x0001  /* read enabled */
@@ -259,6 +252,14 @@ struct mount_point {
 #endif
 
 /*
+ * 文件类型
+ */
+#define VFS_FILE_TYPE_FREE  (0)
+#define VFS_FILE_TYPE_FILE  (1 << 0)
+#define VFS_FILE_TYPE_SOCK  ((1 << 1) | VFS_FILE_TYPE_FILE)
+#define VFS_FILE_TYPE_DIR   (1 << 7)
+
+/*
  * 文件
  */
 struct file {
@@ -266,12 +267,11 @@ struct file {
      * 一个文件可以同时被多次打开, ctx 用于维护文件实例信息
      */
     void                   *ctx;
-    void                   *ctx1;
-#define select_node         ctx1
     mount_point_t          *point;
-    int                     type;
+    unsigned char           type;
     int                     flags;
-    struct file            *next;
+    mutex_t                 lock;
+    atomic_t                ref;
 };
 
 /*

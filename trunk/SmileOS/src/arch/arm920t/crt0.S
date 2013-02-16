@@ -42,7 +42,6 @@
 /*********************************************************************************************************
 ** 系统调用
 *********************************************************************************************************/
-#define SYSCALL_SCHEDULE    2
 #define SYSCALL_BAD         4
 #define SYSCALL_NR          100
 /*********************************************************************************************************
@@ -145,8 +144,10 @@ bad_syscall:
 
     LDR     LR, =sys_do_return              /*  系统调用处理返回地址                                    */
 
-    CMP     R1, #SYSCALL_SCHEDULE           /*  schedule 不开中断!                                      */
-    MSRNE   CPSR_c, #(ARM_FIQ_EN + ARM_IRQ_EN + ARM_SVC_MODE)
+    MRS     R2, SPSR
+    BIC     R2, R2, #(ARM_MODE_MASK)
+    ORR     R2, R2, #(ARM_SVC_MODE)
+    MSR     CPSR_c, R2
 
     MOV     PC, R3
 

@@ -1,7 +1,7 @@
 /*
  * YAFFS: Yet another Flash File System . A NAND-flash specific file system.
  *
- * Copyright (C) 2002-2007 Aleph One Ltd.
+ * Copyright (C) 2002-2011 Aleph One Ltd.
  *   for Toby Churchill Ltd and Brightstar Engineering
  *
  * Created by Charles Manning <charles@aleph1.co.uk>
@@ -16,29 +16,26 @@
 #ifndef __YAFFS_LINUX_H__
 #define __YAFFS_LINUX_H__
 
-#include "devextras.h"
 #include "yportenv.h"
 
-struct yaffs_LinuxContext {
-	struct ylist_head	contextList; /* List of these we have mounted */
-	struct yaffs_DeviceStruct *dev;
+struct yaffs_linux_context {
+	struct list_head context_list;	/* List of these we have mounted */
+	struct yaffs_dev *dev;
+	struct super_block *super;
+	struct task_struct *bg_thread;	/* Background thread for this device */
+	int bg_running;
 #ifndef SMILEOS
-	struct super_block * superBlock;
-	struct task_struct *bgThread; /* Background thread for this device */
-	int bgRunning;
-        struct semaphore grossLock;     /* Gross locking semaphore */
+	struct mutex gross_lock;	/* Gross locking mutex*/
 #endif
-	__u8 *spareBuffer;      /* For mtdif2 use. Don't know the size of the buffer
+	u8 *spare_buffer;	/* For mtdif2 use. Don't know the buffer size
 				 * at compile time so we have to allocate it.
 				 */
-	struct mtd_info *mtd;
-#ifndef SMILEOS
-	struct ylist_head searchContexts;
-	void (*putSuperFunc)(struct super_block *sb);
-#endif
+	struct list_head search_contexts;
+	struct task_struct *readdir_process;
+	unsigned mount_id;
 };
 
-#define yaffs_DeviceToContext(dev) ((struct yaffs_LinuxContext *)((dev)->context))
+#define yaffs_dev_to_lc(dev) ((struct yaffs_linux_context *)((dev)->os_context))
+#define yaffs_dev_to_mtd(dev) ((struct mtd_info *)((dev)->driver_context))
 
 #endif
-

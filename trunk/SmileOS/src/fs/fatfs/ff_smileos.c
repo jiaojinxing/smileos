@@ -41,8 +41,8 @@
 #include "kern/types.h"
 #include "kern/kern.h"
 #include "kern/ipc.h"
-#include "ff.h"
-#include "diskio.h"
+#include "src/ff.h"
+#include "src/diskio.h"
 
 /*------------------------------------------------------------------------*/
 /* Create a Synchronization Object                                        */
@@ -56,7 +56,7 @@ int ff_cre_syncobj (    /* TRUE:Function succeeded, FALSE:Could not create due t
     _SYNC_t* sobj       /* Pointer to return the created sync object */
 )
 {
-    return !mutex_new(sobj);
+    return !mutex_create(sobj);
 }
 
 /*------------------------------------------------------------------------*/
@@ -70,7 +70,7 @@ int ff_del_syncobj (    /* TRUE:Function succeeded, FALSE:Could not delete due t
     _SYNC_t sobj        /* Sync object tied to the logical drive to be deleted */
 )
 {
-    return !mutex_free(&sobj);
+    return !mutex_destroy(&sobj);
 }
 
 /*------------------------------------------------------------------------*/

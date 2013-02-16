@@ -105,16 +105,16 @@
 *********************************************************************************************************/
 typedef struct {
     VFS_DEVICE_MEMBERS;
-    uint32_t    own_adc;
     uint32_t    presc;
     uint32_t    delay;
-    uint32_t    count;
     uint32_t    xp;
     uint32_t    yp;
     uint32_t    x;
     uint32_t    y;
-    uint32_t    down_msg_ok;
-    uint32_t    up_msg_ok;
+    bool_t      own_adc;
+    bool_t      down_msg_ok;
+    bool_t      up_msg_ok;
+    uint8_t     count;
 } privinfo_t;
 /*********************************************************************************************************
 ** Function name:           touch_report_event
@@ -124,7 +124,7 @@ typedef struct {
 ** output parameters:       NONE
 ** Returned value:          NONE
 *********************************************************************************************************/
-static void touch_report_event(privinfo_t *priv, uint32_t is_down)
+static void touch_report_event(privinfo_t *priv, bool_t is_down)
 {
     if (is_down) {
         priv->x           = priv->xp;
@@ -149,7 +149,7 @@ static int touch_isr(intno_t interrupt, void *arg)
     privinfo_t *priv = arg;
     uint32_t    data0;
     uint32_t    data1;
-    uint32_t    is_down;
+    bool_t      is_down;
 
     /*
      * 读取 ADC 转换结果
@@ -392,7 +392,7 @@ static ssize_t touch_read(void *ctx, file_t *file, void *buf, size_t len)
     privinfo_t *priv = ctx;
     struct input_event event;
     int ret;
-    uint32_t msg_ok;
+    bool_t msg_ok;
 
     if (len != sizeof(struct input_event)) {
         seterrno(EINVAL);
@@ -414,7 +414,7 @@ static ssize_t touch_read(void *ctx, file_t *file, void *buf, size_t len)
     msg_ok = priv->down_msg_ok || priv->up_msg_ok;
     interrupt_unmask(TOUCH_INT);
 
-    if (!msg_ok) {                                                       /*  如果没有数据可读            */
+    if (!msg_ok) {                                                      /*  如果没有数据可读            */
         ret = select_helper(&priv->select, touch_scan, ctx, file, VFS_FILE_READABLE);
         if (ret <= 0) {
             return ret;

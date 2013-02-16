@@ -54,7 +54,21 @@
 
 extern int ipc_task_init(task_t *task);
 extern int ipc_task_cleanup(task_t *task);
+/*********************************************************************************************************
+** 配置
+*********************************************************************************************************/
+#if CONFIG_VFS_EN > 0
+#define STDIN_FILE                      "/dev/serial0"
+#define STDOUT_FILE                     "/dev/serial0"
+#define STDERR_FILE                     "/dev/serial0"
 
+/*
+ * 注意不要使用下面三个宏, 也不要使用数字, 可以通过 fileno(stdin) 这种方法
+ */
+//#define STDIN_FILENO    0       /* standard input file descriptor */
+//#define STDOUT_FILENO   1       /* standard output file descriptor */
+//#define STDERR_FILENO   2       /* standard error file descriptor */
+#endif
 /*********************************************************************************************************
 ** Function name:           kthread_shell
 ** Descriptions:            内核线程外壳
@@ -65,13 +79,13 @@ extern int ipc_task_cleanup(task_t *task);
 static void kthread_shell(task_t *task)
 {
 #if CONFIG_VFS_EN > 0
-    int fd = open("/dev/serial0", O_RDONLY);                            /*  打开三个标准文件            */
+    int fd = open(STDIN_FILE, O_RDONLY);                                /*  打开三个标准文件            */
     stdin  = fdopen(fd,  "r");
 
-    open("/dev/serial0", O_WRONLY);
+    open(STDOUT_FILE, O_WRONLY);
     stdout = fdopen(fd, "w");
 
-    open("/dev/serial0", O_WRONLY);
+    open(STDERR_FILE, O_WRONLY);
     stderr = fdopen(fd, "w");
 
     putenv("PATH=/");                                                   /*  设置环境变量                */
@@ -90,7 +104,7 @@ static void kthread_shell(task_t *task)
 **                          arg                 内核线程参数
 **                          stack_size          内核线程栈空间大小
 **                          priority            内核线程优先级
-**                          idle                是否为空闲进程
+**                          is_idle             是否为空闲进程
 ** output parameters:       NONE
 ** Returned value:          内核线程 TID
 *********************************************************************************************************/
@@ -99,7 +113,7 @@ static int32_t __kthread_create(const char *name,
                                 void *arg,
                                 size_t stack_size,
                                 uint8_t priority,
-                                bool_t idle)
+                                bool_t is_idle)
 {
     int32_t  tid;
     task_t  *task;
@@ -120,7 +134,7 @@ static int32_t __kthread_create(const char *name,
     /*
      * 分配内核线程控制块
      */
-    if (idle) {
+    if (is_idle) {
         tid  = 0;
         task = tasks;
     } else {
@@ -162,7 +176,7 @@ static int32_t __kthread_create(const char *name,
     task->thread        = func;                                         /*  线程函数                    */
     task->arg           = arg;                                          /*  线程参数                    */
 
-    task->reent         = idle ? reents : &reents[tid - PROCESS_NR + 1];/*  可重入结构指针              */
+    task->reent         = is_idle ? reents : &reents[tid - PROCESS_NR + 1];/*  可重入结构指针           */
 
     _REENT_INIT_PTR(task->reent);                                       /*  初始化可重入结构            */
 
@@ -186,9 +200,11 @@ static int32_t __kthread_create(const char *name,
         goto __exit1;
     }
 
-    if (vfs_process_init(task->pid, tid, 100) < 0) {               /*  初始化任务的文件信息        */
+#if CONFIG_VFS_EN > 0
+    if (vfs_process_init(task->pid, tid, 100) < 0) {                    /*  初始化任务的文件信息        */
         goto __exit2;
     }
+#endif
 
     if (os_started) {                                                   /*  如果内核已经启动            */
         schedule();                                                     /*  重新调度                    */
@@ -198,8 +214,9 @@ static int32_t __kthread_create(const char *name,
 
     return tid;
 
+#if CONFIG_VFS_EN > 0
     __exit2:
-
+#endif
 
     __exit1:
     ipc_task_cleanup(task);
@@ -272,7 +289,9 @@ void task_cleanup(void)
 
     ipc_task_cleanup(task);                                             /*  清理任务的 IPC              */
 
+#if CONFIG_VFS_EN > 0
     vfs_process_cleanup(task->pid, task->tid);                          /*  清理任务的文件信息          */
+#endif
 
     if (task->type == TASK_TYPE_PROCESS) {                              /*  如果任务是进程              */
 
@@ -329,7 +348,11 @@ void task_schedule(void)
     }
 
     max  = -1;
+#if CONFIG_PROCESS_EN > 0
     flag = FALSE;
+#else
+    flag = TRUE;
+#endif
     next = NULL;
 
     while (1) {
@@ -366,6 +389,7 @@ void task_schedule(void)
             break;
         }
 
+#if CONFIG_PROCESS_EN > 0
         for (i = 1, task = tasks + 1; i < PROCESS_NR; i++, task++) {    /*  重置所有就绪进程的剩余时间片*/
             if (task->status == TASK_RUNNING) {
                 task->timeslice = task->priority;
@@ -373,19 +397,14 @@ void task_schedule(void)
         }
 
         flag = TRUE;
+#endif
     }
 
     task = current;
     if (task == next) {                                                 /*  如果不需要切换任务          */
-        current->pid = 0;
         return;
     } else {
         current = next;                                                 /*  改写 current 指针           */
-
-        if (current->pid != 0) {
-            current->pid = 0;
-        }
-
         _impure_ptr = current->reent;                                   /*  改写 _impure_ptr 指针       */
     }
 
@@ -411,15 +430,22 @@ int task_sleep(tick_t ticks)
 {
     reg_t reg;
 
+    if (in_interrupt()) {
+        return -1;
+    }
+
     reg = interrupt_disable();
 
-    current->delay = ticks == 0 ? 1 : ticks;                            /*  休睡 TICK 数                */
+    if (ticks > 0) {
+        current->delay = ticks;                                         /*  休睡 TICK 数                */
 
-    current->status = TASK_SLEEPING;                                    /*  当前任务进入休睡态          */
+        current->status = TASK_SLEEPING;                                /*  当前任务进入休睡态          */
 
-    current->resume_type = TASK_RESUME_UNKNOW;                          /*  设置恢复类型为未知          */
+        current->resume_type = TASK_RESUME_UNKNOW;                      /*  设置恢复类型为未知          */
+    }
 
-    schedule();                                                         /*  任务调度                    */
+
+    schedule();                                                     /*  任务调度                    */
 
     interrupt_resume(reg);
 

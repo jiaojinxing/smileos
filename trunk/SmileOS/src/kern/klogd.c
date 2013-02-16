@@ -42,26 +42,34 @@
 #include "kern/func_config.h"
 #include <stdio.h>
 #include <stdarg.h>
+
+#if CONFIG_VFS_EN > 0
 #include <unistd.h>
+#include <fcntl.h>
+#endif
+
 /*********************************************************************************************************
 ** 配置
 *********************************************************************************************************/
 #define KLOGD_QUEUE_SIZE            (100)
 #define KLOGD_THREAD_STACKSIZE      (16 * KB)
-#define KLOGD_THREAD_PRIO           (20)
-#define KLOGD_LOG_LEVEL             (4)
+#define KLOGD_THREAD_PRIO           (5)
+#define KLOGD_LOG_LEVEL             (7)
+
+#if CONFIG_VFS_EN > 0
 #define KLOGD_LOG_FILE              "/dev/serial0"
+#endif
 /*********************************************************************************************************
-** 内核日志消息队列
+** 内部变量
 *********************************************************************************************************/
-static mqueue_t                     mqueue;
-static uint8_t                      log_level = KLOGD_LOG_LEVEL;
+static mqueue_t             mqueue;                                     /*  内核日志消息队列            */
+static uint8_t              log_level = KLOGD_LOG_LEVEL;                /*  LOG 级别                    */
 /*********************************************************************************************************
 ** 内核日志消息
 *********************************************************************************************************/
 typedef struct {
-    int                             len;
-    char                            buf[LINE_MAX];
+    int                     len;
+    char                    buf[LINE_MAX];
 } msg_t;
 /*********************************************************************************************************
 ** Function name:           klogd
@@ -73,6 +81,13 @@ typedef struct {
 static void klogd(void *arg)
 {
     msg_t *msg;
+    int fd;
+
+#if CONFIG_VFS_EN > 0
+    fclose(stdout);
+    fd = open(KLOGD_LOG_FILE, O_WRONLY);
+    stdout  = fdopen(fd,  "w");
+#endif
 
     while (1) {
         if (mqueue_fetch(&mqueue, (void **)&msg, 0) == 0) {
@@ -81,13 +96,13 @@ static void klogd(void *arg)
             if (msg->buf[msg->len - 1] == '\n' && msg->buf[msg->len - 2] != '\r') {
                 msg->buf[msg->len - 1] = '\r';
                 msg->buf[msg->len]     = '\n';
-                write(fileno(stdout), msg->buf, msg->len + 1);
+                write(fd, msg->buf, msg->len + 1);
             } else {
-                write(fileno(stdout), msg->buf, msg->len);
+                write(fd, msg->buf, msg->len);
             }
 #else
             /*
-             * TODO
+             * TODO: 不依赖于 VFS 的调试通道
              */
 #endif
             kfree(msg);
@@ -103,7 +118,7 @@ static void klogd(void *arg)
 *********************************************************************************************************/
 void klogd_create(void)
 {
-    mqueue_new(&mqueue, KLOGD_QUEUE_SIZE);
+    mqueue_create(&mqueue, KLOGD_QUEUE_SIZE);
 
     kthread_create("klogd", klogd, NULL, KLOGD_THREAD_STACKSIZE, KLOGD_THREAD_PRIO);
 }

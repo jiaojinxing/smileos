@@ -42,12 +42,12 @@
 /*********************************************************************************************************
 ** 配置
 *********************************************************************************************************/
-#define INTERRUPT_NR                (32)                                /*  中断向量数目, 如果大于请修改*/
+#define INTERRUPT_NR        (32)                                        /*  中断向量数目, 如果大于请修改*/
 /*********************************************************************************************************
-** 全局变量
+** 内部变量
 *********************************************************************************************************/
-static isr_t  isr_table[INTERRUPT_NR];                                  /*  中断服务程序表              */
-static void  *isr_arg_table[INTERRUPT_NR];                              /*  中断服务程序参数表          */
+static isr_t                isr_table[INTERRUPT_NR];                    /*  中断服务程序表              */
+static void                *isr_arg_table[INTERRUPT_NR];                /*  中断服务程序参数表          */
 /*********************************************************************************************************
 ** Function name:           interrupt_enter
 ** Descriptions:            进入中断
@@ -62,7 +62,7 @@ void interrupt_enter(void)
     reg = interrupt_disable();
 
     if (interrupt_nest == 255u) {
-        printk(KERN_ERR"os error: interrupt_nest == 255u at %s %d\n", __func__, __LINE__);
+        printk(KERN_EMERG"%s: interrupt_nest == 255u\n", __func__);
         interrupt_resume(reg);
         return;
     }
@@ -85,15 +85,17 @@ void interrupt_exit(void)
     reg = interrupt_disable();
 
     if (interrupt_nest == 0u) {
-        printk(KERN_ERR"os error: interrupt_nest == 0u at %s %d\n", __func__, __LINE__);
+        printk(KERN_EMERG"%s: interrupt_nest == 0u\n", __func__);
         interrupt_resume(reg);
         return;
     }
 
     interrupt_nest--;                                                   /*  中断嵌套层次减一            */
+
     if (interrupt_nest == 0) {                                          /*  如果已经完全退出了中断      */
         schedule();                                                     /*  任务调度                    */
     }
+
     interrupt_resume(reg);
 }
 /*********************************************************************************************************
@@ -105,8 +107,8 @@ void interrupt_exit(void)
 *********************************************************************************************************/
 bool_t in_interrupt(void)
 {
-    bool_t   ret;
-    reg_t    reg;
+    bool_t ret;
+    reg_t  reg;
 
     reg = interrupt_disable();
 
@@ -117,8 +119,77 @@ bool_t in_interrupt(void)
     return ret;
 }
 /*********************************************************************************************************
+** Function name:           interrupt_install
+** Descriptions:            安装中断服务程序
+** input parameters:        interrupt           中断号
+**                          new_isr             新的中断服务程序
+**                          arg                 中断服务程序参数
+** output parameters:       old_isr             旧的中断服务程序
+** Returned value:          0 OR -1
+*********************************************************************************************************/
+int interrupt_install(intno_t interrupt, isr_t new_isr, isr_t *old_isr, void *arg)
+{
+    reg_t reg;
+
+    if (interrupt >= INTERRUPT_NR) {
+        printk(KERN_ERR"%s: interrupt %d >= INTERRUPT_NR\n", __func__, interrupt);
+        return -1;
+    }
+
+    reg = interrupt_disable();
+
+    if (old_isr != NULL) {
+        *old_isr = isr_table[interrupt];
+    }
+
+    if (new_isr != NULL) {
+        isr_table[interrupt]     = new_isr;
+        isr_arg_table[interrupt] = arg;
+    } else {
+        isr_table[interrupt]     = (isr_t)isr_invaild;
+    }
+
+    interrupt_resume(reg);
+
+    return 0;
+}
+/*********************************************************************************************************
+** Function name:           interrupt_exec
+** Descriptions:            执行中断服务程序
+** input parameters:        interrupt           中断号
+** output parameters:       NONE
+** Returned value:          0 OR -1
+*********************************************************************************************************/
+int interrupt_exec(intno_t interrupt)
+{
+    reg_t reg;
+    isr_t isr;
+    void *arg;
+
+    if (interrupt >= INTERRUPT_NR) {
+        printk(KERN_ERR"%s: interrupt %d >= INTERRUPT_NR\n", __func__, interrupt);
+        return -1;
+    }
+
+    reg = interrupt_disable();
+
+    isr = isr_table[interrupt];
+    arg = isr_arg_table[interrupt];
+
+    interrupt_resume(reg);
+
+    if (isr == NULL) {
+        printk(KERN_ERR"%s: interrupt %d service routine invaild\n", __func__, interrupt);
+        return -1;
+    }
+
+    isr(interrupt, arg);
+
+    return 0;
+}
+/*********************************************************************************************************
 ** Function name:           isr_invaild
-** Descriptions:            无效中断服务程序
+** Descriptions:            无效的中断服务程序
 ** input parameters:        interrupt           中断号
 **                          arg                 参数
 ** output parameters:       NONE
@@ -126,45 +197,9 @@ bool_t in_interrupt(void)
 *********************************************************************************************************/
 int isr_invaild(intno_t interrupt, void *arg)
 {
-    printk(KERN_ERR"os error: interrupt %d invaild at %s %d\n", interrupt, __func__, __LINE__);
+    printk(KERN_ERR"%s: interrupt %d service routine invaild\n", __func__, interrupt);
 
     return -1;
-}
-/*********************************************************************************************************
-** Function name:           interrupt_install
-** Descriptions:            安装中断服务程序
-** input parameters:        interrupt           中断号
-**                          new_isr             新的中断服务程序
-**                          arg                 中断服务程序参数
-** output parameters:       old_isr             旧的中断服务程序
-** Returned value:          NONE
-*********************************************************************************************************/
-int interrupt_install(intno_t interrupt, isr_t new_isr, isr_t *old_isr, void *arg)
-{
-    reg_t reg;
-
-    if (interrupt < INTERRUPT_NR) {
-
-        reg = interrupt_disable();
-
-        if (old_isr != NULL) {
-            *old_isr = isr_table[interrupt];
-        }
-
-        if (new_isr != NULL) {
-            isr_table[interrupt]     = new_isr;
-            isr_arg_table[interrupt] = arg;
-        } else {
-            isr_table[interrupt]     = (isr_t)isr_invaild;
-        }
-
-        interrupt_resume(reg);
-
-        return 0;
-    } else {
-        printk(KERN_ERR"os error: interrupt %d > INTERRUPT_NR at %s %d\n", interrupt, __func__, __LINE__);
-        return -1;
-    }
 }
 /*********************************************************************************************************
 ** Function name:           interrupt_init
@@ -180,33 +215,6 @@ void interrupt_init(void)
     for (i = 0; i < INTERRUPT_NR; i++) {                                /*  初始化中断服务程序及其参数表*/
         isr_table[i]     = (isr_t)isr_invaild;
         isr_arg_table[i] = NULL;
-    }
-}
-/*********************************************************************************************************
-** Function name:           interrupt_exec
-** Descriptions:            执行中断服务程序
-** input parameters:        interrupt           中断号
-** output parameters:       NONE
-** Returned value:          NONE
-*********************************************************************************************************/
-void interrupt_exec(intno_t interrupt)
-{
-    reg_t reg;
-    isr_t isr;
-    void *arg;
-
-    if (interrupt < INTERRUPT_NR) {
-
-        reg = interrupt_disable();
-
-        isr = isr_table[interrupt];
-        arg = isr_arg_table[interrupt];
-
-        interrupt_resume(reg);
-
-        if (isr != NULL) {
-            isr(interrupt, arg);
-        }
     }
 }
 /*********************************************************************************************************

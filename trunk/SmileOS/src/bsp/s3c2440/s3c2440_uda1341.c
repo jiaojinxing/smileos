@@ -53,7 +53,7 @@
 typedef struct dma_job {
     struct dma_job  *prev;                                              /*  前一个 DMA 工作             */
     struct dma_job  *next;                                              /*  后一个 DMA 工作             */
-    uint32_t         len;                                               /*  数据的长度                  */
+    size_t           len;                                               /*  数据的长度                  */
     uint8_t          buf[1];                                            /*  数据                        */
 } dma_job_t;
 /*********************************************************************************************************
@@ -62,10 +62,10 @@ typedef struct dma_job {
 typedef struct {
     VFS_DEVICE_MEMBERS;
     dma_job_t       queue;
-    uint32_t        bps;
-    uint32_t        channels;
-    uint32_t        fs;
     sem_t           done;
+    uint32_t        fs;
+    uint8_t         bps;
+    uint8_t         channels;
 } privinfo_t;
 /*********************************************************************************************************
 ** 音频输出队列大小配置
@@ -104,7 +104,7 @@ static int l3bus_init(void)
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-static int l3bus_write(uint8_t data, uint8_t addr_mode)
+static int l3bus_write(uint8_t data, bool_t addr_mode)
 {
     int i, j;
 
@@ -203,7 +203,7 @@ static int iis_init(void)
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-static int iis_config(uint32_t channels, uint32_t bps, uint32_t fs)
+static int iis_config(uint8_t channels, uint8_t bps, uint32_t fs)
 {
     uint32_t tmp;
 
@@ -368,7 +368,7 @@ static int audio_open(void *ctx, file_t *file, int oflag, mode_t mode)
         priv->bps      = 16;
         priv->fs       = 44100;
 
-        sem_new(&priv->done, 0);
+        sem_create(&priv->done, 0);
 
         iis_config(priv->channels, priv->bps, priv->fs);
 
@@ -401,7 +401,9 @@ static void audio_wait_done(privinfo_t *priv)
         interrupt_unmask(AUDIO_DMA_INT);
 
         /*
-         * 假如在这里发生了中断, 调用了 sem_sync, 由于 sem_wait 是超时的, 所以不会有问题
+         * 假如在这里发生了中断, 调用了 sem_sync, 则 sem_wait 有可能永远休眠,
+         *
+         * 所以 sem_wait 必须是超时的, 才不会有问题
          */
 
         sem_wait(&priv->done, 10);
@@ -486,7 +488,7 @@ static int audio_close(void *ctx, file_t *file)
 
     interrupt_mask(AUDIO_DMA_INT);
 
-    sem_free(&priv->done);
+    sem_destroy(&priv->done);
 
     atomic_dec(dev_ref(file));
 
@@ -509,7 +511,7 @@ static ssize_t audio_write(void *ctx, file_t *file, const void *buf, size_t len)
     privinfo_t *priv = ctx;
     dma_job_t  *job;
     int         ret;
-    uint32_t    queue_len;
+    size_t      queue_len;
 
     if (priv == NULL) {
         seterrno(EINVAL);

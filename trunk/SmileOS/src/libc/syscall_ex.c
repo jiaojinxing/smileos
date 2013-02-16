@@ -107,6 +107,25 @@ int poll(struct pollfd fds[], nfds_t nfds, int timeout)
     nfds_t i;
     int    n;
     int    ret;
+    struct timeval tv;
+
+    if (fds == NULL && nfds != 0) {
+        return -1;
+    }
+
+    if (fds != NULL && nfds == 0) {
+        return -1;
+    }
+
+    if (nfds == 0 && fds == NULL) {
+        if (timeout >= 0) {
+            tv.tv_sec  = timeout / 1000;
+            tv.tv_usec = 1000 * (timeout % 1000);
+            return select(0, NULL, NULL, NULL, &tv);
+        } else {
+            return -1;
+        }
+    }
 
     FD_ZERO(&rfds);
     FD_ZERO(&wfds);
@@ -136,14 +155,12 @@ int poll(struct pollfd fds[], nfds_t nfds, int timeout)
     }
 
     if (n == -1) {
-        return 0;
+        return -1;
     }
 
     if (timeout < 0) {
         ret = select(n + 1, &rfds, &wfds, &efds, NULL);
     } else {
-        struct timeval tv;
-
         tv.tv_sec  = timeout / 1000;
         tv.tv_usec = 1000 * (timeout % 1000);
         ret = select(n + 1, &rfds, &wfds, &efds, &tv);

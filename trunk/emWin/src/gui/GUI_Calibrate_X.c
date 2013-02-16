@@ -11,9 +11,9 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/select.h>
-#include <drv/input.h>
-#include <drv/fb.h>
-#include "./font.h"
+#include <drivers/input.h>
+#include <drivers/fb.h>
+#include "font.h"
 /*********************************************************************************************************
 ** FrameBuffer Ïà¹Øº¯Êý
 *********************************************************************************************************/

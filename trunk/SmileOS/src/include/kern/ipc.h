@@ -59,13 +59,13 @@ typedef struct mqueue *     mqueue_t;
 ** 互斥量
 *********************************************************************************************************/
 /*********************************************************************************************************
-** Function name:           mutex_new
+** Function name:           mutex_create
 ** Descriptions:            创建一个新的互斥量
 ** input parameters:        NONE
 ** output parameters:       mutex               互斥量
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-int mutex_new(mutex_t *mutex);
+int mutex_create(mutex_t *mutex);
 /*********************************************************************************************************
 ** Function name:           mutex_trylock
 ** Descriptions:            尝试对互斥量进行加锁
@@ -100,13 +100,13 @@ int mutex_unlock(mutex_t *mutex);
 *********************************************************************************************************/
 int mutex_abort(mutex_t *mutex);
 /*********************************************************************************************************
-** Function name:           mutex_free
+** Function name:           mutex_destroy
 ** Descriptions:            删除互斥量
 ** input parameters:        mutex               互斥量
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-int mutex_free(mutex_t *mutex);
+int mutex_destroy(mutex_t *mutex);
 /*********************************************************************************************************
 ** Function name:           mutex_valid
 ** Descriptions:            判断互斥量是否有效
@@ -128,13 +128,13 @@ int mutex_set_valid(mutex_t *mutex, bool_t valid);
 ** 信号量
 *********************************************************************************************************/
 /*********************************************************************************************************
-** Function name:           sem_new
+** Function name:           sem_create
 ** Descriptions:            创建一个新的信号量
 ** input parameters:        count               信号初始计数
 ** output parameters:       sem                 信号量
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-int sem_new(sem_t *sem, uint32_t count);
+int sem_create(sem_t *sem, uint32_t count);
 /*********************************************************************************************************
 ** Function name:           sem_trywait
 ** Descriptions:            尝试获得信号量
@@ -180,13 +180,13 @@ int sem_sync(sem_t *sem);
 *********************************************************************************************************/
 int sem_abort(sem_t *sem);
 /*********************************************************************************************************
-** Function name:           sem_free
+** Function name:           sem_destroy
 ** Descriptions:            删除信号量
 ** input parameters:        sem                 信号量
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-int sem_free(sem_t *sem);
+int sem_destroy(sem_t *sem);
 /*********************************************************************************************************
 ** Function name:           sem_valid
 ** Descriptions:            判断信号量是否有效
@@ -208,13 +208,13 @@ int sem_set_valid(sem_t *sem, bool_t valid);
 ** 消息队列
 *********************************************************************************************************/
 /*********************************************************************************************************
-** Function name:           mqueue_new
+** Function name:           mqueue_create
 ** Descriptions:            创建一个新的消息队列
 ** input parameters:        size                消息队列的大小
 ** output parameters:       mqueue              消息队列
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-int mqueue_new(mqueue_t *mqueue, uint32_t size);
+int mqueue_create(mqueue_t *mqueue, uint32_t size);
 /*********************************************************************************************************
 ** Function name:           mqueue_trypost
 ** Descriptions:            尝试投递消息到消息队列
@@ -292,13 +292,13 @@ int mqueue_abort_post(mqueue_t *mqueue);
 *********************************************************************************************************/
 int mqueue_abort(mqueue_t *mqueue);
 /*********************************************************************************************************
-** Function name:           mqueue_free
+** Function name:           mqueue_destroy
 ** Descriptions:            删除消息队列
 ** input parameters:        mqueue              消息队列
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-int mqueue_free(mqueue_t *mqueue);
+int mqueue_destroy(mqueue_t *mqueue);
 /*********************************************************************************************************
 ** Function name:           mqueue_valid
 ** Descriptions:            判断消息队列是否有效

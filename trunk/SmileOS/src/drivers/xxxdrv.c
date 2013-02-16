@@ -19,7 +19,7 @@
 ** Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 **
 **--------------------------------------------------------------------------------------------------------
-** File name:               xxx.c
+** File name:               xxxdrv.c
 ** Last modified Date:      2012-4-6
 ** Last Version:            1.0.0
 ** Descriptions:            设备驱动模板

@@ -49,9 +49,9 @@
 *********************************************************************************************************/
 typedef struct {
     VFS_DEVICE_MEMBERS;
-    int                 start;                          /* Start block we're allowed to use             */
-    int                 end;                            /* End block we're allowed to use               */
-    int                 reserved;                       /* We want this tuneable so that we can reduce  */
+    long                start;                          /* Start block we're allowed to use             */
+    long                end;                            /* End block we're allowed to use               */
+    long                reserved;                       /* We want this tuneable so that we can reduce  */
     struct mtd_info    *mtd;
 } privinfo_t;
 
@@ -120,7 +120,7 @@ static int mtdblock_fstat(void *ctx, file_t *file, struct stat *buf)
     buf->st_blksize   = priv->mtd->erasesize;
     buf->st_size      = buf->st_blocks * buf->st_blksize;
 
-    buf->st_spare1    = (uint32_t)priv->mtd;
+    buf->st_spare1    = (long)priv->mtd;
     buf->st_spare2    = priv->reserved;
     buf->st_spare4[0] = priv->start;
     buf->st_spare4[1] = priv->end;
@@ -170,7 +170,7 @@ static driver_t mtdblock_drv = {
 *********************************************************************************************************/
 int mtdblock_init(void)
 {
-    mutex_new(&mtd_lock);
+    mutex_create(&mtd_lock);
 
     return driver_install(&mtdblock_drv);
 }
@@ -185,7 +185,11 @@ int mtdblock_init(void)
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-int mtdblock_create(const char *path, uint32_t mtd_no, uint32_t start, uint32_t end, uint32_t reserved)
+int mtdblock_create(const char *path,
+                    long mtd_no,
+                    long start,
+                    long end,
+                    long reserved)
 {
     privinfo_t *priv;
 
@@ -207,7 +211,6 @@ int mtdblock_create(const char *path, uint32_t mtd_no, uint32_t start, uint32_t 
         mutex_unlock(&mtd_lock);
 
         if (priv->mtd == NULL) {
-
             kfree(priv);
             seterrno(EINVAL);
             return -1;

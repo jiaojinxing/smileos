@@ -44,6 +44,29 @@
 extern "C" {
 #endif
 
+#include "lwip/netdb.h"
+
+/*
+ * http://pubs.opengroup.org/onlinepubs/009695399/functions/gethostbyname.html
+ */
+struct hostent *gethostbyname(const char *name);
+
+int gethostbyname_r(const char *name, struct hostent *ret, char *buf,
+                size_t buflen, struct hostent **result, int *h_errnop);
+
+/*
+ * http://pubs.opengroup.org/onlinepubs/009604499/functions/getaddrinfo.html
+ */
+void freeaddrinfo(struct addrinfo *ai);
+
+/*
+ * http://pubs.opengroup.org/onlinepubs/009604499/functions/getaddrinfo.html
+ */
+int getaddrinfo(const char *nodename,
+       const char *servname,
+       const struct addrinfo *hints,
+       struct addrinfo **res);
+
 #ifdef __cplusplus
 }
 #endif

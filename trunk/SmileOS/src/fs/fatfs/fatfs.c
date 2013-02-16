@@ -48,7 +48,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include "ff.h"
+#include "src/ff.h"
 
 /*
  * Ë½ÓÐÐÅÏ¢
@@ -180,28 +180,6 @@ static int fatfs_open(mount_point_t *point, file_t *file, const char *path, int 
     }
 }
 
-static int fatfs_dup(mount_point_t *point, const file_t *src, file_t *dest)
-{
-    privinfo_t *priv;
-
-    if (src->flags & FWRITE) {
-        seterrno(EACCES);
-        return -1;
-    }
-
-    priv = kmalloc(sizeof(privinfo_t), GFP_KERNEL);
-    if (priv != NULL) {
-        dest->ctx = priv;
-        memcpy(dest->ctx, src->ctx, sizeof(privinfo_t));
-        extern int fatfs_file_sem_lock(FATFS *fs, int id);
-        fatfs_file_sem_lock(point->ctx, priv->file.lockid);
-        return 0;
-    } else {
-        seterrno(ENOMEM);
-        return -1;
-    }
-}
-
 static int fatfs_close(mount_point_t *point, file_t *file)
 {
     privinfo_t *priv = file->ctx;
@@ -298,13 +276,7 @@ static int fatfs_fcntl(mount_point_t *point, file_t *file, int cmd, int arg)
             seterrno(EINVAL);
             return -1;
         }
-        if (file->flags & VFS_FILE_TYPE_FILE) {
-            arg        &= ~VFS_FILE_TYPE_DIR;
-            file->flags = arg | VFS_FILE_TYPE_FILE;
-        } else {
-            arg        &= ~VFS_FILE_TYPE_FILE;
-            file->flags = arg | VFS_FILE_TYPE_DIR;
-        }
+        file->flags = arg;
         return 0;
 
     default:
@@ -800,7 +772,6 @@ file_system_t fatfs = {
         .truncate   = fatfs_truncate,
 
         .open       = fatfs_open,
-        .dup        = fatfs_dup,
         .read       = fatfs_read,
         .write      = fatfs_write,
         .ioctl      = fatfs_ioctl,

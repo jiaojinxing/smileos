@@ -57,10 +57,11 @@ void vmm_init(void)
 ** output parameters:       NONE
 ** Returned value:          NONE
 *********************************************************************************************************/
-//void arch_mmu_init(void)
-//{
-//
-//}
+__attribute__ ((weak)) void arch_mmu_init(void);
+void arch_mmu_init(void)
+{
+
+}
 /*********************************************************************************************************
 ** Function name:           ua_to_ka
 ** Descriptions:            将进程空间的虚拟地址转换为内核可以处理的虚拟地址

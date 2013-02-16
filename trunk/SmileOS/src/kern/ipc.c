@@ -134,13 +134,13 @@ struct mutex {
     task_t     *owner;                                                  /*  拥有者                      */
 };
 /*********************************************************************************************************
-** Function name:           mutex_new
+** Function name:           mutex_create
 ** Descriptions:            创建一个新的互斥量
 ** input parameters:        NONE
 ** output parameters:       mutex               互斥量
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-int mutex_new(mutex_t *mutex)
+int mutex_create(mutex_t *mutex)
 {
     struct mutex *m;
 
@@ -226,7 +226,7 @@ int mutex_lock(mutex_t *mutex, tick_t timeout)
             } else if (m->owner == current) {
                 m->lock++;
             } else {
-                printk(KERN_EMERG"%s: %s lock mutex, %s wait it, lock level=%d\n", __func__, m->owner->name, current->name, m->lock);
+                printk(KERN_DEBUG"%s: %s lock mutex, %s wait it, lock level=%d\n", __func__, m->owner->name, current->name, m->lock);
                 if (timeout != 0) {
                     wait_event_timeout(m->wait_list, resume_type, timeout, tick);
                 } else {
@@ -281,22 +281,15 @@ int mutex_unlock(mutex_t *mutex)
                         m->owner = NULL;
                         task = m->wait_list;
                         if (task) {
+                            printk(KERN_DEBUG"%s: %s unlock mutex, %s get it\n", __func__, current->name, task->name);
                             resume_task(task, m->wait_list, TASK_RESUME_MUTEX_COME);
                         }
                     }
                     interrupt_resume(reg);
                     return 0;
-                } else {
-                    printk(KERN_EMERG"%s: mutex error1\n", __func__);
                 }
-            } else {
-                printk(KERN_EMERG"%s: mutex error2\n", __func__);
             }
-        } else {
-            printk(KERN_EMERG"%s: mutex error3\n", __func__);
         }
-    } else {
-        printk(KERN_EMERG"%s: mutex error4\n", __func__);
     }
     interrupt_resume(reg);
     return -1;
@@ -329,13 +322,13 @@ int mutex_abort(mutex_t *mutex)
     return -1;
 }
 /*********************************************************************************************************
-** Function name:           mutex_free
+** Function name:           mutex_destroy
 ** Descriptions:            删除互斥量
 ** input parameters:        mutex               互斥量
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-int mutex_free(mutex_t *mutex)
+int mutex_destroy(mutex_t *mutex)
 {
     struct mutex *m;
     reg_t reg;
@@ -415,13 +408,13 @@ struct sem {
     task_t     *wait_list;                                              /*  等待链表                    */
 };
 /*********************************************************************************************************
-** Function name:           sem_new
+** Function name:           sem_create
 ** Descriptions:            创建一个新的信号量
 ** input parameters:        count               信号初始计数
 ** output parameters:       sem                 信号量
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-int sem_new(sem_t *sem, uint32_t count)
+int sem_create(sem_t *sem, uint32_t count)
 {
     struct sem *s;
 
@@ -608,13 +601,13 @@ int sem_abort(sem_t *sem)
     return -1;
 }
 /*********************************************************************************************************
-** Function name:           sem_free
+** Function name:           sem_destroy
 ** Descriptions:            删除信号量
 ** input parameters:        sem                 信号量
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-int sem_free(sem_t *sem)
+int sem_destroy(sem_t *sem)
 {
     struct sem *s;
     reg_t reg;
@@ -699,13 +692,13 @@ struct mqueue {
     void       *msg[1];                                                 /*  消息队列                    */
 };
 /*********************************************************************************************************
-** Function name:           mqueue_new
+** Function name:           mqueue_create
 ** Descriptions:            创建一个新的消息队列
 ** input parameters:        size                消息队列的大小
 ** output parameters:       mqueue              消息队列
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-int mqueue_new(mqueue_t *mqueue, size_t size)
+int mqueue_create(mqueue_t *mqueue, size_t size)
 {
     struct mqueue *q;
 
@@ -1077,13 +1070,13 @@ int mqueue_abort(mqueue_t *mqueue)
     return -1;
 }
 /*********************************************************************************************************
-** Function name:           mqueue_free
+** Function name:           mqueue_destroy
 ** Descriptions:            删除消息队列
 ** input parameters:        mqueue              消息队列
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-int mqueue_free(mqueue_t *mqueue)
+int mqueue_destroy(mqueue_t *mqueue)
 {
     struct mqueue *q;
     reg_t reg;

@@ -44,12 +44,10 @@
 extern "C" {
 #endif
 
-#define MAX_INPUT                   (256)                               /*  输入的最大长度              */
-
 #define LINE_MAX                    (256)                               /*  行的最大长度                */
 
 #undef  ARG_MAX
-#define ARG_MAX                     (32)                                /*  参数最多的个数              */
+#define ARG_MAX                     (16)                                /*  参数最多的个数              */
 
 #define OPEN_MAX                    (20)                                /*  最多能打开的文件数          */
 
@@ -57,6 +55,8 @@ extern "C" {
 
 #undef  PATH_MAX
 #define PATH_MAX                    (256)                               /*  路径的最大长度              */
+
+#define PATH_BUF_LEN                (PATH_MAX)                          /*  路径缓冲的最大长度          */
 
 #ifdef __cplusplus
 }

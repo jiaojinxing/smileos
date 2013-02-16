@@ -94,12 +94,14 @@ extern void printk(const char *fmt, ...);
 /*********************************************************************************************************
 ** 临界区保护
 *********************************************************************************************************/
+#ifdef SMILEOS_KERNEL
 typedef reg_t    sys_prot_t;
 extern  reg_t    interrupt_disable(void);
 extern  void     interrupt_resume(register reg_t reg);
 
 #define sys_arch_protect            interrupt_disable
 #define sys_arch_unprotect          interrupt_resume
+#endif
 /*********************************************************************************************************
 ** OS 数据类型
 *********************************************************************************************************/
@@ -111,6 +113,8 @@ typedef struct mutex  *             sys_mutex_t;
 typedef struct sem    *             sys_sem_t;
 typedef struct mqueue *             sys_mbox_t;
 typedef int32_t                     sys_thread_t;
+
+#define socklen_t                   int
 
 #define SYS_MUTEX_NULL              0ul
 #define SYS_SEM_NULL                0ul
@@ -128,9 +132,6 @@ typedef int32_t                     sys_thread_t;
 *********************************************************************************************************/
 #define PERF_START
 #define PERF_STOP(x)
-
-
-#define socklen_t int
 
 #endif                                                                  /*  LWIP_FIX_H_                 */
 /*********************************************************************************************************
