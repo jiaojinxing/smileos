@@ -54,9 +54,11 @@
 #define MMU_TBL_SIZE        (16 * KB)                                   /*  MMU 转换表大小              */
 #define MMU_TBL_BASE        (PAGE_TBL_BASE - MMU_TBL_SIZE)              /*  MMU 转换表基址              */
 
+#ifndef __ASSEMBLER__
 extern unsigned char __bss_end;
 #define KERN_HEAP_BASE      &__bss_end
 #define KERN_HEAP_SIZE      ((long)((char *)MMU_TBL_BASE - (char *)KERN_HEAP_BASE))
+#endif
 
 #define FB_MEM_SIZE         (4 * MB)                                    /*  中断内存大小                */
 #define FB_MEM_BASE         (KERN_MEM_BASE + KERN_MEM_SIZE)             /*  中断内存基址                */

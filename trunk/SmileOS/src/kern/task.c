@@ -280,7 +280,7 @@ int32_t kthread_create(const char *name,
 *********************************************************************************************************/
 int task_cleanup(int32_t tid)
 {
-    reg_t reg;
+    reg_t   reg;
     task_t *task;
 
     if (tid <= 0 || tid >= TASK_NR) {
@@ -338,12 +338,12 @@ void task_switch_hook(void)
 *********************************************************************************************************/
 void task_schedule(void)
 {
-    int         i;
-    task_t     *next;
-    int         flag;
-    int32_t     max;
-    task_t     *task;
-    reg_t       reg;
+    int     i;
+    task_t *next;
+    int     flag;
+    int32_t max;
+    task_t *task;
+    reg_t   reg;
 
     reg = interrupt_disable();
 
@@ -469,8 +469,8 @@ int task_sleep(tick_t ticks)
 *********************************************************************************************************/
 int32_t task_getpid(void)
 {
-    int32_t  ret;
-    reg_t    reg;
+    int32_t ret;
+    reg_t   reg;
 
     reg = interrupt_disable();
 
@@ -489,8 +489,8 @@ int32_t task_getpid(void)
 *********************************************************************************************************/
 int32_t gettid(void)
 {
-    int32_t  ret;
-    reg_t    reg;
+    int32_t ret;
+    reg_t   reg;
 
     reg = interrupt_disable();
 

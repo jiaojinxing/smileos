@@ -745,8 +745,39 @@ int vfs_unselect_file(int fd, int flags)
 file_t *vfs_get_file(int fd)
 {
     pid_t pid = getpid();
+    mount_point_t  *point;
+    file_t         *file;
+    vfs_info_t     *info;
 
-    vfs_file_begin(pid);
+    mutex_lock(&info_lock[pid], 0);
+
+    info = infos[pid];
+
+    if (fd < 0 || fd >= info->open_max) {                               /*  文件描述符合法性判断        */
+        mutex_unlock(&info_lock[pid]);
+        seterrno(EBADFD);
+        return NULL;
+    }
+
+    file = info->files[fd];                                             /*  获得文件结构                */
+
+    mutex_unlock(&info_lock[pid]);
+
+    if (file == NULL) {                                                 /*  如果文件未打开              */
+        seterrno(EBADFD);
+        return NULL;
+    }
+
+    if (mutex_lock(&file->lock, 0) < 0) {
+        seterrno(EBADFD);
+        return NULL;
+    }
+
+    if (!(file->type & VFS_FILE_TYPE_FILE)) {                           /*  如果类型不是文件 　　       */
+        mutex_unlock(&file->lock);
+        seterrno(EFTYPE);
+        return NULL;
+    }
 
     return file;
 }

@@ -837,10 +837,11 @@ static void dm9000_recv(struct netif *netif)
 
         if (rx_byte > DM9000_PKT_RDY) {
             LWIP_DEBUGF(NETIF_DEBUG, ("dm9000_recv: rx error\n"));
-#if 0
+#if 1
             dm9000_io_write(DM9000_RCR, 0x00);                          /*  Stop Device                 */
             dm9000_io_write(DM9000_ISR, IMR_PAR);                       /*  Stop INT request            */
 #endif
+            dm9000_init(netif);
             goto __exit;
         }
 

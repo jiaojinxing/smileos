@@ -52,7 +52,7 @@
 /*********************************************************************************************************
 ** х╚╬ж╠Да©
 *********************************************************************************************************/
-unsigned int    yaffs_trace_mask = YAFFS_TRACE_ALWAYS | YAFFS_TRACE_OS; /*  TARCE фа╠нязбК              */
+unsigned int    yaffs_trace_mask = YAFFS_TRACE_ALWAYS | YAFFS_TRACE_OS | YAFFS_TRACE_CHECKPOINT | YAFFS_TRACE_ERASE; /*  TARCE фа╠нязбК              */
 
 static mutex_t  yaffs_lock;                                             /*  кЬ                          */
 
