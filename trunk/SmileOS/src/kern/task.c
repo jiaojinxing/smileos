@@ -115,9 +115,9 @@ static int32_t __kthread_create(const char *name,
                                 uint8_t priority,
                                 bool_t is_idle)
 {
-    int32_t  tid;
-    task_t  *task;
-    reg_t    reg;
+    int32_t tid;
+    task_t *task;
+    reg_t   reg;
 
     if (func == NULL) {
         return -1;
@@ -273,19 +273,27 @@ int32_t kthread_create(const char *name,
 }
 /*********************************************************************************************************
 ** Function name:           task_cleanup
-** Descriptions:            清理当前任务
-** input parameters:        NONE
+** Descriptions:            清理任务
+** input parameters:        tid                 任务 ID
 ** output parameters:       NONE
-** Returned value:          NONE
+** Returned value:          0 OR -1
 *********************************************************************************************************/
-void task_cleanup(void)
+int task_cleanup(int32_t tid)
 {
     reg_t reg;
     task_t *task;
 
+    if (tid <= 0 || tid >= TASK_NR) {
+        return -1;
+    }
+
     reg  = interrupt_disable();
 
-    task = current;
+    task = &tasks[tid];
+    if (task->status == TASK_UNALLOCATE) {
+        interrupt_resume(reg);
+        return -1;
+    }
 
     ipc_task_cleanup(task);                                             /*  清理任务的 IPC              */
 
@@ -304,6 +312,8 @@ void task_cleanup(void)
     schedule();                                                         /*  重新进行任务调度            */
 
     interrupt_resume(reg);
+
+    return 0;
 }
 /*********************************************************************************************************
 ** Function name:           task_switch_hook
@@ -361,7 +371,7 @@ void task_schedule(void)
          */
         for (i = PROCESS_NR, task = tasks + PROCESS_NR; i < TASK_NR; i++, task++) {
             if ((task->status == TASK_RUNNING)
-                    && (max < (int32_t)task->priority)) {
+                && (max < (int32_t)task->priority)) {
                 max  = (int32_t)task->priority;                         /*  用优先级来做竞争            */
                 next = task;
             }
@@ -374,7 +384,7 @@ void task_schedule(void)
 #if CONFIG_PROCESS_EN > 0
         for (i = 1, task = tasks + 1; i < PROCESS_NR; i++, task++) {    /*  进程 0 不参与竞争           */
             if ((task->status == TASK_RUNNING)
-                    && (max < (int32_t)task->timeslice)) {
+                && (max < (int32_t)task->timeslice)) {
                 max  = (int32_t)task->timeslice;                        /*  用剩余时间片来做竞争        */
                 next = task;
             }
@@ -444,8 +454,7 @@ int task_sleep(tick_t ticks)
         current->resume_type = TASK_RESUME_UNKNOW;                      /*  设置恢复类型为未知          */
     }
 
-
-    schedule();                                                     /*  任务调度                    */
+    schedule();                                                         /*  任务调度                    */
 
     interrupt_resume(reg);
 

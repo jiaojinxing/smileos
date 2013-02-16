@@ -447,7 +447,7 @@
 #define UDP_DEBUG                       (LWIP_DBG_OFF | 0)
 #define IP_DEBUG                        (LWIP_DBG_OFF | 0)
 #define SOCKETS_DEBUG                   (LWIP_DBG_OFF | 0)
-#define NETIF_DEBUG                     (LWIP_DBG_ON  | 0)
+#define NETIF_DEBUG                     (LWIP_DBG_ON  | 1)
 #else
 #define LWIP_DBG_MIN_LEVEL              LWIP_DBG_LEVEL_SEVERE           /*  不允许主动打印信息          */
 #endif                                                                  /*  LWIP_CFG_DEBUG > 0          */
