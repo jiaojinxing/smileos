@@ -25,8 +25,15 @@ SECTIONS
     *(.glue_7t)
   } > RAM
 
+  . = ALIGN(4);
+  .ARM.extab : { *(.ARM.extab* .gnu.linkonce.armextab.*) } > RAM
+
+  . = ALIGN(4);
+  .text.unlikely : { *(.text.unlikely*) } > RAM
+
+  . = ALIGN(4);
   __exidx_start = .;
-  .ARM.exidx : { *(.ARM.exidx* .gnu.linkonce.armexidx.*) }
+  .ARM.exidx : { *(.ARM.exidx* .gnu.linkonce.armexidx.*) } > RAM
   __exidx_end = .;
 
   . = ALIGN(4);
@@ -41,13 +48,6 @@ SECTIONS
   } > RAM
 
   . = ALIGN(4);
-  __smileos_cmd_start = . ;
-  PROVIDE (__smileos_cmd_start = .);
-  .smileos_cmd : { *(.smileos_cmd) }
-  __smileos_cmd_end = . ;
-  PROVIDE (__smileos_cmd_end = .);
-
-  . = ALIGN(4);
   _edata = . ;
   PROVIDE (edata = .);
 
@@ -58,7 +58,6 @@ SECTIONS
     __bss_start__ = . ;
     *(.bss)
     *(COMMON)
-    . = ALIGN(4);
   } > RAM
 
   . = ALIGN(4);

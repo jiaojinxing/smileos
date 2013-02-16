@@ -51,10 +51,10 @@ typedef struct {
     VFS_DEVICE_MEMBERS;
     struct fb_var_screeninfo var;
     struct fb_fix_screeninfo fix;
-    void                    *framebuffer;                               /*  视频帧缓冲                  */
+    void                    *framebuffer;                               /*  视频帧缓冲区                */
     int  (*video_config)(const struct fb_var_screeninfo *, const struct fb_fix_screeninfo *, void *);
     int  (*video_check) (struct fb_var_screeninfo *);
-    void (*video_onoff)(int on);
+    void (*video_onoff)(bool_t on);
 } privinfo_t;
 /*********************************************************************************************************
 ** Function name:           fb_open
@@ -76,9 +76,9 @@ static int fb_open(void *ctx, file_t *file, int oflag, mode_t mode)
     }
 
     if (atomic_inc_return(dev_ref(file)) == 1) {
-        priv->video_onoff(0);
+        priv->video_onoff(FALSE);
         priv->video_config(&priv->var, &priv->fix, priv->framebuffer);
-        priv->video_onoff(1);
+        priv->video_onoff(TRUE);
     }
     return 0;
 }
@@ -116,9 +116,9 @@ static int fb_ioctl(void *ctx, file_t *file, int cmd, void *arg)
     case FBIOSET_VSCREENINFO:
         if (priv->video_check(ua_to_ka(arg)) == 0) {
             memcpy(&priv->var, ua_to_ka(arg), sizeof(priv->var));
-            priv->video_onoff(0);
+            priv->video_onoff(FALSE);
             priv->video_config(&priv->var, &priv->fix, priv->framebuffer);
-            priv->video_onoff(1);
+            priv->video_onoff(TRUE);
             ret = 0;
         } else {
             seterrno(EINVAL);
@@ -149,7 +149,7 @@ static int fb_close(void *ctx, file_t *file)
     }
 
     if (atomic_dec_return(dev_ref(file)) == 0) {
-        priv->video_onoff(0);
+        priv->video_onoff(FALSE);
     }
     return 0;
 }
@@ -190,8 +190,6 @@ static int fb_unlink(void *ctx)
         return -1;
     }
 
-    kfree(priv->framebuffer);
-
     kfree(priv);
 
     return 0;
@@ -222,7 +220,7 @@ int fb_init(void)
 ** Function name:           fb_create
 ** Descriptions:            创建 FrameBuffer 设备
 ** input parameters:        path                FrameBuffer 设备路径
-**                          framebuffer         显存地址
+**                          framebuffer         视频帧缓冲区
 **                          var                 可变屏幕信息
 **                          video_config        视频模式配置函数
 **                          video_check         视频模式检查修正函数
@@ -235,13 +233,14 @@ int fb_create(const char *path,
               const struct fb_var_screeninfo *var,
               int  (*video_config)(const struct fb_var_screeninfo *, const struct fb_fix_screeninfo *, void *),
               int  (*video_check)(struct fb_var_screeninfo *),
-              void (*video_onoff)(int))
+              void (*video_onoff)(bool_t))
 {
     struct fb_fix_screeninfo *fix;
     privinfo_t *priv;
 
     if (path == NULL ||
         var  == NULL ||
+        framebuffer  == NULL ||
         video_config == NULL ||
         video_check  == NULL ||
         video_onoff  == NULL) {
@@ -277,7 +276,6 @@ int fb_create(const char *path,
         fix->ywrapstep      = 0;
 
         if (device_create(path, "fb", priv) < 0) {
-            kfree(priv->framebuffer);
             kfree(priv);
             return -1;
         }

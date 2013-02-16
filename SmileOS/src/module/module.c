@@ -79,7 +79,7 @@ static mutex_t      mod_mgr_lock;                                       /*  模块
 ** input parameters:        name                符号名
 **                          type                符号类型
 ** output parameters:       NONE
-** Returned value:          符号地址
+** Returned value:          符号地址 OR NULL
 *********************************************************************************************************/
 void *symbol_lookup(const char *name, uint8_t type);
 /*********************************************************************************************************
@@ -103,7 +103,7 @@ int module_init(void)
 
     mod_list = NULL;                                                    /*  初始化模块链表              */
 
-    return mutex_new(&mod_mgr_lock);                                    /*  创建模块管理锁              */
+    return mutex_create(&mod_mgr_lock);                                 /*  创建模块管理锁              */
 }
 /*********************************************************************************************************
 ** Function name:           module_install
@@ -310,22 +310,22 @@ static int module_probe(module_t *mod)
         (ehdr->e_ident[EI_MAG1] != ELFMAG1) ||
         (ehdr->e_ident[EI_MAG2] != ELFMAG2) ||
         (ehdr->e_ident[EI_MAG3] != ELFMAG3)) {
-        printk("ehdr->e_ident[EI_MAG0] != ELFMAG0\n");
+        printk(KERN_ERR"%s: ehdr->e_ident[EI_MAG0] != ELFMAG0\n", __func__);
         return -1;
     }
 
     if (ehdr->e_ident[EI_CLASS] != ELFCLASS32) {                        /*  文件类型: 必须是 32 位目标  */
-        printk("ehdr->e_ident[EI_CLASS] != ELFCLASS32\n");
+        printk(KERN_ERR"%s: ehdr->e_ident[EI_CLASS] != ELFCLASS32\n", __func__);
         return -1;
     }
 
     if (ehdr->e_ident[EI_DATA] != ELFDATA2LSB) {                        /*  数据编码方式: 必须是小端    */
-        printk("ehdr->e_ident[EI_DATA] != ELFDATA2LSB\n");
+        printk(KERN_ERR"%s: ehdr->e_ident[EI_DATA] != ELFDATA2LSB\n", __func__);
         return -1;
     }
 
     if (ehdr->e_ident[EI_VERSION] != EV_CURRENT) {                      /*  ELF 首部版本号              */
-        printk("ehdr->e_ident[EI_VERSION] != EV_CURRENT\n");
+        printk(KERN_ERR"%s: ehdr->e_ident[EI_VERSION] != EV_CURRENT\n", __func__);
         return -1;
     }
 
@@ -333,13 +333,13 @@ static int module_probe(module_t *mod)
      * 目标文件类型: 必须是 可重定位文件 或 共享目标文件
      */
     if (ehdr->e_type != ET_REL && ehdr->e_type != ET_DYN) {
-        printk("ehdr->e_type != ET_REL && ehdr->e_type != ET_DYN\n");
+        printk(KERN_ERR"%s: ehdr->e_type != ET_REL && ehdr->e_type != ET_DYN\n", __func__);
         return -1;
     }
 
 #if 0
     if (ehdr->e_machine != EM_ARM) {                                    /*  体系结构类型: 必须是 ARM    */
-        printk("ehdr->e_machine != EM_ARM\n");
+        printk(KERN_ERR"%s: ehdr->e_machine != EM_ARM\n", __func__);
         return -1;
     }
 #endif
@@ -348,17 +348,17 @@ static int module_probe(module_t *mod)
      * 保证不存在程序首部表格相关的东西
      */
     if (ehdr->e_phoff != 0) {
-        printk("ehdr->e_phoff != 0\n");
+        printk(KERN_ERR"%s: ehdr->e_phoff != 0\n", __func__);
         return -1;
     }
 
     if (ehdr->e_phentsize != 0) {
-        printk("ehdr->e_phentsize != 0\n");
+        printk(KERN_ERR"%s: ehdr->e_phentsize != 0\n", __func__);
         return -1;
     }
 
     if (ehdr->e_phnum != 0) {
-        printk("ehdr->e_phnum != 0\n");
+        printk(KERN_ERR"%s: ehdr->e_phnum != 0\n", __func__);
         return -1;
     }
 
@@ -366,17 +366,17 @@ static int module_probe(module_t *mod)
      * 保证存在节区首部表格相关的东西
      */
     if (ehdr->e_shoff == 0) {
-        printk("ehdr->e_shoff == 0\n");
+        printk(KERN_ERR"%s: ehdr->e_shoff == 0\n", __func__);
         return -1;
     }
 
     if (ehdr->e_shentsize == 0) {
-        printk("ehdr->e_shentsize == 0\n");
+        printk(KERN_ERR"%s: ehdr->e_shentsize == 0\n", __func__);
         return -1;
     }
 
     if (ehdr->e_shnum == 0) {
-        printk("ehdr->e_shnum == 0\n");
+        printk(KERN_ERR"%s: ehdr->e_shnum == 0\n", __func__);
         return -1;
     }
 
@@ -518,7 +518,7 @@ static int module_reloc(module_t *mod)
                         addr = (Elf32_Addr)symbol_lookup(sym->st_name + strtab,
                                 ELF32_ST_TYPE(sym->st_info) == STT_FUNC ? SYMBOL_TEXT : SYMBOL_DATA);
                         if (addr == 0) {
-                            printk("symbol %s no found\n", sym->st_name + strtab);
+                            printk(KERN_ERR"%s: symbol %s no found\n", __func__, sym->st_name + strtab);
                             goto error1;
                         } else {
                             /*
@@ -632,31 +632,31 @@ int module_load(const char *path, int argc, char **argv)
     module_t    *mod;
 
     if (path == NULL) {
-        printk("%s: path = NULL\n", __func__);
+        printk(KERN_ERR"%s: path = NULL\n", __func__);
         return -1;
     }
 
     ret = access(path, R_OK);                                           /*  看下这个文件能否访问        */
     if (ret < 0) {
-        printk("%s: failed to access %s\n", __func__, path);
+        printk(KERN_ERR"%s: failed to access %s\n", __func__, path);
         return -1;
     }
 
     fd = open(path, O_RDONLY);                                          /*  打开文件                    */
     if (fd < 0) {
-        printk("%s: failed to open %s\n", __func__, path);
+        printk(KERN_ERR"%s: failed to open %s\n", __func__, path);
         return -1;
     }
 
     ret = fstat(fd, &st);                                               /*  获得文件的大小              */
     if (ret < 0 || st.st_size == 0) {
-        printk("%s: failed to stat %s or %s is empty\n", __func__, path, path);
+        printk(KERN_ERR"%s: failed to stat %s or %s is empty\n", __func__, path, path);
         return -1;
     }
 
     mod = module_alloc(path, st.st_size);                               /*  分配模块                    */
     if (mod == NULL) {
-        printk("%s: failed to alloc module %s, %d byte\n", __func__, path, st.st_size);
+        printk(KERN_ERR"%s: failed to alloc module %s, %d byte\n", __func__, path, st.st_size);
         close(fd);
         return -1;
     }
@@ -666,7 +666,7 @@ int module_load(const char *path, int argc, char **argv)
     while (st.st_size - len > 0) {
         ret = read(fd, buf, st.st_size - len);
         if (ret < 0) {
-            printk("%s: failed to read %s %d byte at %d\n", __func__, path, st.st_size - len, len);
+            printk(KERN_ERR"%s: failed to read module %s %d byte at %d\n", __func__, path, st.st_size - len, len);
             module_free(mod);
             close(fd);
             return -1;
@@ -679,14 +679,14 @@ int module_load(const char *path, int argc, char **argv)
 
     ret = module_probe(mod);                                            /*  探测模块                    */
     if (ret < 0) {
-        printk("%s: %s is not a module file\n", __func__, path);
+        printk(KERN_ERR"%s: %s is not a module file\n", __func__, path);
         module_free(mod);
         return -1;
     }
 
     ret = module_reloc(mod);                                            /*  重定位模块                  */
     if (ret < 0) {
-        printk("%s: failed to reloc %s\n", __func__, path);
+        printk(KERN_ERR"%s: failed to reloc module %s\n", __func__, path);
         module_free(mod);
         return -1;
     }
@@ -694,6 +694,7 @@ int module_load(const char *path, int argc, char **argv)
     mutex_lock(&mod_mgr_lock, 0);
 
     if (module_lookup_by_key(mod->key) != NULL) {                       /*  看下模块是否已经存在      　*/
+        printk(KERN_ERR"%s: module %s exist\n", __func__, path);
         mutex_unlock(&mod_mgr_lock);
         module_free(mod);
         return -1;
@@ -705,7 +706,7 @@ int module_load(const char *path, int argc, char **argv)
 
     ret = module_exec(mod, "module_init", argc, argv);                  /*  执行模块初始化函数          */
     if (ret < 0) {
-        printk("%s: failed to exec %s module_init\n", __func__, path);
+        printk(KERN_ERR"%s: failed to exec module %s's module_init\n", __func__, path);
         module_remove(mod);
         module_free(mod);
         return -1;
@@ -726,24 +727,24 @@ int module_unload(const char *path)
     int ret;
 
     if (path == NULL) {
-        printk("%s: path = NULL\n", __func__);
+        printk(KERN_ERR"%s: path = NULL\n", __func__);
         return -1;
     }
 
     mod = module_lookup(path);
     if (mod == NULL) {
-        printk("%s: module %s no found\n", __func__, path);
+        printk(KERN_ERR"%s: module %s no found\n", __func__, path);
         return -1;
     }
 
     ret = module_exec(mod, "module_exit", 0, NULL);
     if (ret < 0) {
-        printk("%s: failed to exec %s module_exit\n", __func__, path);
+        printk(KERN_ERR"%s: failed to exec module %s's module_exit\n", __func__, path);
         return -1;
     }
 
     if (atomic_read(&mod->ref) != 0) {
-        printk("%s: module %s is busy\n", __func__, path);
+        printk(KERN_ERR"%s: module %s is busy\n", __func__, path);
         return -1;
     }
 

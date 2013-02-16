@@ -54,7 +54,7 @@ extern "C" {
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-int vfs_mount(const char *point_name, const char *dev_name, const char *fs_name);
+int mount(const char *point_name, const char *dev_name, const char *fs_name);
 
 #ifdef __cplusplus
 }

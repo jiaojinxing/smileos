@@ -95,7 +95,11 @@ int bsp_drivers_install(void)
 *********************************************************************************************************/
 int bsp_devices_create(void)
 {
-    extern int mtdblock_create(const char *path, uint32_t mtd_no, uint32_t start, uint32_t end, uint32_t reserved);
+    extern int mtdblock_create(const char *path,
+                               long mtd_no,
+                               long start,
+                               long end,
+                               long reserved);
 
     mtdblock_create("/dev/mtdblock0", 0, 64,  255,  2);
 

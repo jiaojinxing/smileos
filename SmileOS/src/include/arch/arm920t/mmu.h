@@ -51,9 +51,9 @@ extern "C" {
 /*
  * Domain
  */
-#define DOMAIN_NO_ACCESS        0
-#define DOMAIN_CHECK            1
-#define DOMAIN_NO_CHECK         3
+#define DOMAIN_NO_ACCESS        0ul
+#define DOMAIN_CHECK            1ul
+#define DOMAIN_NO_CHECK         3ul
 
 #define DOMAIN0_ATTR            DOMAIN_NO_ACCESS
 #define DOMAIN1_ATTR            DOMAIN_CHECK
@@ -74,22 +74,22 @@ extern "C" {
 /*
  * AP
  */
-#define AP_ROM                  0
-#define AP_USER_NO              1
-#define AP_USER_R               2
-#define AP_USER_RW              3
+#define AP_ROM                  0ul
+#define AP_USER_NO              1ul
+#define AP_USER_R               2ul
+#define AP_USER_RW              3ul
 
 /*
  * Cache
  */
-#define CACHE_EN                1
-#define CACHE_NO                0
+#define CACHE_EN                1ul
+#define CACHE_NO                0ul
 
 /*
  * Write Buffer
  */
-#define BUFFER_EN               1
-#define BUFFER_NO               0
+#define BUFFER_EN               1ul
+#define BUFFER_NO               0ul
 
 /*
  * ∂Œ Ù–‘

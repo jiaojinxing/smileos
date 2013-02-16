@@ -2,7 +2,7 @@
 注意：
 
 ----------------------------------------------------------------------------------------------------------
-c 库的静态库文件 libc.a 是被我裁减过的，我也懒得编译重新编译一次 newlib 了，操作如下：
+c 库的静态库文件 libc.a 是被我裁减过的，我也懒得重新编译一次 newlib 了，操作如下：
 
 ar -x libc.a
 
@@ -23,7 +23,7 @@ ar rs libc.a *.o
 
 ar 在 yagarto\arm-none-eabi\bin 目录下有！
 
-编译程序前请加上链接库搜索路径："${workspace_loc:/${ProjName}/src/runtime/arch/arm920}" ，
+编译程序前请加上链接库搜索路径："${workspace_loc:/${ProjName}/src/runtime/arch/arm920t}" ，
 
 优先使用被我裁减过的 libc.a 静态库文件！
 

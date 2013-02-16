@@ -44,24 +44,24 @@
 *********************************************************************************************************/
 #define WQ_MIN_SIZE                 (100)
 #define WQ_THREAD_STACKSIZE         (16 * KB)
-#define WQ_THREAD_PRIO              (20)
+#define WQ_THREAD_DEFAULT_PRIO      (90)
 /*********************************************************************************************************
 ** 工作消息
 *********************************************************************************************************/
 typedef struct {
-    void                          (*func)(void *);
-    void                           *arg;
+    void                  (*func)(void *);
+    void                   *arg;
 } msg_t;
 /*********************************************************************************************************
 ** 工作队列
 *********************************************************************************************************/
 struct workqueue {
-    mqueue_t                        wq;
+    mqueue_t                wq;
 };
 /*********************************************************************************************************
-** 缺省的工作队列
+** 内部变量
 *********************************************************************************************************/
-static  workqueue_t                 default_wq;
+static  workqueue_t         default_wq;                                 /*  缺省的工作队列              */
 /*********************************************************************************************************
 ** Function name:           workqueue_thread
 ** Descriptions:            工作队列线程
@@ -88,10 +88,11 @@ static void workqueue_thread(void *arg)
 ** Descriptions:            创建工作队列
 ** input parameters:        name                名字
 **                          size                大小
+**                          priority            优先级
 ** output parameters:       wq                  工作队列
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-int workqueue_create(workqueue_t *wq, const char *name, size_t size)
+int workqueue_create(workqueue_t *wq, const char *name, size_t size, uint8_t priority)
 {
     if (wq == NULL) {
         return -1;
@@ -101,12 +102,16 @@ int workqueue_create(workqueue_t *wq, const char *name, size_t size)
         size = WQ_MIN_SIZE;
     }
 
-    if (mqueue_new((mqueue_t *)wq, size) < 0) {
+    if (mqueue_create((mqueue_t *)wq, size) < 0) {
         return -1;
     }
 
-    if (kthread_create(name, workqueue_thread, wq, WQ_THREAD_STACKSIZE, WQ_THREAD_PRIO) < 0) {
-        mqueue_free((mqueue_t *)wq);
+    if (priority == 0) {
+        priority = WQ_THREAD_DEFAULT_PRIO;
+    }
+
+    if (kthread_create(name, workqueue_thread, wq, WQ_THREAD_STACKSIZE, priority) < 0) {
+        mqueue_destroy((mqueue_t *)wq);
         return -1;
     }
 
@@ -157,7 +162,7 @@ int workqueue_add(workqueue_t *wq, void (*func)(void *), void *arg)
 *********************************************************************************************************/
 void default_workqueue_create(void)
 {
-    workqueue_create(&default_wq, "default_wq", 0);
+    workqueue_create(&default_wq, "default_wq", 0, 0);
 }
 /*********************************************************************************************************
 ** END FILE

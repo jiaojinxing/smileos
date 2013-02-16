@@ -51,6 +51,7 @@ struct dirent;
 struct timeval;
 
 #include "vfs/types.h"
+
 /*********************************************************************************************************
 ** 工具函数
 *********************************************************************************************************/
@@ -70,7 +71,7 @@ const char *vfs_path_add_mount_point(const char *path);
 ** output parameters:       path                正常化后的路径
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-int vfs_path_normalization(char path[PATH_MAX], int sprit_end);
+int vfs_path_normalization(char path[PATH_BUF_LEN], int sprit_end);
 /*********************************************************************************************************
 ** 文件操作接口
 *********************************************************************************************************/
@@ -425,6 +426,7 @@ int vfs_init(void);
 ** Descriptions:            初始化进程的文件信息
 ** input parameters:        pid                 进程 ID
 **                          tid                 任务 ID
+**                          open_max            OPEN_MAX
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
@@ -446,6 +448,14 @@ int vfs_process_cleanup(pid_t pid, pid_t tid);
 ** Returned value:          文件结构
 *********************************************************************************************************/
 file_t *vfs_get_file(int fd);
+/*********************************************************************************************************
+** Function name:           vfs_put_file
+** Descriptions:            归还文件结构
+** input parameters:        file                文件结构
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
+void vfs_put_file(file_t *file);
 
 #ifdef __cplusplus
 }

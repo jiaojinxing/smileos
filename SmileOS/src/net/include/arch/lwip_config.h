@@ -45,8 +45,6 @@
 #define __KB                            (1024)
 #define __MB                            (1024 * __KB)
 
-//#define MEM_LIBC_MALLOC                 (1)
-//#define MEMP_MEM_MALLOC                 (1)
 /*********************************************************************************************************
 *                                           lwIP 设置
 *
@@ -98,9 +96,9 @@
 #define LWIP_CFG_PPPOE                  0                               /*  lwIP pppoe 支持             */
 #define LWIP_CFG_NUM_PPP                2                               /*  lwIP ppp 最大会话数         */
 
-#define LWIP_CFG_TCP_PCB                20                              /*  允许同时的 TCP 连接数       */
-#define LWIP_CFG_UDP_PCB                10                              /*  允许同时的 UDP 数量         */
-#define LWIP_CFG_RAW_PCB                0                               /*  允许同时的 RAW 数量         */
+#define LWIP_CFG_TCP_PCB                60                              /*  允许同时的 TCP 连接数       */
+#define LWIP_CFG_UDP_PCB                50                              /*  允许同时的 UDP 数量         */
+#define LWIP_CFG_RAW_PCB                15                              /*  允许同时的 RAW 数量         */
 
 #define LWIP_CFG_DHCP                   0                               /*  是否允许 DHCP 协议          */
 #define LWIP_CFG_AUTOIP                 0                               /*  自动分析获取 IP (一般不需要)*/
@@ -116,13 +114,13 @@
 *********************************************************************************************************/
 
 #define LWIP_CFG_IGMP                   0                               /*  是否使能 IGMP               */
-#define LWIP_CFG_IGMP_GROUP             10                              /*  可加入的 IGMP 组最大数量    */
+#define LWIP_CFG_IGMP_GROUP             20                              /*  可加入的 IGMP 组最大数量    */
 
 /*********************************************************************************************************
 **                                          lwIP 以太网设置
 *********************************************************************************************************/
 
-#define LWIP_CFG_ARP_TABLE_SIZE         10                              /*  以太网接口 ARP 表大小       */
+#define LWIP_CFG_ARP_TABLE_SIZE         30                              /*  以太网接口 ARP 表大小       */
 #define LWIP_CFG_ARP_TRUST_IP_MAC       0                               /*  接收 IP 包是否更新 ARP      */
                                                                         /*  windows 不信任, 建议为 0    */
 #define LWIP_CFG_ETH_PAD_SIZE           2                               /*  以太包头填充对齐数量        */
@@ -245,7 +243,7 @@
 ** RAW
 *********************************************************************************************************/
 
-#define LWIP_RAW                        0
+#define LWIP_RAW                        1
 
 /*********************************************************************************************************
 ** SNMP
@@ -270,7 +268,7 @@
 ** DNS
 *********************************************************************************************************/
 
-#define LWIP_DNS                        0
+#define LWIP_DNS                        1
 
 #ifndef MEMP_NUM_NETDB
 #define MEMP_NUM_NETDB                  10

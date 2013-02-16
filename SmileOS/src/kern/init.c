@@ -83,6 +83,12 @@ static void tcpip_init_done(void *arg)
     netif_set_default(&ethernetif);
 
     netif_set_up(&ethernetif);
+
+    void ftpd_init(void);
+    ftpd_init();
+
+    void netio_init(void);
+    netio_init();
 }
 #endif
 /*********************************************************************************************************
@@ -108,18 +114,6 @@ static void init(void *arg)
 #if CONFIG_NET_EN > 0
     tcpip_init(tcpip_init_done, NULL);
 #endif
-
-    int ftpdInit
-        (
-        int     port,
-        int     stackSize
-        );
-
-    ftpdInit(0, 0);
-
-    while (1) {
-        sleep(10);
-    }
 }
 /*********************************************************************************************************
 ** Function name:           sys_drivers_install

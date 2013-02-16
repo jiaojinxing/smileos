@@ -70,15 +70,14 @@
 /*
  * 任务恢复类型
  */
-#define TASK_RESUME_UNKNOW          (0)                                   /*  未知                        */
-#define TASK_RESUME_MUTEX_COME      (1)                            /*  互斥量到达                  */
-#define TASK_RESUME_SEM_COME        (2)                            /*  信号到达                    */
-#define TASK_RESUME_SELECT_EVENT    (7)                            /*  select 事件                 */
-#define TASK_RESUME_MSG_COME        (4)                            /*  消息到达                    */
-#define TASK_RESUME_MSG_OUT         (5)                            /*  消息被读取                  */
-
-#define TASK_RESUME_TIMEOUT         (6)                            /*  超时                        */
-#define TASK_RESUME_INTERRUPT       (7)                            /*  等待被中断                  */
+#define TASK_RESUME_UNKNOW          (0)                                 /*  未知                        */
+#define TASK_RESUME_MUTEX_COME      (1)                                 /*  互斥量到达                  */
+#define TASK_RESUME_SEM_COME        (2)                                 /*  信号到达                    */
+#define TASK_RESUME_SELECT_EVENT    (7)                                 /*  select 事件                 */
+#define TASK_RESUME_MSG_COME        (4)                                 /*  消息到达                    */
+#define TASK_RESUME_MSG_OUT         (5)                                 /*  消息被读取                  */
+#define TASK_RESUME_TIMEOUT         (6)                                 /*  超时                        */
+#define TASK_RESUME_INTERRUPT       (7)                                 /*  等待被中断                  */
 
 /*
  * 设置 errno
@@ -159,6 +158,8 @@ typedef struct {
     void *arg8;
     void *arg9;
 } syscall_args_t;
+
+typedef tick_t mseconds_t;
 /*********************************************************************************************************
   内核函数
 *********************************************************************************************************/
@@ -242,6 +243,7 @@ void printk(const char *fmt, ...);
 *********************************************************************************************************/
 void *__kmalloc(const char *func, int line, size_t size, int flags);
 #define GFP_ATOMIC      (0)
+#define GFP_NOFS        (0)
 #define GFP_KERNEL      GFP_ATOMIC
 #define GFP_DMA         (1 << 0)
 #define GFP_SHARE       (1 << 1)
@@ -305,7 +307,7 @@ void interrupt_enter(void);
 void interrupt_exit(void);
 /*********************************************************************************************************
 ** Function name:           isr_invaild
-** Descriptions:            无效中断服务程序
+** Descriptions:            无效的中断服务程序
 ** input parameters:        interrupt           中断号
 **                          arg                 参数
 ** output parameters:       NONE
@@ -319,7 +321,7 @@ int isr_invaild(intno_t interrupt, void *arg);
 **                          new_isr             新的中断服务程序
 **                          arg                 中断服务程序参数
 ** output parameters:       old_isr             旧的中断服务程序
-** Returned value:          NONE
+** Returned value:          0 OR -1
 *********************************************************************************************************/
 int interrupt_install(intno_t interrupt, isr_t new_isr, isr_t *old_isr, void *arg);
 /*********************************************************************************************************
@@ -327,9 +329,9 @@ int interrupt_install(intno_t interrupt, isr_t new_isr, isr_t *old_isr, void *ar
 ** Descriptions:            执行中断服务程序
 ** input parameters:        interrupt           中断号
 ** output parameters:       NONE
-** Returned value:          NONE
+** Returned value:          0 OR -1
 *********************************************************************************************************/
-void interrupt_exec(intno_t interrupt);
+int interrupt_exec(intno_t interrupt);
 /*********************************************************************************************************
 ** Function name:           msleep
 ** Descriptions:            休眠指定的毫秒数
@@ -340,7 +342,7 @@ void interrupt_exec(intno_t interrupt);
 ** 因为系统滴嗒是毫秒级, 所以提供该系统调用
 **
 *********************************************************************************************************/
-int msleep(unsigned int mseconds);
+int msleep(mseconds_t mseconds);
 /*********************************************************************************************************
 ** Function name:           gettid
 ** Descriptions:            获得当前任务的 TID
@@ -369,10 +371,11 @@ typedef struct workqueue workqueue_t;
 ** Descriptions:            创建工作队列
 ** input parameters:        name                名字
 **                          size                大小
+**                          priority            优先级
 ** output parameters:       wq                  工作队列
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-int workqueue_create(workqueue_t *wq, const char *name, size_t size);
+int workqueue_create(workqueue_t *wq, const char *name, size_t size, uint8_t priority);
 /*********************************************************************************************************
 ** Function name:           workqueue_add
 ** Descriptions:            增加一个工作
@@ -383,6 +386,38 @@ int workqueue_create(workqueue_t *wq, const char *name, size_t size);
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
 int workqueue_add(workqueue_t *wq, void (*func)(void *), void *arg);
+/*********************************************************************************************************
+** Function name:           ms_to_tick
+** Descriptions:            将毫秒转换成 tick
+** input parameters:        ms                  毫秒
+** output parameters:       NONE
+** Returned value:          tick
+*********************************************************************************************************/
+static inline tick_t ms_to_tick(mseconds_t ms)
+{
+    if (ms != 0) {
+        if (ms <= 1000 / HZ) {
+            ms = 1;
+        } else {
+            ms = ms * HZ / 1000;
+        }
+    }
+    return ms;
+}
+/*********************************************************************************************************
+** Function name:           tick_to_ms
+** Descriptions:            将 tick 转换成毫秒
+** input parameters:        tick                  tick
+** output parameters:       NONE
+** Returned value:          毫秒
+*********************************************************************************************************/
+static inline mseconds_t tick_to_ms(tick_t tick)
+{
+    if (tick != 0) {
+        tick = tick * 1000 / HZ;
+    }
+    return tick;
+}
 
 #include "arch/if.h"
 

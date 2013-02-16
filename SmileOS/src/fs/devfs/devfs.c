@@ -85,22 +85,6 @@ static int devfs_open(mount_point_t *point, file_t *file, const char *path, int 
     return ret;
 }
 
-static int devfs_dup(mount_point_t *point, const file_t *src, file_t *dest)
-{
-    device_t *dev = src->ctx;
-
-    if (dev == NULL) {
-        seterrno(EINVAL);
-        return -1;
-    }
-
-    atomic_inc(&dev->ref);
-
-    dest->ctx = dev;
-
-    return 0;
-}
-
 static ssize_t devfs_read(mount_point_t *point, file_t *file, void *buf, size_t len)
 {
     device_t *dev = file->ctx;
@@ -189,13 +173,7 @@ static int devfs_fcntl(mount_point_t *point, file_t *file, int cmd, int arg)
         return file->flags;
 
     case F_SETFL:
-        if (file->flags & VFS_FILE_TYPE_FILE) {
-            arg        &= ~VFS_FILE_TYPE_DIR;
-            file->flags = arg | VFS_FILE_TYPE_FILE;
-        } else {
-            arg        &= ~VFS_FILE_TYPE_FILE;
-            file->flags = arg | VFS_FILE_TYPE_DIR;
-        }
+        file->flags = arg;
 
         if (dev->drv->fcntl != NULL) {
             return dev->drv->fcntl(dev->ctx, file, cmd, arg);
@@ -618,7 +596,6 @@ file_system_t devfs = {
         .unlink     = devfs_unlink,
 
         .open       = devfs_open,
-        .dup        = devfs_dup,
         .read       = devfs_read,
         .write      = devfs_write,
         .ioctl      = devfs_ioctl,

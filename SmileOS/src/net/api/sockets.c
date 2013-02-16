@@ -81,7 +81,9 @@ struct lwip_sock {
   /** counter of how many threads are waiting for this socket using select */
   int select_waiting;
 
+/*************************************** jiaojinxing1987@gmail.com **************************************/
   void *ctx;
+/********************************************************************************************************/
 };
 
 /** Description for a task waiting in select */
@@ -132,7 +134,8 @@ static struct lwip_sock sockets[NUM_SOCKETS];
 ** Function name:           lwip_socket_set_ctx
 ** Descriptions:            设置 socket 上下文
 ** input parameters:        sock_fd             socket 的私有文件描述符
-** output parameters:       ctx                 上下文
+**                          ctx                 上下文
+** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
 int lwip_socket_set_ctx(int sock_fd, void *ctx)
@@ -1411,7 +1414,7 @@ event_callback(struct netconn *conn, enum netconn_evt evt, u16_t len)
 
       type = 0;
 
-      if ((lastdata != NULL) || (rcvevent > 0)) {
+      if (rcvevent > 0) {
           type |= VFS_FILE_READABLE;
       }
 

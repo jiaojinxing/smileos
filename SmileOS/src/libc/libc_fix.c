@@ -130,9 +130,9 @@ void *_calloc_r(struct _reent *reent, size_t nelem, size_t elsize)
 {
     void *ptr;
 
-    ptr = heap_alloc(&user_heap, __func__, __LINE__, nelem * MEM_ALIGN_SIZE(elsize));
+    ptr = heap_alloc(&user_heap, __func__, __LINE__, nelem * elsize);
     if (ptr != NULL) {
-        memset(ptr, 0, nelem * MEM_ALIGN_SIZE(elsize));
+        memset(ptr, 0, nelem * elsize);
         reent->_errno = 0;
     } else {
         reent->_errno = ENOMEM;
@@ -259,9 +259,9 @@ void *_calloc_r(struct _reent *reent, size_t nelem, size_t elsize)
 {
     void    *ptr;
 
-    ptr = kmalloc(GFP_KERNEL, nelem * MEM_ALIGN_SIZE(elsize));
+    ptr = kmalloc(GFP_KERNEL, nelem * elsize);
     if (ptr != NULL) {
-        memset(ptr, 0, nelem * MEM_ALIGN_SIZE(elsize));
+        memset(ptr, 0, nelem * elsize);
         reent->_errno = 0;
     } else {
         reent->_errno = ENOMEM;

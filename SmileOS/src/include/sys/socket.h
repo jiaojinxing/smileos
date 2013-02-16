@@ -46,34 +46,76 @@ extern "C" {
 
 #include "lwip/sockets.h"
 
+/*
+ * http://pubs.opengroup.org/onlinepubs/009695399/functions/accept.html
+ */
 int accept(int s, struct sockaddr *addr, socklen_t *addrlen);
 
+/*
+ * http://pubs.opengroup.org/onlinepubs/009695399/functions/bind.html
+ */
 int bind(int s, const struct sockaddr *name, socklen_t namelen);
 
+/*
+ * http://pubs.opengroup.org/onlinepubs/009695399/functions/shutdown.html
+ */
 int shutdown(int s, int how);
 
+/*
+ * http://pubs.opengroup.org/onlinepubs/009604499/functions/getpeername.html
+ */
 int getpeername(int s, struct sockaddr *name, socklen_t *namelen);
 
+/*
+ * http://pubs.opengroup.org/onlinepubs/009604499/functions/getsockname.html
+ */
 int getsockname(int s, struct sockaddr *name, socklen_t *namelen);
 
+/*
+ * http://pubs.opengroup.org/onlinepubs/009695399/functions/getsockopt.html
+ */
 int getsockopt(int s, int level, int optname, void *optval, socklen_t *optlen);
 
+/*
+ * http://pubs.opengroup.org/onlinepubs/009695399/functions/setsockopt.html
+ */
 int setsockopt(int s, int level, int optname, const void *optval, socklen_t optlen);
 
+/*
+ * http://pubs.opengroup.org/onlinepubs/009695399/functions/connect.html
+ */
 int connect(int s, const struct sockaddr *name, socklen_t namelen);
 
+/*
+ * http://pubs.opengroup.org/onlinepubs/009695399/functions/listen.html
+ */
 int listen(int s, int backlog);
 
+/*
+ * http://pubs.opengroup.org/onlinepubs/009695399/functions/recv.html
+ */
 int recv(int s, void *mem, size_t len, int flags);
 
+/*
+ * http://pubs.opengroup.org/onlinepubs/009695399/functions/recvfrom.html
+ */
 int recvfrom(int s, void *mem, size_t len, int flags,
              struct sockaddr *from, socklen_t *fromlen);
 
+/*
+ * http://pubs.opengroup.org/onlinepubs/009695399/functions/send.html
+ */
 int send(int s, const void *dataptr, size_t size, int flags);
 
+/*
+ * http://pubs.opengroup.org/onlinepubs/009695399/functions/sendto.html
+ */
 int sendto(int s, const void *dataptr, size_t size, int flags,
            const struct sockaddr *to, socklen_t tolen);
 
+/*
+ * http://pubs.opengroup.org/onlinepubs/009695399/functions/socket.html
+ */
 int socket(int domain, int type, int protocol);
 
 #ifdef SMILEOS_KERNEL
@@ -89,10 +131,18 @@ int socket_attach(int sock_fd);
 ** Function name:           socket_priv_fd
 ** Descriptions:            获得 socket 的私有文件描述符
 ** input parameters:        fd                  IO 系统文件描述符
-** output parameters:       NONE
+** output parameters:       ctx                 上下文
 ** Returned value:          socket 的私有文件描述符
 *********************************************************************************************************/
-int socket_priv_fd(int fd);
+int socket_priv_fd(int fd, void **ctx);
+/*********************************************************************************************************
+** Function name:           socket_op_end
+** Descriptions:            socket 操作结束
+** input parameters:        ctx                 上下文
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
+void socket_op_end(void *ctx);
 #endif
 
 #ifdef __cplusplus

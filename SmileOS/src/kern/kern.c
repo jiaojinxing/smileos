@@ -97,12 +97,12 @@ void kernel_init(void)
 
 #if CONFIG_MODULE_EN > 0
     extern int module_init(void);
-    module_init();
+    module_init();                                                      /*  初始化内核模块子系统        */
 #endif
 
 #if CONFIG_VFS_EN > 0
     extern int vfs_init(void);
-    vfs_init();
+    vfs_init();                                                         /*  初始化虚拟文件系统          */
 #endif
 
     extern void kidle_create(void);
@@ -123,14 +123,12 @@ void kernel_init(void)
 *********************************************************************************************************/
 void kernel_start(void)
 {
-    if (!os_started) {
-
-
-        os_started = TRUE;                                              /*  内核已经启动                */
+    if (os_started) {                                                   /*  内核已经启动                */
+        printk(KERN_ERR"%s: kernel has started\n", __func__);
+    } else {
+        os_started = TRUE;
 
         arch_switch_context_to(NULL, current);
-    } else {
-        printk(KERN_ERR"os error: kernel has started at %s %d\n", __func__, __LINE__);
     }
 }
 /*********************************************************************************************************
@@ -142,9 +140,9 @@ void kernel_start(void)
 *********************************************************************************************************/
 void kernel_timer(void)
 {
-    reg_t    reg;
-    int      i;
-    task_t  *task;
+    reg_t   reg;
+    int     i;
+    task_t *task;
 
     reg = interrupt_disable();
 
@@ -158,7 +156,9 @@ void kernel_timer(void)
 
     for (i = 0, task = tasks; i < TASK_NR; i++, task++) {               /*  遍历所有任务                */
         if (task->status == TASK_SLEEPING) {                            /*  如果任务正在休睡            */
-            task->delay--;                                              /*  任务延时减一                */
+            if (task->delay != 0) {
+                task->delay--;                                          /*  任务延时减一                */
+            }
             if (task->delay == 0) {                                     /*  如果任务延时到期            */
                 task->status      = TASK_RUNNING;                       /*  任务进入就绪态              */
                 task->resume_type = TASK_RESUME_TIMEOUT;                /*  设置任务的恢复类型为超时    */

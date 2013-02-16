@@ -49,6 +49,7 @@ extern "C" {
 #include <unistd.h>
 
 typedef uint32_t                u_int32_t;
+typedef uint8_t                 u8;
 typedef uint16_t                u16;
 typedef uint32_t                u32;
 typedef mem_ptr_t               phys_addr_t;

@@ -84,7 +84,7 @@ static hash_tbl_t *hash_tbl_create(size_t size)
 ** input parameters:        tbl                 哈希表
 **                          key                 键值
 ** output parameters:       NONE
-** Returned value:          节点
+** Returned value:          节点 OR NULL
 *********************************************************************************************************/
 static node_t *hash_tbl_lookup(hash_tbl_t *tbl, uint32_t key)
 {
@@ -134,7 +134,7 @@ static hash_tbl_t *data_symbol_tbl;                                     /*  DATA
 ** input parameters:        name                符号名
 **                          type                符号类型
 ** output parameters:       NONE
-** Returned value:          符号地址
+** Returned value:          符号地址 OR NULL
 *********************************************************************************************************/
 void *symbol_lookup(const char *name, uint8_t type)
 {
@@ -163,11 +163,13 @@ int symbol_init(void)
 
     text_symbol_tbl = hash_tbl_create(127);                             /*  创建 TEXT 段符号表          */
     if (text_symbol_tbl == NULL) {
+        printk(KERN_ERR"%s: failed to create text symbol hash table\n", __func__);
         return -1;
     }
 
     data_symbol_tbl = hash_tbl_create(127);                             /*  创建 DATA 段符号表          */
     if (data_symbol_tbl == NULL) {
+        printk(KERN_ERR"%s: failed to create data symbol hash table\n", __func__);
         return -1;
     }
 
@@ -189,13 +191,14 @@ int symbol_init(void)
 
             if (strcmp(temp->name, symbol->name) == 0) {                /*  符号重复了                　*/
                 continue;
-            } else {                                                    /*  符号冲突了                  */
-                printk("%s: string hash error\n");
+            } else {                                                    /*  字符串哈希错误              */
+                printk(KERN_ERR"%s: string hash error\n", __func__);
                 return -1;
             }
         }
 
         if (hash_tbl_insert(tbl, key, symbol) < 0) {                    /*  将符号加到符号表            */
+            printk(KERN_ERR"%s: failed to insert symbol %s to symbol hash table\n", __func__, symbol->name);
             return -1;
         }
     }

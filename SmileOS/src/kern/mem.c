@@ -42,20 +42,48 @@
 #include "mm/heap.h"
 #include <string.h>
 /*********************************************************************************************************
-** 内核内存堆
+** 内部变量
 *********************************************************************************************************/
-static heap_t       kern_heap;
+/*
+ * 普通内存区, 可 Cache 及 WriteBuffer, 用户态不可读写
+ *
+ * 虚拟地址!=物理地址
+ */
+static heap_t               kern_heap;                                  /*  普通内存堆                  */
 
+/*
+ * DMA 内存区, 不可 Cache 及 WriteBuffer, 用户态不可读写
+ *
+ * 虚拟地址=物理地址
+ */
 #if defined(DMA_MEM_BASE) && DMA_MEM_SIZE > 0
-static heap_t       dma_heap;
+static heap_t               dma_heap;                                   /*  DMA 内存堆                  */
 #endif
 
+/*
+ * HW_SHARE 内存区, 不可 Cache 及 WriteBuffer, 用户态可读写
+ *
+ * HW_SHARE 内存区作为 DMA 内存区的补充, DMA 内存区供硬件 DMA 使用, 所以不可 Cache 及 WriteBuffer
+ *
+ * 但 DMA 内存区不能供应用程序使用, 而 HW_SHARE 内存区则可以
+ *
+ * 像 FrameBuffer 设备驱动可以使用 HW_SHARE 内存区
+ *
+ * 虚拟地址=物理地址
+ */
 #if defined(HW_SHARE_MEM_BASE) && HW_SHARE_MEM_SIZE > 0
-static heap_t       hw_share_heap;
+static heap_t               hw_share_heap;                              /*  硬件共享内存堆              */
 #endif
 
+/*
+ * SW_SHARE 内存区, 可 Cache 及 WriteBuffer, 用户态可读写
+ *
+ * 像共享内存设备驱动可以使用 SW_SHARE 内存区
+ *
+ * SW_SHARE 内存区不必像 HW_SHARE 内存区那样虚拟地址=物理地址
+ */
 #if defined(SW_SHARE_MEM_BASE) && SW_SHARE_MEM_SIZE > 0
-static heap_t       sw_share_heap;
+static heap_t               sw_share_heap;                              /*  软件共享内存堆              */
 #endif
 /*********************************************************************************************************
 ** Function name:           __kmalloc
@@ -170,9 +198,7 @@ void __kfree(const char *func, int line, void *ptr)
 *********************************************************************************************************/
 void kheap_create(void)
 {
-    extern unsigned char __bss_end;
-
-    heap_init(&kern_heap, "kern", &__bss_end, KERN_MEM_TOP - (mem_ptr_t)&__bss_end);
+    heap_init(&kern_heap, "kern", (void *)KERN_HEAP_BASE, KERN_HEAP_SIZE);
 
 #if defined(DMA_MEM_BASE) && DMA_MEM_SIZE > 0
     heap_init(&dma_heap, "dma", (void *)DMA_MEM_BASE, DMA_MEM_SIZE);

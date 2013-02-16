@@ -240,6 +240,21 @@ static int socket_scan(void *ctx, file_t *file, int flags)
 }
 
 /*
+ * 删除 socket
+ */
+static int socket_unlink(void *ctx)
+{
+    privinfo_t *priv = ctx;
+
+    if (priv == NULL) {
+        seterrno(EINVAL);
+        return -1;
+    }
+
+    return 0;
+}
+
+/*
  * socket 驱动
  */
 driver_t socket_drv = {
@@ -251,6 +266,7 @@ driver_t socket_drv = {
         .fcntl    = socket_fcntl,
         .close    = socket_close,
         .fstat    = socket_fstat,
+        .unlink   = socket_unlink,
         .scan     = socket_scan,
         .select   = select_select,
         .unselect = select_unselect,
@@ -296,6 +312,7 @@ int socket_attach(int sock_fd)
     int fd;
     privinfo_t *priv;
     reg_t reg;
+    file_t *file;
 
     priv = kmalloc(sizeof(privinfo_t), GFP_KERNEL);
     if (priv != NULL) {
@@ -321,6 +338,18 @@ int socket_attach(int sock_fd)
             return -1;
         }
 
+        file = vfs_get_file(fd);
+        if (file == NULL) {
+            vfs_close(fd);
+            vfs_unlink(name);
+            interrupt_resume(reg);
+            kfree(priv);
+            return -1;
+        }
+
+        file->type = VFS_FILE_TYPE_SOCK;
+        vfs_put_file(file);
+
         lwip_socket_set_ctx(sock_fd, priv);
 
         interrupt_resume(reg);
@@ -335,10 +364,10 @@ int socket_attach(int sock_fd)
 ** Function name:           socket_priv_fd
 ** Descriptions:            获得 socket 的私有文件描述符
 ** input parameters:        fd                  IO 系统文件描述符
-** output parameters:       NONE
+** output parameters:       ctx                 上下文
 ** Returned value:          socket 的私有文件描述符
 *********************************************************************************************************/
-int socket_priv_fd(int fd)
+int socket_priv_fd(int fd, void **ctx)
 {
     file_t *file;
     device_t *dev;
@@ -347,18 +376,36 @@ int socket_priv_fd(int fd)
 
     file = vfs_get_file(fd);
     if (file != NULL) {
-        dev = file->ctx;
-        if (dev != NULL) {
-            priv = dev->ctx;
-            if (priv != NULL) {
-                sock_fd = priv->sock_fd;
-                seterrno(0);
-                return sock_fd;
+        if (file->type & VFS_FILE_TYPE_SOCK) {
+            dev = file->ctx;
+            if (dev != NULL) {
+                priv = dev->ctx;
+                if (priv != NULL) {
+                    sock_fd = priv->sock_fd;
+                    *ctx = file;
+                    seterrno(0);
+                    return sock_fd;
+                }
             }
         }
+        seterrno(EFTYPE);
     }
-    seterrno(EBADFD);
     return -1;
+}
+/*********************************************************************************************************
+** Function name:           socket_op_end
+** Descriptions:            socket 操作结束
+** input parameters:        ctx                 上下文
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
+void socket_op_end(void *ctx)
+{
+    file_t *file = ctx;
+
+    if (file != NULL && (file->type & VFS_FILE_TYPE_SOCK)) {
+        vfs_put_file(file);
+    }
 }
 /*********************************************************************************************************
 ** END FILE

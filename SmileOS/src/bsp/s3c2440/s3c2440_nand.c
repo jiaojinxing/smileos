@@ -82,7 +82,7 @@
 *********************************************************************************************************/
 static void s3c2440_cmd_ctrl(struct mtd_info *mtd, int cmd, unsigned int ctrl)
 {
-    static ulong IO_ADDR_W = NF_BASE;
+    static uint32_t IO_ADDR_W = NF_BASE;
 
 #define S3C2440_NFCONT_nCE  (1 << 1)                                    /*  chip select bit             */
 #define S3C2440_ADDR_NALE   (0x0C)                                      /*  reg offset                  */

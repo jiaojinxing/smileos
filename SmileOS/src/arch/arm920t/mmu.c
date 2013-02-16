@@ -609,7 +609,7 @@ void mmu_map_section(uint32_t section_no,
 ** Descriptions:            映射 4K 小页面
 ** input parameters:        page_tbl_base       二级页表基址
 **                          page_no             段内页号
-**                          phypage_base        物理页面基址
+**                          phy_page_base       物理页面基址
 ** output parameters:       NONE
 ** Returned value:          NONE
 *********************************************************************************************************/
@@ -631,8 +631,8 @@ void mmu_map_page(uint32_t page_tbl_base,
 /*********************************************************************************************************
 ** Function name:           mmu_map_region
 ** Descriptions:            映射区域
-** input parameters:        virtual_base        虚拟基址
-**                          physical_base       物理基址
+** input parameters:        virt_section_base   虚拟基址
+**                          phys_section_base   物理基址
 **                          size                大小
 **                          attr                属性
 ** output parameters:       NONE

@@ -55,11 +55,15 @@ typedef struct {
 
 static inline int kfifo_init(kfifo_t *f, unsigned int size)
 {
+    f->size = 1;
+    for(; f->size <= size; f->size <<= 1) {
+        ;
+    }
+
     f->in   = 0;
     f->out  = 0;
-    f->mask = size - 1;
-    f->size = size;
-    f->buf  = kmalloc(size, GFP_KERNEL);
+    f->mask = f->size - 1;
+    f->buf  = kmalloc(f->size, GFP_KERNEL);
     return f->buf ? 0 : -1;
 }
 

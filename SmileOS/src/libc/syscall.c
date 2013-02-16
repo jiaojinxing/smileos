@@ -49,7 +49,7 @@
 #include <reent.h>
 #include "kern/pinfo.h"
 /*********************************************************************************************************
-** 定义
+** 声明
 *********************************************************************************************************/
 struct stat;
 struct tms;
@@ -104,29 +104,29 @@ static sys_do_t             sys_do_table[1];
 
 #include <pthread.h>
 
-#define fork            syscall_fork
-#define waitpid         syscall_waitpid
-#define system          syscall_system
-#define nanosleep       syscall_nanosleep
-#define usleep          syscall_usleep
-#define sleep           syscall_sleep
-#define sigprocmask     syscall_sigmask
-#define sigwait         syscall_sigwait
-#define select          syscall_select
-#define pselect         syscall_pselect
-//#define poll            syscall_poll
-#define connect         syscall_connect
-#define accept          syscall_accept
-#define read            syscall_read
-#define write           syscall_write
-#define readv           syscall_readv
-#define writev          syscall_writev
-#define recv            syscall_recv
-#define send            syscall_send
-#define recvfrom        syscall_recvfrom
-#define sendto          syscall_sendto
-#define pread           syscall_pread
-#define pwrite          syscall_pwrite
+#define fork                syscall_fork
+#define waitpid             syscall_waitpid
+#define system              syscall_system
+#define nanosleep           syscall_nanosleep
+#define usleep              syscall_usleep
+#define sleep               syscall_sleep
+#define sigprocmask         syscall_sigmask
+#define sigwait             syscall_sigwait
+#define select              syscall_select
+#define pselect             syscall_pselect
+//#define poll              syscall_poll
+#define connect             syscall_connect
+#define accept              syscall_accept
+#define read                syscall_read
+#define write               syscall_write
+#define readv               syscall_readv
+#define writev              syscall_writev
+#define recv                syscall_recv
+#define send                syscall_send
+#define recvfrom            syscall_recvfrom
+#define sendto              syscall_sendto
+#define pread               syscall_pread
+#define pwrite              syscall_pwrite
 
 #endif
 /*********************************************************************************************************
@@ -207,11 +207,16 @@ extern _ssize_t _write_r _PARAMS ((struct _reent *, int, const void *, size_t));
 #define  SYSCALL_SHUTDOWN   70
 #define  SYSCALL_SETSOCKOPT 71
 #define  SYSCALL_GETSOCKNAME 72
+#define  SYSCALL_GETPEERNAME 73
+#define  SYSCALL_GETHOSTBYNAME   74
+#define  SYSCALL_GETHOSTBYNAME_R 75
+#define  SYSCALL_FREEADDRINFO    76
+#define  SYSCALL_GETADDRINFO     77
 #define  SYSCALL_NR         100                                         /*  系统调用数                  */
 /*********************************************************************************************************
 ** 系统调用代码
 *********************************************************************************************************/
-#define syscall_code()                                  \
+#define syscall_enter()                                 \
         if (arch_in_kernel()) {                         \
             return (sys_do_table[syscall])(&args);      \
         } else {                                        \
@@ -229,7 +234,7 @@ void _exit(int status)
     int syscall = SYSCALL_EXIT;
     syscall_args_t args = {(void *)status};
 
-    syscall_code();
+    syscall_enter();
 }
 /*********************************************************************************************************
 ** Function name:           msleep
@@ -241,16 +246,16 @@ void _exit(int status)
 ** 因为系统滴嗒是毫秒级, 所以提供该系统调用
 **
 *********************************************************************************************************/
-int msleep(unsigned int mseconds)
+int msleep(mseconds_t mseconds)
 {
     int syscall = SYSCALL_MSLEEP;
-    syscall_args_t args = {(void *)mseconds};
+    syscall_args_t args = {(void *)&mseconds};
 
-    syscall_code();
+    syscall_enter();
 }
 /*********************************************************************************************************
 ** Function name:           pause
-** Descriptions:            停止任务
+** Descriptions:            暂停任务
 ** input parameters:        NONE
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
@@ -260,7 +265,7 @@ int pause(void)
     int syscall = SYSCALL_PAUSE;
     syscall_args_t args;
 
-    syscall_code();
+    syscall_enter();
 }
 /*********************************************************************************************************
 ** Function name:           alarm
@@ -274,7 +279,7 @@ unsigned alarm(unsigned secs)
     int syscall = SYSCALL_ALARM;
     syscall_args_t args = {(void *)secs};
 
-    syscall_code();
+    syscall_enter();
 }
 /*********************************************************************************************************
 ** Function name:           usleep
@@ -303,7 +308,7 @@ int usleep(useconds_t useconds)
 *********************************************************************************************************/
 unsigned sleep(unsigned int seconds)
 {
-    return msleep(1000 * seconds);
+    return msleep(1000 * (mseconds_t)seconds);
 }
 #ifndef SMILEOS_KERNEL
 #undef sleep
@@ -324,7 +329,7 @@ int schedule(void)
     int syscall = SYSCALL_SCHEDULE;
     syscall_args_t args;
 
-    syscall_code();
+    syscall_enter();
 }
 /*********************************************************************************************************
 ** Function name:           _gettimeofday_r
@@ -338,7 +343,7 @@ int _gettimeofday_r(struct _reent *reent, struct timeval *tv, void *tzp)
     int syscall = SYSCALL_GETTIME;
     syscall_args_t args = {(void *)tv, (void *)tzp};
 
-    syscall_code();
+    syscall_enter();
 }
 /*********************************************************************************************************
 ** Function name:           _close_r
@@ -353,7 +358,7 @@ int _close_r(struct _reent *reent, int fd)
     int syscall = SYSCALL_CLOSE;
     syscall_args_t args = {(void *)fd};
 
-    syscall_code();
+    syscall_enter();
 }
 /*********************************************************************************************************
 ** Function name:           ioctl
@@ -377,7 +382,7 @@ int ioctl(int fd, int cmd, ...)
 
     args.arg2 = (void *)arg;
 
-    syscall_code();
+    syscall_enter();
 }
 /*********************************************************************************************************
 ** Function name:           fcntl
@@ -407,7 +412,7 @@ int fcntl(int fd, int cmd, ...)
 
     args.arg2 = (void *)arg;
 
-    syscall_code();
+    syscall_enter();
 }
 /*********************************************************************************************************
 ** Function name:           _fstat_r
@@ -422,7 +427,7 @@ int _fstat_r(struct _reent *reent, int fd, struct stat *buf)
     int syscall = SYSCALL_FSTAT;
     syscall_args_t args = {(void *)fd, (void *)buf};
 
-    syscall_code();
+    syscall_enter();
 }
 /*********************************************************************************************************
 ** Function name:           _getpid_r
@@ -436,7 +441,7 @@ int _getpid_r(struct _reent *reent)
     int syscall = SYSCALL_GETPID;
     syscall_args_t args;
 
-    syscall_code();
+    syscall_enter();
 }
 /*********************************************************************************************************
 ** Function name:           _isatty_r
@@ -444,14 +449,14 @@ int _getpid_r(struct _reent *reent)
 ** input parameters:        reent               可重入结构
 **                          fd                  文件描述符
 ** output parameters:       NONE
-** Returned value:          0 OR 1
+** Returned value:          0 OR 1 OR -1
 *********************************************************************************************************/
 int _isatty_r(struct _reent *reent, int fd)
 {
     int syscall = SYSCALL_ISATTY;
     syscall_args_t args = {(void *)fd};
 
-    syscall_code();
+    syscall_enter();
 }
 /*********************************************************************************************************
 ** Function name:           _link_r
@@ -467,7 +472,7 @@ int _link_r(struct _reent *reent, const char *path1, const char *path2)
     int syscall = SYSCALL_LINK;
     syscall_args_t args = {(void *)path1, (void *)path2};
 
-    syscall_code();
+    syscall_enter();
 }
 /*********************************************************************************************************
 ** Function name:           _lseek_r
@@ -484,7 +489,7 @@ _off_t _lseek_r(struct _reent *reent, int fd, _off_t offset, int whence)
     int syscall = SYSCALL_LSEEK;
     syscall_args_t args = {(void *)fd, (void *)offset, (void *)whence};
 
-    syscall_code();
+    syscall_enter();
 }
 /*********************************************************************************************************
 ** Function name:           _mkdir_r
@@ -500,7 +505,7 @@ int _mkdir_r(struct _reent *reent, const char *path, int mode)
     int syscall = SYSCALL_MKDIR;
     syscall_args_t args = {(void *)path, (void *)mode};
 
-    syscall_code();
+    syscall_enter();
 }
 /*********************************************************************************************************
 ** Function name:           _rmdir_r
@@ -515,7 +520,7 @@ int _rmdir_r(struct _reent *reent, const char *path)
     int syscall = SYSCALL_RMDIR;
     syscall_args_t args = {(void *)path};
 
-    syscall_code();
+    syscall_enter();
 }
 /*********************************************************************************************************
 ** Function name:           _open_r
@@ -532,7 +537,7 @@ int _open_r(struct _reent *reent, const char *path, int oflag, int mode)
     int syscall = SYSCALL_OPEN;
     syscall_args_t args = {(void *)path, (void *)oflag, (void *)mode};
 
-    syscall_code();
+    syscall_enter();
 }
 /*********************************************************************************************************
 ** Function name:           _read_r
@@ -556,7 +561,7 @@ _ssize_t read(int fd, void *buf, size_t nbytes)
     int syscall = SYSCALL_READ;
     syscall_args_t args = {(void *)fd, (void *)buf, (void *)nbytes};
 
-    syscall_code();
+    syscall_enter();
 }
 /*********************************************************************************************************
 ** Function name:           _write_r
@@ -585,7 +590,7 @@ _ssize_t write(int fd, const void *buf, size_t nbytes)
     int syscall = SYSCALL_WRITE;
     syscall_args_t args = {(void *)fd, (void *)buf, (void *)nbytes};
 
-    syscall_code();
+    syscall_enter();
 }
 /*********************************************************************************************************
 ** Function name:           _rename_r
@@ -601,7 +606,7 @@ int _rename_r(struct _reent *reent, const char *old, const char *new)
     int syscall = SYSCALL_RENAME;
     syscall_args_t args = {(void *)old, (void *)new};
 
-    syscall_code();
+    syscall_enter();
 }
 /*********************************************************************************************************
 ** Function name:           _stat_r
@@ -617,7 +622,7 @@ int _stat_r(struct _reent *reent, const char *path, struct stat *buf)
     int syscall = SYSCALL_STAT;
     syscall_args_t args = {(void *)path, (void *)buf};
 
-    syscall_code();
+    syscall_enter();
 }
 /*********************************************************************************************************
 ** Function name:           _unlink_r
@@ -632,7 +637,7 @@ int _unlink_r(struct _reent *reent, const char *path)
     int syscall = SYSCALL_UNLINK;
     syscall_args_t args = {(void *)path};
 
-    syscall_code();
+    syscall_enter();
 }
 /*********************************************************************************************************
 ** Function name:           dup
@@ -646,7 +651,7 @@ int dup(int fd)
     int syscall = SYSCALL_DUP;
     syscall_args_t args = {(void *)fd};
 
-    syscall_code();
+    syscall_enter();
 }
 /*********************************************************************************************************
 ** Function name:           dup2
@@ -661,7 +666,7 @@ int dup2(int fd, int to)
     int syscall = SYSCALL_DUP2;
     syscall_args_t args = {(void *)fd, (void *)to};
 
-    syscall_code();
+    syscall_enter();
 }
 /*********************************************************************************************************
 ** Function name:           setpinfo
@@ -675,7 +680,7 @@ int setpinfo(pinfo_t *info)
     int syscall = SYSCALL_SETPINFO;
     syscall_args_t args = {(void *)info};
 
-    syscall_code();
+    syscall_enter();
 }
 /*********************************************************************************************************
 ** Function name:           _kill_r
@@ -691,7 +696,7 @@ int _kill_r(struct _reent *reent, int pid, int sig)
     int syscall = SYSCALL_KILL;
     syscall_args_t args = {(void *)pid, (void *)sig};
 
-    syscall_code();
+    syscall_enter();
 }
 /*********************************************************************************************************
 ** Function name:           opendir
@@ -705,7 +710,7 @@ DIR *opendir(const char *path)
     int syscall = SYSCALL_OPENDIR;
     syscall_args_t args = {(void *)path};
 
-    syscall_code();
+    syscall_enter();
 }
 /*********************************************************************************************************
 ** Function name:           closedir
@@ -719,7 +724,7 @@ int closedir(DIR *dir)
     int syscall = SYSCALL_CLOSEDIR;
     syscall_args_t args = {(void *)dir};
 
-    syscall_code();
+    syscall_enter();
 }
 /*********************************************************************************************************
 ** Function name:           readdir
@@ -733,7 +738,7 @@ struct dirent *readdir(DIR *dir)
     int syscall = SYSCALL_READDIR;
     syscall_args_t args = {(void *)dir};
 
-    syscall_code();
+    syscall_enter();
 }
 /*********************************************************************************************************
 ** Function name:           rewinddir
@@ -747,7 +752,7 @@ int rewinddir(DIR *dir)
     int syscall = SYSCALL_REWINDDIR;
     syscall_args_t args = {(void *)dir};
 
-    syscall_code();
+    syscall_enter();
 }
 /*********************************************************************************************************
 ** Function name:           rewinddir
@@ -762,7 +767,7 @@ int seekdir(DIR *dir, long loc)
     int syscall = SYSCALL_SEEKDIR;
     syscall_args_t args = {(void *)dir, (void *)loc};
 
-    syscall_code();
+    syscall_enter();
 }
 /*********************************************************************************************************
 ** Function name:           telldir
@@ -776,7 +781,7 @@ long telldir(DIR *dir)
     int syscall = SYSCALL_TELLDIR;
     syscall_args_t args = {(void *)dir};
 
-    syscall_code();
+    syscall_enter();
 }
 /*********************************************************************************************************
 ** Function name:           chdir
@@ -790,7 +795,7 @@ int chdir(const char *path)
     int syscall = SYSCALL_CHDIR;
     syscall_args_t args = {(void *)path};
 
-    syscall_code();
+    syscall_enter();
 }
 /*********************************************************************************************************
 ** Function name:           getcwd
@@ -805,7 +810,7 @@ char *getcwd(char *buf, size_t size)
     int syscall = SYSCALL_GETCWD;
     syscall_args_t args = {(void *)buf, (void *)size};
 
-    syscall_code();
+    syscall_enter();
 }
 /*********************************************************************************************************
 ** Function name:           select
@@ -824,7 +829,7 @@ int select(int nfds, fd_set *readset, fd_set *writeset, fd_set *exceptset, struc
     int syscall = SYSCALL_SELECT;
     syscall_args_t args = {(void *)nfds, (void *)readset, (void *)writeset, (void *)exceptset, (void *)timeout};
 
-    syscall_code();
+    syscall_enter();
 }
 #ifndef SMILEOS_KERNEL
 #undef select
@@ -857,7 +862,7 @@ _sig_func_ptr signal(int sig, _sig_func_ptr func)
     int syscall = SYSCALL_SIGNAL;
     syscall_args_t args = {(void *)sig, (void *)func};
 
-    syscall_code();
+    syscall_enter();
 }
 
 int sigprocmask(int how, const sigset_t *set, sigset_t *oset)
@@ -865,7 +870,7 @@ int sigprocmask(int how, const sigset_t *set, sigset_t *oset)
     int syscall = SYSCALL_SIGPROCMASK;
     syscall_args_t args = {(void *)how, (void *)set, (void *)oset};
 
-    syscall_code();
+    syscall_enter();
 }
 
 int sigsuspend(const sigset_t *set)
@@ -873,7 +878,7 @@ int sigsuspend(const sigset_t *set)
     int syscall = SYSCALL_SIGSUSPEND;
     syscall_args_t args = {(void *)set};
 
-    syscall_code();
+    syscall_enter();
 }
 
 #include <sys/socket.h>
@@ -886,7 +891,7 @@ int socket(int domain, int type, int protocol)
     int syscall = SYSCALL_SOCKET;
     syscall_args_t args = {(void *)domain, (void *)type, (void *)protocol};
 
-    syscall_code();
+    syscall_enter();
 }
 
 /*
@@ -897,7 +902,7 @@ int bind(int s, const struct sockaddr *name, socklen_t namelen)
     int syscall = SYSCALL_BIND;
     syscall_args_t args = {(void *)s, (void *)name, (void *)namelen};
 
-    syscall_code();
+    syscall_enter();
 }
 
 /*
@@ -908,7 +913,7 @@ int accept(int s, struct sockaddr *addr, socklen_t *addrlen)
     int syscall = SYSCALL_ACCEPT;
     syscall_args_t args = {(void *)s, (void *)addr, (void *)addrlen};
 
-    syscall_code();
+    syscall_enter();
 }
 #ifndef SMILEOS_KERNEL
 #undef accept
@@ -926,7 +931,7 @@ int connect(int s, const struct sockaddr *name, socklen_t namelen)
     int syscall = SYSCALL_CONNECT;
     syscall_args_t args = {(void *)s, (void *)name, (void *)namelen};
 
-    syscall_code();
+    syscall_enter();
 }
 #ifndef SMILEOS_KERNEL
 #undef connect
@@ -944,7 +949,7 @@ int listen(int s, int backlog)
     int syscall = SYSCALL_LISTEN;
     syscall_args_t args = {(void *)s, (void *)backlog};
 
-    syscall_code();
+    syscall_enter();
 }
 
 /*
@@ -955,7 +960,7 @@ int recv(int s, void *mem, size_t len, int flags)
     int syscall = SYSCALL_RECV;
     syscall_args_t args = {(void *)s, (void *)mem, (void *)len, (void *)flags};
 
-    syscall_code();
+    syscall_enter();
 }
 #ifndef SMILEOS_KERNEL
 #undef recv
@@ -974,7 +979,7 @@ int recvfrom(int s, void *mem, size_t len, int flags,
     int syscall = SYSCALL_RECVFROM;
     syscall_args_t args = {(void *)s, (void *)mem, (void *)len, (void *)flags, (void *)from, (void *)fromlen};
 
-    syscall_code();
+    syscall_enter();
 }
 #ifndef SMILEOS_KERNEL
 #undef recvfrom
@@ -994,7 +999,7 @@ int sendto(int s, const void *dataptr, size_t size, int flags,
     int syscall = SYSCALL_SENDTO;
     syscall_args_t args = {(void *)s, (void *)dataptr, (void *)size, (void *)flags, (void *)to, (void *)tolen};
 
-    syscall_code();
+    syscall_enter();
 }
 #ifndef SMILEOS_KERNEL
 #undef sendto
@@ -1013,7 +1018,7 @@ int getsockopt(int s, int level, int optname, void *optval, socklen_t *optlen)
     int syscall = SYSCALL_GETSOCKOPT;
     syscall_args_t args = {(void *)s, (void *)level, (void *)optname, (void *)optval, (void *)optlen};
 
-    syscall_code();
+    syscall_enter();
 }
 
 /*
@@ -1024,7 +1029,7 @@ int send(int s, const void *dataptr, size_t size, int flags)
     int syscall = SYSCALL_SEND;
     syscall_args_t args = {(void *)s, (void *)dataptr, (void *)size, (void *)flags};
 
-    syscall_code();
+    syscall_enter();
 }
 #ifndef SMILEOS_KERNEL
 #undef send
@@ -1042,7 +1047,7 @@ int shutdown(int s, int how)
     int syscall = SYSCALL_SHUTDOWN;
     syscall_args_t args = {(void *)s, (void *)how};
 
-    syscall_code();
+    syscall_enter();
 }
 
 /*
@@ -1053,18 +1058,76 @@ int setsockopt(int s, int level, int optname, const void *optval, socklen_t optl
     int syscall = SYSCALL_SETSOCKOPT;
     syscall_args_t args = {(void *)s, (void *)level, (void *)optname, (void *)optval, (void *)optlen};
 
-    syscall_code();
+    syscall_enter();
 }
 
 /*
- *
+ * http://pubs.opengroup.org/onlinepubs/009604499/functions/getsockname.html
  */
 int getsockname(int s, struct sockaddr *name, socklen_t *namelen)
 {
     int syscall = SYSCALL_GETSOCKNAME;
     syscall_args_t args = {(void *)s, (void *)name, (void *)namelen};
 
-    syscall_code();
+    syscall_enter();
+}
+
+/*
+ * http://pubs.opengroup.org/onlinepubs/009604499/functions/getpeername.html
+ */
+int getpeername(int s, struct sockaddr *name, socklen_t *namelen)
+{
+    int syscall = SYSCALL_GETPEERNAME;
+    syscall_args_t args = {(void *)s, (void *)name, (void *)namelen};
+
+    syscall_enter();
+}
+
+#include <netdb.h>
+
+/*
+ * http://pubs.opengroup.org/onlinepubs/009695399/functions/gethostbyname.html
+ */
+struct hostent *gethostbyname(const char *name)
+{
+    int syscall = SYSCALL_GETHOSTBYNAME;
+    syscall_args_t args = {(void *)name};
+
+    syscall_enter();
+}
+
+int gethostbyname_r(const char *name, struct hostent *ret, char *buf,
+                size_t buflen, struct hostent **result, int *h_errnop)
+{
+    int syscall = SYSCALL_GETHOSTBYNAME_R;
+    syscall_args_t args = {(void *)name, (void *)ret, (void *)buf, (void *)buflen, (void *)result, (void *)h_errnop};
+
+    syscall_enter();
+}
+
+/*
+ * http://pubs.opengroup.org/onlinepubs/009604499/functions/getaddrinfo.html
+ */
+void freeaddrinfo(struct addrinfo *ai)
+{
+    int syscall = SYSCALL_FREEADDRINFO;
+    syscall_args_t args = {(void *)ai};
+
+    syscall_enter();
+}
+
+/*
+ * http://pubs.opengroup.org/onlinepubs/009604499/functions/getaddrinfo.html
+ */
+int getaddrinfo(const char *nodename,
+       const char *servname,
+       const struct addrinfo *hints,
+       struct addrinfo **res)
+{
+    int syscall = SYSCALL_GETADDRINFO;
+    syscall_args_t args = {(void *)nodename, (void *)servname, (void *)hints, (void *)res};
+
+    syscall_enter();
 }
 /*********************************************************************************************************
 ** 以下几个桩函数未实现

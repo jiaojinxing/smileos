@@ -48,7 +48,7 @@
 ** output parameters:       NONE
 ** Returned value:          NONE
 *********************************************************************************************************/
-static void print_regs(uint32_t *regs)
+static void print_regs(reg_t *regs)
 {
     int i;
 
@@ -87,7 +87,7 @@ void fiq_c_handler(void)
 ** output parameters:       NONE
 ** Returned value:          NONE
 *********************************************************************************************************/
-void undf_c_handler(uint32_t *regs)
+void undf_c_handler(reg_t *regs)
 {
     interrupt_enter();                                                  /*  进入中断                    */
 
@@ -106,7 +106,7 @@ void undf_c_handler(uint32_t *regs)
 ** output parameters:       NONE
 ** Returned value:          NONE
 *********************************************************************************************************/
-void pabt_c_handler(uint32_t *regs)
+void pabt_c_handler(reg_t *regs)
 {
     interrupt_enter();                                                  /*  进入中断                    */
 
@@ -127,7 +127,7 @@ void pabt_c_handler(uint32_t *regs)
 ** output parameters:       NONE
 ** Returned value:          NONE
 *********************************************************************************************************/
-static void dabt_oops(uint32_t *regs)
+static void dabt_oops(reg_t *regs)
 {
     printk("%s, current TID = %d name=%s\n", __func__, current->tid, current->name);
     printk("fault address = 0x%x\n", mmu_get_fault_address());
@@ -142,13 +142,13 @@ static void dabt_oops(uint32_t *regs)
 ** output parameters:       NONE
 ** Returned value:          NONE
 *********************************************************************************************************/
-void dabt_c_handler(uint32_t *regs)
+void dabt_c_handler(reg_t *regs)
 {
     interrupt_enter();                                                  /*  进入中断                    */
 
     dabt_oops(regs);
 
-    kill(current->tid, SIGBUS);                                         /*  杀死当前任务                */
+    kill(current->tid, SIGSEGV);                                        /*  杀死当前任务                */
 
     interrupt_exit();                                                   /*  退出中断                    */
 }
