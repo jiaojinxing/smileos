@@ -95,11 +95,6 @@ void kernel_init(void)
     extern void vmm_init(void);
     vmm_init();                                                         /*  初始化虚拟内存管理          */
 
-#if CONFIG_MODULE_EN > 0
-    extern int module_init(void);
-    module_init();                                                      /*  初始化内核模块子系统        */
-#endif
-
 #if CONFIG_VFS_EN > 0
     extern int vfs_init(void);
     vfs_init();                                                         /*  初始化虚拟文件系统          */

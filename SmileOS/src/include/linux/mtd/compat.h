@@ -45,6 +45,7 @@ extern "C" {
 #endif
 
 #include <linux/compat.h>
+#include <linux/mtd/nand_config.h>
 
 #ifdef __cplusplus
 }

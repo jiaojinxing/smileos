@@ -46,6 +46,7 @@
 #include "lwip/tcpip.h"
 #endif
 #include <unistd.h>
+#include <stdio.h>
 /*********************************************************************************************************
 ** 配置
 *********************************************************************************************************/
@@ -114,6 +115,16 @@ static void init(void *arg)
     bsp_devices_create();
 #endif
 
+#if CONFIG_VFS_EN > 0
+    {
+        int fd;
+
+        fclose(stdout);
+        fd = open("/dev/serial0", O_WRONLY);
+        stdout  = fdopen(fd,  "w");
+    }
+#endif
+
 #if CONFIG_VFS_EN > 0 && CONFIG_RAMDISK_EN > 0
     int ramdisk_create(const char *path, size_t size);
     ramdisk_create("/dev/ramdisk", 1440 * KB);
@@ -127,6 +138,11 @@ static void init(void *arg)
 
 #if CONFIG_NET_EN > 0
     tcpip_init(tcpip_init_done, NULL);
+#endif
+
+#if CONFIG_MODULE_EN > 0
+    extern int module_init(void);
+    module_init();                                                      /*  初始化内核模块子系统        */
 #endif
 
     while (1) {
@@ -225,7 +241,7 @@ int main(void)
     sys_devices_create();
 #endif
 
-    kthread_create("init", init, NULL, 16 * KB, 100);
+    kthread_create("init", init, NULL, 32 * KB, 50);
 
     kernel_start();
 

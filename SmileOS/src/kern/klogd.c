@@ -53,7 +53,7 @@
 *********************************************************************************************************/
 #define KLOGD_QUEUE_SIZE            (100)
 #define KLOGD_THREAD_STACKSIZE      (16 * KB)
-#define KLOGD_THREAD_PRIO           (5)
+#define KLOGD_THREAD_PRIO           (80)
 #define KLOGD_LOG_LEVEL             (7)
 
 #if CONFIG_VFS_EN > 0
@@ -81,11 +81,18 @@ typedef struct {
 static void klogd(void *arg)
 {
     msg_t *msg;
-    int fd;
+    int fd = -1;
 
 #if CONFIG_VFS_EN > 0
     fclose(stdout);
-    fd = open(KLOGD_LOG_FILE, O_WRONLY);
+
+    while (fd < 0) {
+        fd = open(KLOGD_LOG_FILE, O_WRONLY);
+        if (fd < 0) {
+            sleep(1);
+        }
+    }
+
     stdout  = fdopen(fd,  "w");
 #endif
 
