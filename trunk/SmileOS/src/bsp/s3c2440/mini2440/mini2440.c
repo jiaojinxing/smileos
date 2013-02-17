@@ -105,9 +105,9 @@ int bsp_devices_create(void)
 
     mtdblock_create("/dev/mtdblock1", 0, 256, 4095, 5);
 
-    vfs_mount("/kern",   "/dev/mtdblock0", "yaffs1", NULL);
+    vfs_mount("/kern",   "/dev/mtdblock0", "yaffs1", "empty-lost-and-found-on,no-cache");
 
-    vfs_mount("/rootfs", "/dev/mtdblock1", "yaffs1", NULL);
+    vfs_mount("/rootfs", "/dev/mtdblock1", "yaffs1", "empty-lost-and-found-on,no-cache");
 
     return 0;
 }

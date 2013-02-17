@@ -591,6 +591,8 @@ void *yaffsfs_Mount(int yaffs_version,
 
     yaffsfs_Unlock();
 
+    yaffs_add_device(dev);
+
     if (yaffs_mount(point_name) < 0) {
 
         yaffsfs_Lock();
