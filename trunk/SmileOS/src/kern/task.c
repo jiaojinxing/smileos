@@ -58,9 +58,9 @@ extern int ipc_task_cleanup(task_t *task);
 ** 配置
 *********************************************************************************************************/
 #if CONFIG_VFS_EN > 0
-#define STDIN_FILE                      "/dev/serial0"
-#define STDOUT_FILE                     "/dev/serial0"
-#define STDERR_FILE                     "/dev/serial0"
+#define STDIN_FILE                      "/dev/null"
+#define STDOUT_FILE                     "/dev/null"
+#define STDERR_FILE                     "/dev/null"
 
 /*
  * 注意不要使用下面三个宏, 也不要使用数字, 可以通过 fileno(stdin) 这种方法
@@ -87,12 +87,13 @@ static void kthread_shell(task_t *task)
 
     open(STDERR_FILE, O_WRONLY);
     stderr = fdopen(fd, "w");
-
-    putenv("PATH=/");                                                   /*  设置环境变量                */
-    putenv("HOME=/");
 #endif
 
     task->thread(task->arg);                                            /*  进入真正的内核线程函数      */
+
+    fclose(stdin);
+    fclose(stdout);
+    fclose(stderr);
 
     _exit(0);                                                           /*  退出内核线程                */
 }

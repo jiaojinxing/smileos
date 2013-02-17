@@ -39,6 +39,11 @@
 *********************************************************************************************************/
 #ifndef FUNC_CONFIG_H_
 #define FUNC_CONFIG_H_
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*********************************************************************************************************
 ** π¶ƒ‹≈‰÷√
 **
@@ -68,6 +73,10 @@
 #if CONFIG_VFS_EN == 0
 #error "module depend on vfs"
 #endif
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif                                                                  /*  FUNC_CONFIG_H_              */

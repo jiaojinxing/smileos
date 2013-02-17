@@ -40,6 +40,10 @@
 #ifndef ARCH_TYPES_H_
 #define ARCH_TYPES_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef uint32_t                    mem_ptr_t;
 
 typedef uint32_t                    reg_t;
@@ -51,6 +55,10 @@ typedef uint8_t                     intno_t;
 #define MEM_ALIGNMENT               (4)
 
 #define BYTE_ORDER                  LITTLE_ENDIAN
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif                                                                  /*  ARCH_TYPES_H_               */
 /*********************************************************************************************************

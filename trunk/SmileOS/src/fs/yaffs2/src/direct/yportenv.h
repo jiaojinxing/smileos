@@ -23,7 +23,6 @@
 
 #include <dirent.h>
 #include <unistd.h>
-#include "kern/kern.h"
 #include <linux/compat.h>
 
 #ifndef XATTR_CREATE

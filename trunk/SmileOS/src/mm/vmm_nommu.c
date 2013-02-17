@@ -52,7 +52,7 @@ void vmm_init(void)
 }
 /*********************************************************************************************************
 ** Function name:           arch_mmu_init
-** Descriptions:            建立转换表, 初始化 MMU Cache 等
+** Descriptions:            初始化 MMU Cache 等
 ** input parameters:        NONE
 ** output parameters:       NONE
 ** Returned value:          NONE

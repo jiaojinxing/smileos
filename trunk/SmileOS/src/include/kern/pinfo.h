@@ -40,6 +40,10 @@
 #ifndef PINFO_H_
 #define PINFO_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <dirent.h>
 struct _reent;
 
@@ -48,6 +52,10 @@ typedef struct {
     struct dirent       entry;                                          /*  目录项结构　　            　*/
     char                cwd[PATH_MAX];                                  /*  当前工作目录　            　*/
 } pinfo_t;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif                                                                  /*  PINFO_H_                    */
 /*********************************************************************************************************

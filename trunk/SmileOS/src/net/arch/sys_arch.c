@@ -326,14 +326,20 @@ u32_t sys_now(void)
 
 #include "lwip/ip_addr.h"
 
-u32_t __inetHostTableGetItem(const char *name)
+/**
+ * 查找本地 DNS 记录
+ */
+u32_t sys_dns_lookup_local(const char *name)
 {
     return IPADDR_NONE;
 }
 
+/**
+ * 返回线程主机条目
+ */
 struct hostent *sys_thread_hostent(struct hostent *hostent)
 {
-    return 0;
+    return NULL;
 }
 /*********************************************************************************************************
 ** END FILE

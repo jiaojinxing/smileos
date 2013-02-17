@@ -64,7 +64,7 @@ struct timeval;
 
 extern sys_do_t             sys_do_table[];
 
-#define debug(...)
+#define debug               printk
 
 /*
  * 内核里使用 gettid
@@ -97,7 +97,7 @@ static sys_do_t             sys_do_table[1];
 
 #define arch_in_kernel()    0
 
-#define debug(...)
+#define debug               printf
 
 #include <stdio.h>
 #include <unistd.h>
@@ -1137,7 +1137,7 @@ int getaddrinfo(const char *nodename,
  */
 void *_sbrk_r(struct _reent *reent, ptrdiff_t incr)
 {
-    printf("can't call %s()!, kill process %d\n", __func__, getpid());
+    debug("can't call %s()!, kill process %d\n", __func__, getpid());
 
     abort();
 }
@@ -1147,7 +1147,7 @@ void *_sbrk_r(struct _reent *reent, ptrdiff_t incr)
  */
 int _fork_r(struct _reent *reent)
 {
-    printf("can't call %s()!, kill process %d\n", __func__, getpid());
+    debug("can't call %s()!, kill process %d\n", __func__, getpid());
 
     abort();
 }
@@ -1157,7 +1157,7 @@ int _fork_r(struct _reent *reent)
  */
 _CLOCK_T_ _times_r(struct _reent *reent, struct tms *buf)
 {
-    printf("can't call %s()!, kill process %d\n", __func__, getpid());
+    debug("can't call %s()!, kill process %d\n", __func__, getpid());
 
     abort();
 }
@@ -1167,7 +1167,7 @@ _CLOCK_T_ _times_r(struct _reent *reent, struct tms *buf)
  */
 int _wait_r(struct _reent *reent, int *status)
 {
-    printf("can't call %s()!, kill process %d\n", __func__, getpid());
+    debug("can't call %s()!, kill process %d\n", __func__, getpid());
 
     abort();
 }
@@ -1177,7 +1177,7 @@ int _wait_r(struct _reent *reent, int *status)
  */
 int _execve_r(struct _reent *reent, const char *path, char *const *argv, char *const *env)
 {
-    printf("can't call %s()!, kill process %d\n", __func__, getpid());
+    debug("can't call %s()!, kill process %d\n", __func__, getpid());
 
     abort();
 }

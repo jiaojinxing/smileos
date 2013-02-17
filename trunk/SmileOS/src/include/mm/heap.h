@@ -104,16 +104,15 @@ void *heap_alloc(heap_t *heap, const char *func, int line, size_t size);
 *********************************************************************************************************/
 void *heap_free(heap_t *heap, const char *func, int line, void *ptr);
 /*********************************************************************************************************
-** Function name:           mem_size
-** Descriptions:            获得内存的大小
+** Function name:           heap_check
+** Descriptions:            检查内存堆的使用情况
 ** input parameters:        heap                内存堆
 **                          func                调用者的函数名
 **                          line                调用者的行号
-**                          ptr                 内存指针
 ** output parameters:       NONE
-** Returned value:          内存的大小
+** Returned value:          0 OR -1
 *********************************************************************************************************/
-size_t mem_size(heap_t *heap, const char *func, int line, void *ptr);
+int heap_check(heap_t *heap, const char *func, int line);
 
 #ifdef __cplusplus
 }

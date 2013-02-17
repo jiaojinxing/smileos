@@ -47,14 +47,14 @@
 /*
  * 普通内存区, 可 Cache 及 WriteBuffer, 用户态不可读写
  *
- * 虚拟地址!=物理地址
+ * 虚拟地址 != 物理地址
  */
 static heap_t               kern_heap;                                  /*  普通内存堆                  */
 
 /*
  * DMA 内存区, 不可 Cache 及 WriteBuffer, 用户态不可读写
  *
- * 虚拟地址=物理地址
+ * 虚拟地址 = 物理地址
  */
 #if defined(DMA_MEM_BASE) && DMA_MEM_SIZE > 0
 static heap_t               dma_heap;                                   /*  DMA 内存堆                  */
@@ -69,7 +69,7 @@ static heap_t               dma_heap;                                   /*  DMA 
  *
  * 像 FrameBuffer 设备驱动可以使用 HW_SHARE 内存区
  *
- * 虚拟地址=物理地址
+ * 虚拟地址 = 物理地址
  */
 #if defined(HW_SHARE_MEM_BASE) && HW_SHARE_MEM_SIZE > 0
 static heap_t               hw_share_heap;                              /*  硬件共享内存堆              */
@@ -80,7 +80,7 @@ static heap_t               hw_share_heap;                              /*  硬件
  *
  * 像共享内存设备驱动可以使用 SW_SHARE 内存区
  *
- * SW_SHARE 内存区不必像 HW_SHARE 内存区那样虚拟地址=物理地址
+ * SW_SHARE 内存区不必像 HW_SHARE 内存区那样虚拟地址 = 物理地址
  */
 #if defined(SW_SHARE_MEM_BASE) && SW_SHARE_MEM_SIZE > 0
 static heap_t               sw_share_heap;                              /*  软件共享内存堆              */
@@ -188,7 +188,6 @@ void __kfree(const char *func, int line, void *ptr)
 
     interrupt_resume(reg);
 }
-
 /*********************************************************************************************************
 ** Function name:           kheap_create
 ** Descriptions:            创建内核内存堆
@@ -211,6 +210,35 @@ void kheap_create(void)
 #if defined(SW_SHARE_MEM_BASE) && SW_SHARE_MEM_SIZE > 0
     heap_init(&sw_share_heap, "sw_share", (void *)SW_SHARE_MEM_BASE, SW_SHARE_MEM_SIZE);
 #endif
+}
+/*********************************************************************************************************
+** Function name:           kheap_check
+** Descriptions:            检查内核内存堆
+** input parameters:        NONE
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
+void kheap_check(void)
+{
+    reg_t reg;
+
+    reg = interrupt_disable();
+
+    heap_check(&kern_heap, __func__, __LINE__);
+
+#if defined(DMA_MEM_BASE) && DMA_MEM_SIZE > 0
+    heap_check(&dma_heap, __func__, __LINE__);
+#endif
+
+#if defined(HW_SHARE_MEM_BASE) && HW_SHARE_MEM_SIZE > 0
+    heap_check(&hw_share_heap, __func__, __LINE__);
+#endif
+
+#if defined(SW_SHARE_MEM_BASE) && SW_SHARE_MEM_SIZE > 0
+    heap_check(&sw_share_heap, __func__, __LINE__);
+#endif
+
+    interrupt_resume(reg);
 }
 /*********************************************************************************************************
 ** END FILE

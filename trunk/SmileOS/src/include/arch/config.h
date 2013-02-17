@@ -40,13 +40,21 @@
 #ifndef ARCH_CONFIG_H_
 #define ARCH_CONFIG_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define ARCH_CPU                    ARCH_ARM920T
 
 #define CPU_REGS_SIZE               (32)                                /*  CPU 寄存器组大小            */
-#define KERN_STACK_SIZE             (4 * KB)                            /*  内核栈空间大小              */
+#define KERN_STACK_SIZE             (2 * KB)                            /*  内核栈空间大小              */
 #define TICK_PER_SECOND             (100)                               /*  每秒内核定时器中断次数      */
 #define CONFIG_MMU_EN               (1)                                 /*  带 MMU                      */
 #define PROCESS_NR                  (20)                                /*  进程数, 含进程 0            */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif                                                                  /*  ARCH_CONFIG_H_              */
 /*********************************************************************************************************

@@ -40,11 +40,19 @@
 #ifndef ARCH_CONFIG_H_
 #define ARCH_CONFIG_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define ARCH_CPU                    ARCH_ARMV7_M
 
 #define TICK_PER_SECOND             (100)                               /*  每秒内核定时器中断次数      */
 #define CONFIG_MMU_EN               (0)                                 /*  带 MMU                      */
 #define PROCESS_NR                  (1)                                 /*  进程数, 含进程 0            */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif                                                                  /*  ARCH_CONFIG_H_              */
 /*********************************************************************************************************

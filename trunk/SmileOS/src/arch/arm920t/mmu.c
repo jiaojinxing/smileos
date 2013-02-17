@@ -575,13 +575,21 @@ uint32_t mmu_get_fault_address(void)
 ** Descriptions:            取消映射段
 ** input parameters:        section_no          段号
 ** output parameters:       NONE
-** Returned value:          NONE
+** Returned value:          0 OR -1
 *********************************************************************************************************/
-void mmu_unmap_section(uint32_t section_no)
+int mmu_unmap_section(uint32_t section_no)
 {
-    volatile uint32_t *entry = (volatile uint32_t *)MMU_TBL_BASE + section_no;
+    volatile uint32_t *entry;
+
+    if (section_no >= VMM_SECTION_NR) {
+        return -1;
+    }
+
+    entry  = (volatile uint32_t *)MMU_TBL_BASE + section_no;
 
     *entry = 0;
+
+    return 0;
 }
 /*********************************************************************************************************
 ** Function name:           mmu_map_section
@@ -589,13 +597,19 @@ void mmu_unmap_section(uint32_t section_no)
 ** input parameters:        section_no          段号
 **                          page_tbl_base       二级页表基址
 ** output parameters:       NONE
-** Returned value:          NONE
+** Returned value:          0 OR -1
 *********************************************************************************************************/
-void mmu_map_section(uint32_t section_no,
-                     uint32_t page_tbl_base)
+int mmu_map_section(uint32_t section_no,
+                    uint32_t page_tbl_base)
 {
-    volatile uint32_t *entry = (volatile uint32_t *)MMU_TBL_BASE + section_no;
-    uint32_t           value;
+    volatile uint32_t *entry;
+             uint32_t  value;
+
+    if (section_no >= VMM_SECTION_NR) {
+        return -1;
+    }
+
+    entry = (volatile uint32_t *)MMU_TBL_BASE + section_no;
 
     value = (page_tbl_base & (~(PAGE_TBL_SIZE - 1))) |
             (DOMAIN_CHECK << 5) |
@@ -603,6 +617,48 @@ void mmu_map_section(uint32_t section_no,
             (1 << 0);
 
     *entry = value;
+
+    return 0;
+}
+/*********************************************************************************************************
+** Function name:           mmu_map_region
+** Descriptions:            映射区域
+** input parameters:        virt_section_base   段虚拟基址
+**                          phys_section_base   段物理基址
+**                          size                大小
+**                          attr                属性
+** output parameters:       NONE
+** Returned value:          0 OR -1
+*********************************************************************************************************/
+int mmu_map_region(uint32_t virt_section_base,
+                   uint32_t phys_section_base,
+                   uint32_t size,
+                   uint32_t attr)
+{
+    volatile uint32_t *entry;
+    int                i;
+
+    if (virt_section_base & ((1 << VMM_SECTION_OFFSET) - 1)) {
+        return -1;
+    }
+
+    if (phys_section_base & ((1 << VMM_SECTION_OFFSET) - 1)) {
+        return -1;
+    }
+
+    if (size & ((1 << VMM_SECTION_OFFSET) - 1)) {
+        return -1;
+    }
+
+    entry  = (volatile uint32_t *)MMU_TBL_BASE + (virt_section_base >> VMM_SECTION_OFFSET);
+
+    size   = size / VMM_SECTION_SIZE;
+
+    for (i = 0; i < size; i++) {
+        *entry++ = attr | (((phys_section_base >> VMM_SECTION_OFFSET) + i) << VMM_SECTION_OFFSET);
+    }
+
+    return 0;
 }
 /*********************************************************************************************************
 ** Function name:           mmu_map_page
@@ -613,11 +669,17 @@ void mmu_map_section(uint32_t section_no,
 ** output parameters:       NONE
 ** Returned value:          NONE
 *********************************************************************************************************/
-void mmu_map_page(uint32_t page_tbl_base,
-                  uint32_t page_no,
-                  uint32_t phy_page_base)
+int mmu_map_page(uint32_t page_tbl_base,
+                 uint32_t page_no,
+                 uint32_t phy_page_base)
 {
-    volatile uint32_t *entry = (volatile uint32_t *)page_tbl_base + page_no;
+    volatile uint32_t *entry;
+
+    if (page_no >= VMM_SECTION_SIZE / VMM_PAGE_SIZE) {
+        return -1;
+    }
+
+    entry  = (volatile uint32_t *)page_tbl_base + page_no;
 
     *entry = (phy_page_base & (~(VMM_PHY_PAGE_SIZE - 1))) |
             (AP_USER_RW << 10) |
@@ -627,32 +689,8 @@ void mmu_map_page(uint32_t page_tbl_base,
             (CACHE_EN   <<  3) |
             (BUFFER_EN  <<  2) |
             (1          <<  1);
-}
-/*********************************************************************************************************
-** Function name:           mmu_map_region
-** Descriptions:            映射区域
-** input parameters:        virt_section_base   虚拟基址
-**                          phys_section_base   物理基址
-**                          size                大小
-**                          attr                属性
-** output parameters:       NONE
-** Returned value:          NONE
-*********************************************************************************************************/
-void mmu_map_region(uint32_t virt_section_base,
-                    uint32_t phys_section_base,
-                    uint32_t size,
-                    uint32_t attr)
-{
-    volatile uint32_t *entry;
-    int                i;
 
-    entry  = (volatile uint32_t *)MMU_TBL_BASE + (virt_section_base >> VMM_SECTION_OFFSET);
-
-    size   = (size + VMM_SECTION_SIZE - 1) / VMM_SECTION_SIZE;
-
-    for (i = 0; i < size; i++) {
-        *entry++ = attr | (((phys_section_base >> VMM_SECTION_OFFSET) + i) << VMM_SECTION_OFFSET);
-    }
+    return 0;
 }
 /*********************************************************************************************************
 ** Function name:           arch_mmu_init

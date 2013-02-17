@@ -42,7 +42,11 @@
 /*********************************************************************************************************
 ** Í·ÎÄ¼þ
 *********************************************************************************************************/
+#ifdef SMILEOS_KERNEL
+#include "kern/kern.h"
+#else
 #include "kern/types.h"
+#endif
 #include <sys/time.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -83,9 +87,8 @@ static inline u32_t __HTONL(u32_t x)
 #define X8_F                        "02X"
 
 #ifdef SMILEOS_KERNEL
-extern void printk(const char *fmt, ...);
 #define LWIP_PLATFORM_DIAG(x)       { printk x; }
-#define LWIP_PLATFORM_ASSERT(x)     { printk("lwip assert: %s\n", x); }
+#define LWIP_PLATFORM_ASSERT(x)     { printk(KERN_ERR"lwip assert: %s\n", x); }
 #else
 #include <stdio.h>
 #define LWIP_PLATFORM_DIAG(x)       { printf x; }
@@ -96,8 +99,6 @@ extern void printk(const char *fmt, ...);
 *********************************************************************************************************/
 #ifdef SMILEOS_KERNEL
 typedef reg_t    sys_prot_t;
-extern  reg_t    interrupt_disable(void);
-extern  void     interrupt_resume(register reg_t reg);
 
 #define sys_arch_protect            interrupt_disable
 #define sys_arch_unprotect          interrupt_resume

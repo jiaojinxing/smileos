@@ -351,44 +351,44 @@ uint32_t mmu_get_fault_address(void);
 ** input parameters:        section_no          段号
 **                          page_tbl_base       二级页表基址
 ** output parameters:       NONE
-** Returned value:          NONE
+** Returned value:          0 OR -1
 *********************************************************************************************************/
-void mmu_map_section(uint32_t section_no,
-                     uint32_t page_tbl_base);
+int mmu_map_section(uint32_t section_no,
+                    uint32_t page_tbl_base);
 /*********************************************************************************************************
 ** Function name:           mmu_unmap_section
 ** Descriptions:            取消映射段
 ** input parameters:        section_no          段号
 ** output parameters:       NONE
-** Returned value:          NONE
+** Returned value:          0 OR -1
 *********************************************************************************************************/
-void mmu_unmap_section(uint32_t section_no);
+int mmu_unmap_section(uint32_t section_no);
 /*********************************************************************************************************
 ** Function name:           mmu_map_page
 ** Descriptions:            映射 4K 小页面
 ** input parameters:        page_tbl_base       二级页表基址
 **                          page_no             段内页号
-**                          phypage_base        物理页面基址
+**                          phy_page_base       物理页面基址
 ** output parameters:       NONE
 ** Returned value:          NONE
 *********************************************************************************************************/
-void mmu_map_page(uint32_t page_tbl_base,
-                  uint32_t page_no,
-                  uint32_t phy_page_base);
+int mmu_map_page(uint32_t page_tbl_base,
+                 uint32_t page_no,
+                 uint32_t phy_page_base);
 /*********************************************************************************************************
 ** Function name:           mmu_map_region
 ** Descriptions:            映射区域
-** input parameters:        virt_section_base   虚拟基址
-**                          phys_section_base   物理基址
+** input parameters:        virt_section_base   段虚拟基址
+**                          phys_section_base   段物理基址
 **                          size                大小
 **                          attr                属性
 ** output parameters:       NONE
-** Returned value:          NONE
+** Returned value:          0 OR -1
 *********************************************************************************************************/
-void mmu_map_region(uint32_t virt_section_base,
-                    uint32_t phys_section_base,
-                    uint32_t size,
-                    uint32_t attr);
+int mmu_map_region(uint32_t virt_section_base,
+                   uint32_t phys_section_base,
+                   uint32_t size,
+                   uint32_t attr);
 
 #ifdef __cplusplus
 }

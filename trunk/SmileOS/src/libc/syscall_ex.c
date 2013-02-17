@@ -42,6 +42,7 @@
 #include <unistd.h>
 #include <sys/poll.h>
 #include <sys/select.h>
+#include <errno.h>
 /*********************************************************************************************************
 ** Function name:           creat
 ** Descriptions:            创建文件
@@ -110,10 +111,12 @@ int poll(struct pollfd fds[], nfds_t nfds, int timeout)
     struct timeval tv;
 
     if (fds == NULL && nfds != 0) {
+        errno = EINVAL;
         return -1;
     }
 
     if (fds != NULL && nfds == 0) {
+        errno = EINVAL;
         return -1;
     }
 
@@ -123,6 +126,7 @@ int poll(struct pollfd fds[], nfds_t nfds, int timeout)
             tv.tv_usec = 1000 * (timeout % 1000);
             return select(0, NULL, NULL, NULL, &tv);
         } else {
+            errno = EINVAL;
             return -1;
         }
     }
@@ -155,6 +159,7 @@ int poll(struct pollfd fds[], nfds_t nfds, int timeout)
     }
 
     if (n == -1) {
+        errno = EINVAL;
         return -1;
     }
 

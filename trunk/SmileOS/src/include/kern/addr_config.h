@@ -40,6 +40,10 @@
 #ifndef ADDR_CONFIG_H_
 #define ADDR_CONFIG_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifndef KB
 #define KB                          (1024)
 #define MB                          (1024 * KB)
@@ -47,6 +51,10 @@
 #endif
 
 #include "../../bsp/s3c2440/s3c2440_config.h"
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif                                                                  /*  ADDR_CONFIG_H_              */
 /*********************************************************************************************************
