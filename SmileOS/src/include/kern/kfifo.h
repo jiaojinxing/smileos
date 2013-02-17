@@ -40,6 +40,10 @@
 #ifndef KFIFO_H_
 #define KFIFO_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <string.h>
 
 /*
@@ -152,6 +156,10 @@ static inline unsigned int kfifo_get(kfifo_t *f, void *buf, unsigned int len)
 
     return len;
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif                                                                  /*  KFIFO_H_                    */
 /*********************************************************************************************************

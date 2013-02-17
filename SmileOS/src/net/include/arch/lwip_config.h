@@ -281,7 +281,7 @@
 
                                                                         /*  范围 IPv4 网络字节序地址    */
 #define DNS_LOCAL_HOSTLIST_IS_DYNAMIC   1
-#define DNS_LOOKUP_LOCAL_EXTERN(x)      __inetHostTableGetItem(x)
+#define DNS_LOOKUP_LOCAL_EXTERN(x)      sys_dns_lookup_local(x)
 
 /*********************************************************************************************************
 ** transmit layer (注意: 如果 TCP_WND 大于网卡接收缓冲, 可能造成批量传输时, 网卡芯片缓冲溢出.

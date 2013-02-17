@@ -40,6 +40,10 @@
 #ifndef KVARS_H_
 #define KVARS_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifndef KVARS_INC
 #define KVAR            extern
 #else
@@ -51,6 +55,10 @@ KVAR struct _reent      reents[1 + KTHREAD_NR];                         /*  可重
 KVAR task_t            *current;                                        /*  指向当前运行的任务          */
 KVAR uint8_t            interrupt_nest;                                 /*  中断嵌套层次                */
 KVAR bool_t             os_started;                                     /*  内核是否正在运行            */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif                                                                  /*  KVARS_H_                    */
 /*********************************************************************************************************

@@ -40,6 +40,10 @@
 #ifndef VFS_COMMON_H_
 #define VFS_COMMON_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "kern/kern.h"
 #include "kern/ipc.h"
 #include "kern/kvars.h"
@@ -174,6 +178,10 @@ int vfs_select_file(int fd, int flags);
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
 int vfs_unselect_file(int fd, int flags);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif                                                                  /*  VFS_COMMON_H_               */
 /*********************************************************************************************************

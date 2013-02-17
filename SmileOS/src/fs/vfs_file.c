@@ -745,7 +745,6 @@ int vfs_unselect_file(int fd, int flags)
 file_t *vfs_get_file(int fd)
 {
     pid_t pid = getpid();
-    mount_point_t  *point;
     file_t         *file;
     vfs_info_t     *info;
 

@@ -127,7 +127,7 @@
 / Physical Drive Configurations
 /----------------------------------------------------------------------------*/
 
-#define _VOLUMES	5
+#define _VOLUMES	10
 /* Number of volumes (logical drives) to be used. */
 
 
@@ -185,7 +185,7 @@ struct mutex;
 /      function must be added to the project. */
 
 
-#define	_FS_LOCK	20	/* 0:Disable or >=1:Enable */
+#define	_FS_LOCK	100	/* 0:Disable or >=1:Enable */
 /* To enable file lock control feature, set _FS_LOCK to 1 or greater.
    The value defines how many files can be opened simultaneously. */
 

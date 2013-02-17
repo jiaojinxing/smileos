@@ -1414,7 +1414,7 @@ event_callback(struct netconn *conn, enum netconn_evt evt, u16_t len)
 
       type = 0;
 
-      if (rcvevent > 0) {
+      if (rcvevent > 0 || lastdata != NULL) {
           type |= VFS_FILE_READABLE;
       }
 

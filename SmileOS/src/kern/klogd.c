@@ -153,7 +153,7 @@ void printk(const char *fmt, ...)
     msg = kmalloc(sizeof(msg_t), GFP_KERNEL);
     if (msg == NULL) {
         /*
-         * TODO
+         * TODO: 不依赖于 VFS 的调试通道
          */
         return;
     }

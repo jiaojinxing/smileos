@@ -137,6 +137,8 @@ int yaffsfs_CheckMemRegion(const void *addr, size_t size, int writeable)
 *********************************************************************************************************/
 int yaffsfs_Init(void)
 {
+    INIT_LIST_HEAD(&yaffs_context_list);
+
     if (mutex_create(&yaffs_lock) < 0) {
         return -1;
     }

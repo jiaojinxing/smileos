@@ -40,6 +40,10 @@
 #ifndef ATOMIC_H_
 #define ATOMIC_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
  * 原子量
  */
@@ -147,6 +151,10 @@ int atomic_inc_return(atomic_t *v);
 ** Returned value:          原子量新的值
 *********************************************************************************************************/
 int atomic_dec_return(atomic_t *v);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif                                                                  /*  ATOMIC_H_                   */
 /*********************************************************************************************************

@@ -232,7 +232,9 @@ int mutex_lock(mutex_t *mutex, tick_t timeout)
                 } else {
                     wait_event_forever(m->wait_list, resume_type);
                 }
-                if (resume_type == TASK_RESUME_INTERRUPT || resume_type == TASK_RESUME_TIMEOUT) {
+                if (resume_type == TASK_RESUME_INTERRUPT ||
+                    resume_type == TASK_RESUME_TIMEOUT ||
+                    resume_type == TASK_RESUME_UNKNOW) {
                     goto error;
                 } else {
                     if (timeout != 0) {
@@ -496,7 +498,9 @@ int sem_wait(sem_t *sem, tick_t timeout)
                 } else {
                     wait_event_forever(s->wait_list, resume_type);
                 }
-                if (resume_type == TASK_RESUME_INTERRUPT || resume_type == TASK_RESUME_TIMEOUT) {
+                if (resume_type == TASK_RESUME_INTERRUPT ||
+                    resume_type == TASK_RESUME_TIMEOUT ||
+                    resume_type == TASK_RESUME_UNKNOW) {
                     goto error;
                 } else {
                     if (timeout != 0) {
@@ -808,7 +812,9 @@ int mqueue_post(mqueue_t *mqueue, void *msg, tick_t timeout)
                 } else {
                     wait_event_forever(q->w_wait_list, resume_type);
                 }
-                if (resume_type == TASK_RESUME_INTERRUPT || resume_type == TASK_RESUME_TIMEOUT) {
+                if (resume_type == TASK_RESUME_INTERRUPT ||
+                    resume_type == TASK_RESUME_TIMEOUT ||
+                    resume_type == TASK_RESUME_UNKNOW) {
                     goto error;
                 } else {
                     if (timeout != 0) {
@@ -905,7 +911,9 @@ int mqueue_fetch(mqueue_t *mqueue, void **msg, tick_t timeout)
                 } else {
                     wait_event_forever(q->r_wait_list, resume_type);
                 }
-                if (resume_type == TASK_RESUME_INTERRUPT || resume_type == TASK_RESUME_TIMEOUT) {
+                if (resume_type == TASK_RESUME_INTERRUPT ||
+                    resume_type == TASK_RESUME_TIMEOUT ||
+                    resume_type == TASK_RESUME_UNKNOW) {
                     goto error;
                 } else {
                     if (timeout != 0) {

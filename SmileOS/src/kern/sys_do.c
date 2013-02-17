@@ -70,6 +70,10 @@ extern int          task_pause(void);
 *********************************************************************************************************/
 static void sys_do_enter(void)
 {
+    if (!os_started) {
+        while (1);
+    }
+
     /*
      * TODO: 为避免调试应用程序时 GDB 进入内核, 这里应该加上一些处理
      */
@@ -98,9 +102,6 @@ static void do_exit(syscall_args_t *args)
 #if CONFIG_SIGNAL_EN > 0
     kill(gettid(), SIGKILL);
 #else
-    /*
-     * TODO
-     */
     task_cleanup(gettid());
 #endif
 
