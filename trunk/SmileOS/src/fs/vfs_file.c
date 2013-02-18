@@ -98,14 +98,21 @@ int vfs_open(const char *path, int oflag, mode_t mode)
     mount_point_t  *point;
     vfs_info_t     *info;
     file_t         *file;
-    char            pathbuf[PATH_BUF_LEN];
+    char           *pathbuf;
     char           *filepath;
     int             fd;
     int             ret;
     int             pid = getpid();
 
+    pathbuf = kmalloc(PATH_BUF_LEN, GFP_KERNEL);
+    if (pathbuf == NULL) {
+        seterrno(ENOMEM);
+        return -1;
+    }
+
     point = vfs_mount_point_lookup_ref(pathbuf, &filepath, path);       /*  查找挂载点                  */
     if (point == NULL) {
+        kfree(pathbuf);
         return -1;
     }
 
@@ -123,6 +130,7 @@ int vfs_open(const char *path, int oflag, mode_t mode)
     if (fd == info->open_max) {                                         /*  没找到                      */
         mutex_unlock(&info_lock[pid]);
         atomic_dec(&point->ref);
+        kfree(pathbuf);
         seterrno(EMFILE);
         return -1;
     }
@@ -131,6 +139,7 @@ int vfs_open(const char *path, int oflag, mode_t mode)
     if (file == NULL) {
         mutex_unlock(&info_lock[pid]);
         atomic_dec(&point->ref);
+        kfree(pathbuf);
         seterrno(EMFILE);
         return -1;
     }
@@ -152,6 +161,7 @@ int vfs_open(const char *path, int oflag, mode_t mode)
         mutex_unlock(&info_lock[pid]);
         vfs_file_free(file);
         atomic_dec(&point->ref);
+        kfree(pathbuf);
         seterrno(ENOSYS);
         return -1;
     }
@@ -164,10 +174,13 @@ int vfs_open(const char *path, int oflag, mode_t mode)
         mutex_unlock(&info_lock[pid]);
         vfs_file_free(file);
         atomic_dec(&point->ref);
+        kfree(pathbuf);
         return -1;
     }
 
     mutex_unlock(&file->lock);
+
+    kfree(pathbuf);
 
     return fd;                                                          /*  返回文件描述符              */
 }
@@ -744,7 +757,7 @@ int vfs_unselect_file(int fd, int flags)
 *********************************************************************************************************/
 file_t *vfs_get_file(int fd)
 {
-    pid_t pid = getpid();
+    pid_t           pid = getpid();
     file_t         *file;
     vfs_info_t     *info;
 

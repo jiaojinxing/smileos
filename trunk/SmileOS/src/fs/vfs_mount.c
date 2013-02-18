@@ -41,13 +41,13 @@
 /*********************************************************************************************************
 ** 外部变量
 *********************************************************************************************************/
-extern mutex_t          point_mgr_lock;                                 /*  挂载点管理锁                */
+extern mutex_t              point_mgr_lock;                             /*  挂载点管理锁                */
 
-extern mount_point_t   *rootfs_point;                                   /*  根文件系统挂载点            */
+extern mount_point_t       *rootfs_point;                               /*  根文件系统挂载点            */
 
-extern mutex_t          dev_mgr_lock;                                   /*  设备管理锁                  */
+extern mutex_t              dev_mgr_lock;                               /*  设备管理锁                  */
 
-extern mutex_t          fs_mgr_lock;                                    /*  文件系统管理锁              */
+extern mutex_t              fs_mgr_lock;                                /*  文件系统管理锁              */
 /*********************************************************************************************************
 ** Function name:           vfs_path_add_mount_point
 ** Descriptions:            在 PATH 前加入挂载点名
@@ -381,9 +381,17 @@ int vfs_mount(const char *point_name, const char *dev_name, const char *fs_name,
     atomic_inc(&fs->ref);
     mutex_unlock(&fs_mgr_lock);
 
-    mutex_lock(&dev_mgr_lock, 0);
-    dev = device_lookup(dev_name);                                      /*  查找设备                    */
-    if (dev != NULL) {
+    if (dev_name != NULL) {
+        mutex_lock(&dev_mgr_lock, 0);
+        dev = device_lookup(dev_name);                                  /*  查找设备                    */
+        if (dev == NULL) {
+            atomic_dec(&fs->ref);
+            mutex_unlock(&dev_mgr_lock);
+            mutex_unlock(&point_mgr_lock);
+            seterrno(ENODEV);
+            return -1;
+        }
+
         if (atomic_inc_return(&dev->ref) != 1) {
             atomic_dec(&dev->ref);
             atomic_dec(&fs->ref);
@@ -392,8 +400,8 @@ int vfs_mount(const char *point_name, const char *dev_name, const char *fs_name,
             seterrno(EBUSY);
             return -1;
         }
+        mutex_unlock(&dev_mgr_lock);
     }
-    mutex_unlock(&dev_mgr_lock);
 
     point = kmalloc(sizeof(mount_point_t), GFP_KERNEL);                 /*  分配挂载点                  */
     if (point == NULL) {
@@ -450,6 +458,7 @@ int vfs_mount(const char *point_name, const char *dev_name, const char *fs_name,
 
     mount_point_install(point);                                         /*  安装挂载点                  */
     mutex_unlock(&point_mgr_lock);
+
     return 0;
 }
 /*********************************************************************************************************
@@ -463,26 +472,35 @@ int vfs_mount(const char *point_name, const char *dev_name, const char *fs_name,
 int vfs_unmount(const char *path, const char *param)
 {
     mount_point_t  *point;
-    char            pathbuf[PATH_BUF_LEN];
+    char           *pathbuf;
     char           *filepath;
     int             ret;
+
+    pathbuf = kmalloc(PATH_BUF_LEN, GFP_KERNEL);
+    if (pathbuf == NULL) {
+        seterrno(ENOMEM);
+        return -1;
+    }
 
     mutex_lock(&point_mgr_lock, 0);
 
     point = vfs_mount_point_lookup2(pathbuf, &filepath, path);          /*  查找挂载点                  */
     if (point == NULL) {
         mutex_unlock(&point_mgr_lock);
+        kfree(pathbuf);
         return -1;
     }
 
     if (point->fs->unmount == NULL) {
         mutex_unlock(&point_mgr_lock);
+        kfree(pathbuf);
         seterrno(ENOSYS);
         return -1;
     }
 
     if (atomic_read(&point->ref) != 0) {
         mutex_unlock(&point_mgr_lock);
+        kfree(pathbuf);
         seterrno(EBUSY);
         return -1;
     }
@@ -500,6 +518,8 @@ int vfs_unmount(const char *path, const char *param)
     }
 
     mutex_unlock(&point_mgr_lock);
+
+    kfree(pathbuf);
 
     return ret;
 }

@@ -52,7 +52,7 @@
 /*********************************************************************************************************
 ** 全局变量
 *********************************************************************************************************/
-unsigned int    yaffs_trace_mask = YAFFS_TRACE_ALWAYS | YAFFS_TRACE_OS | YAFFS_TRACE_CHECKPOINT | YAFFS_TRACE_ERASE; /*  TARCE 屏蔽掩码              */
+unsigned int    yaffs_trace_mask = YAFFS_TRACE_ALWAYS;                  /*  TARCE 屏蔽掩码              */
 
 static mutex_t  yaffs_lock;                                             /*  锁                          */
 
@@ -398,7 +398,7 @@ void *yaffsfs_Mount(int yaffs_version,
 
     yaffs_trace(YAFFS_TRACE_OS, "block size %d\n", (int)(st.st_blksize));
 
-    yaffs_trace(YAFFS_TRACE_OS, "Attempting MTD mount on \"%s\"\n", dev_name);
+    yaffs_trace(YAFFS_TRACE_ALWAYS, "Attempting MTD mount on \"%s\"\n", dev_name);
 
     /*
      * 获得 MTD 设备
@@ -409,92 +409,20 @@ void *yaffsfs_Mount(int yaffs_version,
         return NULL;
     }
 
-    /*
-     * 检查它的类型, 保证是 NANDFLASH
-     */
-    if (mtd->type != MTD_NANDFLASH) {
-        yaffs_trace(YAFFS_TRACE_ALWAYS, "MTD device is not NAND it's type %d", mtd->type);
-        return NULL;
-    }
-
-    yaffs_trace(YAFFS_TRACE_OS, "erase %p", mtd->erase);
-    yaffs_trace(YAFFS_TRACE_OS, "read %p", mtd->read);
-    yaffs_trace(YAFFS_TRACE_OS, "write %p", mtd->write);
-    yaffs_trace(YAFFS_TRACE_OS, "readoob %p", mtd->read_oob);
-    yaffs_trace(YAFFS_TRACE_OS, "writeoob %p", mtd->write_oob);
-    yaffs_trace(YAFFS_TRACE_OS, "block_isbad %p", mtd->block_isbad);
-    yaffs_trace(YAFFS_TRACE_OS, "block_markbad %p", mtd->block_markbad);
-#define WRITE_SIZE_STR "writesize"
-#define WRITE_SIZE(mtd) ((mtd)->writesize)
-    yaffs_trace(YAFFS_TRACE_OS, "%s %d", WRITE_SIZE_STR, WRITE_SIZE(mtd));
-    yaffs_trace(YAFFS_TRACE_OS, "oobsize %d", mtd->oobsize);
-    yaffs_trace(YAFFS_TRACE_OS, "erasesize %d", mtd->erasesize);
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 29)
-    yaffs_trace(YAFFS_TRACE_OS, "size %u", mtd->size);
-#else
-    yaffs_trace(YAFFS_TRACE_OS, "size %lld", mtd->size);
-#endif
-
-    /*
-     * 自动选择 yaffs 版本
-     */
     if (yaffs_version == 1 && WRITE_SIZE(mtd) >= 2048) {
         yaffs_trace(YAFFS_TRACE_ALWAYS, "auto selecting yaffs2");
         yaffs_version = 2;
     }
 
-    /*
-     * Added NCB 26/5/2006 for completeness
-     */
+    /* Added NCB 26/5/2006 for completeness */
     if (yaffs_version == 2 && !options.inband_tags
         && WRITE_SIZE(mtd) == 512) {
         yaffs_trace(YAFFS_TRACE_ALWAYS, "auto selecting yaffs1");
         yaffs_version = 1;
     }
 
-    if (yaffs_version == 2) {
-        /*
-         * Check for version 2 style functions
-         */
-        if (!mtd->erase ||
-            !mtd->block_isbad ||
-            !mtd->block_markbad || !mtd->read || !mtd->write ||
-#if (LINUX_VERSION_CODE > KERNEL_VERSION(2, 6, 17))
-            !mtd->read_oob || !mtd->write_oob) {
-#else
-            !mtd->write_ecc ||
-            !mtd->read_ecc || !mtd->read_oob || !mtd->write_oob) {
-#endif
-            yaffs_trace(YAFFS_TRACE_ALWAYS, "MTD device does not support required functions");
-            return NULL;
-        }
-
-        if ((WRITE_SIZE(mtd) < YAFFS_MIN_YAFFS2_CHUNK_SIZE ||
-             mtd->oobsize < YAFFS_MIN_YAFFS2_SPARE_SIZE) &&
-            !options.inband_tags) {
-            yaffs_trace(YAFFS_TRACE_ALWAYS, "MTD device does not have the right page sizes");
-            return NULL;
-        }
-    } else {
-        /*
-         * Check for V1 style functions
-         */
-        if (!mtd->erase || !mtd->read || !mtd->write ||
-#if (LINUX_VERSION_CODE > KERNEL_VERSION(2, 6, 17))
-            !mtd->read_oob || !mtd->write_oob) {
-#else
-            !mtd->write_ecc ||
-            !mtd->read_ecc || !mtd->read_oob || !mtd->write_oob) {
-#endif
-            yaffs_trace(YAFFS_TRACE_ALWAYS, "MTD device does not support required functions");
-            return NULL;
-        }
-
-        if (WRITE_SIZE(mtd) < YAFFS_BYTES_PER_CHUNK ||
-            mtd->oobsize != YAFFS_BYTES_PER_SPARE) {
-            yaffs_trace(YAFFS_TRACE_ALWAYS, "MTD device does not support have the right page sizes");
-            return NULL;
-        }
+    if (yaffs_verify_mtd(mtd, yaffs_version, options.inband_tags) < 0) {
+        return NULL;
     }
 
     /*
@@ -542,7 +470,7 @@ void *yaffsfs_Mount(int yaffs_version,
     if (options.empty_lost_and_found_overridden)
         param->empty_lost_n_found = options.empty_lost_and_found;
 
-#define YCALCBLOCKS(s, b) ((s) / (b))
+#define YCALCBLOCKS(s, b)   ((s) / (b))
 
     if (yaffs_version == 2) {
         param->is_yaffs2 = 1;
@@ -559,7 +487,8 @@ void *yaffsfs_Mount(int yaffs_version,
         param->end_block = n_blocks - 1;
     } else {
         param->is_yaffs2 = 0;
-        n_blocks = YCALCBLOCKS(mtd->size, YAFFS_CHUNKS_PER_BLOCK * YAFFS_BYTES_PER_CHUNK);
+        n_blocks = YCALCBLOCKS(mtd->size,
+                 YAFFS_CHUNKS_PER_BLOCK * YAFFS_BYTES_PER_CHUNK);
 
         param->chunks_per_block = YAFFS_CHUNKS_PER_BLOCK;
         param->total_bytes_per_chunk = YAFFS_BYTES_PER_CHUNK;

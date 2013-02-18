@@ -56,7 +56,7 @@ extern "C" {
 #undef  PATH_MAX
 #define PATH_MAX                    (256)                               /*  路径的最大长度              */
 
-#define PATH_BUF_LEN                (PATH_MAX)                          /*  路径缓冲的最大长度          */
+#define PATH_BUF_LEN                (PATH_MAX * 2)                      /*  路径缓冲的最大长度          */
 
 #ifdef __cplusplus
 }

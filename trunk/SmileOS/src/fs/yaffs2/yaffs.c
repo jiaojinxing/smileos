@@ -75,10 +75,6 @@ static int __yaffs1_mount(mount_point_t *point, device_t *dev, const char *dev_n
         return -1;
     }
 
-    if (dev_name == NULL) {
-        dev_name = dev->name;
-    }
-
     ctx = yaffsfs_Mount(1, point->name, dev_name, param);
     if (ctx != NULL) {
         point->ctx = ctx;
@@ -96,10 +92,6 @@ static int __yaffs2_mount(mount_point_t *point, device_t *dev, const char *dev_n
     if (point == NULL || dev == NULL) {
         seterrno(EINVAL);
         return -1;
-    }
-
-    if (dev_name == NULL) {
-        dev_name = dev->name;
     }
 
     ctx = yaffsfs_Mount(2, point->name, dev_name, param);

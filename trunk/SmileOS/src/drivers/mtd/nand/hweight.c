@@ -15,9 +15,9 @@
  * equivaqlent functions in the Linux kernel.
  */
 
-#include "yaffs_hweight.h"
+#include <linux/compat.h>
 
-static const char yaffs_count_bits_table[256] = {
+static const char count_bits_table[256] = {
 	0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4,
 	1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
 	1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
@@ -36,18 +36,17 @@ static const char yaffs_count_bits_table[256] = {
 	4, 5, 5, 6, 5, 6, 6, 7, 5, 6, 6, 7, 6, 7, 7, 8
 };
 
-int yaffs_hweight8(u8 x)
+int hweight8(u8 x)
 {
 	int ret_val;
-	ret_val = yaffs_count_bits_table[x];
+	ret_val = count_bits_table[x];
 	return ret_val;
 }
 
-int yaffs_hweight32(u32 x)
+int hweight32(u32 x)
 {
-	return yaffs_hweight8(x & 0xff) +
-		yaffs_hweight8((x >> 8) & 0xff) +
-		yaffs_hweight8((x >> 16) & 0xff) +
-		yaffs_hweight8((x >> 24) & 0xff);
+	return hweight8(x & 0xff) +
+		hweight8((x >> 8) & 0xff) +
+		hweight8((x >> 16) & 0xff) +
+		hweight8((x >> 24) & 0xff);
 }
-

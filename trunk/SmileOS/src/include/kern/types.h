@@ -71,6 +71,16 @@ typedef int16_t                     s16_t;
 typedef uint32_t                    u32_t;
 typedef int32_t                     s32_t;
 
+typedef uint8_t                     u8;
+typedef uint16_t                    u16;
+typedef uint32_t                    u32;
+typedef uint64_t                    u64;
+
+typedef unsigned char               uchar;
+typedef unsigned int                uint;
+typedef unsigned short              ushort;
+typedef unsigned long               ulong;
+
 #ifndef NULL
 #define NULL                        0
 #endif
@@ -82,16 +92,17 @@ typedef int32_t                     s32_t;
 #ifndef FALSE
 #define FALSE                       0
 #endif
-
+/*********************************************************************************************************
+** 大小
+*********************************************************************************************************/
 #ifndef KB
 #define KB                          (1024)
 #define MB                          (1024 * KB)
 #define GB                          (1024 * MB)
 #endif
-
-/*
- * 字节序
- */
+/*********************************************************************************************************
+** 字节序
+*********************************************************************************************************/
 #ifndef LITTLE_ENDIAN
 #define LITTLE_ENDIAN               1234
 #endif
@@ -99,57 +110,112 @@ typedef int32_t                     s32_t;
 #ifndef BIG_ENDIAN
 #define BIG_ENDIAN                  4321
 #endif
-
+/*********************************************************************************************************
+** ARCH 数据类型定义
+*********************************************************************************************************/
 #include "arch/types.h"
-
+/*********************************************************************************************************
+** 内存空间
+*********************************************************************************************************/
 typedef mem_ptr_t                   mem_size_t;
 
-/*
- * 内存空间
- */
 typedef struct {
     mem_ptr_t                       base;
     mem_size_t                      size;
 } mem_space_t;
-
-/*
- * TICK 数据类型
- */
+/*********************************************************************************************************
+** TICK 数据类型
+*********************************************************************************************************/
 typedef uint64_t                    tick_t;
 /*********************************************************************************************************
-** 系统数据类型定义
+** 处理内存对齐
 *********************************************************************************************************/
-/*
- * 处理内存对齐
- */
 #define MEM_ALIGN_SIZE(size)        (((size) + MEM_ALIGNMENT - 1) & ~(MEM_ALIGNMENT - 1))
 #define MEM_ALIGN_SIZE_LESS(size)   (((size) & ~(MEM_ALIGNMENT - 1)))
 #define MEM_ALIGN(addr)             ((void *)(((mem_ptr_t)(addr) + MEM_ALIGNMENT - 1) & ~(mem_ptr_t)(MEM_ALIGNMENT - 1)))
 #define MEM_ALIGN_LESS(addr)        ((void *)(((mem_ptr_t)(addr)) & ~(mem_ptr_t)(MEM_ALIGNMENT - 1)))
 
-/*
- * 编译器结构缩排
- */
+#define ALIGN(size, align)          (((size) + align - 1) & ~(align - 1))
+/*********************************************************************************************************
+** 编译器结构缩排
+*********************************************************************************************************/
 #define PACK_STRUCT_FIELD(x)        x
 #define PACK_STRUCT_STRUCT          __attribute__((packed))
 #define PACK_STRUCT_BEGIN                                               /*  单字节缩排结构体            */
 #define PACK_STRUCT_END                                                 /*  结束单字节缩排结构体        */
-
-/*
- * 求最大和最小值
- */
+/*********************************************************************************************************
+** 求最大和最小值
+*********************************************************************************************************/
 #define max(a, b)                   (a) > (b) ? (a) : (b)
 #define min(a, b)                   (a) < (b) ? (a) : (b)
-
-/*
- * 读写内存地址
- */
+/*********************************************************************************************************
+** 读写内存地址
+*********************************************************************************************************/
 #define writeb(d, r)                (*(volatile uint8_t  *)r) = (d)
 #define writew(d, r)                (*(volatile uint16_t *)r) = (d)
 #define writel(d, r)                (*(volatile uint32_t *)r) = (d)
 #define readb(r)                    (*(volatile uint8_t  *)r)
 #define readw(r)                    (*(volatile uint16_t *)r)
 #define readl(r)                    (*(volatile uint8_t  *)r)
+/*********************************************************************************************************
+** 数组大小
+*********************************************************************************************************/
+#define ARRAY_SIZE(a)               (sizeof(a) / sizeof(a[0]))
+/*********************************************************************************************************
+** 字节序转换
+*********************************************************************************************************/
+#define uswap_16(x) \
+    ((((x) & 0xff00) >> 8) | \
+     (((x) & 0x00ff) << 8))
+#define uswap_32(x) \
+    ((((x) & 0xff000000) >> 24) | \
+     (((x) & 0x00ff0000) >>  8) | \
+     (((x) & 0x0000ff00) <<  8) | \
+     (((x) & 0x000000ff) << 24))
+#define _uswap_64(x, sfx) \
+    ((((x) & 0xff00000000000000##sfx) >> 56) | \
+     (((x) & 0x00ff000000000000##sfx) >> 40) | \
+     (((x) & 0x0000ff0000000000##sfx) >> 24) | \
+     (((x) & 0x000000ff00000000##sfx) >>  8) | \
+     (((x) & 0x00000000ff000000##sfx) <<  8) | \
+     (((x) & 0x0000000000ff0000##sfx) << 24) | \
+     (((x) & 0x000000000000ff00##sfx) << 40) | \
+     (((x) & 0x00000000000000ff##sfx) << 56))
+#if defined(__GNUC__)
+# define uswap_64(x) _uswap_64(x, ull)
+#else
+# define uswap_64(x) _uswap_64(x, )
+#endif
+/*********************************************************************************************************
+** 机器字节序转换
+*********************************************************************************************************/
+#if BYTE_ORDER == LITTLE_ENDIAN
+# define cpu_to_le16(x)     (x)
+# define cpu_to_le32(x)     (x)
+# define cpu_to_le64(x)     (x)
+# define le16_to_cpu(x)     (x)
+# define le32_to_cpu(x)     (x)
+# define le64_to_cpu(x)     (x)
+# define cpu_to_be16(x)     uswap_16(x)
+# define cpu_to_be32(x)     uswap_32(x)
+# define cpu_to_be64(x)     uswap_64(x)
+# define be16_to_cpu(x)     uswap_16(x)
+# define be32_to_cpu(x)     uswap_32(x)
+# define be64_to_cpu(x)     uswap_64(x)
+#else
+# define cpu_to_le16(x)     uswap_16(x)
+# define cpu_to_le32(x)     uswap_32(x)
+# define cpu_to_le64(x)     uswap_64(x)
+# define le16_to_cpu(x)     uswap_16(x)
+# define le32_to_cpu(x)     uswap_32(x)
+# define le64_to_cpu(x)     uswap_64(x)
+# define cpu_to_be16(x)     (x)
+# define cpu_to_be32(x)     (x)
+# define cpu_to_be64(x)     (x)
+# define be16_to_cpu(x)     (x)
+# define be32_to_cpu(x)     (x)
+# define be64_to_cpu(x)     (x)
+#endif
 
 #ifdef __cplusplus
 }

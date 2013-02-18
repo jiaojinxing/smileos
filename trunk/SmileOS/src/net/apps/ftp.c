@@ -872,7 +872,7 @@ static void ftpd_ctrlconnection(void *arg)
     send_msg(fsm, msg220);
 
     while (1) {
-        len = read(fd, text, sizeof(fsm->rx_buffer));
+        len = read(fd, text, sizeof(fsm->rx_buffer) - 1);
         if (len < 0) {
             break;
         }
@@ -979,6 +979,8 @@ static void ftpd(void *arg)
     }
 
     close(fd);
+
+    dbg_printf("ftp server exit\n");
 }
 /*********************************************************************************************************
 ** 初始化 FTPD 服务器

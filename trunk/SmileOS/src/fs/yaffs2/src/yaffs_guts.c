@@ -533,8 +533,6 @@ static int yaffs_write_new_chunk(struct yaffs_dev *dev,
 		if (dev->param.always_check_erased)
 			bi->skip_erased_check = 0;
 
-		bi->skip_erased_check = 1;
-
 		if (!bi->skip_erased_check) {
 			erased_ok = yaffs_check_chunk_erased(dev, chunk);
 			if (erased_ok != YAFFS_OK) {

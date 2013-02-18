@@ -96,14 +96,21 @@ DIR *vfs_opendir(const char *path)
     mount_point_t  *point;
     vfs_info_t     *info;
     file_t         *file;
-    char            pathbuf[PATH_BUF_LEN];
+    char           *pathbuf;
     char           *filepath;
     int             fd;
     int             ret;
     int             pid = getpid();
 
+    pathbuf = kmalloc(PATH_BUF_LEN, GFP_KERNEL);
+    if (pathbuf == NULL) {
+        seterrno(ENOMEM);
+        return (DIR *)0;
+    }
+
     point = vfs_mount_point_lookup2_ref(pathbuf, &filepath, path);      /*  查找挂载点                  */
     if (point == NULL) {
+        kfree(pathbuf);
         return (DIR *)0;
     }
 
@@ -121,6 +128,7 @@ DIR *vfs_opendir(const char *path)
     if (fd == info->open_max) {                                         /*  没找到                      */
         mutex_unlock(&info_lock[pid]);
         atomic_dec(&point->ref);
+        kfree(pathbuf);
         seterrno(EMFILE);
         return (DIR *)0;
     }
@@ -129,6 +137,7 @@ DIR *vfs_opendir(const char *path)
     if (file == NULL) {
         mutex_unlock(&info_lock[pid]);
         atomic_dec(&point->ref);
+        kfree(pathbuf);
         seterrno(EMFILE);
         return (DIR *)0;
     }
@@ -150,6 +159,7 @@ DIR *vfs_opendir(const char *path)
         mutex_unlock(&info_lock[pid]);
         vfs_file_free(file);
         atomic_dec(&point->ref);
+        kfree(pathbuf);
         seterrno(ENOSYS);
         return (DIR *)0;
     }
@@ -162,10 +172,13 @@ DIR *vfs_opendir(const char *path)
         mutex_unlock(&info_lock[pid]);
         vfs_file_free(file);
         atomic_dec(&point->ref);
+        kfree(pathbuf);
         return (DIR *)0;
     }
 
     mutex_unlock(&file->lock);
+
+    kfree(pathbuf);
 
     return (DIR *)fd;                                                   /*  返回文件描述符              */
 }

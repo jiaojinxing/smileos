@@ -73,7 +73,12 @@
 *********************************************************************************************************/
                             .global arch_kernel_enter
 arch_kernel_enter:
+    NOP
     SWI     0
+    MRS     R1, CPSR
+    BIC     R1, R1, #ARM_MODE_MASK
+    CMP     R1, #ARM_SYS_MODE                   /*  判断是否在 SYS 模式下                               */
+    BNE     .
     MOV     PC, LR
 /*********************************************************************************************************
 ** Function name:           interrupt_disable

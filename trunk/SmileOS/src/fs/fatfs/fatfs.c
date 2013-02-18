@@ -109,7 +109,7 @@ static int fatfs_mount(mount_point_t *point, device_t *dev, const char *dev_name
     FATFS *fs;
     FRESULT res;
 
-    if (dev_name == NULL) {
+    if (dev == NULL) {
         seterrno(EINVAL);
         return -1;
     }
