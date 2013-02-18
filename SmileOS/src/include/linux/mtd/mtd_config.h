@@ -19,10 +19,10 @@
 ** Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 **
 **--------------------------------------------------------------------------------------------------------
-** File name:               nand_config.h
+** File name:               mtd_config.h
 ** Last modified Date:      2013-2-3
 ** Last Version:            1.0.0
-** Descriptions:            nand ≈‰÷√
+** Descriptions:            MTD ≈‰÷√
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing
@@ -37,20 +37,31 @@
 ** Descriptions:
 **
 *********************************************************************************************************/
-#ifndef NAND_CONFIG_H_
-#define NAND_CONFIG_H_
+#ifndef MTD_CONFIG_H_
+#define MTD_CONFIG_H_
 
-/*
- * MTD ≈‰÷√
- */
 #define CONFIG_SYS_MAX_NAND_DEVICE      1
 #define CONFIG_SYS_NAND_BASE            0
 #define CONFIG_MTD_DEVICE               1
-#define CONFIG_RELOC_FIXUP_WORKS        1
 #define CONFIG_MTD_DEBUG                1
+#define CONFIG_SYS_NAND_RESET_CNT       200000
+//#define PPCHAMELON_NAND_TIMER_HACK    1
+//#define CONFIG_MTD_NAND_VERIFY_WRITE  1
+//#define CONFIG_SYS_NAND_ONFI_DETECTION  1
+//#define CONFIG_SYS_NAND_QUIET_TEST    1
+//#define CONFIG_MTD_PARTITIONS         1
+//#define CONFIG_NAND_NDFC              1
+//#define CONFIG_MTD_NAND_ECC_SMC       1
+//#define CONFIG_NAND_SPL               1
+//#define CONFIG_SPL_NAND_SOFTECC       1
+#define CONFIG_MTD_NAND_MUSEUM_IDS      1
+#define CONFIG_SYS_NAND_BASE_LIST       {0}
+//#define CONFIG_SYS_NAND_SELF_INIT     1
+//#define CONFIG_SYS_NAND_SELECT_DEVICE 1
+#define CONFIG_CMD_MTDPARTS_SPREAD      1
 #define CONFIG_MTD_DEBUG_VERBOSE        0
 
-#endif                                                                  /*  NAND_CONFIG_H_              */
+#endif                                                                  /*  MTD_CONFIG_H_               */
 /*********************************************************************************************************
 ** END FILE
 *********************************************************************************************************/

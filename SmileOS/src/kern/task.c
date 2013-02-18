@@ -413,6 +413,7 @@ void task_schedule(void)
 
     task = current;
     if (task == next) {                                                 /*  如果不需要切换任务          */
+        interrupt_resume(reg);
         return;
     } else {
         current = next;                                                 /*  改写 current 指针           */

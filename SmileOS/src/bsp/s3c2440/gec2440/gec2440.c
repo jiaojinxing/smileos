@@ -19,10 +19,10 @@
 ** Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 **
 **--------------------------------------------------------------------------------------------------------
-** File name:               mini2440.c
+** File name:               gec2440.c
 ** Last modified Date:      2012-2-2
 ** Last Version:            1.0.0
-** Descriptions:            mini2440 开发板初始化
+** Descriptions:            gec2440 开发板初始化
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing
@@ -51,18 +51,23 @@ void bsp_mem_map(void)
     /*
      * DM9000
      */
-    mmu_map_region(0x20000000,
-                   0x20000000,
+    mmu_map_region(0x10000000,
+                   0x10000000,
                    1 * MB,
-                   SECTION_ATTR(AP_USER_NO, DOMAIN_CHECK, CACHE_NO, BUFFER_NO));
+                   SECTION_ATTR(AP_USER_RW, DOMAIN_CHECK, CACHE_NO, BUFFER_NO));
+
+    mmu_map_region(0x10000000 + 1 * MB,
+                   0x11000000,
+                   1 * MB,
+                   SECTION_ATTR(AP_USER_RW, DOMAIN_CHECK, CACHE_NO, BUFFER_NO));
 }
 /*********************************************************************************************************
 ** BSP 保留空间
 *********************************************************************************************************/
 const mem_space_t bsp_resv_space[] = {
         {
-            0x20000000,                                                 /*  DM9000                      */
-            1 * MB
+            0x10000000,                                                 /*  DM9000                      */
+            2 * MB
         },
         {
             0,

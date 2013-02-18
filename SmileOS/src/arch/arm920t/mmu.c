@@ -874,7 +874,7 @@ void arch_mmu_init(void)
     /*
      * 拷贝异常向量跳转表
      */
-    memcpy((char *)VECTOR_P_ADDR, (char *)KERN_MEM_BASE, VMM_PAGE_SIZE);
+    memcpy((char *)VECTOR_P_ADDR, (char *)KERN_MEM_BASE, VMM_PAGE_SIZE * 4);
 }
 /*********************************************************************************************************
 ** 系统保留虚拟地址空间

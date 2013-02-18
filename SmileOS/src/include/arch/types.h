@@ -54,7 +54,9 @@ typedef uint8_t                     intno_t;
 
 #define MEM_ALIGNMENT               (4)
 
-#define BYTE_ORDER                  LITTLE_ENDIAN
+#define ARCH_DMA_MINALIGN           (MEM_ALIGNMENT)
+
+#define BYTE_ORDER                  (LITTLE_ENDIAN)
 
 #ifdef __cplusplus
 }

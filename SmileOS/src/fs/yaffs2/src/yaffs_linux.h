@@ -21,21 +21,33 @@
 struct yaffs_linux_context {
 	struct list_head context_list;	/* List of these we have mounted */
 	struct yaffs_dev *dev;
+#ifndef SMILEOS
 	struct super_block *super;
 	struct task_struct *bg_thread;	/* Background thread for this device */
 	int bg_running;
-#ifndef SMILEOS
 	struct mutex gross_lock;	/* Gross locking mutex*/
+	mutex_t gross_lock; /* Gross locking mutex*/
 #endif
 	u8 *spare_buffer;	/* For mtdif2 use. Don't know the buffer size
 				 * at compile time so we have to allocate it.
 				 */
+#ifndef SMILEOS
 	struct list_head search_contexts;
 	struct task_struct *readdir_process;
 	unsigned mount_id;
+	int dirty;
+#endif
 };
 
 #define yaffs_dev_to_lc(dev) ((struct yaffs_linux_context *)((dev)->os_context))
 #define yaffs_dev_to_mtd(dev) ((struct mtd_info *)((dev)->driver_context))
+
+#if (LINUX_VERSION_CODE > KERNEL_VERSION(2, 6, 17))
+#define WRITE_SIZE_STR "writesize"
+#define WRITE_SIZE(mtd) ((mtd)->writesize)
+#else
+#define WRITE_SIZE_STR "oobblock"
+#define WRITE_SIZE(mtd) ((mtd)->oobblock)
+#endif
 
 #endif

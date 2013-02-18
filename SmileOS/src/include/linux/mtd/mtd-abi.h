@@ -8,7 +8,11 @@
 #define __MTD_ABI_H__
 
 #if 1
-#include <linux/mtd/compat.h>
+#include <linux/compat.h>
+#endif
+
+#ifndef SMILEOS
+#include <linux/compiler.h>
 #endif
 
 struct erase_info_user {
@@ -123,7 +127,7 @@ struct nand_oobfree {
  */
 struct nand_ecclayout {
 	uint32_t eccbytes;
-	uint32_t eccpos[64];
+	uint32_t eccpos[128];
 	uint32_t oobavail;
 	struct nand_oobfree oobfree[MTD_MAX_OOBFREE_ENTRIES];
 };

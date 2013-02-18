@@ -51,7 +51,7 @@
 *********************************************************************************************************/
 int vfs_chdir(const char *path)
 {
-    char    pathbuf[PATH_BUF_LEN];
+    char   *pathbuf;
     int     ret;
     int     tid;
 
@@ -60,12 +60,18 @@ int vfs_chdir(const char *path)
         return -1;
     }
 
+    pathbuf = kmalloc(PATH_BUF_LEN, GFP_KERNEL);
+    if (pathbuf == NULL) {
+        seterrno(ENOMEM);
+        return -1;
+    }
+
     tid = gettid();
 
     if (path[0] == '/') {                                               /*  如果是绝对路径              */
-        strlcpy(pathbuf, path, sizeof(pathbuf));
+        strlcpy(pathbuf, path, PATH_BUF_LEN);
     } else {                                                            /*  如果是相对路径              */
-        snprintf(pathbuf, sizeof(pathbuf), "%s%s", cwd[tid], path);
+        snprintf(pathbuf, PATH_BUF_LEN, "%s%s", cwd[tid], path);
     }
 
     ret = vfs_path_normalization(pathbuf, TRUE);
@@ -78,6 +84,8 @@ int vfs_chdir(const char *path)
             ret = -1;
         }
     }
+
+    kfree(pathbuf);
 
     return ret;
 }

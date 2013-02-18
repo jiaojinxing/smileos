@@ -86,9 +86,9 @@ struct ethernetif {
 /*
  * 板级
  */
-#define DM9000_BASE             0x20000300
+#define DM9000_BASE             0x10000000
 #define DM9000_IO               (DM9000_BASE)
-#define DM9000_DATA             (DM9000_BASE + 4)
+#define DM9000_DATA             (DM9000_BASE + 1 * MB)
 
 #define DM9000_outb(d,r)        writeb(d, (volatile u8_t  *)(r))
 #define DM9000_outw(d,r)        writew(d, (volatile u16_t *)(r))
@@ -1152,8 +1152,8 @@ static void dm9000_isr(struct netif *netif)
     DM9000_outb(last_io, DM9000_IO);
 }
 /*********************************************************************************************************
-** Function name:           eint47_isr
-** Descriptions:            EINT4-7 中断服务函数
+** Function name:           eint0_isr
+** Descriptions:            EINT0 中断服务函数
 ** input parameters:        NONE
 ** output parameters:       NONE
 ** Returned value:          NONE
@@ -1164,16 +1164,9 @@ static void dm9000_isr(struct netif *netif)
 ** Modified date:
 **--------------------------------------------------------------------------------------------------------
 *********************************************************************************************************/
-static int eint47_isr(intno_t interrupt, void *arg)
+static int eint0_isr(intno_t interrupt, void *arg)
 {
-    uint32_t  sub_interrupt;
-
-    sub_interrupt = EINTPEND;
-    EINTPEND      = sub_interrupt;
-
-    if (sub_interrupt & (1 << 7)) {
-       dm9000_isr(arg);
-    }
+    dm9000_isr(arg);
 
     return 0;
 }
@@ -1225,22 +1218,22 @@ static void low_level_init(struct netif *netif)
     ethif->tx_pkt_cnt    = 0;
 
     /*
-     * mini2440 开发板上的 DM9000 芯片挂在 BANK4
+     * GEC-2440 开发板上的 DM9000 芯片挂在 BANK2
      */
     /*
-     * 设置 GPA15 为 nGCS4
+     * 设置 GPA13 为 nGCS2
      */
-    GPACON  |= 1 << 15;
+    GPACON  |= 1 << 13;
 
     /*
-     * 设置 BANK4 总线宽度为 16 位, 使能等待
+     * 设置 BANK2 总线宽度为 16 位, 使能等待
      */
-    BWSCON   = (BWSCON & (~(0x07 << 16))) | (0x05 << 16);
+    BWSCON   = (BWSCON & (~(0x03 << 8))) | (0x01 << 8);
 
     /*
-     * 设置 BANK4 的访问时序以适合 DM9000 芯片
+     * 设置 BANK2 的访问时序以适合 DM9000 芯片
      */
-    BANKCON4 = (1 << 13) | (1 << 11) | (6 << 8) | (1 << 6) | (1 << 4) | (0 << 2) | (0 << 0);
+    BANKCON2 = 0x1f7c;
 
     /*
      * 初始化 DM9000 芯片
@@ -1251,36 +1244,27 @@ static void low_level_init(struct netif *netif)
         return;
     }
 
-    sys_mutex_new(&ethif->lock);
-
-    sys_sem_new(&ethif->tx_sync, 0);
+    /*
+     * 设置 GPF0 为 EINT0
+     */
+    GPFCON = (GPFCON & (~(0x03 << 0))) | (0x02 << 0);
 
     /*
-     * 安装 EINT4-7 中断服务程序, 并使能 EINT4-7 中断
+     * 关闭 GPF0 的上拉电阻
      */
-    interrupt_install(INTEINT4_7, eint47_isr, NULL, (void *)netif);
-
-    interrupt_unmask(INTEINT4_7);
+    GPFUP = GPFUP | (1 << 0);
 
     /*
-     * 设置 GPF7 为 EINT7
+     * 设置 EINT0 高电平中断
      */
-    GPFCON = (GPFCON & (~(0x03 << 14))) | (0x02 << 14);
+    EXTINT0 = (EXTINT0 & (~(0x07 << 0))) | (0x01 << 0);
 
     /*
-     * 关闭 GPF7 的上拉电阻
+     * 安装 EINT0 中断服务程序, 并使能 EINT0 中断
      */
-    GPFUP = GPFUP | (1 << 7);
+    interrupt_install(INTEINT0, eint0_isr, NULL, (void *)netif);
 
-    /*
-     * 设置 EINT7 高电平中断
-     */
-    EXTINT0 = (EXTINT0 & (~(0x07 << 28))) | (0x01 << 28);
-
-    /*
-     * 使能 EINT7
-     */
-    EINTMASK = EINTMASK & (~(1 << 7));
+    interrupt_unmask(INTEINT0);
 /********************************************************************************************************/
 }
 /*********************************************************************************************************

@@ -45,37 +45,37 @@ extern "C" {
 #endif
 
 #include <kern/kern.h>
+#include <kern/ipc.h>
 #include <string.h>
 #include <unistd.h>
 
-typedef uint32_t                u_int32_t;
-typedef uint8_t                 u8;
-typedef uint16_t                u16;
-typedef uint32_t                u32;
-typedef mem_ptr_t               phys_addr_t;
-typedef long                    loff_t;
-typedef unsigned long           ulong;
+typedef u16                         __le16;
+typedef u32                         __le32;
+typedef uint32_t                    u_int32_t;
+typedef mem_ptr_t                   phys_addr_t;
+typedef long                        loff_t;
 
-#define EUCLEAN                 135
+#define EUCLEAN                     135
+
+#define CONFIG_SYS_HZ               HZ
 
 #define __user
 #define __iomem
 
-#define udelay(x)	            usleep(x)
-#define ndelay(x)               usleep(1)
-#define vmalloc(size)		    kmalloc(size, GFP_KERNEL)
-#define vfree(ptr)		        kfree(ptr)
+#define udelay(x)	                usleep(x)
+#define ndelay(x)                   usleep(1)
+#define vmalloc(size)		        kmalloc(size, GFP_KERNEL)
+#define vfree(ptr)		            kfree(ptr)
 
-#define __cpu_to_le16(x)        ((u16)(x))
-#define cpu_to_le16             __cpu_to_le16
+#define DECLARE_WAITQUEUE(...)	    do { } while (0)
+#define add_wait_queue(...)	        do { } while (0)
+#define remove_wait_queue(...)	    do { } while (0)
 
-#define DECLARE_WAITQUEUE(...)	do { } while (0)
-#define add_wait_queue(...)	    do { } while (0)
-#define remove_wait_queue(...)	do { } while (0)
+#define KERNEL_VERSION(a,b,c)	    (((a) << 16) + ((b) << 8) + (c))
 
-#define KERNEL_VERSION(a,b,c)	(((a) << 16) + ((b) << 8) + (c))
+#define LINUX_VERSION_CODE          KERNEL_VERSION(2, 6, 30)
 
-#define LINUX_VERSION_CODE      KERNEL_VERSION(2, 6, 30)
+#define WATCHDOG_RESET()
 
 /*
  * ..and if you can't take the strict
@@ -94,16 +94,16 @@ typedef unsigned long           ulong;
 	printk("SmileOS BUG at %s:%d!\n", __FILE__, __LINE__); \
 } while (0)
 
-#define BUG_ON(condition)       do { if (condition) BUG(); } while(0)
+#define BUG_ON(condition)           do { if (condition) BUG(); } while(0)
 #endif /* BUG */
 
-#define likely(x)	            __builtin_expect(!!(x), 1)
-#define unlikely(x)	            __builtin_expect(!!(x), 0)
+#define likely(x)	                __builtin_expect(!!(x), 1)
+#define unlikely(x)	                __builtin_expect(!!(x), 0)
 
 #define compile_time_assertion(assertion) \
-                                ({ int x = __builtin_choose_expr(assertion, 0, (void)0); (void) x; })
+                                    ({ int x = __builtin_choose_expr(assertion, 0, (void)0); (void) x; })
 
-#define IS_ERR_VALUE(x)         unlikely((x) >= (unsigned long)-__ELASTERROR)
+#define IS_ERR_VALUE(x)             unlikely((x) >= (unsigned long)-__ELASTERROR)
 
 static inline void *ERR_PTR(long error)
 {
@@ -119,6 +119,15 @@ static inline long IS_ERR(const void *ptr)
 {
     return IS_ERR_VALUE((unsigned long)ptr);
 }
+
+static inline u32 get_timer(u32 t)
+{
+    return (u32)getticks() - t;
+}
+
+extern int hweight8(u8 x);
+
+extern int hweight32(u32 x);
 
 #ifdef __cplusplus
 }

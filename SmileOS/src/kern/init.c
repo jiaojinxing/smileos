@@ -108,14 +108,6 @@ static void init(void *arg)
     extern int soc_devices_create(void);
     soc_devices_create();
 
-    extern int bsp_drivers_install(void);
-    bsp_drivers_install();
-
-    extern int bsp_devices_create(void);
-    bsp_devices_create();
-#endif
-
-#if CONFIG_VFS_EN > 0
     {
         int fd;
 
@@ -123,7 +115,14 @@ static void init(void *arg)
         fd = open("/dev/serial0", O_WRONLY);
         stdout  = fdopen(fd,  "w");
     }
+
+    extern int bsp_drivers_install(void);
+    bsp_drivers_install();
+
+    extern int bsp_devices_create(void);
+    bsp_devices_create();
 #endif
+
 
 #if CONFIG_VFS_EN > 0 && CONFIG_RAMDISK_EN > 0
     int ramdisk_create(const char *path, size_t size);
@@ -241,7 +240,7 @@ int main(void)
     sys_devices_create();
 #endif
 
-    kthread_create("init", init, NULL, 32 * KB, 50);
+    kthread_create("init", init, NULL, 64 * KB, 50);
 
     kernel_start();
 
