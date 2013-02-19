@@ -118,33 +118,6 @@ int sendto(int s, const void *dataptr, size_t size, int flags,
  */
 int socket(int domain, int type, int protocol);
 
-#ifdef SMILEOS_KERNEL
-/*********************************************************************************************************
-** Function name:           socket_attach
-** Descriptions:            联结 socket
-** input parameters:        sock_fd             socket 的私有文件描述符
-** output parameters:       NONE
-** Returned value:          IO 系统文件描述符
-*********************************************************************************************************/
-int socket_attach(int sock_fd);
-/*********************************************************************************************************
-** Function name:           socket_priv_fd
-** Descriptions:            获得 socket 的私有文件描述符
-** input parameters:        fd                  IO 系统文件描述符
-** output parameters:       ctx                 上下文
-** Returned value:          socket 的私有文件描述符
-*********************************************************************************************************/
-int socket_priv_fd(int fd, void **ctx);
-/*********************************************************************************************************
-** Function name:           socket_op_end
-** Descriptions:            socket 操作结束
-** input parameters:        ctx                 上下文
-** output parameters:       NONE
-** Returned value:          NONE
-*********************************************************************************************************/
-void socket_op_end(void *ctx);
-#endif
-
 #ifdef __cplusplus
 }
 #endif

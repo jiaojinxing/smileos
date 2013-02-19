@@ -23,8 +23,8 @@
  * MA 02111-1307 USA
  */
 
-#include "mmc.h"
-#include "mmc_config.h"
+#include <linux/mmc/mmc_config.h>
+#include <linux/mmc/mmc.h>
 
 /* Set block count limit because of 16 bit register limit on some hardware*/
 #ifndef CONFIG_SYS_MMC_MAX_BLK_COUNT
@@ -52,48 +52,48 @@ static int mmc_send_cmd(struct mmc *mmc, struct mmc_cmd *cmd, struct mmc_data *d
 	int i;
 	u8 *ptr;
 
-	printk("CMD_SEND:%d\n", cmd->cmdidx);
-	printk("\t\tARG\t\t\t 0x%08X\n", cmd->cmdarg);
+	printk(KERN_DEBUG"CMD_SEND:%d\n", cmd->cmdidx);
+	printk(KERN_DEBUG"\t\tARG\t\t\t 0x%08X\n", cmd->cmdarg);
 	ret = mmc->send_cmd(mmc, cmd, data);
 	switch (cmd->resp_type) {
 		case MMC_RSP_NONE:
-			printk("\t\tMMC_RSP_NONE\n");
+			printk(KERN_DEBUG"\t\tMMC_RSP_NONE\n");
 			break;
 		case MMC_RSP_R1:
-			printk("\t\tMMC_RSP_R1,5,6,7 \t 0x%08X \n",
+			printk(KERN_DEBUG"\t\tMMC_RSP_R1,5,6,7 \t 0x%08X \n",
 				cmd->response[0]);
 			break;
 		case MMC_RSP_R1b:
-			printk("\t\tMMC_RSP_R1b\t\t 0x%08X \n",
+			printk(KERN_DEBUG"\t\tMMC_RSP_R1b\t\t 0x%08X \n",
 				cmd->response[0]);
 			break;
 		case MMC_RSP_R2:
-			printk("\t\tMMC_RSP_R2\t\t 0x%08X \n",
+			printk(KERN_DEBUG"\t\tMMC_RSP_R2\t\t 0x%08X \n",
 				cmd->response[0]);
-			printk("\t\t          \t\t 0x%08X \n",
+			printk(KERN_DEBUG"\t\t          \t\t 0x%08X \n",
 				cmd->response[1]);
-			printk("\t\t          \t\t 0x%08X \n",
+			printk(KERN_DEBUG"\t\t          \t\t 0x%08X \n",
 				cmd->response[2]);
-			printk("\t\t          \t\t 0x%08X \n",
+			printk(KERN_DEBUG"\t\t          \t\t 0x%08X \n",
 				cmd->response[3]);
-			printk("\n");
-			printk("\t\t\t\t\tDUMPING DATA\n");
+			printk(KERN_DEBUG"\n");
+			printk(KERN_DEBUG"\t\t\t\t\tDUMPING DATA\n");
 			for (i = 0; i < 4; i++) {
 				int j;
-				printk("\t\t\t\t\t%03d - ", i*4);
+				printk(KERN_DEBUG"\t\t\t\t\t%03d - ", i*4);
 				ptr = (u8 *)&cmd->response[i];
 				ptr += 3;
 				for (j = 0; j < 4; j++)
-					printk("%02X ", *ptr--);
-				printk("\n");
+					printk(KERN_DEBUG"%02X ", *ptr--);
+				printk(KERN_DEBUG"\n");
 			}
 			break;
 		case MMC_RSP_R3:
-			printk("\t\tMMC_RSP_R3,4\t\t 0x%08X \n",
+			printk(KERN_DEBUG"\t\tMMC_RSP_R3,4\t\t 0x%08X \n",
 				cmd->response[0]);
 			break;
 		default:
-			printk("\t\tERROR MMC rsp not supported\n");
+			printk(KERN_DEBUG"\t\tERROR MMC rsp not supported\n");
 			break;
 	}
 #else
@@ -123,7 +123,7 @@ static int mmc_send_status(struct mmc *mmc, int timeout)
 			     MMC_STATE_PRG)
 				break;
 			else if (cmd.response[0] & MMC_STATUS_MASK) {
-				printk("Status Error: 0x%08X\n",
+				printk(KERN_ERR"Status Error: 0x%08X\n",
 					cmd.response[0]);
 				return COMM_ERR;
 			}
@@ -136,10 +136,10 @@ static int mmc_send_status(struct mmc *mmc, int timeout)
 
 #ifdef CONFIG_MMC_TRACE
 	status = (cmd.response[0] & MMC_STATUS_CURR_STATE) >> 9;
-	printk("CURR STATE:%d\n", status);
+	printk(KERN_DEBUG"CURR STATE:%d\n", status);
 #endif
 	if (timeout <= 0) {
-		printk("Timeout waiting card ready\n");
+		printk(KERN_ERR"Timeout waiting card ready\n");
 		return TIMEOUT;
 	}
 
@@ -204,7 +204,7 @@ ulong mmc_erase_blocks(struct mmc *mmc, ulong start, ulong blkcnt)
 	return 0;
 
 err_out:
-    printk("mmc erase failed\n");
+    printk(KERN_ERR"mmc erase failed\n");
 	return err;
 }
 
@@ -232,7 +232,7 @@ ulong mmc_write_blocks(struct mmc *mmc, ulong start, ulong blkcnt, const void *s
 	data.flags = MMC_DATA_WRITE;
 
 	if (mmc_send_cmd(mmc, &cmd, &data)) {
-		printk("mmc write failed\n");
+		printk(KERN_ERR"mmc write failed\n");
 		return 0;
 	}
 
@@ -244,7 +244,7 @@ ulong mmc_write_blocks(struct mmc *mmc, ulong start, ulong blkcnt, const void *s
 		cmd.cmdarg = 0;
 		cmd.resp_type = MMC_RSP_R1b;
 		if (mmc_send_cmd(mmc, &cmd, NULL)) {
-			printk("mmc fail to send stop cmd\n");
+			printk(KERN_ERR"mmc fail to send stop cmd\n");
 			return 0;
 		}
 	}
@@ -286,7 +286,7 @@ ulong mmc_read_blocks(struct mmc *mmc, ulong start, ulong blkcnt, void *dst)
 		cmd.cmdarg = 0;
 		cmd.resp_type = MMC_RSP_R1b;
 		if (mmc_send_cmd(mmc, &cmd, NULL)) {
-			printk("mmc fail to send stop cmd\n");
+			printk(KERN_ERR"mmc fail to send stop cmd\n");
 			return 0;
 		}
 	}
@@ -1053,7 +1053,7 @@ int mmc_init(struct mmc *mmc)
 
 	if (mmc_getcd(mmc) == 0) {
 		mmc->has_init = 0;
-		printk("MMC: no card present\n");
+		printk(KERN_ERR"MMC: no card present\n");
 		return NO_CARD_ERR;
 	}
 
@@ -1088,7 +1088,7 @@ int mmc_init(struct mmc *mmc)
 		err = mmc_send_op_cond(mmc);
 
 		if (err) {
-			printk("Card did not respond to voltage select!\n");
+			printk(KERN_ERR"Card did not respond to voltage select!\n");
 			return UNUSABLE_ERR;
 		}
 	}

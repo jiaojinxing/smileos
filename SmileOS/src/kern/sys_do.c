@@ -923,6 +923,7 @@ static int do_select(syscall_args_t *args)
 #if CONFIG_NET_EN > 0
 
 #include <sys/socket.h>
+#include "drivers/socket.h"
 
 /*
  * do_socket

@@ -19,14 +19,14 @@
 ** Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 **
 **--------------------------------------------------------------------------------------------------------
-** File name:               vmm_nommu.c
-** Last modified Date:      2013-2-3
+** File name:               sharemem.h
+** Last modified Date:      2013-2-19
 ** Last Version:            1.0.0
-** Descriptions:            无 MMU 的虚拟内存管理
+** Descriptions:            共享内存头文件
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing
-** Created date:            2013-2-3
+** Created date:            2013-2-19
 ** Version:                 1.0.0
 ** Descriptions:            创建文件
 **
@@ -37,54 +37,32 @@
 ** Descriptions:
 **
 *********************************************************************************************************/
-#include "kern/config.h"
-#if CONFIG_MMU_EN == 1
-/*********************************************************************************************************
-** Function name:           vmm_init
-** Descriptions:            初始化虚拟内存管理
-** input parameters:        NONE
-** output parameters:       NONE
-** Returned value:          NONE
-*********************************************************************************************************/
-void vmm_init(void)
-{
+#ifndef SHAREMEM_H_
+#define SHAREMEM_H_
 
-}
-/*********************************************************************************************************
-** Function name:           arch_mmu_init
-** Descriptions:            初始化 MMU Cache 等
-** input parameters:        NONE
-** output parameters:       NONE
-** Returned value:          NONE
-*********************************************************************************************************/
-void arch_mmu_init(void) __attribute__ ((weak));
-void arch_mmu_init(void)
-{
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-}
+#include <sys/types.h>
+
+#ifdef SMILEOS_KERNEL
 /*********************************************************************************************************
-** Function name:           ua_to_ka
-** Descriptions:            将进程空间的虚拟地址转换为内核可以处理的虚拟地址
-** input parameters:        VA                  进程空间的虚拟地址
+** Function name:           sharemem_create
+** Descriptions:            创建共享内存设备
+** input parameters:        path                共享内存设备路径
+**                          size                共享内存大小
 ** output parameters:       NONE
-** Returned value:          内核可以处理的虚拟地址
+** Returned value:          0 OR -1
 *********************************************************************************************************/
-void *ua_to_ka(const void *uaddr)
-{
-    return (void *)uaddr;
-}
-/*********************************************************************************************************
-** Function name:           ka_to_ua
-** Descriptions:            将内核可以处理的虚拟地址转换为进程空间的虚拟地址
-** input parameters:        kaddr               内核可以处理的虚拟地址
-** output parameters:       NONE
-** Returned value:          进程空间的虚拟地址
-*********************************************************************************************************/
-void *ka_to_ua(const void *kaddr)
-{
-    return (void *)kaddr;
+int sharemem_create(const char *path, size_t size);
+#endif
+
+#ifdef __cplusplus
 }
 #endif
+
+#endif                                                                  /*  SHAREMEM_H_                 */
 /*********************************************************************************************************
 ** END FILE
 *********************************************************************************************************/

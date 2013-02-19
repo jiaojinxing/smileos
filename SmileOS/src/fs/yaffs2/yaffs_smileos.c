@@ -354,12 +354,12 @@ void *yaffsfs_Mount(int yaffs_version,
                     void *data)
 {
     int n_blocks;
-    struct yaffs_dev *dev = 0;
+    struct yaffs_dev *dev;
     struct mtd_info *mtd;
     char *data_str = (char *)data;
-    struct yaffs_linux_context *context = NULL;
+    struct yaffs_linux_context *context;
     struct yaffs_param *param;
-    int read_only = 0;
+    int read_only;
     struct yaffs_options options;
     struct stat st;
 
@@ -378,6 +378,8 @@ void *yaffsfs_Mount(int yaffs_version,
         yaffs_trace(YAFFS_TRACE_ALWAYS, "MTD device \"%s\" doesn't appear to exist\n", dev_name);
         return NULL;
     }
+
+    read_only = st.st_spare3;
 
     /*
      * ·ÖÎö¹ÒÔØÑ¡Ïî×Ö·û´®
@@ -423,6 +425,16 @@ void *yaffsfs_Mount(int yaffs_version,
 
     if (yaffs_verify_mtd(mtd, yaffs_version, options.inband_tags) < 0) {
         return NULL;
+    }
+
+    /*
+     * OK, so if we got here, we have an MTD that's NAND and looks
+     * like it has the right capabilities
+     * Set the struct yaffs_dev up for mtd
+     */
+    if (!read_only && !(mtd->flags & MTD_WRITEABLE)) {
+        read_only = 1;
+        printk(KERN_INFO"yaffs: mtd is read only, setting superblock read only\n");
     }
 
     /*

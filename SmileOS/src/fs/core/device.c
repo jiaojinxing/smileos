@@ -46,8 +46,7 @@
 /*********************************************************************************************************
 ** 全局变量
 *********************************************************************************************************/
-static device_t    *dev_list;                                           /*  设备链表                    */
-
+static LIST_HEAD(device_list);                                          /*  设备链表                    */
 mutex_t             dev_mgr_lock;                                       /*  设备管理锁                  */
 /*********************************************************************************************************
 ** Function name:           device_install
@@ -60,8 +59,7 @@ static int device_install(device_t *dev)
 {
     mutex_lock(&dev_mgr_lock, 0);
 
-    dev->next = dev_list;
-    dev_list  = dev;
+    list_add_tail(&dev->dev_list, &device_list);
 
     mutex_unlock(&dev_mgr_lock);
 
@@ -76,17 +74,25 @@ static int device_install(device_t *dev)
 *********************************************************************************************************/
 device_t *device_get(unsigned int index)
 {
+    struct list_head *item;
     device_t *dev;
     int i;
 
     mutex_lock(&dev_mgr_lock, 0);
 
-    for (i = 0, dev = dev_list; i < index && dev != NULL; i++, dev = dev->next) {
+    i = 0;
+    list_for_each(item, &device_list) {
+        dev = list_entry(item, device_t, dev_list);
+        if (i >= index) {
+            mutex_unlock(&dev_mgr_lock);
+            return dev;
+        }
+        i++;
     }
 
     mutex_unlock(&dev_mgr_lock);
 
-    return dev;
+    return NULL;
 }
 /*********************************************************************************************************
 ** Function name:           device_lookup
@@ -97,28 +103,26 @@ device_t *device_get(unsigned int index)
 *********************************************************************************************************/
 device_t *device_lookup(const char *name)
 {
+    struct list_head *item;
     device_t *dev;
-    unsigned int key;
 
     if (name == NULL) {
         return NULL;
     }
 
-    key = bkdr_hash(name);
-
     mutex_lock(&dev_mgr_lock, 0);
 
-    dev = dev_list;
-    while (dev != NULL) {
-        if (key == dev->key) {
-            break;
+    list_for_each(item, &device_list) {
+        dev = list_entry(item, device_t, dev_list);
+        if (strcmp(name, dev->name) == 0) {
+            mutex_unlock(&dev_mgr_lock);
+            return dev;
         }
-        dev = dev->next;
     }
 
     mutex_unlock(&dev_mgr_lock);
 
-    return dev;
+    return NULL;
 }
 /*********************************************************************************************************
 ** Function name:           device_remove
@@ -129,7 +133,8 @@ device_t *device_lookup(const char *name)
 *********************************************************************************************************/
 int device_remove(device_t *dev)
 {
-    device_t *temp, *prev;
+    struct list_head *item, *save;
+    device_t *_dev;
     int ret = -1;
 
     if (dev == NULL) {
@@ -139,22 +144,15 @@ int device_remove(device_t *dev)
     mutex_lock(&dev_mgr_lock, 0);
 
     if (atomic_read(&dev->ref) == 0) {
-        prev = NULL;
-        temp = dev_list;
-        while (temp != NULL) {
-            if (dev == temp) {
-                if (prev != NULL) {
-                    prev->next = dev->next;
-                } else {
-                    dev_list   = dev->next;
-                }
+        list_for_each_safe(item, save, &device_list) {
+            _dev = list_entry(item, device_t, dev_list);
+            if (_dev == dev) {
+                list_del(&dev->dev_list);
                 atomic_dec(&dev->drv->ref);
                 kfree(dev);
                 ret = 0;
                 break;
             }
-            prev = temp;
-            temp = temp->next;
         }
     }
 
@@ -207,22 +205,21 @@ int device_create(const char *dev_name, const char *drv_name, void *ctx)
     }
 
     dev = kmalloc(sizeof(device_t), GFP_KERNEL);
-    if (dev != NULL) {
-        strlcpy(dev->name, dev_name, sizeof(dev->name));
-        dev->key   = bkdr_hash(dev_name);
-        dev->drv   = drv;
-        dev->ctx   = ctx;
-        dev->devno = bkdr_hash(drv_name);
-        atomic_set(&dev->ref, 0);
-        device_install(dev);
-        mutex_unlock(&dev_mgr_lock);
-        seterrno(0);
-        return 0;
-    } else {
+    if (dev == NULL) {
         atomic_dec(&drv->ref);
         seterrno(ENOMEM);
         return -1;
     }
+
+    strlcpy(dev->name, dev_name, sizeof(dev->name));
+    dev->drv   = drv;
+    dev->ctx   = ctx;
+    dev->devno = bkdr_hash(dev_name);
+    atomic_set(&dev->ref, 0);
+    device_install(dev);
+    mutex_unlock(&dev_mgr_lock);
+    seterrno(0);
+    return 0;
 }
 /*********************************************************************************************************
 ** Function name:           device_manager_init
@@ -233,7 +230,7 @@ int device_create(const char *dev_name, const char *drv_name, void *ctx)
 *********************************************************************************************************/
 int device_manager_init(void)
 {
-    dev_list = NULL;
+    INIT_LIST_HEAD(&device_list);
 
     return mutex_create(&dev_mgr_lock);
 }

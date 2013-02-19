@@ -46,6 +46,7 @@
 #include "kern/kern.h"
 #include "kern/ipc.h"
 #include "kern/atomic.h"
+#include "kern/list.h"
 
 #include "module/elf.h"
 #include "module/symbol_tool.h"
@@ -58,21 +59,20 @@
 ** 模块
 *********************************************************************************************************/
 struct module {
-    struct module  *next;                                               /*  后趋                      　*/
-    uint32_t        key;                                                /*  ELF 文件路径 key            */
-    atomic_t        ref;                                                /*  引用计数                    */
-    uint8_t        *elf;                                                /*  ELF 文件                    */
-    size_t          size;                                               /*  文件大小                    */
-    Elf32_Shdr    **shdrs;                                              /*  段首部数组指针              */
-    uint16_t        bss_idx;                                            /*  BSS 段索引                  */
-    uint16_t        text_idx;                                           /*  TEXT 段索引                 */
+    struct list_head    mod_list;
+    uint32_t            key;                                            /*  ELF 文件路径 key            */
+    atomic_t            ref;                                            /*  引用计数                    */
+    uint8_t            *elf;                                            /*  ELF 文件                    */
+    size_t              size;                                           /*  文件大小                    */
+    Elf32_Shdr        **shdrs;                                          /*  段首部数组指针              */
+    uint16_t            bss_idx;                                        /*  BSS 段索引                  */
+    uint16_t            text_idx;                                       /*  TEXT 段索引                 */
 };
 /*********************************************************************************************************
 ** 全局变量
 *********************************************************************************************************/
-static module_t    *mod_list;                                           /*  模块链表                    */
-
-static mutex_t      mod_mgr_lock;                                       /*  模块管理锁                  */
+static LIST_HEAD(module_list);                                          /*  模块链表                    */
+static mutex_t              mod_mgr_lock;                               /*  模块管理锁                  */
 /*********************************************************************************************************
 ** Function name:           symbol_lookup
 ** Descriptions:            查找符号
@@ -101,7 +101,7 @@ int module_init(void)
 {
     symbol_init();                                                      /*  初始化符号表                */
 
-    mod_list = NULL;                                                    /*  初始化模块链表              */
+    INIT_LIST_HEAD(&module_list);                                       /*  初始化模块链表              */
 
     return mutex_create(&mod_mgr_lock);                                 /*  创建模块管理锁              */
 }
@@ -116,8 +116,7 @@ static int module_install(module_t *mod)
 {
     mutex_lock(&mod_mgr_lock, 0);
 
-    mod->next = mod_list;
-    mod_list  = mod;
+    list_add_tail(&mod->mod_list, &module_list);
 
     mutex_unlock(&mod_mgr_lock);
 
@@ -132,25 +131,19 @@ static int module_install(module_t *mod)
 *********************************************************************************************************/
 static int module_remove(module_t *mod)
 {
-    module_t *tmp, *prev;
+    module_t *_mod;
+    struct list_head *item, *save;
     int ret = -1;
 
     mutex_lock(&mod_mgr_lock, 0);
 
-    prev = NULL;
-    tmp  = mod_list;
-    while (tmp != NULL) {
-        if (mod == tmp) {
-            if (prev != NULL) {
-                prev->next = tmp->next;
-            } else {
-                mod_list   = tmp->next;
-            }
+    list_for_each_safe(item, save, &module_list) {
+        _mod = list_entry(item, module_t, mod_list);
+        if (_mod == mod) {
+            list_del(&mod->mod_list);
             ret = 0;
             break;
         }
-        prev = tmp;
-        tmp  = tmp->next;
     }
 
     mutex_unlock(&mod_mgr_lock);
@@ -167,20 +160,21 @@ static int module_remove(module_t *mod)
 static module_t *module_lookup_by_key(uint32_t key)
 {
     module_t *mod;
+    struct list_head *item;
 
     mutex_lock(&mod_mgr_lock, 0);
 
-    mod = mod_list;
-    while (mod != NULL) {
+    list_for_each(item, &module_list) {
+        mod = list_entry(item, module_t, mod_list);
         if (key == mod->key) {
-            break;
+            mutex_unlock(&mod_mgr_lock);
+            return mod;
         }
-        mod = mod->next;
     }
 
     mutex_unlock(&mod_mgr_lock);
 
-    return mod;
+    return NULL;
 }
 /*********************************************************************************************************
 ** Function name:           module_lookup
@@ -211,22 +205,23 @@ module_t *module_lookup(const char *path)
 module_t *module_ref_by_addr(void *addr)
 {
     module_t *mod;
+    struct list_head *item;
 
     mutex_lock(&mod_mgr_lock, 0);
 
-    mod = mod_list;
-    while (mod != NULL) {
+    list_for_each(item, &module_list) {
+        mod = list_entry(item, module_t, mod_list);
         if (((char *)addr >= (char *)mod + sizeof(module_t)) &&
             ((char *)addr <  (char *)mod + sizeof(module_t) + mod->size)) {
             atomic_inc(&mod->ref);
-            break;
+            mutex_unlock(&mod_mgr_lock);
+            return mod;
         }
-        mod = mod->next;
     }
 
     mutex_unlock(&mod_mgr_lock);
 
-    return mod;
+    return NULL;
 }
 /*********************************************************************************************************
 ** Function name:           module_unref

@@ -55,6 +55,10 @@
 #define CONFIG_MTD_EN       1
 #define CONFIG_FB_EN        1
 #define CONFIG_SHAREMEM_EN  1
+
+#if CONFIG_RAMDISK_EN > 0
+#include "drivers/ramdisk.h"
+#endif
 /*********************************************************************************************************
 ** Function name:           tcpip_init_done
 ** Descriptions:            lwIP 初始化完成处理函数
@@ -120,7 +124,6 @@ static void init(void *arg)
 #endif
 
 #if CONFIG_VFS_EN > 0 && CONFIG_RAMDISK_EN > 0
-    int ramdisk_create(const char *path, size_t size);
     ramdisk_create("/dev/ramdisk", 1440 * KB);
 #endif
 

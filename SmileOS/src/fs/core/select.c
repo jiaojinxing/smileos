@@ -72,10 +72,7 @@ int select_select(select_struct_t *select, file_t *file, int type)
     node->select_type = type;                                           /*  初始化节点                  */
     node->task        = current;
 
-    select->wait_list.next->prev = node;                                /*  加到等待列表                */
-    node->next                   = select->wait_list.next;
-    select->wait_list.next       = node;
-    node->prev                   = &select->wait_list;
+    list_add_tail(&node->node_list, &select->wait_list);                /*  加到等待列表                */
 
     interrupt_resume(reg);
 
@@ -92,6 +89,7 @@ int select_select(select_struct_t *select, file_t *file, int type)
 *********************************************************************************************************/
 int select_unselect(select_struct_t *select, file_t *file, int type)
 {
+    struct list_head *item;
     select_node_t *node;
     reg_t reg;
 
@@ -102,22 +100,20 @@ int select_unselect(select_struct_t *select, file_t *file, int type)
 
     reg = interrupt_disable();
 
-    node = select->wait_list.next;
-    while (node != &select->wait_list) {
+    list_for_each(item, &select->wait_list) {
+        node = list_entry(item, select_node_t, node_list);
         if (node->task == current) {
             break;
         }
-        node = node->next;
     }
 
-    if (node == &select->wait_list) {
+    if (item == &select->wait_list) {
         interrupt_resume(reg);
         seterrno(EINVAL);
         return -1;
     }
 
-    node->next->prev = node->prev;                                      /*  从等待列表中移除节点        */
-    node->prev->next = node->next;
+    list_del(&node->node_list);                                         /*  从等待列表中移除节点        */
 
     interrupt_resume(reg);
 
@@ -135,6 +131,7 @@ int select_unselect(select_struct_t *select, file_t *file, int type)
 *********************************************************************************************************/
 int select_report(select_struct_t *select, int type)
 {
+    struct list_head *item;
     select_node_t *node;
     task_t *task;
     int flag = FALSE;
@@ -147,8 +144,8 @@ int select_report(select_struct_t *select, int type)
     /*
      * 恢复等待列表里有类型交集的任务
      */
-    node = select->wait_list.next;
-    while (node != &select->wait_list) {
+    list_for_each(item, &select->wait_list) {
+        node = list_entry(item, select_node_t, node_list);
 
         task = node->task;
 
@@ -163,8 +160,6 @@ int select_report(select_struct_t *select, int type)
                 flag = TRUE;
             }
         }
-
-        node = node->next;
     }
 
     interrupt_resume(reg);
@@ -256,7 +251,7 @@ int select_init(select_struct_t *select)
 {
     atomic_set(&select->flags, 0);
 
-    select->wait_list.next = select->wait_list.prev = &select->wait_list;
+    INIT_LIST_HEAD(&select->wait_list);
 
     return 0;
 }

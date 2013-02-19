@@ -46,8 +46,7 @@
 /*********************************************************************************************************
 ** 全局变量
 *********************************************************************************************************/
-static file_system_t   *fs_list;                                        /*  文件系统链表                */
-
+static LIST_HEAD(file_system_list);                                     /*  文件系统链表                */
 mutex_t                 fs_mgr_lock;                                    /*  文件系统管理锁              */
 /*********************************************************************************************************
 ** Function name:           file_system_lookup
@@ -59,6 +58,7 @@ mutex_t                 fs_mgr_lock;                                    /*  文件
 file_system_t *file_system_lookup(const char *name)
 {
     file_system_t *fs;
+    struct list_head *item;
 
     if (name == NULL) {
         return NULL;
@@ -66,17 +66,17 @@ file_system_t *file_system_lookup(const char *name)
 
     mutex_lock(&fs_mgr_lock, 0);
 
-    fs = fs_list;
-    while (fs != NULL) {
+    list_for_each(item, &file_system_list) {
+        fs = list_entry(item, file_system_t, fs_list);
         if (strcmp(fs->name, name) == 0) {
-            break;
+            mutex_unlock(&fs_mgr_lock);
+            return fs;
         }
-        fs = fs->next;
     }
 
     mutex_unlock(&fs_mgr_lock);
 
-    return fs;
+    return NULL;
 }
 /*********************************************************************************************************
 ** Function name:           file_system_remove
@@ -87,7 +87,8 @@ file_system_t *file_system_lookup(const char *name)
 *********************************************************************************************************/
 int file_system_remove(file_system_t *fs)
 {
-    file_system_t *prev, *temp;
+    struct list_head *item, *save;
+    file_system_t *_fs;
     int ret = -1;
 
     if (fs == NULL) {
@@ -97,21 +98,14 @@ int file_system_remove(file_system_t *fs)
     mutex_lock(&fs_mgr_lock, 0);
 
     if (atomic_read(&fs->ref) == 0) {
-        prev = NULL;
-        temp = fs_list;
-        while (temp != NULL) {
-            if (temp == fs) {
-                if (prev != NULL) {
-                    prev->next = fs->next;
-                } else {
-                    fs_list    = fs->next;
-                }
+        list_for_each_safe(item, save, &file_system_list) {
+            _fs = list_entry(item, file_system_t, fs_list);
+            if (_fs == fs) {
+                list_del(&fs->fs_list);
                 module_unref(fs->module);
                 ret = 0;
                 break;
             }
-            prev = temp;
-            temp = temp->next;
         }
     }
 
@@ -144,8 +138,7 @@ int file_system_install(file_system_t *fs)
 
     atomic_set(&fs->ref, 0);
 
-    fs->next = fs_list;
-    fs_list  = fs;
+    list_add_tail(&fs->fs_list, &file_system_list);
 
     mutex_unlock(&fs_mgr_lock);
 
@@ -164,7 +157,7 @@ int file_system_install(file_system_t *fs)
 *********************************************************************************************************/
 int file_system_manager_init(void)
 {
-    fs_list = NULL;
+    INIT_LIST_HEAD(&file_system_list);
 
     return mutex_create(&fs_mgr_lock);
 }
