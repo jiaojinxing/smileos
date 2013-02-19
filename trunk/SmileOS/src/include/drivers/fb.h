@@ -90,6 +90,28 @@ struct fb_fix_screeninfo {
     int     ywrapstep;
 };
 
+#ifdef SMILEOS_KERNEL
+#include "kern/types.h"
+/*********************************************************************************************************
+** Function name:           fb_create
+** Descriptions:            创建 FrameBuffer 设备
+** input parameters:        path                FrameBuffer 设备路径
+**                          framebuffer         视频帧缓冲区
+**                          var                 可变屏幕信息
+**                          video_config        视频模式配置函数
+**                          video_check         视频模式检查修正函数
+**                          video_onoff         视频开关函数
+** output parameters:       NONE
+** Returned value:          0 OR -1
+*********************************************************************************************************/
+int fb_create(const char *path,
+              void *framebuffer,
+              const struct fb_var_screeninfo *var,
+              int  (*video_config)(const struct fb_var_screeninfo *, const struct fb_fix_screeninfo *, void *),
+              int  (*video_check)(struct fb_var_screeninfo *),
+              void (*video_onoff)(bool_t));
+#endif
+
 #ifdef __cplusplus
 }
 #endif

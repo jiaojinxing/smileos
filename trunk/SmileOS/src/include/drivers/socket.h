@@ -19,14 +19,14 @@
 ** Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 **
 **--------------------------------------------------------------------------------------------------------
-** File name:               mini2440.c
-** Last modified Date:      2012-2-2
+** File name:               socket.h
+** Last modified Date:      2013-2-19
 ** Last Version:            1.0.0
-** Descriptions:            mini2440 开发板初始化
+** Descriptions:            socket 头文件
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing
-** Created date:            2012-2-2
+** Created date:            2013-2-19
 ** Version:                 1.0.0
 ** Descriptions:            创建文件
 **
@@ -37,77 +37,45 @@
 ** Descriptions:
 **
 *********************************************************************************************************/
-#include "arch/arm920t/mmu.h"
-#include "vfs/vfs.h"
-#include "drivers/mtdblock.h"
+#ifndef SOCKET_H_
+#define SOCKET_H_
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#ifdef SMILEOS_KERNEL
 /*********************************************************************************************************
-** Function name:           board_mem_map
-** Descriptions:            目标板内存映射
-** input parameters:        NONE
+** Function name:           socket_attach
+** Descriptions:            联结 socket
+** input parameters:        sock_fd             socket 的私有文件描述符
+** output parameters:       NONE
+** Returned value:          IO 系统文件描述符
+*********************************************************************************************************/
+int socket_attach(int sock_fd);
+/*********************************************************************************************************
+** Function name:           socket_priv_fd
+** Descriptions:            获得 socket 的私有文件描述符
+** input parameters:        fd                  IO 系统文件描述符
+** output parameters:       ctx                 上下文
+** Returned value:          socket 的私有文件描述符
+*********************************************************************************************************/
+int socket_priv_fd(int fd, void **ctx);
+/*********************************************************************************************************
+** Function name:           socket_op_end
+** Descriptions:            socket 操作结束
+** input parameters:        ctx                 上下文
 ** output parameters:       NONE
 ** Returned value:          NONE
 *********************************************************************************************************/
-void board_mem_map(void)
-{
-    /*
-     * DM9000
-     */
-    mmu_map_region(0x20000000,
-                   0x20000000,
-                   1 * MB,
-                   SECTION_ATTR(AP_USER_NO, DOMAIN_CHECK, CACHE_NO, BUFFER_NO));
+void socket_op_end(void *ctx);
+#endif
+
+#ifdef __cplusplus
 }
-/*********************************************************************************************************
-** 目标板保留空间
-*********************************************************************************************************/
-const mem_space_t board_resv_space[] = {
-        {
-            0x20000000,                                                 /*  DM9000                      */
-            1 * MB
-        },
-        {
-            0,
-            0
-        }
-};
-/*********************************************************************************************************
-** Function name:           board_drivers_install
-** Descriptions:            安装目标板驱动
-** input parameters:        NONE
-** output parameters:       NONE
-** Returned value:          0 OR -1
-*********************************************************************************************************/
-int board_drivers_install(void)
-{
-    extern int audio_init(void);
-    audio_init();
+#endif
 
-    extern int lcd_init(void);
-    lcd_init();
-
-    return 0;
-}
-/*********************************************************************************************************
-** Function name:           board_devices_create
-** Descriptions:            创建目标板设备
-** input parameters:        NONE
-** output parameters:       NONE
-** Returned value:          0 OR -1
-*********************************************************************************************************/
-int board_devices_create(void)
-{
-    mtdblock_create("/dev/mtdblock0", 0, 64,  255,  5, FALSE);
-
-    mtdblock_create("/dev/mtdblock1", 0, 256, 4095, 5, FALSE);
-
-    vfs_mount("/kern",   "/dev/mtdblock0", "yaffs1", "empty-lost-and-found-on,no-cache");
-
-    vfs_mount("/rootfs", "/dev/mtdblock1", "yaffs1", NULL);
-
-    vfs_mount("/sd0", "/dev/sdblock0", "fatfs", NULL);
-
-    return 0;
-}
+#endif                                                                  /*  SOCKET_H_                   */
 /*********************************************************************************************************
 ** END FILE
 *********************************************************************************************************/

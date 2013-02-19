@@ -53,7 +53,7 @@
 *********************************************************************************************************/
 #define KLOGD_QUEUE_SIZE            (100)
 #define KLOGD_THREAD_STACKSIZE      (16 * KB)
-#define KLOGD_THREAD_PRIO           (80)
+#define KLOGD_THREAD_PRIO           (5)
 #define KLOGD_LOG_LEVEL             (7)
 
 #if CONFIG_VFS_EN > 0

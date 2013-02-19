@@ -50,7 +50,6 @@
 typedef struct {
     VFS_DEVICE_MEMBERS;
     kfifo_t     fifo;
-    size_t      size;
 } privinfo_t;
 
 static int fifo_scan(void *ctx, file_t *file, int flags);
@@ -225,7 +224,7 @@ static int fifo_fstat(void *ctx, file_t *file, struct stat *buf)
     }
 
     buf->st_mode = (buf->st_mode & (~S_IFMT)) | S_IFIFO;
-    buf->st_size = priv->size;
+    buf->st_size = priv->fifo.size;
 
     return 0;
 }
@@ -260,7 +259,7 @@ int fifo_init(void)
 ** Function name:           fifo_create
 ** Descriptions:            创建 fifo 设备
 ** input parameters:        path                fifo 设备路径
-**                          size                fifo 大小(必须是 2 的 n 次方)
+**                          size                fifo 大小
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
@@ -276,8 +275,6 @@ int fifo_create(const char *path, size_t size)
     priv = kmalloc(sizeof(privinfo_t), GFP_KERNEL);
     if (priv != NULL) {
         device_init(priv);
-
-        priv->size = size;
 
         if (kfifo_init(&priv->fifo, size) < 0) {
             kfree(priv);

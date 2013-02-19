@@ -48,6 +48,7 @@ extern "C" {
 #include <sys/types.h>
 #include "kern/ipc.h"
 #include "kern/atomic.h"
+#include "kern/list.h"
 
 struct stat;
 struct dirent;
@@ -79,8 +80,7 @@ typedef struct mount_point  mount_point_t;
  * select 节点
  */
 typedef struct _select_node {
-    struct _select_node    *prev;
-    struct _select_node    *next;
+    struct list_head        node_list;
     void                   *task;
     int                     select_type;
 } select_node_t;
@@ -90,7 +90,7 @@ typedef struct _select_node {
  */
 typedef struct {
     atomic_t                flags;
-    select_node_t           wait_list;
+    struct list_head        wait_list;
 } select_struct_t;
 
 #define VFS_DEVICE_MEMBERS          \
@@ -104,7 +104,7 @@ typedef struct {
  */
 struct driver {
     const char             *name;
-    struct driver          *next;
+    struct list_head        drv_list;
     atomic_t                ref;
     void                   *module;
 
@@ -140,13 +140,12 @@ struct driver {
  */
 struct device {
     char                    name[NAME_MAX];
-    unsigned int            key;
     driver_t               *drv;
     /*
      * 一个驱动可以被多个设备使用, ctx 用于维护设备信息
      */
     void                   *ctx;
-    struct device          *next;
+    struct list_head        dev_list;
     dev_t                   devno;
     atomic_t                ref;
 };
@@ -159,7 +158,7 @@ struct device {
  */
 struct file_system {
     const char             *name;
-    struct file_system     *next;
+    struct list_head        fs_list;
     atomic_t                ref;
     void                   *module;
 
@@ -224,7 +223,7 @@ struct mount_point {
      * 一个文件系统可以同时被多个设备挂载, ctx 用于维护文件系统信息
      */
     void                   *ctx;
-    struct mount_point     *next;
+    struct list_head        point_list;
 };
 
 #if 0

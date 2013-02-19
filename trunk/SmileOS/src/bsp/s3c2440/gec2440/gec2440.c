@@ -39,6 +39,7 @@
 *********************************************************************************************************/
 #include "arch/arm920t/mmu.h"
 #include "vfs/vfs.h"
+#include "drivers/mtdblock.h"
 /*********************************************************************************************************
 ** Function name:           board_mem_map
 ** Descriptions:            Ä¿±ê°åÄÚ´æÓ³Éä
@@ -100,15 +101,9 @@ int board_drivers_install(void)
 *********************************************************************************************************/
 int board_devices_create(void)
 {
-    extern int mtdblock_create(const char *path,
-                               long mtd_no,
-                               long start,
-                               long end,
-                               long reserved);
+    mtdblock_create("/dev/mtdblock0", 0, 64,  255,  5, FALSE);
 
-    mtdblock_create("/dev/mtdblock0", 0, 64,  255,  5);
-
-    mtdblock_create("/dev/mtdblock1", 0, 256, 4095, 5);
+    mtdblock_create("/dev/mtdblock1", 0, 256, 4095, 5, FALSE);
 
     vfs_mount("/kern",   "/dev/mtdblock0", "yaffs1", "empty-lost-and-found-on,no-cache");
 

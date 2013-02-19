@@ -52,6 +52,7 @@ typedef struct {
     long                start;                          /* Start block we're allowed to use             */
     long                end;                            /* End block we're allowed to use               */
     long                reserved;                       /* We want this tuneable so that we can reduce  */
+    bool_t              readonly;
     struct mtd_info    *mtd;
 } privinfo_t;
 
@@ -122,6 +123,7 @@ static int mtdblock_fstat(void *ctx, file_t *file, struct stat *buf)
 
     buf->st_spare1    = (long)priv->mtd;
     buf->st_spare2    = priv->reserved;
+    buf->st_spare3    = priv->readonly;
     buf->st_spare4[0] = priv->start;
     buf->st_spare4[1] = priv->end;
 
@@ -182,6 +184,7 @@ int mtdblock_init(void)
 **                          start               开始块号
 **                          end                 结束块号
 **                          reserved            保留块数
+**                          readonly            是否只读
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
@@ -189,7 +192,8 @@ int mtdblock_create(const char *path,
                     long mtd_no,
                     long start,
                     long end,
-                    long reserved)
+                    long reserved,
+                    bool_t readonly)
 {
     privinfo_t *priv;
 
@@ -205,6 +209,7 @@ int mtdblock_create(const char *path,
         priv->reserved = reserved;
         priv->start    = start;
         priv->end      = end;
+        priv->readonly = readonly;
 
         mutex_lock(&mtd_lock, 0);
         priv->mtd = get_mtd_device(NULL, mtd_no);

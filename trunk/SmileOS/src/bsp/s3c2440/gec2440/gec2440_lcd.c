@@ -225,13 +225,6 @@ int lcd_init(void)
     var.blue.offset    = 5;
     var.blue.length    = 0;
 
-    int fb_create(const char *path,
-                  void *framebuffer,
-                  const struct fb_var_screeninfo *var,
-                  int  (*video_config)(const struct fb_var_screeninfo *, const struct fb_fix_screeninfo *, void *),
-                  int  (*video_check)(struct fb_var_screeninfo *),
-                  void (*video_onoff)(bool_t));
-
     return fb_create("/dev/fb0", (void *)FB_MEM_BASE, &var, lcd_config, video_check, video_onoff);
 }
 /*********************************************************************************************************

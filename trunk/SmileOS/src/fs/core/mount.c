@@ -48,10 +48,8 @@
 /*********************************************************************************************************
 ** 全局变量
 *********************************************************************************************************/
-static mount_point_t   *point_list;                                     /*  挂载点链表                  */
-
+static LIST_HEAD(mount_point_list);                                     /*  挂载点链表                  */
 mount_point_t          *rootfs_point;                                   /*  根文件系统挂载点            */
-
 mutex_t                 point_mgr_lock;                                 /*  挂载点管理锁                */
 /*********************************************************************************************************
 ** Function name:           mount_point_install
@@ -64,8 +62,7 @@ int mount_point_install(mount_point_t *point)
 {
     mutex_lock(&point_mgr_lock, 0);
 
-    point->next = point_list;
-    point_list  = point;
+    list_add(&point->point_list, &mount_point_list);
 
     mutex_unlock(&point_mgr_lock);
 
@@ -81,6 +78,7 @@ int mount_point_install(mount_point_t *point)
 mount_point_t *mount_point_lookup(const char *name)
 {
     mount_point_t *point;
+    struct list_head *item;
 
     if (name == NULL) {
         return NULL;
@@ -88,17 +86,17 @@ mount_point_t *mount_point_lookup(const char *name)
 
     mutex_lock(&point_mgr_lock, 0);
 
-    point = point_list;
-    while (point != NULL) {
+    list_for_each(item, &mount_point_list) {
+        point = list_entry(item, mount_point_t, point_list);
         if (strcmp(point->name, name) == 0) {
-            break;
+            mutex_unlock(&point_mgr_lock);
+            return point;
         }
-        point = point->next;
     }
 
     mutex_unlock(&point_mgr_lock);
 
-    return point;
+    return NULL;
 }
 /*********************************************************************************************************
 ** Function name:           mount_point_remove
@@ -109,7 +107,8 @@ mount_point_t *mount_point_lookup(const char *name)
 *********************************************************************************************************/
 int mount_point_remove(mount_point_t *point)
 {
-    mount_point_t *prev, *temp;
+    mount_point_t *_point;
+    struct list_head *item, *save;
     int ret = -1;
 
     if (point == NULL) {
@@ -119,21 +118,14 @@ int mount_point_remove(mount_point_t *point)
     mutex_lock(&point_mgr_lock, 0);
 
     if (atomic_read(&point->ref) == 0) {
-        prev = NULL;
-        temp = point_list;
-        while (temp != NULL) {
-            if (temp == point) {
-                if (prev != NULL) {
-                    prev->next = point->next;
-                } else {
-                    point_list = point->next;
-                }
+        list_for_each_safe(item, save, &mount_point_list) {
+            _point = list_entry(item, mount_point_t, point_list);
+            if (_point == point) {
+                list_del(&point->point_list);
                 kfree(point);
                 ret = 0;
                 break;
             }
-            prev = temp;
-            temp = temp->next;
         }
     }
 
@@ -152,15 +144,23 @@ mount_point_t *mount_point_get(unsigned int index)
 {
     int i;
     mount_point_t *point;
+    struct list_head *item;
 
     mutex_lock(&point_mgr_lock, 0);
 
-    for (i = 0, point = point_list; i < index && point != NULL; i++, point = point->next) {
+    i = 0;
+    list_for_each(item, &mount_point_list) {
+        point = list_entry(item, mount_point_t, point_list);
+        if (i >= index) {
+            mutex_unlock(&point_mgr_lock);
+            return point;
+        }
+        i++;
     }
 
     mutex_unlock(&point_mgr_lock);
 
-    return point;
+    return NULL;
 }
 /*********************************************************************************************************
 ** Function name:           mount_point_manager_init
@@ -173,7 +173,7 @@ int mount_point_manager_init(void)
 {
     rootfs_point = NULL;
 
-    point_list   = NULL;
+    INIT_LIST_HEAD(&mount_point_list);
 
     return mutex_create(&point_mgr_lock);
 }

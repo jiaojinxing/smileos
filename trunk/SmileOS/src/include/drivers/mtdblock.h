@@ -19,14 +19,14 @@
 ** Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 **
 **--------------------------------------------------------------------------------------------------------
-** File name:               vmm_nommu.c
-** Last modified Date:      2013-2-3
+** File name:               mtdblock.h
+** Last modified Date:      2013-2-19
 ** Last Version:            1.0.0
-** Descriptions:            无 MMU 的虚拟内存管理
+** Descriptions:            MTD 块头文件
 **
 **--------------------------------------------------------------------------------------------------------
 ** Created by:              JiaoJinXing
-** Created date:            2013-2-3
+** Created date:            2013-2-19
 ** Version:                 1.0.0
 ** Descriptions:            创建文件
 **
@@ -37,54 +37,40 @@
 ** Descriptions:
 **
 *********************************************************************************************************/
-#include "kern/config.h"
-#if CONFIG_MMU_EN == 1
-/*********************************************************************************************************
-** Function name:           vmm_init
-** Descriptions:            初始化虚拟内存管理
-** input parameters:        NONE
-** output parameters:       NONE
-** Returned value:          NONE
-*********************************************************************************************************/
-void vmm_init(void)
-{
+#ifndef MTDBLOCK_H_
+#define MTDBLOCK_H_
 
-}
-/*********************************************************************************************************
-** Function name:           arch_mmu_init
-** Descriptions:            初始化 MMU Cache 等
-** input parameters:        NONE
-** output parameters:       NONE
-** Returned value:          NONE
-*********************************************************************************************************/
-void arch_mmu_init(void) __attribute__ ((weak));
-void arch_mmu_init(void)
-{
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-}
+#ifdef SMILEOS_KERNEL
+#include "kern/types.h"
 /*********************************************************************************************************
-** Function name:           ua_to_ka
-** Descriptions:            将进程空间的虚拟地址转换为内核可以处理的虚拟地址
-** input parameters:        VA                  进程空间的虚拟地址
+** Function name:           mtdblock_create
+** Descriptions:            创建 MTD 块设备
+** input parameters:        path                MTD 块设备路径
+**                          mtd_no              MTD 设备号
+**                          start               开始块号
+**                          end                 结束块号
+**                          reserved            保留块数
+**                          readonly            是否只读
 ** output parameters:       NONE
-** Returned value:          内核可以处理的虚拟地址
+** Returned value:          0 OR -1
 *********************************************************************************************************/
-void *ua_to_ka(const void *uaddr)
-{
-    return (void *)uaddr;
-}
-/*********************************************************************************************************
-** Function name:           ka_to_ua
-** Descriptions:            将内核可以处理的虚拟地址转换为进程空间的虚拟地址
-** input parameters:        kaddr               内核可以处理的虚拟地址
-** output parameters:       NONE
-** Returned value:          进程空间的虚拟地址
-*********************************************************************************************************/
-void *ka_to_ua(const void *kaddr)
-{
-    return (void *)kaddr;
+int mtdblock_create(const char *path,
+                    long mtd_no,
+                    long start,
+                    long end,
+                    long reserved,
+                    bool_t readonly);
+#endif
+
+#ifdef __cplusplus
 }
 #endif
+
+#endif                                                                  /*  MTDBLOCK_H_                 */
 /*********************************************************************************************************
 ** END FILE
 *********************************************************************************************************/
