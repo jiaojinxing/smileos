@@ -40,13 +40,13 @@
 #include "arch/arm920t/mmu.h"
 #include "vfs/vfs.h"
 /*********************************************************************************************************
-** Function name:           bsp_mem_map
-** Descriptions:            BSP 内存映射
+** Function name:           board_mem_map
+** Descriptions:            目标板内存映射
 ** input parameters:        NONE
 ** output parameters:       NONE
 ** Returned value:          NONE
 *********************************************************************************************************/
-void bsp_mem_map(void)
+void board_mem_map(void)
 {
     /*
      * DM9000
@@ -62,9 +62,9 @@ void bsp_mem_map(void)
                    SECTION_ATTR(AP_USER_RW, DOMAIN_CHECK, CACHE_NO, BUFFER_NO));
 }
 /*********************************************************************************************************
-** BSP 保留空间
+** 目标板保留空间
 *********************************************************************************************************/
-const mem_space_t bsp_resv_space[] = {
+const mem_space_t board_resv_space[] = {
         {
             0x10000000,                                                 /*  DM9000                      */
             2 * MB
@@ -75,13 +75,13 @@ const mem_space_t bsp_resv_space[] = {
         }
 };
 /*********************************************************************************************************
-** Function name:           bsp_drivers_install
-** Descriptions:            安装 BSP 驱动
+** Function name:           board_drivers_install
+** Descriptions:            安装目标板驱动
 ** input parameters:        NONE
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-int bsp_drivers_install(void)
+int board_drivers_install(void)
 {
     extern int audio_init(void);
     audio_init();
@@ -92,13 +92,13 @@ int bsp_drivers_install(void)
     return 0;
 }
 /*********************************************************************************************************
-** Function name:           bsp_devices_create
-** Descriptions:            创建 BSP 设备
+** Function name:           board_devices_create
+** Descriptions:            创建目标板设备
 ** input parameters:        NONE
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-int bsp_devices_create(void)
+int board_devices_create(void)
 {
     extern int mtdblock_create(const char *path,
                                long mtd_no,

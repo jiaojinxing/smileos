@@ -55,13 +55,13 @@ static int timer4_isr(intno_t interrupt, void *arg)
     return 0;
 }
 /*********************************************************************************************************
-** Function name:           soc_timer_init
+** Function name:           cpu_timer_init
 ** Descriptions:            初始化定时器
 ** input parameters:        NONE
 ** output parameters:       NONE
 ** Returned value:          NONE
 *********************************************************************************************************/
-void soc_timer_init(void)
+void cpu_timer_init(void)
 {
     /*
      * Timer input clock Frequency = PCLK / {prescaler value + 1} / {divider value}

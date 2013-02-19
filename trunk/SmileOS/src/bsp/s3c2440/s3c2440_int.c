@@ -71,13 +71,13 @@ void irq_c_handler(void)
     interrupt_exit();                                                   /*  退出中断                    */
 }
 /*********************************************************************************************************
-** Function name:           interrupt_mode_init
+** Function name:           cpu_interrupt_init
 ** Descriptions:            初始化中断
 ** input parameters:        NONE
 ** output parameters:       NONE
 ** Returned value:          NONE
 *********************************************************************************************************/
-void interrupt_mode_init(void)
+void cpu_interrupt_init(void)
 {
     SRCPND      = 0x00;                                                 /*  清除所有中断源等待          */
 
