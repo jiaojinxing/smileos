@@ -40,13 +40,13 @@
 #include "arch/arm920t/mmu.h"
 #include "s3c2440.h"
 /*********************************************************************************************************
-** Function name:           cpu_init
+** Function name:           cpu_reset_init
 ** Descriptions:            复位后初始化 CPU
 ** input parameters:        NONE
 ** output parameters:       NONE
 ** Returned value:          NONE
 *********************************************************************************************************/
-void cpu_init(void)
+void cpu_reset_init(void)
 {
     WTCON       = 0x00;                                                 /*  关闭看门狗                  */
 
@@ -91,28 +91,28 @@ const mem_space_t cpu_resv_space[] = {
         }
 };
 /*********************************************************************************************************
-** Function name:           soc_init
+** Function name:           cpu_init
 ** Descriptions:            内核初始化 CPU
 ** input parameters:        NONE
 ** output parameters:       NONE
 ** Returned value:          NONE
 *********************************************************************************************************/
-void soc_init(void)
+void cpu_init(void)
 {
     extern void clock_init(void);
     clock_init();
 
-    extern void interrupt_mode_init(void);
-    interrupt_mode_init();
+    extern void cpu_interrupt_init(void);
+    cpu_interrupt_init();
 }
 /*********************************************************************************************************
-** Function name:           soc_drivers_install
-** Descriptions:            安装 SOC 驱动
+** Function name:           cpu_drivers_install
+** Descriptions:            安装 CPU 驱动
 ** input parameters:        NONE
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-int soc_drivers_install(void)
+int cpu_drivers_install(void)
 {
     extern int serial0_init(void);
     serial0_init();
@@ -126,13 +126,13 @@ int soc_drivers_install(void)
     return 0;
 }
 /*********************************************************************************************************
-** Function name:           soc_devices_create
-** Descriptions:            创建 SOC 设备
+** Function name:           cpu_devices_create
+** Descriptions:            创建 CPU 设备
 ** input parameters:        NONE
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-int soc_devices_create(void)
+int cpu_devices_create(void)
 {
     return 0;
 }

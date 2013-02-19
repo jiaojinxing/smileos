@@ -46,7 +46,7 @@ extern "C" {
 
 #include <sys/stat.h>
 /*********************************************************************************************************
-** Function name:           vfs_mount
+** Function name:           mount
 ** Descriptions:            挂载
 ** input parameters:        point_name          挂载点名
 **                          dev_name            设备名

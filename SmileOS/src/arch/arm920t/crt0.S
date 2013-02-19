@@ -47,7 +47,7 @@
 /*********************************************************************************************************
 ** 外部函数与变量
 *********************************************************************************************************/
-.extern cpu_init
+.extern cpu_reset_init
 .extern irq_c_handler
 .extern fiq_c_handler
 .extern dabt_c_handler
@@ -102,7 +102,7 @@ reset_handler:
 
     LDR     SP, =(IRQ_STACK_P_BASE)         /*  设置 SVC 模式的 SP                                      */
 
-    BL      cpu_init                        /*  初始化 CPU                                              */
+    BL      cpu_reset_init                  /*  初始化 CPU                                              */
 
     MOV     R0, #0                          /*  对 BSS 段进行清零                                       */
     LDR     R1, =__bss_start

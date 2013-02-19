@@ -45,21 +45,21 @@ extern "C" {
 #endif
 
 /*********************************************************************************************************
-** Function name:           soc_init
+** Function name:           cpu_init
 ** Descriptions:            内核初始化 CPU
 ** input parameters:        NONE
 ** output parameters:       NONE
 ** Returned value:          NONE
 *********************************************************************************************************/
-void soc_init(void);
+void cpu_init(void);
 /*********************************************************************************************************
-** Function name:           soc_timer_init
+** Function name:           cpu_timer_init
 ** Descriptions:            初始化定时器
 ** input parameters:        NONE
 ** output parameters:       NONE
 ** Returned value:          NONE
 *********************************************************************************************************/
-void soc_timer_init(void);
+void cpu_timer_init(void);
 /*********************************************************************************************************
 ** Function name:           interrupt_disable
 ** Descriptions:            进入临界区域
@@ -136,37 +136,37 @@ void arch_switch_context(register task_t *from, register task_t *to);
 *********************************************************************************************************/
 void arch_switch_context_to(register task_t *from, register task_t *to);
 /*********************************************************************************************************
-** Function name:           soc_drivers_install
-** Descriptions:            安装 SOC 驱动
+** Function name:           cpu_drivers_install
+** Descriptions:            安装 CPU 驱动
 ** input parameters:        NONE
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-int soc_drivers_install(void);
+int cpu_drivers_install(void);
 /*********************************************************************************************************
-** Function name:           soc_devices_create
-** Descriptions:            创建 SOC 设备
+** Function name:           cpu_devices_create
+** Descriptions:            创建 CPU 设备
 ** input parameters:        NONE
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-int soc_devices_create(void);
+int cpu_devices_create(void);
 /*********************************************************************************************************
-** Function name:           bsp_drivers_install
-** Descriptions:            安装 BSP 驱动
+** Function name:           board_drivers_install
+** Descriptions:            安装目标板驱动
 ** input parameters:        NONE
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-int bsp_drivers_install(void);
+int board_drivers_install(void);
 /*********************************************************************************************************
-** Function name:           bsp_devices_create
-** Descriptions:            创建 BSP 设备
+** Function name:           board_devices_create
+** Descriptions:            创建目标板设备
 ** input parameters:        NONE
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-int bsp_devices_create(void);
+int board_devices_create(void);
 /*********************************************************************************************************
 ** Function name:           ua_to_ka
 ** Descriptions:            将进程空间的虚拟地址转换为内核可以处理的虚拟地址

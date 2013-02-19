@@ -46,6 +46,8 @@ extern "C" {
 
 #include <syslimits.h>
 
+#define PATH_BUF_LEN                (PATH_MAX * 2)                      /*  路径缓冲的最大长度          */
+
 #ifdef __cplusplus
 }
 #endif

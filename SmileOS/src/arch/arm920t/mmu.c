@@ -843,8 +843,8 @@ void arch_mmu_init(void)
     /*
      * BSP 内存映射
      */
-    extern void bsp_mem_map(void);
-    bsp_mem_map();
+    extern void board_mem_map(void);
+    board_mem_map();
 
     /*
      * 设置转换表基址

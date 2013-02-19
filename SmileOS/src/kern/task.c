@@ -236,7 +236,7 @@ static int32_t __kthread_create(const char *name,
 *********************************************************************************************************/
 static void idle_thread(void *arg)
 {
-    soc_timer_init();
+    cpu_timer_init();
 
     while (1) {
 

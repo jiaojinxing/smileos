@@ -41,6 +41,7 @@
 #define MTD_CONFIG_H_
 
 #define CONFIG_SYS_MAX_NAND_DEVICE      1
+#define CONFIG_SYS_NAND_MAX_CHIPS       1
 #define CONFIG_SYS_NAND_BASE            0
 #define CONFIG_MTD_DEVICE               1
 #define CONFIG_MTD_DEBUG                1
@@ -60,6 +61,7 @@
 //#define CONFIG_SYS_NAND_SELECT_DEVICE 1
 #define CONFIG_CMD_MTDPARTS_SPREAD      1
 #define CONFIG_MTD_DEBUG_VERBOSE        0
+//#define CONFIG_NAND_ECC_BCH
 
 #endif                                                                  /*  MTD_CONFIG_H_               */
 /*********************************************************************************************************

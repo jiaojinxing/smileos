@@ -102,11 +102,9 @@ static void tcpip_init_done(void *arg)
 static void init(void *arg)
 {
 #if CONFIG_VFS_EN > 0
-    extern int soc_drivers_install(void);
-    soc_drivers_install();
+    cpu_drivers_install();
 
-    extern int soc_devices_create(void);
-    soc_devices_create();
+    cpu_devices_create();
 
     {
         int fd;
@@ -116,13 +114,10 @@ static void init(void *arg)
         stdout  = fdopen(fd,  "w");
     }
 
-    extern int bsp_drivers_install(void);
-    bsp_drivers_install();
+    board_drivers_install();
 
-    extern int bsp_devices_create(void);
-    bsp_devices_create();
+    board_devices_create();
 #endif
-
 
 #if CONFIG_VFS_EN > 0 && CONFIG_RAMDISK_EN > 0
     int ramdisk_create(const char *path, size_t size);
@@ -145,7 +140,6 @@ static void init(void *arg)
 #endif
 
     while (1) {
-        void kheap_check(void);
         kheap_check();
 
         sleep(10);
@@ -225,8 +219,8 @@ int main(void)
      *
      * 时钟可能未初始化好
      */
-    extern void soc_init(void);
-    soc_init();
+    extern void cpu_init(void);
+    cpu_init();
 
     /*
      * 现在我认为时钟初始化好了, CPU 以全速跑
