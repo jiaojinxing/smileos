@@ -213,6 +213,9 @@ extern _ssize_t _write_r _PARAMS ((struct _reent *, int, const void *, size_t));
 #define  SYSCALL_GETHOSTBYNAME_R 75
 #define  SYSCALL_FREEADDRINFO    76
 #define  SYSCALL_GETADDRINFO     77
+#define  SYSCALL_DLOPEN     90
+#define  SYSCALL_DLSYM      91
+#define  SYSCALL_DLCLOSE    92
 #define  SYSCALL_NR         100                                         /*  系统调用数                  */
 /*********************************************************************************************************
 ** 系统调用代码
@@ -1141,6 +1144,47 @@ int getaddrinfo(const char *nodename,
 {
     int syscall = SYSCALL_GETADDRINFO;
     syscall_args_t args = {(void *)nodename, (void *)servname, (void *)hints, (void *)res};
+
+    syscall_enter();
+}
+
+/*
+ * http://pubs.opengroup.org/onlinepubs/009695399/functions/dlopen.html
+ */
+void  *dlopen(const char *path, int mode)
+{
+    int syscall = SYSCALL_DLOPEN;
+    syscall_args_t args = {(void *)path, (void *)mode};
+
+    syscall_enter();
+}
+
+/*
+ * http://pubs.opengroup.org/onlinepubs/009695399/functions/dlsym.html
+ */
+void  *dlsym(void *mod, const char *name)
+{
+    int syscall = SYSCALL_DLSYM;
+    syscall_args_t args = {(void *)mod, (void *)name};
+
+    syscall_enter();
+}
+
+/*
+ * http://pubs.opengroup.org/onlinepubs/009695399/functions/dlerror.html
+ */
+char  *dlerror(void)
+{
+    return NULL;
+}
+
+/*
+ * http://pubs.opengroup.org/onlinepubs/009695399/functions/dlclose.html
+ */
+int    dlclose(void *mod)
+{
+    int syscall = SYSCALL_DLCLOSE;
+    syscall_args_t args = {(void *)mod};
 
     syscall_enter();
 }
