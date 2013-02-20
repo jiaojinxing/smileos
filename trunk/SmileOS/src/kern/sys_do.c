@@ -61,6 +61,10 @@ extern int          task_alarm(uint32_t secs);
 extern int          task_pause(void);
 #endif
 
+#if CONFIG_VFS_EN > 0
+extern int          pipe_create(int fds[2]);
+#endif
+
 /*********************************************************************************************************
 ** Function name:           sys_do_enter
 ** Descriptions:            进入系统调用处理
@@ -915,7 +919,24 @@ static int do_select(syscall_args_t *args)
     sys_do_exit();
     return ret;
 }
+/*********************************************************************************************************
+** Function name:           do_pipe
+** Descriptions:            pipe 系统调用处理函数
+** input parameters:        args                系统调用处理参数
+** output parameters:       NONE
+** Returned value:          0 OR -1
+*********************************************************************************************************/
+static int do_pipe(syscall_args_t *args)
+{
+    int ret;
 
+    sys_do_enter();
+
+    ret = pipe_create(ua_to_ka(args->arg0));
+
+    sys_do_exit();
+    return ret;
+}
 #endif
 /*********************************************************************************************************
 ** 网络相关系统调用处理
@@ -1463,6 +1484,7 @@ sys_do_t sys_do_table[] = {
 #define  SYSCALL_RMDIR      35
 #define  SYSCALL_DUP        36
 #define  SYSCALL_DUP2       37
+#define  SYSCALL_PIPE       38
         (sys_do_t)do_rename,
         (sys_do_t)do_unlink,
         (sys_do_t)do_link,
@@ -1471,7 +1493,7 @@ sys_do_t sys_do_table[] = {
         (sys_do_t)do_rmdir,
         (sys_do_t)do_dup,
         (sys_do_t)do_dup2,
-        NULL,
+        (sys_do_t)do_pipe,
         NULL,
 #define  SYSCALL_OPENDIR    40
 #define  SYSCALL_READDIR    41

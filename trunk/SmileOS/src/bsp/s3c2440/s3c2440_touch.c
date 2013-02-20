@@ -134,7 +134,7 @@ static void touch_report_event(privinfo_t *priv, bool_t is_down)
         priv->up_msg_ok   = TRUE;
     }
 
-    select_report(&priv->select, VFS_FILE_READABLE);
+    vfs_event_report(&priv->select, VFS_FILE_READABLE);
 }
 /*********************************************************************************************************
 ** Function name:           touch_isr
@@ -415,7 +415,7 @@ static ssize_t touch_read(void *ctx, file_t *file, void *buf, size_t len)
     interrupt_unmask(TOUCH_INT);
 
     if (!msg_ok) {                                                      /*  如果没有数据可读            */
-        ret = select_helper(&priv->select, touch_scan, ctx, file, VFS_FILE_READABLE);
+        ret = vfs_block_helper(&priv->select, touch_scan, ctx, file, VFS_FILE_READABLE);
         if (ret <= 0) {
             return ret;
         } else {

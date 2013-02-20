@@ -599,8 +599,7 @@ int mmu_unmap_section(uint32_t section_no)
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-int mmu_map_section(uint32_t section_no,
-                    uint32_t page_tbl_base)
+int mmu_map_section(uint32_t section_no, uint32_t page_tbl_base)
 {
     volatile uint32_t *entry;
              uint32_t  value;
@@ -630,10 +629,7 @@ int mmu_map_section(uint32_t section_no,
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-int mmu_map_region(uint32_t virt_section_base,
-                   uint32_t phys_section_base,
-                   uint32_t size,
-                   uint32_t attr)
+int mmu_map_region(uint32_t virt_section_base, uint32_t phys_section_base, uint32_t size, uint32_t attr)
 {
     volatile uint32_t *entry;
     int                i;
@@ -877,22 +873,27 @@ void arch_mmu_init(void)
     memcpy((char *)VECTOR_P_ADDR, (char *)KERN_MEM_BASE, VMM_PAGE_SIZE * 4);
 }
 /*********************************************************************************************************
-** 系统保留虚拟地址空间
+** Function name:           ua_to_ka
+** Descriptions:            将进程空间的虚拟地址转换为内核可以处理的虚拟地址
+** input parameters:        VA                  进程空间的虚拟地址
+** output parameters:       NONE
+** Returned value:          内核可以处理的虚拟地址
 *********************************************************************************************************/
-const mem_space_t sys_resv_space[] = {
-        {
-                PHY_MEM_BASE,
-                PHY_MEM_SIZE
-        },
-        {
-                0xFFF00000,
-                1 * MB
-        },
-        {
-                0,
-                0
-        }
-};
+void *ua_to_ka(const void *uaddr)
+{
+    return (void *)uaddr;
+}
+/*********************************************************************************************************
+** Function name:           ka_to_ua
+** Descriptions:            将内核可以处理的虚拟地址转换为进程空间的虚拟地址
+** input parameters:        kaddr               内核可以处理的虚拟地址
+** output parameters:       NONE
+** Returned value:          进程空间的虚拟地址
+*********************************************************************************************************/
+void *ka_to_ua(const void *kaddr)
+{
+    return (void *)kaddr;
+}
 /*********************************************************************************************************
 ** END FILE
 *********************************************************************************************************/

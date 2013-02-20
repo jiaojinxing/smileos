@@ -737,7 +737,10 @@ static int fatfs_truncate(mount_point_t *point, const char *path, off_t len)
     int fd = vfs_open(vfs_path_add_mount_point(path), O_WRONLY, 0666);
     if (fd >= 0) {
         int ret = vfs_ftruncate(fd, len);
+        int err;
+        geterrno(err);
         vfs_close(fd);
+        seterrno(err);
         return ret;
     } else {
         return -1;

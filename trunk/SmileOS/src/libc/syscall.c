@@ -186,6 +186,7 @@ extern _ssize_t _write_r _PARAMS ((struct _reent *, int, const void *, size_t));
 #define  SYSCALL_RMDIR      35
 #define  SYSCALL_DUP        36
 #define  SYSCALL_DUP2       37
+#define  SYSCALL_PIPE       38
 #define  SYSCALL_OPENDIR    40
 #define  SYSCALL_READDIR    41
 #define  SYSCALL_SEEKDIR    42
@@ -838,6 +839,20 @@ int select(int maxfdp1, fd_set *readset, fd_set *writeset, fd_set *exceptset, st
     return __pthread_select(maxfdp1, readset, writeset, exceptset, timeout);
 }
 #endif
+/*********************************************************************************************************
+** Function name:           pipe
+** Descriptions:            创建管道
+** input parameters:        NONE
+** output parameters:       fds                 文件描述符
+** Returned value:          0 OR -1
+*********************************************************************************************************/
+int pipe(int fds[2])
+{
+    int syscall = SYSCALL_PIPE;
+    syscall_args_t args = {(void *)fds};
+
+    syscall_enter();
+}
 /*********************************************************************************************************
 ** Function name:           raise
 ** Descriptions:            给自己发信号

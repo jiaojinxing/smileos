@@ -85,7 +85,7 @@ static int uart0_isr(intno_t interrupt, void *arg)
                 buf[i] = URXH0;
             }
             kfifo_put(&priv->iq, buf, len);                             /*  放到输入队列              　*/
-            select_report(&priv->select, VFS_FILE_READABLE);            /*  通知可读                    */
+            vfs_event_report(&priv->select, VFS_FILE_READABLE);            /*  通知可读                    */
         }
     }
 
@@ -94,7 +94,7 @@ static int uart0_isr(intno_t interrupt, void *arg)
         if (len == 0) {                                                 /*  没有数据可发                */
             INTSUBMSK |= INTSUB_TXD0;                                   /*  禁能发送 FIFO 空中断     　 */
         } else {
-            select_report(&priv->select, VFS_FILE_WRITEABLE);           /*  通知可写                    */
+            vfs_event_report(&priv->select, VFS_FILE_WRITEABLE);           /*  通知可写                    */
             for (i = 0; i < len; i++) {                                 /*  发送数据                    */
                 UTXH0 = buf[i];
             }
@@ -124,7 +124,7 @@ static void serial0_start(privinfo_t *priv)
             INTSUBMSK |= INTSUB_TXD0;                                   /*  禁能发送 FIFO 空中断     　 */
             return;
         } else {
-            select_report(&priv->select, VFS_FILE_WRITEABLE);
+            vfs_event_report(&priv->select, VFS_FILE_WRITEABLE);
             for (i = 0; i < len; i++) {                                 /*  发送数据                    */
                 UTXH0 = buf[i];
             }
@@ -331,7 +331,7 @@ static ssize_t serial0_read(void *ctx, file_t *file, void *buf, size_t len)
     mutex_lock(&priv->read_lock, 0);
 
     if (kfifo_is_empty(&priv->iq)) {                                    /*  如果没有数据可读            */
-        ret = select_helper(&priv->select, serial0_scan, ctx, file, VFS_FILE_READABLE);
+        ret = vfs_block_helper(&priv->select, serial0_scan, ctx, file, VFS_FILE_READABLE);
         if (ret <= 0) {
             mutex_unlock(&priv->read_lock);
             return ret;
@@ -376,7 +376,7 @@ static ssize_t serial0_write(void *ctx, file_t *file, const void *buf, size_t le
     mutex_lock(&priv->write_lock, 0);
 
     if (kfifo_is_full(&priv->oq)) {                                     /*  如果没有空间可写            */
-        ret = select_helper(&priv->select, serial0_scan, ctx, file, VFS_FILE_WRITEABLE);
+        ret = vfs_block_helper(&priv->select, serial0_scan, ctx, file, VFS_FILE_WRITEABLE);
         if (ret <= 0) {
             mutex_unlock(&priv->write_lock);
             return ret;

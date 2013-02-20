@@ -89,6 +89,7 @@ extern "C" {
  */
 #include <errno.h>
 #define seterrno(err)               errno = (err)
+#define geterrno(err)               err = errno
 
 #include <sys/reent.h>                                                  /*  for struct _reent           */
 
