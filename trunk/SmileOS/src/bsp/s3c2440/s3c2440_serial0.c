@@ -85,7 +85,7 @@ static int uart0_isr(intno_t interrupt, void *arg)
                 buf[i] = URXH0;
             }
             kfifo_put(&priv->iq, buf, len);                             /*  放到输入队列              　*/
-            vfs_event_report(&priv->select, VFS_FILE_READABLE);            /*  通知可读                    */
+            vfs_event_report(&priv->select, VFS_FILE_READABLE);         /*  通知可读                    */
         }
     }
 
@@ -94,7 +94,7 @@ static int uart0_isr(intno_t interrupt, void *arg)
         if (len == 0) {                                                 /*  没有数据可发                */
             INTSUBMSK |= INTSUB_TXD0;                                   /*  禁能发送 FIFO 空中断     　 */
         } else {
-            vfs_event_report(&priv->select, VFS_FILE_WRITEABLE);           /*  通知可写                    */
+            vfs_event_report(&priv->select, VFS_FILE_WRITEABLE);        /*  通知可写                    */
             for (i = 0; i < len; i++) {                                 /*  发送数据                    */
                 UTXH0 = buf[i];
             }

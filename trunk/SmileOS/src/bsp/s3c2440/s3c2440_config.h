@@ -43,8 +43,10 @@
 #define PHY_MEM_SIZE        (64 * MB)                                   /*  物理内存大小                */
 #define PHY_MEM_BASE        (0x30000000)                                /*  物理内存基址                */
 
-#define KERN_MEM_SIZE       (20 * MB)                                   /*  内核内存大小                */
-#define KERN_MEM_BASE       (PHY_MEM_BASE)                              /*  内核内存基址                */
+#define PHY_MEM_RESV_SIZE   (0)                                         /*  保留内存大小                */
+
+#define KERN_MEM_SIZE       (20 * MB - PHY_MEM_RESV_SIZE)               /*  内核内存大小                */
+#define KERN_MEM_BASE       (PHY_MEM_BASE + PHY_MEM_RESV_SIZE)          /*  内核内存基址                */
 
 #define PAGE_TBL_SIZE       (1 * KB)                                    /*  页表大小                    */
 #define PAGE_TBL_NR         (1024 - 16)                                 /*  页表数                      */
@@ -75,18 +77,6 @@ extern unsigned char __bss_end;
 #define SW_SHARE_MEM_SIZE   (1 * MB)                                    /*  软件共享内存大小            */
 #define SW_SHARE_MEM_BASE   (HW_SHARE_MEM_BASE + HW_SHARE_MEM_SIZE)     /*  软件共享内存基址            */
 
-                                                                        /*  VMM 内存大小                */
-#define VMM_MEM_SIZE        (PHY_MEM_SIZE - KERN_MEM_SIZE - FB_MEM_SIZE - \
-                             INT_MEM_SIZE - DMA_MEM_SIZE - HW_SHARE_MEM_SIZE - SW_SHARE_MEM_SIZE)
-#define VMM_MEM_BASE        (SW_SHARE_MEM_BASE + SW_SHARE_MEM_SIZE)     /*  VMM 内存基址                */
-#define VMM_PHY_PAGE_SIZE   (4096)                                      /*  物理页面大小                */
-#define VMM_PHY_PAGE_NR     (VMM_MEM_SIZE / VMM_PHY_PAGE_SIZE)             /*  物理页面数                  */
-
-#define VMM_PAGE_SIZE       (VMM_PHY_PAGE_SIZE)
-#define VMM_SECTION_NR      (4096)
-#define VMM_SECTION_SIZE    (1 * MB)
-#define VMM_SECTION_OFFSET  (20)
-
 #define VECTOR_V_ADDR       (0xFFFF0000)                                /*  向量虚拟地址                */
 #define VECTOR_P_ADDR       (INT_MEM_BASE + 0xF0000)                    /*  向量物理地址                */
 
@@ -96,6 +86,18 @@ extern unsigned char __bss_end;
 #define UART_BAUD_RATE      (115200)                                    /*  UART 波特率                 */
 
 #define SYS_CLK_FREQ        (12000000)                                  /*  Fin = 12.00MHz              */
+
+                                                                        /*  VMM 内存大小                */
+#define VMM_MEM_SIZE        (PHY_MEM_SIZE - PHY_MEM_RESV_SIZE - KERN_MEM_SIZE - FB_MEM_SIZE - \
+                            INT_MEM_SIZE - DMA_MEM_SIZE - HW_SHARE_MEM_SIZE - SW_SHARE_MEM_SIZE)
+#define VMM_MEM_BASE        (SW_SHARE_MEM_BASE + SW_SHARE_MEM_SIZE)     /*  VMM 内存基址                */
+#define VMM_PHY_PAGE_SIZE   (4096)                                      /*  物理页面大小                */
+#define VMM_PHY_PAGE_NR     (VMM_MEM_SIZE / VMM_PHY_PAGE_SIZE)          /*  物理页面数                  */
+
+#define VMM_PAGE_SIZE       (VMM_PHY_PAGE_SIZE)
+#define VMM_SECTION_NR      (4096)
+#define VMM_SECTION_SIZE    (1 * MB)
+#define VMM_SECTION_OFFSET  (20)
 
 #define PROCESS_SPACE_SIZE  (32 * MB)
 #define PROCESS_PARAM_SIZE  (VMM_PAGE_SIZE)
