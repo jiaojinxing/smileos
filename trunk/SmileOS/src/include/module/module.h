@@ -50,8 +50,8 @@ struct module;
 typedef struct module module_t;
 /*********************************************************************************************************
 ** Function name:           module_load
-** Descriptions:            加载 ELF 文件
-** input parameters:        path                ELF 文件路径
+** Descriptions:            加载内核模块
+** input parameters:        path                内核模块文件路径
 **                          argc                参数个数
 **                          argv                参数数组
 ** output parameters:       NONE
@@ -60,36 +60,54 @@ typedef struct module module_t;
 int module_load(const char *path, int argc, char **argv);
 /*********************************************************************************************************
 ** Function name:           module_unload
-** Descriptions:            卸载模块
-** input parameters:        path                ELF 文件路径
+** Descriptions:            卸载内核模块
+** input parameters:        path                内核模块文件路径
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
 int module_unload(const char *path);
 /*********************************************************************************************************
-** Function name:           module_ref_by_addr
-** Descriptions:            通过模块的一个地址引用模块
-** input parameters:        addr                地址
-** output parameters:       NONE
-** Returned value:          模块 OR NULL
-*********************************************************************************************************/
-module_t *module_ref_by_addr(void *addr);
-/*********************************************************************************************************
 ** Function name:           module_unref
-** Descriptions:            解取对模块的引用
-** input parameters:        mod                 模块
+** Descriptions:            解取对内核模块的引用
+** input parameters:        mod                 内核模块
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
 int module_unref(module_t *mod);
 /*********************************************************************************************************
-** Function name:           module_lookup
-** Descriptions:            查找模块
-** input parameters:        path                ELF 文件路径
+** Function name:           module_ref_by_addr
+** Descriptions:            通过内核模块的一个地址引用内核模块
+** input parameters:        addr                地址
 ** output parameters:       NONE
-** Returned value:          模块 OR NULL
+** Returned value:          内核模块 OR NULL
 *********************************************************************************************************/
-module_t *module_lookup(const char *path);
+module_t *module_ref_by_addr(void *addr);
+/*********************************************************************************************************
+** Function name:           module_open
+** Descriptions:            打开应用模块
+** input parameters:        path                应用模块文件路径
+**                          mode                模式
+** output parameters:       NONE
+** Returned value:          模块
+*********************************************************************************************************/
+module_t *module_open(const char *path, int mode);
+/*********************************************************************************************************
+** Function name:           module_close
+** Descriptions:            关闭应用模块
+** input parameters:        mod                 应用模块
+** output parameters:       NONE
+** Returned value:          0 OR -1
+*********************************************************************************************************/
+int module_close(module_t *mod);
+/*********************************************************************************************************
+** Function name:           module_symbol
+** Descriptions:            在模块里查找符号
+** input parameters:        mod                 模块
+**                          name                符号名
+** output parameters:       NONE
+** Returned value:          符号地址
+*********************************************************************************************************/
+void *module_symbol(module_t *mod, const char *name);
 
 #ifdef __cplusplus
 }

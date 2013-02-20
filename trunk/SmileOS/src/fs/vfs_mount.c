@@ -183,6 +183,49 @@ int vfs_path_normalization(char *path, int sprit_end)
     return 0;
 }
 /*********************************************************************************************************
+** Function name:           vfs_path_format
+** Descriptions:            格式化 PATH
+** input parameters:        path                路径
+** output parameters:       pathbuf             格式化后的路径
+** Returned value:          0 OR -1
+*********************************************************************************************************/
+int vfs_path_format(char *pathbuf, const char *path)
+{
+    char *pathbuf1;
+
+    if (pathbuf == NULL || path == NULL || strlen(path) > PATH_MAX - 1) {/*  PATH 合法性检查            */
+        seterrno(EINVAL);
+        return -1;
+    }
+
+    if (path[0] == '/') {                                               /*  如果是绝对路径              */
+        strlcpy(pathbuf, path, PATH_MAX);
+
+        if (vfs_path_normalization(pathbuf, FALSE) < 0) {               /*  正常化 PATH                 */
+            return -1;
+        }
+    } else {                                                            /*  如果是相对路径              */
+        int tid = gettid();
+
+        pathbuf1 = kmalloc(PATH_BUF_LEN, GFP_KERNEL);
+        if (pathbuf1 == NULL) {
+            seterrno(ENOMEM);
+            return -1;
+        }
+
+        snprintf(pathbuf1, PATH_BUF_LEN, "%s%s", cwd[tid], path);       /*  在前面加入当前工作目录      */
+
+        if (vfs_path_normalization(pathbuf1, FALSE) < 0) {              /*  正常化 PATH                 */
+            kfree(pathbuf1);
+            return -1;
+        }
+
+        kfree(pathbuf1);
+    }
+
+    return 0;
+}
+/*********************************************************************************************************
 ** Function name:           vfs_mount_point_lookup
 ** Descriptions:            查找挂载点, PATH 不能是挂载点
 ** input parameters:        pathbuf             路径临时缓冲区
@@ -292,6 +335,8 @@ mount_point_t *vfs_mount_point_lookup2(char pathbuf[PATH_MAX], char **ppath, con
     }
     return point;
 }
+
+
 /*********************************************************************************************************
 ** Function name:           vfs_mount_point_lookup_ref
 ** Descriptions:            查找并引用挂载点, PATH 不能是挂载点

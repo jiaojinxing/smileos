@@ -129,14 +129,14 @@ static int hash_tbl_insert(hash_tbl_t *tbl, uint32_t key, void *data)
 static hash_tbl_t *text_symbol_tbl;                                     /*  TEXT 段符号表               */
 static hash_tbl_t *data_symbol_tbl;                                     /*  DATA 段符号表               */
 /*********************************************************************************************************
-** Function name:           symbol_lookup
-** Descriptions:            查找符号
+** Function name:           sys_symbol_lookup
+** Descriptions:            查找系统符号
 ** input parameters:        name                符号名
 **                          type                符号类型
 ** output parameters:       NONE
 ** Returned value:          符号地址 OR NULL
 *********************************************************************************************************/
-void *symbol_lookup(const char *name, uint8_t type)
+void *sys_symbol_lookup(const char *name, uint8_t type)
 {
     node_t *node;
 
@@ -148,13 +148,13 @@ void *symbol_lookup(const char *name, uint8_t type)
     return NULL;
 }
 /*********************************************************************************************************
-** Function name:           symbol_init
-** Descriptions:            初始化符号表
+** Function name:           sys_symbol_init
+** Descriptions:            初始化系统符号表
 ** input parameters:        NONE
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-int symbol_init(void)
+int sys_symbol_init(void)
 {
     hash_tbl_t *tbl;
     symbol_t   *symbol;
