@@ -112,7 +112,7 @@ static ssize_t fifo_read(void *ctx, file_t *file, void *buf, size_t len)
     }
 
     if (kfifo_is_empty(&priv->fifo)) {                                  /*  如果没有数据可读            */
-        ret = select_helper(&priv->select, fifo_scan, ctx, file, VFS_FILE_READABLE);
+        ret = vfs_block_helper(&priv->select, fifo_scan, ctx, file, VFS_FILE_READABLE);
         if (ret <= 0) {
             return ret;
         } else {
@@ -123,7 +123,7 @@ static ssize_t fifo_read(void *ctx, file_t *file, void *buf, size_t len)
     len = kfifo_get(&priv->fifo, buf, len);
 
     if (len > 0) {
-        select_report(&priv->select, VFS_FILE_WRITEABLE);
+        vfs_event_report(&priv->select, VFS_FILE_WRITEABLE);
     }
 
     return len;
@@ -149,7 +149,7 @@ static ssize_t fifo_write(void *ctx, file_t *file, const void *buf, size_t len)
     }
 
     if (kfifo_is_full(&priv->fifo)) {                                   /*  如果没有空间可写            */
-        ret = select_helper(&priv->select, fifo_scan, ctx, file, VFS_FILE_WRITEABLE);
+        ret = vfs_block_helper(&priv->select, fifo_scan, ctx, file, VFS_FILE_WRITEABLE);
         if (ret <= 0) {
             return ret;
         } else {
@@ -160,7 +160,7 @@ static ssize_t fifo_write(void *ctx, file_t *file, const void *buf, size_t len)
     len = kfifo_put(&priv->fifo, buf, len);
 
     if (len > 0) {
-        select_report(&priv->select, VFS_FILE_READABLE);
+        vfs_event_report(&priv->select, VFS_FILE_READABLE);
     }
 
     return len;
@@ -292,6 +292,66 @@ int fifo_create(const char *path, size_t size)
         seterrno(ENOMEM);
         return -1;
     }
+}
+
+#include <fcntl.h>
+#include <stdio.h>
+#include "vfs/vfs.h"
+/*********************************************************************************************************
+** Function name:           pipe_create
+** Descriptions:            创建 PIPE
+** input parameters:        NONE
+** output parameters:       fds                 文件描述符
+** Returned value:          0 OR -1
+*********************************************************************************************************/
+int pipe_create(int fds[2])
+{
+    char path[PATH_MAX];
+    int err;
+    static int key = 0;
+    int _key;
+    reg_t reg;
+
+    again:
+
+    reg = interrupt_disable();
+    _key = key++;
+    interrupt_resume(reg);
+
+    snprintf(path, sizeof(PATH_MAX), "/dev/pipe%d", _key);
+
+    reg = interrupt_disable();
+
+    if (fifo_create(path, 4 * KB) < 0) {
+        interrupt_resume(reg);
+        if (errno == EEXIST) {
+            goto again;
+        }
+        return -1;
+    }
+
+    fds[0] = vfs_open(path, O_RDONLY, 0666);
+    if (fds[0] < 0) {
+        geterrno(err);
+        vfs_unlink(path);
+        seterrno(err);
+        interrupt_resume(reg);
+        return -1;
+    }
+
+    fds[1] = vfs_open(path, O_WRONLY, 0666);
+    if (fds[1] < 0) {
+        geterrno(err);
+        vfs_close(fds[0]);
+        vfs_unlink(path);
+        seterrno(err);
+        interrupt_resume(reg);
+        return -1;
+    }
+
+    interrupt_resume(reg);
+
+    return 0;
 }
 /*********************************************************************************************************
 ** END FILE

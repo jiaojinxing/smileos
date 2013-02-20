@@ -45,7 +45,14 @@ extern "C" {
 #endif
 
 #include "vfs/types.h"
-
+/*********************************************************************************************************
+** Function name:           select_init
+** Descriptions:            初始化 select
+** input parameters:        select              select 结构
+** output parameters:       NONE
+** Returned value:          0 OR -1
+*********************************************************************************************************/
+int select_init(select_struct_t *select);
 /*********************************************************************************************************
 ** Function name:           select_select
 ** Descriptions:            将当前任务加入到文件的等待列表
@@ -67,17 +74,17 @@ int select_select(select_struct_t *select, file_t *file, int type);
 *********************************************************************************************************/
 int select_unselect(select_struct_t *select, file_t *file, int type);
 /*********************************************************************************************************
-** Function name:           select_report
+** Function name:           vfs_event_report
 ** Descriptions:            回报事件
 ** input parameters:        select              select 结构
 **                          type                回报类型
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
-int select_report(select_struct_t *select, int type);
+int vfs_event_report(select_struct_t *select, int type);
 /*********************************************************************************************************
-** Function name:           select_helper
-** Descriptions:            select 辅助函数
+** Function name:           vfs_block_helper
+** Descriptions:            阻塞辅助函数
 ** input parameters:        select              select 结构
 **                          scan                扫描函数
 **                          ctx                 上下文
@@ -86,17 +93,11 @@ int select_report(select_struct_t *select, int type);
 ** output parameters:       NONE
 ** Returned value:          0 OR -1 OR 1
 *********************************************************************************************************/
-int select_helper(select_struct_t *select,
-                  int (*scan)(void *, file_t *, int),
-                  void *ctx, file_t *file, int type);
-/*********************************************************************************************************
-** Function name:           select_init
-** Descriptions:            初始化 select
-** input parameters:        select              select 结构
-** output parameters:       NONE
-** Returned value:          0 OR -1
-*********************************************************************************************************/
-int select_init(select_struct_t *select);
+int vfs_block_helper(select_struct_t *select,
+                     int (*scan)(void *, file_t *, int),
+                     void *ctx,
+                     file_t *file,
+                     int type);
 
 #ifdef __cplusplus
 }

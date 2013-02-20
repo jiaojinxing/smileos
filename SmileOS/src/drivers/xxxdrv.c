@@ -152,7 +152,7 @@ static ssize_t xxx_read(void *ctx, file_t *file, void *buf, size_t len)
     }
 
     if (0) {                                                            /*  如果没有数据可读            */
-        ret = select_helper(&priv->select, xxx_scan, ctx, file, VFS_FILE_READABLE);
+        ret = vfs_block_helper(&priv->select, xxx_scan, ctx, file, VFS_FILE_READABLE);
         if (ret <= 0) {
             return ret;
         } else {
@@ -188,7 +188,7 @@ static ssize_t xxx_write(void *ctx, file_t *file, const void *buf, size_t len)
     }
 
     if (0) {                                                            /*  如果没有空间可写            */
-        ret = select_helper(&priv->select, xxx_scan, ctx, file, VFS_FILE_WRITEABLE);
+        ret = vfs_block_helper(&priv->select, xxx_scan, ctx, file, VFS_FILE_WRITEABLE);
         if (ret <= 0) {
             return ret;
         } else {

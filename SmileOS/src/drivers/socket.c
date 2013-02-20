@@ -285,7 +285,7 @@ void smileos_socket_report(int sock_fd, int type, void *ctx)
     privinfo_t *priv = ctx;
 
     if (priv != NULL) {
-        select_report(&priv->select, type);
+        vfs_event_report(&priv->select, type);
     }
 }
 /*********************************************************************************************************
@@ -313,6 +313,7 @@ int socket_attach(int sock_fd)
     privinfo_t *priv;
     reg_t reg;
     file_t *file;
+    int err;
 
     priv = kmalloc(sizeof(privinfo_t), GFP_KERNEL);
     if (priv != NULL) {
@@ -332,7 +333,9 @@ int socket_attach(int sock_fd)
 
         fd = vfs_open(name, O_RDWR, 0666);
         if (fd < 0) {
+            geterrno(err);
             vfs_unlink(name);
+            seterrno(err);
             interrupt_resume(reg);
             kfree(priv);
             return -1;
@@ -340,8 +343,10 @@ int socket_attach(int sock_fd)
 
         file = vfs_get_file(fd);
         if (file == NULL) {
+            geterrno(err);
             vfs_close(fd);
             vfs_unlink(name);
+            seterrno(err);
             interrupt_resume(reg);
             kfree(priv);
             return -1;

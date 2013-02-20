@@ -69,6 +69,7 @@ void arch_mmu_init(void)
 ** output parameters:       NONE
 ** Returned value:          内核可以处理的虚拟地址
 *********************************************************************************************************/
+void *ua_to_ka(const void *uaddr) __attribute__ ((weak));
 void *ua_to_ka(const void *uaddr)
 {
     return (void *)uaddr;
@@ -80,6 +81,7 @@ void *ua_to_ka(const void *uaddr)
 ** output parameters:       NONE
 ** Returned value:          进程空间的虚拟地址
 *********************************************************************************************************/
+void *ka_to_ua(const void *kaddr) __attribute__ ((weak));
 void *ka_to_ua(const void *kaddr)
 {
     return (void *)kaddr;

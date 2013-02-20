@@ -323,7 +323,7 @@ static int audio_dma_isr(intno_t interrupt, void *arg)
 
     if (priv->queue.len < AUDIO_OUT_QUEUE_SIZE) {
 
-        select_report(&priv->select, VFS_FILE_WRITEABLE);               /*  可以写了                    */
+        vfs_event_report(&priv->select, VFS_FILE_WRITEABLE);               /*  可以写了                    */
 
         if (priv->queue.len == 0) {
             sem_sync(&priv->done);                                      /*  结束了                      */
@@ -532,7 +532,7 @@ static ssize_t audio_write(void *ctx, file_t *file, const void *buf, size_t len)
     interrupt_unmask(AUDIO_DMA_INT);
 
     if (queue_len >= AUDIO_OUT_QUEUE_SIZE) {
-        ret = select_helper(&priv->select, audio_scan, ctx, file, VFS_FILE_WRITEABLE);
+        ret = vfs_block_helper(&priv->select, audio_scan, ctx, file, VFS_FILE_WRITEABLE);
         if (ret <= 0) {
             return ret;
         } else {
