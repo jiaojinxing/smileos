@@ -1148,6 +1148,7 @@ int getaddrinfo(const char *nodename,
     syscall_enter();
 }
 
+#ifdef SMILEOS_KERNEL
 /*
  * http://pubs.opengroup.org/onlinepubs/009695399/functions/dlopen.html
  */
@@ -1188,6 +1189,7 @@ int    dlclose(void *mod)
 
     syscall_enter();
 }
+#endif
 /*********************************************************************************************************
 ** 以下几个桩函数未实现
 *********************************************************************************************************/
