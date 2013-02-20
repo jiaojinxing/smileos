@@ -1402,6 +1402,58 @@ static int do_getaddrinfo(syscall_args_t *args)
     return ret;
 }
 #endif
+
+static void  *do_dlopen(syscall_args_t *args)
+{
+    const char *path;
+    int mode;
+    void *ret;
+
+    sys_do_enter();
+
+    path = ua_to_ka(args->arg0);
+    mode = (int)args->arg1;
+
+    ret = module_open(path, mode);
+
+    sys_do_exit();
+
+    return ret;
+}
+
+static void  *do_dlsym(syscall_args_t *args)
+{
+    void *mod;
+    const char *name;
+    void *ret;
+
+    sys_do_enter();
+
+    mod = args->arg0;
+    name = ua_to_ka(args->arg1);
+
+    ret = module_symbol(mod, name);
+
+    sys_do_exit();
+
+    return ret;
+}
+
+static int    do_dlclose(syscall_args_t *args)
+{
+    void *mod;
+    int ret;
+
+    sys_do_enter();
+
+    mod = args->arg0;
+
+    ret = module_close(mod);
+
+    sys_do_exit();
+
+    return ret;
+}
 /*********************************************************************************************************
   系统调用处理表
 *********************************************************************************************************/
@@ -1559,6 +1611,21 @@ sys_do_t sys_do_table[] = {
         (sys_do_t)do_gethostbyname_r,
         (sys_do_t)do_freeaddrinfo,
         (sys_do_t)do_getaddrinfo,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        (sys_do_t)do_dlopen,
+        (sys_do_t)do_dlsym,
+        (sys_do_t)do_dlclose,
 };
 /*********************************************************************************************************
 ** END FILE

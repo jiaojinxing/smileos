@@ -46,21 +46,45 @@
 extern "C" {
 #endif
 
+/*
+ * Relocations are performed at an implementation-defined time.
+ */
 #define RTLD_LAZY       (1 << 0)
 
+/*
+ * Relocations are performed when the object is loaded.
+ */
 #define RTLD_NOW        (1 << 1)
 
+/*
+ * All symbols are available for relocation processing of other modules.
+ */
 #define RTLD_GLOBAL     (1 << 2)
 
+/*
+ * All symbols are not made available for relocation processing by other modules.
+ */
 #define RTLD_LOCAL      (1 << 3)
 
-int    dlclose(void *mod);
-
-char  *dlerror(void);
-
+/*
+ * http://pubs.opengroup.org/onlinepubs/009695399/functions/dlopen.html
+ */
 void  *dlopen(const char *path, int mode);
 
+/*
+ * http://pubs.opengroup.org/onlinepubs/009695399/functions/dlsym.html
+ */
 void  *dlsym(void *mod, const char *name);
+
+/*
+ * http://pubs.opengroup.org/onlinepubs/009695399/functions/dlerror.html
+ */
+char  *dlerror(void);
+
+/*
+ * http://pubs.opengroup.org/onlinepubs/009695399/functions/dlclose.html
+ */
+int    dlclose(void *mod);
 
 #ifdef __cplusplus
 }
