@@ -71,7 +71,7 @@ struct module {
     uint16_t            text_idx;                                       /*  TEXT 段索引                 */
     char                path[PATH_MAX];
     int                 mode;
-    bool_t is_ko;
+    bool_t              is_ko;
 };
 /*********************************************************************************************************
 ** 全局变量
@@ -814,7 +814,7 @@ int module_unload(const char *path)
         return -1;
     }
 
-    func = module_symbol(mod, "module_exit");                       /*  执行模块清理函数 　         */
+    func = module_symbol(mod, "module_exit");                           /*  执行模块清理函数 　         */
     if (func != NULL) {
         ret = func();
         if (ret < 0) {
@@ -823,6 +823,7 @@ int module_unload(const char *path)
             return -1;
         }
     }
+
     if (atomic_read(&mod->ref) != 0) {
         mutex_unlock(&mod_mgr_lock);
         printk(KERN_ERR"%s: module %s is busy\n", __func__, mod->path);
