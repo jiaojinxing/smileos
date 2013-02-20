@@ -810,7 +810,7 @@ int module_unload(const char *path)
 
     if (!mod->is_ko) {
         mutex_unlock(&mod_mgr_lock);
-        printk(KERN_ERR"%s: module %s no found\n", __func__, path);
+        printk(KERN_ERR"%s: module %s is not a kernel module\n", __func__, path);
         return -1;
     }
 
