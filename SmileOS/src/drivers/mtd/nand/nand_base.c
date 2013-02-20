@@ -791,7 +791,7 @@ static int nand_wait(struct mtd_info *mtd, struct nand_chip *chip)
 #ifndef SMILEOS
 			printf("Timeout!");
 #else
-            printk("Timeout!");
+            printk(KERN_WARNING"Timeout!");
 #endif
 			return 0x01;
 		}

@@ -119,7 +119,7 @@ void nand_init(void)
 #ifndef SMILEOS
 	printf("%lu MiB\n", total_nand_size / 1024);
 #else
-    printk("%lu MiB\n", total_nand_size / 1024);
+    printk(KERN_INFO"%lu MiB\n", total_nand_size / 1024);
 #endif
 
 #ifdef CONFIG_SYS_NAND_SELECT_DEVICE

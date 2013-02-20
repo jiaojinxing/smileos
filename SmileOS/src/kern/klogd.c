@@ -54,7 +54,7 @@
 #define KLOGD_QUEUE_SIZE            (100)
 #define KLOGD_THREAD_STACKSIZE      (16 * KB)
 #define KLOGD_THREAD_PRIO           (5)
-#define KLOGD_LOG_LEVEL             (7)
+#define KLOGD_LOG_LEVEL             (4)
 
 #if CONFIG_VFS_EN > 0
 #define KLOGD_LOG_FILE              "/dev/serial0"

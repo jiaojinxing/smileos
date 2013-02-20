@@ -91,7 +91,7 @@ typedef long                        loff_t;
 
 #ifndef BUG
 #define BUG() do { \
-	printk("SmileOS BUG at %s:%d!\n", __FILE__, __LINE__); \
+	printk(KERN_ERR"SmileOS BUG at %s:%d!\n", __FILE__, __LINE__); \
 } while (0)
 
 #define BUG_ON(condition)           do { if (condition) BUG(); } while(0)
