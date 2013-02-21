@@ -114,6 +114,9 @@ int vfs_init(void)
     extern file_system_t yaffs2;
     file_system_install(&yaffs2);
 
+    extern file_system_t nfs;
+    file_system_install(&nfs);
+
     vfs_mount("/",      NULL, "rootfs", NULL);
 
     vfs_mount("/proc",  NULL, "procfs", NULL);

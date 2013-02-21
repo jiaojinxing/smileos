@@ -339,7 +339,7 @@ u32_t sys_dns_lookup_local(const char *name)
  */
 struct hostent *sys_thread_hostent(struct hostent *hostent)
 {
-    return NULL;
+    return hostent;
 }
 /*********************************************************************************************************
 ** END FILE

@@ -81,6 +81,14 @@ typedef unsigned int                uint;
 typedef unsigned short              ushort;
 typedef unsigned long               ulong;
 
+typedef uint8_t                     u_int8_t;
+typedef uint16_t                    u_int16_t;
+typedef uint32_t                    u_int32_t;
+typedef uint64_t                    u_int64_t;
+typedef uint64_t                    u_quad_t;
+typedef int64_t                     quad_t;
+typedef quad_t                     *qaddr_t;
+
 #ifndef NULL
 #define NULL                        0
 #endif
@@ -109,6 +117,22 @@ typedef unsigned long               ulong;
 
 #ifndef BIG_ENDIAN
 #define BIG_ENDIAN                  4321
+#endif
+
+#ifndef __BIG_ENDIAN
+#define __BIG_ENDIAN                BIG_ENDIAN
+#endif
+
+#ifndef __LITTLE_ENDIAN
+#define __LITTLE_ENDIAN             LITTLE_ENDIAN
+#endif
+
+#ifndef FLOAT_WORD_ORDER
+#define FLOAT_WORD_ORDER            BYTE_ORDER
+#endif
+
+#ifndef __FLOAT_WORD_ORDER
+#define __FLOAT_WORD_ORDER          FLOAT_WORD_ORDER
 #endif
 /*********************************************************************************************************
 ** ARCH 数据类型定义

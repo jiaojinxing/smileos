@@ -1329,7 +1329,7 @@ static struct hostent *do_gethostbyname(syscall_args_t *args)
 
     sys_do_enter();
 
-    ret = lwip_gethostbyname(ua_to_ka(args->arg1));
+    ret = lwip_gethostbyname(ua_to_ka(args->arg0));
 
     sys_do_exit();
 
