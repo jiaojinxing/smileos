@@ -142,6 +142,10 @@ static void init(void *arg)
     module_init();                                                      /*  初始化内核模块子系统        */
 #endif
 
+    sleep(10);
+
+    vfs_mount("/nfs", NULL, "nfs", "192.168.7.30:/nfs");
+
     while (1) {
         kheap_check();
 

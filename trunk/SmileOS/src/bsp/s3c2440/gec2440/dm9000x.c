@@ -701,15 +701,17 @@ static err_t dm9000_init(struct netif *netif)
      */
     dm9000_io_write(DM9000_IMR, IMR_PAR);
 
+#if 0
     i = 0;
     while (!(dm9000_phy_read(1) & 0x20)) {                              /*  autonegation complete bit   */
-        usleep(1000);
+        sleep(1);
         i++;
-        if (i == 100000) {
+        if (i == 10) {
             LWIP_DEBUGF(NETIF_DEBUG, ("dm9000_init: can not establish link\n"));
             return 0;
         }
     }
+#endif
 
     link = dm9000_phy_read(17) >> 12;                                   /*  see what we've got          */
     switch (link) {

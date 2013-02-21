@@ -190,7 +190,7 @@
 #define UMSTAT2    (*(volatile unsigned *)0x5000801c) //UART 2 Modem status
 #define UBRD2      (*(volatile unsigned *)0x50008028) //UART 2 Baud ate divisor
 
-#ifdef __BIG_ENDIAN
+#if  BIG_ENDIAN == BYTE_ORDER
 #define UTXH0      (*(volatile unsigned char *)0x50000023) //UART 0 Transmission Hold
 #define URXH0      (*(volatile unsigned char *)0x50000027) //UART 0 Receive buffer
 #define UTXH1      (*(volatile unsigned char *)0x50004023) //UART 1 Transmission Hold
@@ -250,7 +250,7 @@
 
 
 // USB DEVICE
-#ifdef __BIG_ENDIAN
+#if  BIG_ENDIAN == BYTE_ORDER
 #define FUNC_ADDR_REG     (*(volatile unsigned char *)0x52000143) //Function address
 #define PWR_REG           (*(volatile unsigned char *)0x52000147) //Power management
 #define EP_INT_REG        (*(volatile unsigned char *)0x5200014b) //EP Interrupt pending and clear
@@ -367,7 +367,7 @@
 #define IISPSR  (*(volatile unsigned *)0x55000008) //IIS Prescaler
 #define IISFCON (*(volatile unsigned *)0x5500000c) //IIS FIFO control
 
-#ifdef __BIG_ENDIAN
+#if  BIG_ENDIAN == BYTE_ORDER
 #define IISFIFO  (*(volatile unsigned short *)0x55000012) //IIS FIFO entry
 
 #else //Little Endian
@@ -431,7 +431,7 @@
 
 
 // RTC
-#ifdef __BIG_ENDIAN
+#if  BIG_ENDIAN == BYTE_ORDER
 #define RTCCON    (*(volatile unsigned char *)0x57000043) //RTC control
 #define TICNT     (*(volatile unsigned char *)0x57000047) //Tick time count
 #define RTCALM    (*(volatile unsigned char *)0x57000053) //RTC alarm control
@@ -512,7 +512,7 @@
 #define SDIFSTA    (*(volatile unsigned *)0x5a000038) //SDI FIFO status
 #define SDIIMSK    (*(volatile unsigned *)0x5a000040) //SDI interrupt mask
 
-#ifdef __BIG_ENDIAN  /* edited for 2440A */
+#if  BIG_ENDIAN == BYTE_ORDER  /* edited for 2440A */
 #define SDIDAT     (*(volatile unsigned *)0x5a00004c)
 #else  // Little Endian
 #define SDIDAT     (*(volatile unsigned *)0x5a000040)  

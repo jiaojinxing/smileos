@@ -124,7 +124,7 @@ static module_t *module_alloc(const char *path, size_t size, int mode, bool_t is
 {
     module_t *mod;
 
-    mod = kmalloc(sizeof(module_t) + size, GFP_SHARE);                 /*  分配模块及其缓冲            */
+    mod = kmalloc(sizeof(module_t) + size, GFP_KERNEL);                 /*  分配模块及其缓冲            */
     if (mod != NULL) {
         mod->elf        = (uint8_t *)mod + sizeof(module_t);
         mod->size       = size;
