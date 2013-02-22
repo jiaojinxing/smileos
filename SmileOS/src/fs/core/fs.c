@@ -47,7 +47,7 @@
 ** 全局变量
 *********************************************************************************************************/
 static LIST_HEAD(file_system_list);                                     /*  文件系统链表                */
-mutex_t                 fs_mgr_lock;                                    /*  文件系统管理锁              */
+mutex_t          file_system_lock;                                      /*  文件系统管理锁              */
 /*********************************************************************************************************
 ** Function name:           file_system_lookup
 ** Descriptions:            查找文件系统
@@ -64,17 +64,17 @@ file_system_t *file_system_lookup(const char *name)
         return NULL;
     }
 
-    mutex_lock(&fs_mgr_lock, 0);
+    mutex_lock(&file_system_lock, 0);
 
     list_for_each(item, &file_system_list) {
-        fs = list_entry(item, file_system_t, fs_list);
+        fs = list_entry(item, file_system_t, node);
         if (strcmp(fs->name, name) == 0) {
-            mutex_unlock(&fs_mgr_lock);
+            mutex_unlock(&file_system_lock);
             return fs;
         }
     }
 
-    mutex_unlock(&fs_mgr_lock);
+    mutex_unlock(&file_system_lock);
 
     return NULL;
 }
@@ -95,13 +95,13 @@ int file_system_remove(file_system_t *fs)
         return ret;
     }
 
-    mutex_lock(&fs_mgr_lock, 0);
+    mutex_lock(&file_system_lock, 0);
 
     if (atomic_read(&fs->ref) == 0) {
         list_for_each_safe(item, save, &file_system_list) {
-            _fs = list_entry(item, file_system_t, fs_list);
+            _fs = list_entry(item, file_system_t, node);
             if (_fs == fs) {
-                list_del(&fs->fs_list);
+                list_del(&fs->node);
                 module_unref(fs->module);
                 ret = 0;
                 break;
@@ -109,7 +109,7 @@ int file_system_remove(file_system_t *fs)
         }
     }
 
-    mutex_unlock(&fs_mgr_lock);
+    mutex_unlock(&file_system_lock);
 
     return ret;
 }
@@ -128,19 +128,19 @@ int file_system_install(file_system_t *fs)
 
     fs->module = module_ref_by_addr(fs);
 
-    mutex_lock(&fs_mgr_lock, 0);
+    mutex_lock(&file_system_lock, 0);
 
     if (file_system_lookup(fs->name) != NULL) {
-        mutex_unlock(&fs_mgr_lock);
+        mutex_unlock(&file_system_lock);
         module_unref(fs->module);
         return -1;
     }
 
     atomic_set(&fs->ref, 0);
 
-    list_add_tail(&fs->fs_list, &file_system_list);
+    list_add_tail(&fs->node, &file_system_list);
 
-    mutex_unlock(&fs_mgr_lock);
+    mutex_unlock(&file_system_lock);
 
     if (fs->init != NULL) {
         fs->init();
@@ -159,7 +159,7 @@ int file_system_manager_init(void)
 {
     INIT_LIST_HEAD(&file_system_list);
 
-    return mutex_create(&fs_mgr_lock);
+    return mutex_create(&file_system_lock);
 }
 /*********************************************************************************************************
 ** END FILE

@@ -41,7 +41,7 @@
 /*********************************************************************************************************
 ** 外部变量
 *********************************************************************************************************/
-extern mutex_t              point_mgr_lock;                             /*  挂载点管理锁                */
+extern mutex_t              mount_point_lock;                             /*  挂载点管理锁                */
 /*********************************************************************************************************
 ** Function name:           vfs_link
 ** Descriptions:            给文件创建一个链接
@@ -516,24 +516,24 @@ int vfs_mkfs(const char *path, const char *param)
         return -1;
     }
 
-    mutex_lock(&point_mgr_lock, 0);
+    mutex_lock(&mount_point_lock, 0);
 
     point = vfs_mount_point_lookup2(pathbuf, &filepath, path);          /*  查找挂载点                  */
     if (point == NULL) {
-        mutex_unlock(&point_mgr_lock);
+        mutex_unlock(&mount_point_lock);
         kfree(pathbuf);
         return -1;
     }
 
     if (point->fs->mkfs == NULL) {
-        mutex_unlock(&point_mgr_lock);
+        mutex_unlock(&mount_point_lock);
         kfree(pathbuf);
         seterrno(ENOSYS);
         return -1;
     }
 
     if (atomic_read(&point->ref) != 0) {
-        mutex_unlock(&point_mgr_lock);
+        mutex_unlock(&mount_point_lock);
         kfree(pathbuf);
         seterrno(EBUSY);
         return -1;
@@ -542,7 +542,7 @@ int vfs_mkfs(const char *path, const char *param)
     seterrno(0);
     ret = point->fs->mkfs(point, param);                                /*  格式化文件系统              */
 
-    mutex_unlock(&point_mgr_lock);
+    mutex_unlock(&mount_point_lock);
 
     kfree(pathbuf);
 

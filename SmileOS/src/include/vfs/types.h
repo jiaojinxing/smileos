@@ -80,7 +80,7 @@ typedef struct mount_point  mount_point_t;
  * select 节点
  */
 typedef struct _select_node {
-    struct list_head        node_list;
+    struct list_head        node;
     void                   *task;
     int                     select_type;
 } select_node_t;
@@ -104,7 +104,7 @@ typedef struct {
  */
 struct driver {
     const char             *name;
-    struct list_head        drv_list;
+    struct list_head        node;
     atomic_t                ref;
     void                   *module;
 
@@ -145,7 +145,7 @@ struct device {
      * 一个驱动可以被多个设备使用, ctx 用于维护设备信息
      */
     void                   *ctx;
-    struct list_head        dev_list;
+    struct list_head        node;
     dev_t                   devno;
     atomic_t                ref;
 };
@@ -158,7 +158,7 @@ struct device {
  */
 struct file_system {
     const char             *name;
-    struct list_head        fs_list;
+    struct list_head        node;
     atomic_t                ref;
     void                   *module;
 
@@ -223,7 +223,7 @@ struct mount_point {
      * 一个文件系统可以同时被多个设备挂载, ctx 用于维护文件系统信息
      */
     void                   *ctx;
-    struct list_head        point_list;
+    struct list_head        node;
 };
 
 #if 0
