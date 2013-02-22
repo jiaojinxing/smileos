@@ -41,13 +41,13 @@
 /*********************************************************************************************************
 ** 外部变量
 *********************************************************************************************************/
-extern mutex_t              point_mgr_lock;                             /*  挂载点管理锁                */
+extern mutex_t              mount_point_lock;                           /*  挂载点管理锁                */
 
 extern mount_point_t       *rootfs_point;                               /*  根文件系统挂载点            */
 
-extern mutex_t              dev_mgr_lock;                               /*  设备管理锁                  */
+extern mutex_t              device_lock;                                /*  设备管理锁                  */
 
-extern mutex_t              fs_mgr_lock;                                /*  文件系统管理锁              */
+extern mutex_t              file_system_lock;                           /*  文件系统管理锁              */
 /*********************************************************************************************************
 ** Function name:           vfs_path_add_mount_point
 ** Descriptions:            在 PATH 前加入挂载点名
@@ -349,7 +349,7 @@ mount_point_t *vfs_mount_point_lookup_ref(char pathbuf[PATH_BUF_LEN], char **ppa
 {
     mount_point_t *point;
 
-    mutex_lock(&point_mgr_lock, 0);
+    mutex_lock(&mount_point_lock, 0);
 
     point = vfs_mount_point_lookup(pathbuf, ppath, path);
 
@@ -357,7 +357,7 @@ mount_point_t *vfs_mount_point_lookup_ref(char pathbuf[PATH_BUF_LEN], char **ppa
         atomic_inc(&point->ref);
     }
 
-    mutex_unlock(&point_mgr_lock);
+    mutex_unlock(&mount_point_lock);
 
     return point;
 }
@@ -373,7 +373,7 @@ mount_point_t *vfs_mount_point_lookup2_ref(char pathbuf[PATH_BUF_LEN], char **pp
 {
     mount_point_t *point;
 
-    mutex_lock(&point_mgr_lock, 0);
+    mutex_lock(&mount_point_lock, 0);
 
     point = vfs_mount_point_lookup2(pathbuf, ppath, path);
 
@@ -381,7 +381,7 @@ mount_point_t *vfs_mount_point_lookup2_ref(char pathbuf[PATH_BUF_LEN], char **pp
         atomic_inc(&point->ref);
     }
 
-    mutex_unlock(&point_mgr_lock);
+    mutex_unlock(&mount_point_lock);
 
     return point;
 }
@@ -407,32 +407,32 @@ int vfs_mount(const char *point_name, const char *dev_name, const char *fs_name,
         return -1;
     }
 
-    mutex_lock(&point_mgr_lock, 0);
+    mutex_lock(&mount_point_lock, 0);
     point = mount_point_lookup(point_name);                             /*  查找挂载点                  */
     if (point != NULL) {                                                /*  没找到                      */
-        mutex_unlock(&point_mgr_lock);
+        mutex_unlock(&mount_point_lock);
         seterrno(EINVAL);
         return -1;
     }
 
-    mutex_lock(&fs_mgr_lock, 0);
+    mutex_lock(&file_system_lock, 0);
     fs = file_system_lookup(fs_name);                                   /*  查找文件系统                */
     if (fs == NULL) {
-        mutex_unlock(&fs_mgr_lock);
-        mutex_unlock(&point_mgr_lock);
+        mutex_unlock(&file_system_lock);
+        mutex_unlock(&mount_point_lock);
         seterrno(EINVAL);
         return -1;
     }
     atomic_inc(&fs->ref);
-    mutex_unlock(&fs_mgr_lock);
+    mutex_unlock(&file_system_lock);
 
     if (dev_name != NULL) {
-        mutex_lock(&dev_mgr_lock, 0);
+        mutex_lock(&device_lock, 0);
         dev = device_lookup(dev_name);                                  /*  查找设备                    */
         if (dev == NULL) {
             atomic_dec(&fs->ref);
-            mutex_unlock(&dev_mgr_lock);
-            mutex_unlock(&point_mgr_lock);
+            mutex_unlock(&device_lock);
+            mutex_unlock(&mount_point_lock);
             seterrno(ENODEV);
             return -1;
         }
@@ -440,12 +440,12 @@ int vfs_mount(const char *point_name, const char *dev_name, const char *fs_name,
         if (atomic_inc_return(&dev->ref) != 1) {
             atomic_dec(&dev->ref);
             atomic_dec(&fs->ref);
-            mutex_unlock(&dev_mgr_lock);
-            mutex_unlock(&point_mgr_lock);
+            mutex_unlock(&device_lock);
+            mutex_unlock(&mount_point_lock);
             seterrno(EBUSY);
             return -1;
         }
-        mutex_unlock(&dev_mgr_lock);
+        mutex_unlock(&device_lock);
     }
 
     point = kmalloc(sizeof(mount_point_t), GFP_KERNEL);                 /*  分配挂载点                  */
@@ -454,7 +454,7 @@ int vfs_mount(const char *point_name, const char *dev_name, const char *fs_name,
             atomic_dec(&dev->ref);
         }
         atomic_dec(&fs->ref);
-        mutex_unlock(&point_mgr_lock);
+        mutex_unlock(&mount_point_lock);
         seterrno(ENOMEM);
         return -1;
     }
@@ -473,7 +473,7 @@ int vfs_mount(const char *point_name, const char *dev_name, const char *fs_name,
                 atomic_dec(&dev->ref);
             }
             atomic_dec(&fs->ref);
-            mutex_unlock(&point_mgr_lock);
+            mutex_unlock(&mount_point_lock);
             seterrno(EINVAL);
             return -1;
         }
@@ -497,12 +497,12 @@ int vfs_mount(const char *point_name, const char *dev_name, const char *fs_name,
             atomic_dec(&dev->ref);
         }
         atomic_dec(&fs->ref);
-        mutex_unlock(&point_mgr_lock);
+        mutex_unlock(&mount_point_lock);
         return -1;
     }
 
     mount_point_install(point);                                         /*  安装挂载点                  */
-    mutex_unlock(&point_mgr_lock);
+    mutex_unlock(&mount_point_lock);
 
     return 0;
 }
@@ -527,24 +527,24 @@ int vfs_unmount(const char *path, const char *param)
         return -1;
     }
 
-    mutex_lock(&point_mgr_lock, 0);
+    mutex_lock(&mount_point_lock, 0);
 
     point = vfs_mount_point_lookup2(pathbuf, &filepath, path);          /*  查找挂载点                  */
     if (point == NULL) {
-        mutex_unlock(&point_mgr_lock);
+        mutex_unlock(&mount_point_lock);
         kfree(pathbuf);
         return -1;
     }
 
     if (point->fs->unmount == NULL) {
-        mutex_unlock(&point_mgr_lock);
+        mutex_unlock(&mount_point_lock);
         kfree(pathbuf);
         seterrno(ENOSYS);
         return -1;
     }
 
     if (atomic_read(&point->ref) != 0) {
-        mutex_unlock(&point_mgr_lock);
+        mutex_unlock(&mount_point_lock);
         kfree(pathbuf);
         seterrno(EBUSY);
         return -1;
@@ -562,7 +562,7 @@ int vfs_unmount(const char *path, const char *param)
         mount_point_remove(point);
     }
 
-    mutex_unlock(&point_mgr_lock);
+    mutex_unlock(&mount_point_lock);
 
     kfree(pathbuf);
 

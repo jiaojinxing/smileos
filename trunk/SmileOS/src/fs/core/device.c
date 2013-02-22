@@ -47,7 +47,7 @@
 ** 全局变量
 *********************************************************************************************************/
 static LIST_HEAD(device_list);                                          /*  设备链表                    */
-mutex_t             dev_mgr_lock;                                       /*  设备管理锁                  */
+mutex_t             device_lock;                                        /*  设备管理锁                  */
 /*********************************************************************************************************
 ** Function name:           device_install
 ** Descriptions:            安装设备
@@ -57,11 +57,11 @@ mutex_t             dev_mgr_lock;                                       /*  设备
 *********************************************************************************************************/
 static int device_install(device_t *dev)
 {
-    mutex_lock(&dev_mgr_lock, 0);
+    mutex_lock(&device_lock, 0);
 
-    list_add_tail(&dev->dev_list, &device_list);
+    list_add_tail(&dev->node, &device_list);
 
-    mutex_unlock(&dev_mgr_lock);
+    mutex_unlock(&device_lock);
 
     return 0;
 }
@@ -78,19 +78,19 @@ device_t *device_get(unsigned int index)
     device_t *dev;
     int i;
 
-    mutex_lock(&dev_mgr_lock, 0);
+    mutex_lock(&device_lock, 0);
 
     i = 0;
     list_for_each(item, &device_list) {
-        dev = list_entry(item, device_t, dev_list);
+        dev = list_entry(item, device_t, node);
         if (i >= index) {
-            mutex_unlock(&dev_mgr_lock);
+            mutex_unlock(&device_lock);
             return dev;
         }
         i++;
     }
 
-    mutex_unlock(&dev_mgr_lock);
+    mutex_unlock(&device_lock);
 
     return NULL;
 }
@@ -110,17 +110,17 @@ device_t *device_lookup(const char *name)
         return NULL;
     }
 
-    mutex_lock(&dev_mgr_lock, 0);
+    mutex_lock(&device_lock, 0);
 
     list_for_each(item, &device_list) {
-        dev = list_entry(item, device_t, dev_list);
+        dev = list_entry(item, device_t, node);
         if (strcmp(name, dev->name) == 0) {
-            mutex_unlock(&dev_mgr_lock);
+            mutex_unlock(&device_lock);
             return dev;
         }
     }
 
-    mutex_unlock(&dev_mgr_lock);
+    mutex_unlock(&device_lock);
 
     return NULL;
 }
@@ -141,13 +141,13 @@ int device_remove(device_t *dev)
         return ret;
     }
 
-    mutex_lock(&dev_mgr_lock, 0);
+    mutex_lock(&device_lock, 0);
 
     if (atomic_read(&dev->ref) == 0) {
         list_for_each_safe(item, save, &device_list) {
-            _dev = list_entry(item, device_t, dev_list);
+            _dev = list_entry(item, device_t, node);
             if (_dev == dev) {
-                list_del(&dev->dev_list);
+                list_del(&dev->node);
                 atomic_dec(&dev->drv->ref);
                 kfree(dev);
                 ret = 0;
@@ -156,7 +156,7 @@ int device_remove(device_t *dev)
         }
     }
 
-    mutex_unlock(&dev_mgr_lock);
+    mutex_unlock(&device_lock);
 
     return ret;
 }
@@ -189,17 +189,17 @@ int device_create(const char *dev_name, const char *drv_name, void *ctx)
         return -1;
     }
 
-    mutex_lock(&dev_mgr_lock, 0);                                       /*  保证查找到安装之间是原子的  */
+    mutex_lock(&device_lock, 0);                                       /*  保证查找到安装之间是原子的  */
 
     if (device_lookup(dev_name) != NULL) {
-        mutex_unlock(&dev_mgr_lock);
+        mutex_unlock(&device_lock);
         seterrno(EEXIST);
         return -1;
     }
 
     drv = driver_ref_by_name(drv_name);
     if (drv == NULL) {
-        mutex_unlock(&dev_mgr_lock);
+        mutex_unlock(&device_lock);
         seterrno(EINVAL);
         return -1;
     }
@@ -217,7 +217,7 @@ int device_create(const char *dev_name, const char *drv_name, void *ctx)
     dev->devno = bkdr_hash(dev_name);
     atomic_set(&dev->ref, 0);
     device_install(dev);
-    mutex_unlock(&dev_mgr_lock);
+    mutex_unlock(&device_lock);
     seterrno(0);
     return 0;
 }
@@ -232,7 +232,7 @@ int device_manager_init(void)
 {
     INIT_LIST_HEAD(&device_list);
 
-    return mutex_create(&dev_mgr_lock);
+    return mutex_create(&device_lock);
 }
 /*********************************************************************************************************
 ** END FILE

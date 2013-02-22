@@ -48,9 +48,9 @@
 /*********************************************************************************************************
 ** 全局变量
 *********************************************************************************************************/
-static LIST_HEAD(mount_point_list);                                     /*  挂载点链表                  */
+static LIST_HEAD(mount_node);                                           /*  挂载点链表                  */
 mount_point_t          *rootfs_point;                                   /*  根文件系统挂载点            */
-mutex_t                 point_mgr_lock;                                 /*  挂载点管理锁                */
+mutex_t                 mount_point_lock;                               /*  挂载点管理锁                */
 /*********************************************************************************************************
 ** Function name:           mount_point_install
 ** Descriptions:            安装挂载点
@@ -60,11 +60,11 @@ mutex_t                 point_mgr_lock;                                 /*  挂载
 *********************************************************************************************************/
 int mount_point_install(mount_point_t *point)
 {
-    mutex_lock(&point_mgr_lock, 0);
+    mutex_lock(&mount_point_lock, 0);
 
-    list_add(&point->point_list, &mount_point_list);
+    list_add(&point->node, &mount_node);
 
-    mutex_unlock(&point_mgr_lock);
+    mutex_unlock(&mount_point_lock);
 
     return 0;
 }
@@ -84,17 +84,17 @@ mount_point_t *mount_point_lookup(const char *name)
         return NULL;
     }
 
-    mutex_lock(&point_mgr_lock, 0);
+    mutex_lock(&mount_point_lock, 0);
 
-    list_for_each(item, &mount_point_list) {
-        point = list_entry(item, mount_point_t, point_list);
+    list_for_each(item, &mount_node) {
+        point = list_entry(item, mount_point_t, node);
         if (strcmp(point->name, name) == 0) {
-            mutex_unlock(&point_mgr_lock);
+            mutex_unlock(&mount_point_lock);
             return point;
         }
     }
 
-    mutex_unlock(&point_mgr_lock);
+    mutex_unlock(&mount_point_lock);
 
     return NULL;
 }
@@ -115,13 +115,13 @@ int mount_point_remove(mount_point_t *point)
         return ret;
     }
 
-    mutex_lock(&point_mgr_lock, 0);
+    mutex_lock(&mount_point_lock, 0);
 
     if (atomic_read(&point->ref) == 0) {
-        list_for_each_safe(item, save, &mount_point_list) {
-            _point = list_entry(item, mount_point_t, point_list);
+        list_for_each_safe(item, save, &mount_node) {
+            _point = list_entry(item, mount_point_t, node);
             if (_point == point) {
-                list_del(&point->point_list);
+                list_del(&point->node);
                 kfree(point);
                 ret = 0;
                 break;
@@ -129,7 +129,7 @@ int mount_point_remove(mount_point_t *point)
         }
     }
 
-    mutex_unlock(&point_mgr_lock);
+    mutex_unlock(&mount_point_lock);
 
     return ret;
 }
@@ -146,19 +146,19 @@ mount_point_t *mount_point_get(unsigned int index)
     mount_point_t *point;
     struct list_head *item;
 
-    mutex_lock(&point_mgr_lock, 0);
+    mutex_lock(&mount_point_lock, 0);
 
     i = 0;
-    list_for_each(item, &mount_point_list) {
-        point = list_entry(item, mount_point_t, point_list);
+    list_for_each(item, &mount_node) {
+        point = list_entry(item, mount_point_t, node);
         if (i >= index) {
-            mutex_unlock(&point_mgr_lock);
+            mutex_unlock(&mount_point_lock);
             return point;
         }
         i++;
     }
 
-    mutex_unlock(&point_mgr_lock);
+    mutex_unlock(&mount_point_lock);
 
     return NULL;
 }
@@ -173,9 +173,9 @@ int mount_point_manager_init(void)
 {
     rootfs_point = NULL;
 
-    INIT_LIST_HEAD(&mount_point_list);
+    INIT_LIST_HEAD(&mount_node);
 
-    return mutex_create(&point_mgr_lock);
+    return mutex_create(&mount_point_lock);
 }
 /*********************************************************************************************************
 ** END FILE

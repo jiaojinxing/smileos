@@ -87,7 +87,7 @@ int select_select(select_struct_t *select, file_t *file, int type)
     node->select_type = type;                                           /*  初始化节点                  */
     node->task        = current;
 
-    list_add_tail(&node->node_list, &select->wait_list);                /*  加到等待列表                */
+    list_add_tail(&node->node, &select->wait_list);                     /*  加到等待列表                */
 
     interrupt_resume(reg);
 
@@ -116,7 +116,7 @@ int select_unselect(select_struct_t *select, file_t *file, int type)
     reg = interrupt_disable();
 
     list_for_each(item, &select->wait_list) {
-        node = list_entry(item, select_node_t, node_list);
+        node = list_entry(item, select_node_t, node);
         if (node->task == current) {
             break;
         }
@@ -128,7 +128,7 @@ int select_unselect(select_struct_t *select, file_t *file, int type)
         return -1;
     }
 
-    list_del(&node->node_list);                                         /*  从等待列表中移除节点        */
+    list_del(&node->node);                                              /*  从等待列表中移除节点        */
 
     interrupt_resume(reg);
 
@@ -160,7 +160,7 @@ int vfs_event_report(select_struct_t *select, int type)
      * 恢复等待列表里有类型交集的任务
      */
     list_for_each(item, &select->wait_list) {
-        node = list_entry(item, select_node_t, node_list);
+        node = list_entry(item, select_node_t, node);
 
         task = node->task;
 

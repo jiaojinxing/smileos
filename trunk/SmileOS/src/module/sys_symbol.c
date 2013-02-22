@@ -2896,8 +2896,8 @@ extern int  current_iphdr_dest;
 extern int  current_iphdr_src; 
 extern int  current_netif; 
 extern int  cwd; 
-extern int  dev_mgr_lock; 
-extern int  fs_mgr_lock; 
+extern int  device_lock; 
+extern int  file_system_lock; 
 extern int  h_errno; 
 extern int  info_lock; 
 extern int  infos; 
@@ -2910,7 +2910,7 @@ extern int  netif_default;
 extern int  netif_list; 
 extern int  os_started; 
 extern int  pbuf_free_ooseq_pending; 
-extern int  point_mgr_lock; 
+extern int  mount_point_lock; 
 extern int  ram_heap; 
 extern int  reents; 
 extern int  rootfs_point; 
@@ -5834,8 +5834,8 @@ SYMBOL_TABLE_BEGIN
     SYMBOL_ITEM_OBJ(current_iphdr_src) 
     SYMBOL_ITEM_OBJ(current_netif) 
     SYMBOL_ITEM_OBJ(cwd) 
-    SYMBOL_ITEM_OBJ(dev_mgr_lock) 
-    SYMBOL_ITEM_OBJ(fs_mgr_lock) 
+    SYMBOL_ITEM_OBJ(device_lock) 
+    SYMBOL_ITEM_OBJ(file_system_lock) 
     SYMBOL_ITEM_OBJ(h_errno) 
     SYMBOL_ITEM_OBJ(info_lock) 
     SYMBOL_ITEM_OBJ(infos) 
@@ -5848,7 +5848,7 @@ SYMBOL_TABLE_BEGIN
     SYMBOL_ITEM_OBJ(netif_list) 
     SYMBOL_ITEM_OBJ(os_started) 
     SYMBOL_ITEM_OBJ(pbuf_free_ooseq_pending) 
-    SYMBOL_ITEM_OBJ(point_mgr_lock) 
+    SYMBOL_ITEM_OBJ(mount_point_lock) 
     SYMBOL_ITEM_OBJ(ram_heap) 
     SYMBOL_ITEM_OBJ(reents) 
     SYMBOL_ITEM_OBJ(rootfs_point) 
