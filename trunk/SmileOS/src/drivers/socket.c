@@ -87,7 +87,6 @@ static int socket_open(void *ctx, file_t *file, int oflag, mode_t mode)
 static int socket_close(void *ctx, file_t *file)
 {
     privinfo_t *priv = ctx;
-    char name[PATH_MAX];
     reg_t reg;
 
     if (priv == NULL) {
@@ -95,21 +94,19 @@ static int socket_close(void *ctx, file_t *file)
         return -1;
     }
 
-    sprintf(name, "/dev/socket%d", priv->sock_fd);
-
     reg = interrupt_disable();
 
     atomic_dec(dev_ref(file));
 
-    vfs_unlink(name);
+    device_remove(file->ctx);
 
-    lwip_socket_set_ctx(priv->sock_fd, NULL);
-
-    interrupt_resume(reg);
+    file->ctx = NULL;
 
     lwip_close(priv->sock_fd);
 
     kfree(priv);
+
+    interrupt_resume(reg);
 
     return 0;
 }
@@ -240,21 +237,6 @@ static int socket_scan(void *ctx, file_t *file, int flags)
 }
 
 /*
- * É¾³ý socket
- */
-static int socket_unlink(void *ctx)
-{
-    privinfo_t *priv = ctx;
-
-    if (priv == NULL) {
-        seterrno(EINVAL);
-        return -1;
-    }
-
-    return 0;
-}
-
-/*
  * socket Çý¶¯
  */
 driver_t socket_drv = {
@@ -266,7 +248,6 @@ driver_t socket_drv = {
         .fcntl    = socket_fcntl,
         .close    = socket_close,
         .fstat    = socket_fstat,
-        .unlink   = socket_unlink,
         .scan     = socket_scan,
         .select   = select_select,
         .unselect = select_unselect,

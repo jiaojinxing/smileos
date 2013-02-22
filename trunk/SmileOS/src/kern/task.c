@@ -76,7 +76,7 @@ extern int ipc_task_cleanup(task_t *task);
 ** output parameters:       NONE
 ** Returned value:          NONE
 *********************************************************************************************************/
-static void kthread_shell(task_t *task)
+void kthread_shell(task_t *task)
 {
 #if CONFIG_VFS_EN > 0
     int fd = open(STDIN_FILE, O_RDONLY);                                /*  打开三个标准文件            */

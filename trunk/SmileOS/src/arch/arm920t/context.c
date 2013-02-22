@@ -50,10 +50,15 @@
 int arch_build_context(task_t *task, void *func)
 {
     if (task->type == TASK_TYPE_KTHREAD) {
-        task->regs[0]   = (reg_t)&task->kstack[KERN_STACK_SIZE];        /*  SVC 模式的 SP (满堆栈递减)  */
+        task->kstack[KERN_STACK_SIZE - 1] = -1;
+        task->kstack[KERN_STACK_SIZE - 2] = -1;
+        task->regs[0]   = (reg_t)&task->kstack[KERN_STACK_SIZE - 3];    /*  SVC 模式的 SP (满堆栈递减)  */
         task->regs[1]   = ARM_SYS_MODE | ARM_FIQ_EN | ARM_IRQ_EN;       /*  CPSR, SYS 模式              */
                                                                         /*  SYS 模式的 SP (满堆栈递减)  */
-        task->regs[2]   = (reg_t)((uint8_t *)task->stack_base + task->stack_size);
+        *(reg_t *)((uint8_t *)task->stack_base + task->stack_size - 4) = -1;
+        *(reg_t *)((uint8_t *)task->stack_base + task->stack_size - 8) = -1;
+
+        task->regs[2]   = (reg_t)((uint8_t *)task->stack_base + task->stack_size - 12);
         task->regs[3]   = ARM_SVC_MODE;                                 /*  SPSR, SVC 模式              */
         task->regs[4]   = (reg_t)func;                                  /*  LR                          */
         task->regs[5]   = (reg_t)task;                                  /*  R0 ~ R12                    */
@@ -67,7 +72,7 @@ int arch_build_context(task_t *task, void *func)
         task->regs[13]  = 8;
         task->regs[14]  = 9;
         task->regs[15]  = 10;
-        task->regs[16]  = 11;
+        task->regs[16]  = (reg_t)((uint8_t *)task->stack_base + task->stack_size - 8);
         task->regs[17]  = 12;
         task->regs[18]  = (reg_t)func;                                  /*  PC                          */
     } else {

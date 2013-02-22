@@ -1125,7 +1125,7 @@ static void dm9000_isr(struct netif *netif)
          */
         reg &= ~(IMR_PRM);
 
-        LWIP_DEBUGF(NETIF_DEBUG, ("dm9000_isr: rx\n"));
+        //LWIP_DEBUGF(NETIF_DEBUG, ("dm9000_isr: rx\n"));
     }
 
     /*
@@ -1138,7 +1138,7 @@ static void dm9000_isr(struct netif *netif)
          */
         reg &= ~(IMR_PTM);
 
-        LWIP_DEBUGF(NETIF_DEBUG, ("dm9000_isr: tx done\n"));
+        //LWIP_DEBUGF(NETIF_DEBUG, ("dm9000_isr: tx done\n"));
     }
 
     /*

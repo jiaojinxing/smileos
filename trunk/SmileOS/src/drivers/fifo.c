@@ -53,6 +53,7 @@ typedef struct {
 } privinfo_t;
 
 static int fifo_scan(void *ctx, file_t *file, int flags);
+static int fifo_unlink(void *ctx);
 
 /*
  * ´ò¿ª fifo
@@ -82,13 +83,26 @@ static int fifo_open(void *ctx, file_t *file, int oflag, mode_t mode)
 static int fifo_close(void *ctx, file_t *file)
 {
     privinfo_t *priv = ctx;
+    reg_t reg;
 
     if (priv == NULL) {
         seterrno(EINVAL);
         return -1;
     }
 
-    atomic_dec(dev_ref(file));
+    reg = interrupt_disable();
+
+    if (atomic_dec_and_test(dev_ref(file))) {
+
+        device_remove(file->ctx);
+
+        file->ctx = NULL;
+
+        fifo_unlink(ctx);
+    }
+
+    interrupt_resume(reg);
+
     return 0;
 }
 
@@ -311,6 +325,11 @@ int pipe_create(int fds[2])
     static int key = 0;
     int _key;
     reg_t reg;
+
+    if (fds == NULL) {
+        seterrno(EINVAL);
+        return -1;
+    }
 
     again:
 

@@ -122,6 +122,7 @@ bss_loop:
 ** output parameters:       NONE
 ** Returned value:          系统调用返回值
 *********************************************************************************************************/
+                            .global swi_handler
 swi_handler:
     STMFD   SP!, {R2-R12, LR}               /*  保存寄存器和返回地址到任务的 SVC 堆栈                   */
 

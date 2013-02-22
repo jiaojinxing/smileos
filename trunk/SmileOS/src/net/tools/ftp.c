@@ -933,6 +933,41 @@ static void ftpd_ctrlconnection(void *arg)
     error0:
     close(fd);
 }
+
+void test_code6(void)
+{
+    int fd = socket(AF_INET, SOCK_STREAM, 0);
+}
+
+void test_code5(void)
+{
+    test_code6();
+}
+
+void test_code4(void)
+{
+    test_code5();
+}
+
+void test_code3(void)
+{
+    test_code4();
+}
+
+void test_code2(void)
+{
+    test_code3();
+}
+
+void test_code1(void)
+{
+    test_code2();
+}
+
+void test_code(void)
+{
+    test_code1();
+}
 /*********************************************************************************************************
 ** FTPD 服务器线程
 *********************************************************************************************************/
@@ -945,6 +980,8 @@ static void ftpd(void *arg)
     struct sockaddr_in remote;
     socklen_t addr_len;
     char name[NAME_MAX];
+
+    test_code();
 
     fd = socket(AF_INET, SOCK_STREAM, 0);
     if (fd < 0) {
