@@ -186,26 +186,5 @@ tick_t getticks(void)
     return ret;
 }
 /*********************************************************************************************************
-** Function name:           bkdr_hash
-** Descriptions:            BKDR Hash Function
-**                          各种字符串 Hash 函数比较
-**                          http://www.byvoid.com/blog/string-hash-compare/
-** input parameters:        str                 字符串
-** output parameters:       NONE
-** Returned value:          BKDR Hash
-*********************************************************************************************************/
-unsigned int bkdr_hash(const char *str)
-{
-    unsigned int seed = 131;                                            /*  31 131 1313 13131 131313 etc*/
-    unsigned int hash = 0;
-    char ch;
-
-    while ((ch = *str++) != 0) {
-        hash = hash * seed + ch;
-    }
-
-    return (hash & 0x7FFFFFFF);
-}
-/*********************************************************************************************************
 ** END FILE
 *********************************************************************************************************/

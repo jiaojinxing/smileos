@@ -39,7 +39,9 @@
 *********************************************************************************************************/
 #include "kern/kern.h"
 #include "kern/kvars.h"
+#include "module/module.h"
 #include "arch/arm920t/mmu.h"
+#include "arch/arm920t/arm.h"
 #include <signal.h>
 /*********************************************************************************************************
 ** Function name:           print_regs
@@ -50,20 +52,133 @@
 *********************************************************************************************************/
 static void print_regs(reg_t *regs)
 {
-    int i;
+    int         i;
+    char        cpsr_str[32] = "\0";
+    reg_t       cpsr;
+    reg_t       lr;
+    reg_t       fp;
+    const char *func_name;
+    mem_ptr_t   diff;
 
-    printk("\n-------- REGS --------\n");
+    cpsr = regs[0];
 
-    printk("CPSR\t= 0x%x\n", regs[0]);
-    printk("SP\t= 0x%x\n",   regs[1]);
-    printk("LR\t= 0x%x\n",   regs[2]);
-    printk("PC\t= 0x%x\n",   regs[16]);
+    if (cpsr & 0x80000000) {
+        cpsr_str[0] = 'N';
+    } else {
+        cpsr_str[0] = 'n';
+    }
+
+    if (cpsr & 0x40000000) {
+        cpsr_str[1] = 'Z';
+    } else {
+        cpsr_str[1] = 'z';
+    }
+
+    if (cpsr & 0x20000000) {
+        cpsr_str[2] = 'C';
+    } else {
+        cpsr_str[2] = 'c';
+    }
+
+    if (cpsr & 0x10000000) {
+        cpsr_str[3] = 'V';
+    } else {
+        cpsr_str[3] = 'v';
+    }
+
+    if (cpsr & 0x08000000) {
+        cpsr_str[4] = 'Q';
+    } else {
+        cpsr_str[4] = 'q';
+    }
+
+    if (cpsr & 0x80) {
+        cpsr_str[5] = 'I';
+    } else {
+        cpsr_str[5] = 'i';
+    }
+
+    if (cpsr & 0x40) {
+        cpsr_str[6] = 'F';
+    } else {
+        cpsr_str[6] = 'f';
+    }
+
+    if (cpsr & 0x20) {
+        cpsr_str[7] = 'T';
+    } else {
+        cpsr_str[7] = 't';
+    }
+    cpsr_str[8] = 0;
+
+    cpsr &= 0x1F;
+
+    switch (cpsr) {
+    case ARM_USR_MODE:
+        strcpy(&cpsr_str[8], "_USER");
+        break;
+
+    case ARM_FIQ_MODE:
+        strcpy(&cpsr_str[8], "_FIQ");
+        break;
+
+    case ARM_IRQ_MODE:
+        strcpy(&cpsr_str[8], "_IRQ");
+        break;
+
+    case ARM_SVC_MODE:
+        strcpy(&cpsr_str[8], "_SVC");
+        break;
+
+    case ARM_ABT_MODE:
+        strcpy(&cpsr_str[8], "_ABT");
+        break;
+
+    case ARM_UDF_MODE:
+        strcpy(&cpsr_str[8], "_UND");
+        break;
+
+    case ARM_SYS_MODE:
+        strcpy(&cpsr_str[8], "_SYS");
+        break;
+
+    default:
+        strcpy(&cpsr_str[8], "_!!!");
+        break;
+    }
+
+    printk("\n---------------- CPU REGISERS ----------------\n");
+
+    printk("CPSR\t= %s\n", cpsr_str);
+    printk("SP\t= 0x%x\n", regs[1]);
+    printk("LR\t= 0x%x\n", regs[2]);
+    printk("PC\t= 0x%x\n", regs[16]);
 
     for (i = 0; i < 13; i++) {
         printk("R%d\t= 0x%x\n", i, regs[3 + i]);
     }
 
-    printk("\n-------- END  --------\n");
+    printk("\n---------------- CALL STACK ----------------\n");
+
+    func_name = symbol_name(regs[16], &diff);
+
+    printk("error function: %s, diff = 0x%x\n", func_name, diff);
+
+    fp = regs[3 + 11];
+
+    for (i = 0; i < 10; i++) {
+        if (fp == (reg_t) -1) {
+            break;
+        }
+        lr = *((reg_t *)(fp));
+        fp = *((reg_t *)(fp - 4));
+
+        func_name = symbol_name(lr, &diff);
+
+        printk(" ^ function: %s, diff = 0x%x\n", func_name, diff);
+    }
+
+    printk("\n----------------  END  ----------------\n");
 }
 /*********************************************************************************************************
 ** Function name:           fiq_c_handler

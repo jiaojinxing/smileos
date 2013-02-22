@@ -72,7 +72,7 @@ extern int          pipe_create(int fds[2]);
 ** output parameters:       NONE
 ** Returned value:          NONE
 *********************************************************************************************************/
-static void sys_do_enter(void)
+void sys_do_enter(void)
 {
     if (!os_started) {
         while (1);

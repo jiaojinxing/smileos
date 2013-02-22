@@ -86,9 +86,9 @@ module_t *module_ref_by_addr(void *addr);
 ** Function name:           module_open
 ** Descriptions:            打开应用模块
 ** input parameters:        path                应用模块文件路径
-**                          mode                模式
+**                          mode                加载模式
 ** output parameters:       NONE
-** Returned value:          模块
+** Returned value:          模块 OR NULL
 *********************************************************************************************************/
 module_t *module_open(const char *path, int mode);
 /*********************************************************************************************************
@@ -105,9 +105,17 @@ int module_close(module_t *mod);
 ** input parameters:        mod                 模块
 **                          name                符号名
 ** output parameters:       NONE
-** Returned value:          符号地址
+** Returned value:          符号地址 OR NULL
 *********************************************************************************************************/
 void *module_symbol(module_t *mod, const char *name);
+/*********************************************************************************************************
+** Function name:           symbol_name
+** Descriptions:            查找与指定地址最接近的符号
+** input parameters:        addr                指定地址
+** output parameters:       pdiff               差值
+** Returned value:          符号名
+*********************************************************************************************************/
+const char *symbol_name(mem_ptr_t addr, mem_ptr_t *pdiff);
 
 #ifdef __cplusplus
 }

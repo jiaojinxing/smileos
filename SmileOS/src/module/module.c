@@ -47,9 +47,10 @@
 #include "kern/ipc.h"
 #include "kern/atomic.h"
 #include "kern/list.h"
+#include "kern/hash_tbl.h"
 
 #include "module/elf.h"
-#include "module/symbol_tool.h"
+#include "module/symbol.h"
 #include "module/module.h"
 
 #include "vfs/vfs.h"
@@ -62,60 +63,47 @@
 ** 模块
 *********************************************************************************************************/
 struct module {
-    struct list_head    mod_list;
+    struct list_head    node;
     atomic_t            ref;                                            /*  引用计数                    */
     uint8_t            *elf;                                            /*  ELF 文件                    */
     size_t              size;                                           /*  文件大小                    */
     Elf32_Shdr        **shdrs;                                          /*  段首部数组指针              */
     uint16_t            bss_idx;                                        /*  BSS 段索引                  */
     uint16_t            text_idx;                                       /*  TEXT 段索引                 */
-    char                path[PATH_MAX];
-    int                 mode;
-    bool_t              is_ko;
+    char                path[PATH_MAX];                                 /*  模块文件路径                */
+    int                 mode;                                           /*  加载模式　　                */
+    bool_t              is_ko;                                          /*  是否内核模块                */
+    hash_tbl_t         *symbol_tbl;
 };
 /*********************************************************************************************************
 ** 全局变量
 *********************************************************************************************************/
 static LIST_HEAD(module_list);                                          /*  模块链表                    */
-static mutex_t              mod_mgr_lock;                               /*  模块管理锁                  */
-/*********************************************************************************************************
-** Function name:           sys_symbol_lookup
-** Descriptions:            查找系统符号
-** input parameters:        name                符号名
-**                          type                符号类型
-** output parameters:       NONE
-** Returned value:          符号地址 OR NULL
-*********************************************************************************************************/
+static mutex_t              module_lock;                                /*  模块管理锁                  */
+
 void *sys_symbol_lookup(const char *name, uint8_t type);
-/*********************************************************************************************************
-** Function name:           sys_symbol_init
-** Descriptions:            初始化系统符号表
-** input parameters:        NONE
-** output parameters:       NONE
-** Returned value:          0 OR -1
-*********************************************************************************************************/
-int sys_symbol_init(void);
+int sys_symbol_tbl_init(void);
 /*********************************************************************************************************
 ** Function name:           module_init
-** Descriptions:            初始化内核模块子系统
+** Descriptions:            初始化模块子系统
 ** input parameters:        NONE
 ** output parameters:       NONE
 ** Returned value:          0 OR -1
 *********************************************************************************************************/
 int module_init(void)
 {
-    sys_symbol_init();                                                  /*  初始化系统符号表            */
+    sys_symbol_tbl_init();                                              /*  初始化系统符号表            */
 
     INIT_LIST_HEAD(&module_list);                                       /*  初始化模块链表              */
 
-    return mutex_create(&mod_mgr_lock);                                 /*  创建模块管理锁              */
+    return mutex_create(&module_lock);                                  /*  创建模块管理锁              */
 }
 /*********************************************************************************************************
 ** Function name:           module_alloc
 ** Descriptions:            分配模块
 ** input parameters:        path                模块文件路径
 **                          size                模块文件大小
-**                          mode                模式
+**                          mode                加载模式
 **                          is_ko               是否内核模块
 ** output parameters:       NONE
 ** Returned value:          模块 OR NULL
@@ -133,6 +121,7 @@ static module_t *module_alloc(const char *path, size_t size, int mode, bool_t is
         mod->shdrs      = NULL;
         mod->mode       = mode;
         mod->is_ko      = is_ko;
+        mod->symbol_tbl = NULL;
         atomic_set(&mod->ref, 0);
         vfs_path_format(mod->path, path);
     }
@@ -153,6 +142,10 @@ static int module_free(module_t *mod)
 
     if (mod->shdrs != NULL) {                                           /*  释放节区首部数组            */
         kfree(mod->shdrs);
+    }
+
+    if (mod->symbol_tbl != NULL) {
+        hash_tbl_destroy(mod->symbol_tbl);                              /*  销毁符号表                  */
     }
 
     kfree(mod);
@@ -176,21 +169,21 @@ module_t *module_ref_by_addr(void *addr)
         return NULL;
     }
 
-    mutex_lock(&mod_mgr_lock, 0);
+    mutex_lock(&module_lock, 0);
 
     list_for_each(item, &module_list) {
-        mod = list_entry(item, module_t, mod_list);
+        mod = list_entry(item, module_t, node);
         if (mod->is_ko) {
             if (((char *)addr >= (char *)mod + sizeof(module_t)) &&
                 ((char *)addr <  (char *)mod + sizeof(module_t) + mod->size)) {
                 atomic_inc(&mod->ref);
-                mutex_unlock(&mod_mgr_lock);
+                mutex_unlock(&module_lock);
                 return mod;
             }
         }
     }
 
-    mutex_unlock(&mod_mgr_lock);
+    mutex_unlock(&module_lock);
 
     return NULL;
 }
@@ -229,19 +222,19 @@ static module_t *module_lookup(const char *path)
         return NULL;
     }
 
-    mutex_lock(&mod_mgr_lock, 0);
+    mutex_lock(&module_lock, 0);
 
     list_for_each(item, &module_list) {
-        mod = list_entry(item, module_t, mod_list);
+        mod = list_entry(item, module_t, node);
         if (mod->mode & RTLD_GLOBAL) {
             if (strcmp(mod->path, path) == 0) {
-                mutex_unlock(&mod_mgr_lock);
+                mutex_unlock(&module_lock);
                 return mod;
             }
         }
     }
 
-    mutex_unlock(&mod_mgr_lock);
+    mutex_unlock(&module_lock);
 
     return NULL;
 }
@@ -254,18 +247,18 @@ static module_t *module_lookup(const char *path)
 *********************************************************************************************************/
 static int module_install(module_t *mod)
 {
-    mutex_lock(&mod_mgr_lock, 0);
+    mutex_lock(&module_lock, 0);
 
     if (mod->mode & RTLD_GLOBAL) {
         if (module_lookup(mod->path)) {
-            mutex_unlock(&mod_mgr_lock);
+            mutex_unlock(&module_lock);
             return -1;
         }
     }
 
-    list_add_tail(&mod->mod_list, &module_list);
+    list_add_tail(&mod->node, &module_list);
 
-    mutex_unlock(&mod_mgr_lock);
+    mutex_unlock(&module_lock);
 
     return 0;
 }
@@ -278,11 +271,11 @@ static int module_install(module_t *mod)
 *********************************************************************************************************/
 static int module_remove(module_t *mod)
 {
-    mutex_lock(&mod_mgr_lock, 0);
+    mutex_lock(&module_lock, 0);
 
-    list_del(&mod->mod_list);
+    list_del(&mod->node);
 
-    mutex_unlock(&mod_mgr_lock);
+    mutex_unlock(&module_lock);
 
     return 0;
 }
@@ -398,20 +391,87 @@ static Elf32_Addr symbol_lookup(const char *name, uint8_t type)
         return 0;
     }
 
-    mutex_lock(&mod_mgr_lock, 0);
+    mutex_lock(&module_lock, 0);
 
     list_for_each(item, &module_list) {
-        mod = list_entry(item, module_t, mod_list);
+        mod = list_entry(item, module_t, node);
         if (mod->mode & RTLD_GLOBAL) {
             addr = (Elf32_Addr)module_symbol(mod, name);
             if (addr != 0) {
-                mutex_unlock(&mod_mgr_lock);
+                mutex_unlock(&module_lock);
                 return addr;
             }
         }
     }
 
-    mutex_unlock(&mod_mgr_lock);
+    mutex_unlock(&module_lock);
+
+    return 0;
+}
+/*********************************************************************************************************
+** Function name:           module_symbol_tbl_init
+** Descriptions:            初始化模块的符号表
+** input parameters:        mod                 模块
+** output parameters:       NONE
+** Returned value:          0 OR -1
+*********************************************************************************************************/
+static int module_symbol_tbl_init(module_t *mod)
+{
+    int             i;
+    Elf32_Ehdr     *ehdr;
+    Elf32_Shdr     *shdr;
+    void           *func;
+    unsigned int    key;
+
+    mod->symbol_tbl = hash_tbl_create(127);                             /*  创建符号表                  */
+    if (mod->symbol_tbl == NULL) {
+        printk(KERN_ERR"%s: failed to create module %s symbol hash table\n", __func__, mod->path);
+        return -1;
+    }
+
+    ehdr = (Elf32_Ehdr *)mod->elf;                                      /*  ELF 首部                    */
+
+    for (i = 0, shdr = mod->shdrs[0]; i < ehdr->e_shnum; i++, shdr = mod->shdrs[i]) {
+
+        if (shdr->sh_type == SHT_SYMTAB) {                              /*  节区首部类型: 符号表        */
+            Elf32_Shdr *symtab_shdr;
+            Elf32_Shdr *strtab_shdr;
+            char       *strtab;
+            uint8_t    *symtab;
+            Elf32_Sym  *sym;
+            int         j;
+
+            symtab_shdr = shdr;                                         /*  符号表节区首部              */
+            symtab      = mod->elf + symtab_shdr->sh_offset;            /*  符号表 　                   */
+
+            if (symtab_shdr->sh_link == SHN_UNDEF) {
+                continue;
+            }
+            strtab_shdr = mod->shdrs[symtab_shdr->sh_link];             /*  字符串表节区首部            */
+            strtab      = (char *)mod->elf + strtab_shdr->sh_offset;    /*  字符串表                    */
+
+            for (j = 0,
+                 sym = (Elf32_Sym *)symtab;
+                 j < symtab_shdr->sh_size / symtab_shdr->sh_entsize;
+                 j++, sym = (Elf32_Sym *)((char *)sym + symtab_shdr->sh_entsize)) {
+
+                if (sym->st_shndx == mod->text_idx &&                   /*  该符号在 TEXT 段            */
+                    ELF32_ST_TYPE(sym->st_info) == STT_FUNC) {          /*  该符号是函数　　            */
+
+                    func = (void *)(mod->elf +                          /*  该符号在 ELF 文件里的位置   */
+                                    mod->shdrs[mod->text_idx]->sh_offset + sym->st_value);
+
+                    key  = bkdr_hash(sym->st_name + strtab);
+
+                    if (hash_tbl_insert(mod->symbol_tbl, key, func) < 0) {  /*  将符号加到符号表        */
+                        printk(KERN_ERR"%s: failed to insert symbol %s to module %s symbol hash table\n",
+                                __func__, sym->st_name + strtab, mod->path);
+                        return -1;
+                    }
+                }
+            }
+        }
+    }
 
     return 0;
 }
@@ -596,16 +656,13 @@ static int module_reloc(module_t *mod)
 ** input parameters:        mod                 模块
 **                          name                符号名
 ** output parameters:       NONE
-** Returned value:          符号地址
+** Returned value:          符号地址 OR NULL
 *********************************************************************************************************/
 void *module_symbol(module_t *mod, const char *name)
 {
-    int         i;
-    Elf32_Ehdr *ehdr;
-    Elf32_Shdr *shdr;
-    void       *func;
+    hash_node_t *node;
 
-    if (mod == NULL) {
+    if (mod == NULL || mod->symbol_tbl == NULL) {
         printk(KERN_ERR"%s: module == NULL\n", __func__);
         return NULL;
     }
@@ -615,50 +672,10 @@ void *module_symbol(module_t *mod, const char *name)
         return NULL;
     }
 
-    ehdr = (Elf32_Ehdr *)mod->elf;                                      /*  ELF 首部                    */
-
-    /*
-     * 在模块的符号表里查找这个函数
-     */
-    for (i = 0, shdr = mod->shdrs[0]; i < ehdr->e_shnum; i++, shdr = mod->shdrs[i]) {
-
-        if (shdr->sh_type == SHT_SYMTAB) {                              /*  节区首部类型: 符号表        */
-            Elf32_Shdr *symtab_shdr;
-            Elf32_Shdr *strtab_shdr;
-            char       *strtab;
-            uint8_t    *symtab;
-            Elf32_Sym  *sym;
-            int         j;
-
-            symtab_shdr = shdr;                                         /*  符号表节区首部              */
-            symtab      = mod->elf + symtab_shdr->sh_offset;            /*  符号表 　                   */
-
-            if (symtab_shdr->sh_link == SHN_UNDEF) {
-                continue;
-            }
-            strtab_shdr = mod->shdrs[symtab_shdr->sh_link];             /*  字符串表节区首部            */
-            strtab      = (char *)mod->elf + strtab_shdr->sh_offset;    /*  字符串表                    */
-
-            for (j = 0,
-                 sym = (Elf32_Sym *)symtab;
-                 j < symtab_shdr->sh_size / symtab_shdr->sh_entsize;
-                 j++, sym = (Elf32_Sym *)((char *)sym + symtab_shdr->sh_entsize)) {
-
-                if (sym->st_shndx == mod->text_idx &&                   /*  该符号在 TEXT 段            */
-                    ELF32_ST_TYPE(sym->st_info) == STT_FUNC) {          /*  该符号是函数　　            */
-
-                    if (strcmp(sym->st_name + strtab, name) == 0) {     /*  该符号名字匹配　            */
-
-                        func = (void *)(mod->elf +                      /*  该符号在 ELF 文件里的位置   */
-                                mod->shdrs[mod->text_idx]->sh_offset + sym->st_value);
-
-                        return func;                                    /*  返回该函数的地址            */
-                    }
-                }
-            }
-        }
+    node = hash_tbl_lookup(mod->symbol_tbl, bkdr_hash(name));
+    if (node != NULL) {
+        return node->data;
     }
-
     return NULL;
 }
 /*********************************************************************************************************
@@ -667,7 +684,7 @@ void *module_symbol(module_t *mod, const char *name)
 ** input parameters:        path                模块文件路径
 **                          argc                参数个数
 **                          argv                参数数组
-**                          mode                模式
+**                          mode                加载模式
 **                          is_ko               是否内核模块
 ** output parameters:       NONE
 ** Returned value:          模块 OR NULL
@@ -742,7 +759,14 @@ static module_t *__module_load(const char *path, int argc, char **argv, int mode
         return NULL;
     }
 
-    mutex_lock(&mod_mgr_lock, 0);
+    ret = module_symbol_tbl_init(mod);                                  /*  初始化模块的符号表          */
+    if (ret < 0) {
+        printk(KERN_ERR"%s: failed to init module %s symbol table\n", __func__, path);
+        module_free(mod);
+        return NULL;
+    }
+
+    mutex_lock(&module_lock, 0);
 
     ret = module_install(mod);                                          /*  安装模块                    */
     if (ret < 0) {
@@ -758,14 +782,14 @@ static module_t *__module_load(const char *path, int argc, char **argv, int mode
             if (ret < 0) {
                 printk(KERN_ERR"%s: failed to exec module %s's module_init\n", __func__, path);
                 module_remove(mod);
-                mutex_unlock(&mod_mgr_lock);
+                mutex_unlock(&module_lock);
                 module_free(mod);
                 return NULL;
             }
         }
     }
 
-    mutex_unlock(&mod_mgr_lock);
+    mutex_unlock(&module_lock);
 
     return mod;
 }
@@ -799,17 +823,17 @@ int module_unload(const char *path)
     int ret;
     int (*func)(void);
 
-    mutex_lock(&mod_mgr_lock, 0);
+    mutex_lock(&module_lock, 0);
 
     mod = module_lookup(path);
     if (mod == NULL) {
-        mutex_unlock(&mod_mgr_lock);
+        mutex_unlock(&module_lock);
         printk(KERN_ERR"%s: module %s no found\n", __func__, path);
         return -1;
     }
 
     if (!mod->is_ko) {
-        mutex_unlock(&mod_mgr_lock);
+        mutex_unlock(&module_lock);
         printk(KERN_ERR"%s: module %s is not a kernel module\n", __func__, path);
         return -1;
     }
@@ -818,21 +842,21 @@ int module_unload(const char *path)
     if (func != NULL) {
         ret = func();
         if (ret < 0) {
-            mutex_unlock(&mod_mgr_lock);
+            mutex_unlock(&module_lock);
             printk(KERN_ERR"%s: failed to exec module %s's module_exit\n", __func__, mod->path);
             return -1;
         }
     }
 
     if (atomic_read(&mod->ref) != 0) {
-        mutex_unlock(&mod_mgr_lock);
+        mutex_unlock(&module_lock);
         printk(KERN_ERR"%s: module %s is busy\n", __func__, mod->path);
         return -1;
     }
 
     module_remove(mod);
 
-    mutex_unlock(&mod_mgr_lock);
+    mutex_unlock(&module_lock);
 
     module_free(mod);
 
@@ -842,9 +866,9 @@ int module_unload(const char *path)
 ** Function name:           module_open
 ** Descriptions:            打开应用模块
 ** input parameters:        path                应用模块文件路径
-**                          mode                模式
+**                          mode                加载模式
 ** output parameters:       NONE
-** Returned value:          模块
+** Returned value:          模块 OR NULL
 *********************************************************************************************************/
 module_t *module_open(const char *path, int mode)
 {
@@ -870,7 +894,114 @@ int module_close(module_t *mod)
 
     return 0;
 }
+/*********************************************************************************************************
+** Function name:           symbol_name
+** Descriptions:            查找与指定地址最接近的符号
+** input parameters:        addr                指定地址
+** output parameters:       pdiff               差值
+** Returned value:          符号名
+*********************************************************************************************************/
+const char *symbol_name(mem_ptr_t addr, mem_ptr_t *pdiff)
+{
+    symbol_t       *symbol;
+    symbol_t       *symbol_found;
+    mem_ptr_t       diff;
+    int             i;
+    Elf32_Ehdr     *ehdr;
+    Elf32_Shdr     *shdr;
+    void           *func;
+    module_t       *mod;
+    struct list_head *item;
 
+    diff = (mem_ptr_t)-1;
+
+    symbol_found = NULL;
+
+    extern symbol_t sys_symbol_tbl[];
+    for (symbol = sys_symbol_tbl; symbol->name != NULL; symbol++) {
+
+        if (symbol->flags == SYMBOL_TEXT) {
+            if ((mem_ptr_t)symbol->addr == addr) {
+                *pdiff = 0;
+                return symbol->name;
+            }
+
+            if ((mem_ptr_t)symbol->addr < addr) {
+                if (addr - (mem_ptr_t)symbol->addr < diff) {
+                    diff = addr - (mem_ptr_t)symbol->addr;
+                    symbol_found = symbol;
+                }
+            }
+        }
+    }
+
+    mutex_lock(&module_lock, 0);
+
+    list_for_each(item, &module_list) {
+        mod = list_entry(item, module_t, node);
+
+        ehdr = (Elf32_Ehdr *)mod->elf;                                  /*  ELF 首部                    */
+
+        for (i = 0, shdr = mod->shdrs[0]; i < ehdr->e_shnum; i++, shdr = mod->shdrs[i]) {
+
+            if (shdr->sh_type == SHT_SYMTAB) {                          /*  节区首部类型: 符号表        */
+                Elf32_Shdr *symtab_shdr;
+                Elf32_Shdr *strtab_shdr;
+                char       *strtab;
+                uint8_t    *symtab;
+                Elf32_Sym  *sym;
+                int         j;
+
+                symtab_shdr = shdr;                                     /*  符号表节区首部              */
+                symtab      = mod->elf + symtab_shdr->sh_offset;        /*  符号表 　                   */
+
+                if (symtab_shdr->sh_link == SHN_UNDEF) {
+                    continue;
+                }
+                strtab_shdr = mod->shdrs[symtab_shdr->sh_link];         /*  字符串表节区首部            */
+                strtab      = (char *)mod->elf + strtab_shdr->sh_offset;/*  字符串表                    */
+
+                for (j = 0,
+                     sym = (Elf32_Sym *)symtab;
+                     j < symtab_shdr->sh_size / symtab_shdr->sh_entsize;
+                     j++, sym = (Elf32_Sym *)((char *)sym + symtab_shdr->sh_entsize)) {
+
+                    if (sym->st_shndx == mod->text_idx &&               /*  该符号在 TEXT 段            */
+                        ELF32_ST_TYPE(sym->st_info) == STT_FUNC) {      /*  该符号是函数　　            */
+
+                        func = (void *)(mod->elf +                      /*  该符号在 ELF 文件里的位置   */
+                                        mod->shdrs[mod->text_idx]->sh_offset + sym->st_value);
+
+                        if ((mem_ptr_t)func == addr) {
+                            *pdiff = 0;
+                            mutex_unlock(&module_lock);
+                            return sym->st_name + strtab;
+                        }
+
+                        if ((mem_ptr_t)func < addr) {
+                            if (addr - (mem_ptr_t)func < diff) {
+                                static symbol_t __symbol;
+                                diff = addr - (mem_ptr_t)func;
+                                __symbol.name = sym->st_name + strtab;
+                                symbol_found = &__symbol;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    mutex_unlock(&module_lock);
+
+    if (symbol_found != NULL) {
+        *pdiff = diff;
+        return symbol_found->name;
+    } else {
+        *pdiff = 0;
+        return "no found";
+    }
+}
 #endif
 /*********************************************************************************************************
 ** END FILE
