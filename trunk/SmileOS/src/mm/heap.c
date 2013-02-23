@@ -45,35 +45,35 @@
 *********************************************************************************************************/
 #ifdef SMILEOS_KERNEL
 #include "kern/kern.h"
-#define debug                       printk
+#define debug               printk
 #else
-#define debug                       printf
+#define debug               printf
 #endif
 
 /*
  * 内存块魔数
  */
-#define MEM_BLOCK_MAGIC             0xAA5555AA
+#define MEM_BLOCK_MAGIC     0xAA5555AA
 
 /*
  * 内存块状态(相当于后魔数)
  */
-#define MEM_BLOCK_FREE              0x12345678
-#define MEM_BLOCK_USED              0x87654321
+#define MEM_BLOCK_FREE      0x12345678
+#define MEM_BLOCK_USED      0x87654321
 
 /*
  * 内存块
  */
 struct mem_block {
-    uint32_t        magic;                                              /*  魔数                        */
-    mem_block_t    *prev;                                               /*  前趋                        */
-    mem_block_t    *next;                                               /*  后趋                        */
-    mem_block_t    *prev_free;                                          /*  空闲前趋                    */
-    mem_block_t    *next_free;                                          /*  空闲后趋                    */
-    size_t          size;                                               /*  大小                        */
-    const char     *func;                                               /*  分配函数                    */
-    int             line;                                               /*  分配行号                    */
-    uint32_t        status;                                             /*  状态                        */
+    uint32_t                magic;                                      /*  魔数                        */
+    mem_block_t            *prev;                                       /*  前趋                        */
+    mem_block_t            *next;                                       /*  后趋                        */
+    mem_block_t            *prev_free;                                  /*  空闲前趋                    */
+    mem_block_t            *next_free;                                  /*  空闲后趋                    */
+    size_t                  size;                                       /*  大小                        */
+    const char             *func;                                       /*  分配函数                    */
+    int                     line;                                       /*  分配行号                    */
+    uint32_t                status;                                     /*  状态                        */
 };
 /*********************************************************************************************************
 ** Function name:           heap_init

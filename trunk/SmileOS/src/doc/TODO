@@ -9,7 +9,7 @@
 
 4，虚拟内存管理
 
-5，进程的dlopen
+5，进程使用elf，并且可以dlopen
 
 6，shell及命令
 

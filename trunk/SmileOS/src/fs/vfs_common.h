@@ -65,22 +65,22 @@ extern "C" {
 **
 *********************************************************************************************************/
 typedef struct {
-    atomic_t            ref;                                            /*  引用计数                    */
-    int                 open_max;                                       /*  OPEN_MAX                    */
-    file_t             *files[1];                                       /*  文件结构表                  */
+    atomic_t                ref;                                        /*  引用计数                    */
+    int                     open_max;                                   /*  OPEN_MAX                    */
+    file_t                 *files[1];                                   /*  文件结构表                  */
 } vfs_info_t;
 
 #ifndef FS_VAR_INC
-#define FS_VAR          extern
+#define FS_VAR              extern
 #else
 #define FS_VAR
 #endif
 
-FS_VAR vfs_info_t      *infos[PROCESS_NR];                              /*  进程文件信息                */
+FS_VAR vfs_info_t          *infos[PROCESS_NR];                          /*  进程文件信息                */
 
-FS_VAR mutex_t          info_lock[PROCESS_NR];                          /*  进程文件信息锁              */
+FS_VAR mutex_t              info_lock[PROCESS_NR];                      /*  进程文件信息锁              */
 
-FS_VAR char            *cwd[TASK_NR];                                   /*  任务当前工作目录            */
+FS_VAR char                *cwd[TASK_NR];                               /*  任务当前工作目录            */
 /*********************************************************************************************************
 ** Function name:           vfs_file_alloc
 ** Descriptions:            释放文件结构

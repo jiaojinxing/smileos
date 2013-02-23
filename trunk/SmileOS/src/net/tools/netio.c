@@ -25,6 +25,7 @@
  *
  */
 #include "lwip/opt.h"
+#include "lwip/sys.h"
 
 #if LWIP_TCP
 #include "lwip/tcp.h"
@@ -146,7 +147,7 @@ netio_recv(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t err)
               } else if (ns->cmd == NETIO_CMD_S2C) {
                 ns->state = NETIO_STATE_SEND_DATA;
                 /* start timer */
-                ns->time_stamp = getticks();
+                ns->time_stamp = sys_now();
                 /* send first round of data */
 
                 len = tcp_sndbuf(pcb);
@@ -250,7 +251,7 @@ netio_sent(void *arg, struct tcp_pcb *pcb, u16_t len)
     ns->cntr = 0;
 
     /* check if timer expired */
-    if (getticks() - ns->time_stamp > 600) {
+    if (sys_now() - ns->time_stamp > 600) {
       ns->buf_ptr[0] = 1;
       ns->state = NETIO_STATE_SEND_DATA_LAST;
     } else {

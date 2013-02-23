@@ -49,8 +49,8 @@
 ** 全局变量
 *********************************************************************************************************/
 static LIST_HEAD(mount_node);                                           /*  挂载点链表                  */
-mount_point_t          *rootfs_point;                                   /*  根文件系统挂载点            */
-mutex_t                 mount_point_lock;                               /*  挂载点管理锁                */
+mount_point_t              *rootfs_point;                               /*  根文件系统挂载点            */
+mutex_t                     mount_point_lock;                           /*  挂载点管理锁                */
 /*********************************************************************************************************
 ** Function name:           mount_point_install
 ** Descriptions:            安装挂载点

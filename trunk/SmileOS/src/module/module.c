@@ -63,17 +63,17 @@
 ** 模块
 *********************************************************************************************************/
 struct module {
-    struct list_head    node;
-    atomic_t            ref;                                            /*  引用计数                    */
-    uint8_t            *elf;                                            /*  ELF 文件                    */
-    size_t              size;                                           /*  文件大小                    */
-    Elf32_Shdr        **shdrs;                                          /*  段首部数组指针              */
-    uint16_t            bss_idx;                                        /*  BSS 段索引                  */
-    uint16_t            text_idx;                                       /*  TEXT 段索引                 */
-    char                path[PATH_MAX];                                 /*  模块文件路径                */
-    int                 mode;                                           /*  加载模式　　                */
-    bool_t              is_ko;                                          /*  是否内核模块                */
-    hash_tbl_t         *symbol_tbl;
+    struct list_head        node;
+    atomic_t                ref;                                        /*  引用计数                    */
+    uint8_t                *elf;                                        /*  ELF 文件内容                */
+    size_t                  size;                                       /*  文件大小                    */
+    Elf32_Shdr            **shdrs;                                      /*  段首部数组指针              */
+    uint16_t                bss_idx;                                    /*  BSS 段索引                  */
+    uint16_t                text_idx;                                   /*  TEXT 段索引                 */
+    char                    path[PATH_MAX];                             /*  模块文件路径                */
+    int                     mode;                                       /*  加载模式　　                */
+    bool_t                  is_ko;                                      /*  是否内核模块                */
+    hash_tbl_t             *symbol_tbl;                                 /*　符号表                      */
 };
 /*********************************************************************************************************
 ** 全局变量
@@ -122,7 +122,9 @@ static module_t *module_alloc(const char *path, size_t size, int mode, bool_t is
         mod->mode       = mode;
         mod->is_ko      = is_ko;
         mod->symbol_tbl = NULL;
+
         atomic_set(&mod->ref, 0);
+
         vfs_path_format(mod->path, path);
     }
     return mod;
@@ -896,7 +898,7 @@ int module_close(module_t *mod)
 }
 /*********************************************************************************************************
 ** Function name:           symbol_name
-** Descriptions:            查找与指定地址最接近的符号
+** Descriptions:            查找与指定地址最前近的符号
 ** input parameters:        addr                指定地址
 ** output parameters:       pdiff               差值
 ** Returned value:          符号名

@@ -50,8 +50,10 @@
 int arch_build_context(task_t *task, void *func)
 {
     if (task->type == TASK_TYPE_KTHREAD) {
+
         task->kstack[KERN_STACK_SIZE - 1] = -1;
         task->kstack[KERN_STACK_SIZE - 2] = -1;
+
         task->regs[0]   = (reg_t)&task->kstack[KERN_STACK_SIZE - 3];    /*  SVC 模式的 SP (满堆栈递减)  */
         task->regs[1]   = ARM_SYS_MODE | ARM_FIQ_EN | ARM_IRQ_EN;       /*  CPSR, SYS 模式              */
                                                                         /*  SYS 模式的 SP (满堆栈递减)  */
