@@ -289,7 +289,7 @@ int socket_init(void)
 *********************************************************************************************************/
 int socket_attach(int sock_fd)
 {
-    char name[PATH_MAX];
+    char path[PATH_MAX];
     int fd;
     privinfo_t *priv;
     reg_t reg;
@@ -302,20 +302,20 @@ int socket_attach(int sock_fd)
 
         device_init(priv);
 
-        sprintf(name, "/dev/socket%d", sock_fd);
+        sprintf(path, "/dev/socket%d", sock_fd);
 
         reg = interrupt_disable();
 
-        if (device_create(name, "socket", priv) < 0) {
+        if (device_create(path, "socket", priv) < 0) {
             interrupt_resume(reg);
             kfree(priv);
             return -1;
         }
 
-        fd = vfs_open(name, O_RDWR, 0666);
+        fd = vfs_open(path, O_RDWR, 0666);
         if (fd < 0) {
             geterrno(err);
-            vfs_unlink(name);
+            vfs_unlink(path);
             seterrno(err);
             interrupt_resume(reg);
             kfree(priv);
@@ -326,7 +326,7 @@ int socket_attach(int sock_fd)
         if (file == NULL) {
             geterrno(err);
             vfs_close(fd);
-            vfs_unlink(name);
+            vfs_unlink(path);
             seterrno(err);
             interrupt_resume(reg);
             kfree(priv);

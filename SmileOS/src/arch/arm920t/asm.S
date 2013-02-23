@@ -64,23 +64,6 @@
                             .code 32
                             .align 2
 /*********************************************************************************************************
-** Function name:           arch_kernel_enter
-** Descriptions:            进入内核
-** input parameters:        R0                  系统调用参数指针
-                            R1                  系统调用号
-** output parameters:       NONE
-** Returned value:          系统调用返回值
-*********************************************************************************************************/
-                            .global arch_kernel_enter
-arch_kernel_enter:
-    NOP
-    SWI     0
-    MRS     R1, CPSR
-    BIC     R1, R1, #ARM_MODE_MASK
-    CMP     R1, #ARM_SYS_MODE                   /*  判断是否在 SYS 模式下                               */
-    BNE     .
-    MOV     PC, LR
-/*********************************************************************************************************
 ** Function name:           interrupt_disable
 ** Descriptions:            进入临界区域
 ** input parameters:        NONE
@@ -109,31 +92,6 @@ interrupt_resume:
 
     MOV     PC, LR
 /*********************************************************************************************************
-** Function name:           arch_in_kernel
-** Descriptions:            判断是否在内核里
-** input parameters:        NONE
-** output parameters:       NONE
-** Returned value:          TRUE OR FALSE
-*********************************************************************************************************/
-                            .global arch_in_kernel
-arch_in_kernel:
-    MRS     R0, CPSR
-    BIC     R0, R0, #ARM_MODE_MASK
-
-    CMP     R0, #ARM_USR_MODE                   /*  判断是否在 USR 模式下                               */
-    BEQ     user_mode
-
-    CMP     R0, #ARM_SYS_MODE                   /*  判断是否在 SYS 模式下                               */
-    BEQ     sys_mode
-
-    MOV     R0, #1                              /*  返回 TRUE                                           */
-    MOV     PC, LR
-
-user_mode:
-sys_mode:
-    MOV     R0, #0                              /*  返回 FALSE                                          */
-    MOV     PC, LR
-/*********************************************************************************************************
 ** Function name:           arch_switch_context
 ** Descriptions:            任务切换
 ** input parameters:        R0                  原任务的任务控制块
@@ -142,12 +100,15 @@ sys_mode:
 ** Returned value:          NONE
 *********************************************************************************************************/
                             .global arch_switch_context
-arch_switch_context:                            /*  arch_switch_context 可能在异常和 SVC 模式下调用     */
+arch_switch_context:
     MRS     R2, CPSR
     BIC     R2, R2, #ARM_MODE_MASK
 
     CMP     R2, #ARM_SVC_MODE                   /*  判断是否在 SVC 模式下                               */
     BEQ     svc_mode_ctx_save                   /*  跳到 SVC 模式保存任务上下文                         */
+
+    CMP     R2, #ARM_SYS_MODE                   /*  判断是否在 SYS 模式下                               */
+    BEQ     sys_mode_ctx_save                   /*  跳到 SYS 模式保存任务上下文                         */
 
     B       trap_mode_ctx_save                  /*  跳到异常模式保存任务上下文                          */
 /*********************************************************************************************************
@@ -257,6 +218,51 @@ svc_mode_ctx_save:
     STMIA   R0!, {SP}                           /*  保存切换时的 SP                                     */
 
     MRS     R2, SPSR                            /*  保存切换时的 SPSR                                   */
+    STMIA   R0!, {R2}
+
+    STMIA   R0!, {LR}                           /*  保存切换时的 LR                                     */
+
+    STMIA   R0!, {R0-R12, LR}                   /*  保存切换时的寄存器到 current->regs 中               */
+
+    B       arch_switch_context_to              /*  执行任务切换                                        */
+/*********************************************************************************************************
+** Function name:           sys_mode_ctx_save
+** Descriptions:            SYS 模式保存任务上下文
+** input parameters:        R0                  原任务的任务控制块
+                            R1                  新任务的任务控制块
+** output parameters:       NONE
+** Returned value:          NONE
+*********************************************************************************************************/
+sys_mode_ctx_save:
+/*
+              +--------------------------------------+
+              | PC                                   |
+              +--------------------------------------+
+              |                                      |
+              | R0 - R12                             |
+              |                                      |
+              +--------------------------------------+
+              | 切换时的 LR                          |
+              +--------------------------------------+
+              | 切换时的 SPSR                        |
+              +--------------------------------------+
+              | 切换时的 SP                          |
+              +--------------------------------------+
+              | 切换时的 CPSR                        |
+              +--------------------------------------+
+              | 原有值                               |
+              +--------------------------------------+
+*/
+    ADD     R0, R0, #REGS_OFFSET                /*  R0 = current->regs                                  */
+
+    ADD     R0, R0, #4                          /*  不修改 SP_backup                                    */
+
+    MRS     R2, CPSR                            /*  保存切换时的 CPSR                                   */
+    STMIA   R0!, {R2}
+
+    STMIA   R0!, {SP}                           /*  保存切换时的 SP                                     */
+
+    MOV     R2, #ARM_SVC_MODE                   /*  保存切换时的 SPSR: ARM_SVC_MODE                     */
     STMIA   R0!, {R2}
 
     STMIA   R0!, {LR}                           /*  保存切换时的 LR                                     */

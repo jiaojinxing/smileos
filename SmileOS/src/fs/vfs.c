@@ -99,9 +99,6 @@ int vfs_init(void)
     extern file_system_t rootfs;
     file_system_install(&rootfs);
 
-    extern file_system_t procfs;
-    file_system_install(&procfs);
-
     extern file_system_t devfs;
     file_system_install(&devfs);
 
@@ -118,8 +115,6 @@ int vfs_init(void)
     file_system_install(&nfs);
 
     vfs_mount("/",      NULL, "rootfs", NULL);
-
-    vfs_mount("/proc",  NULL, "procfs", NULL);
 
     vfs_mount("/dev",   NULL, "devfs", NULL);
 

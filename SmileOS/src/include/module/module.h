@@ -110,7 +110,7 @@ int module_close(module_t *mod);
 void *module_symbol(module_t *mod, const char *name);
 /*********************************************************************************************************
 ** Function name:           symbol_name
-** Descriptions:            查找与指定地址最接近的符号
+** Descriptions:            查找与指定地址最前近的符号
 ** input parameters:        addr                指定地址
 ** output parameters:       pdiff               差值
 ** Returned value:          符号名

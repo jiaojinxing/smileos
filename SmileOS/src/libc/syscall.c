@@ -60,9 +60,6 @@ struct timeval;
 #ifdef SMILEOS_KERNEL
 
 #include "kern/kern.h"
-#include "arch/if.h"
-
-extern sys_do_t             sys_do_table[];
 
 #define debug               printk
 
@@ -71,10 +68,18 @@ extern sys_do_t             sys_do_table[];
  */
 #define getpid              gettid
 
-#else
+
+extern sys_do_t             sys_do_table[];
+#define syscall_enter()     \
+            return (sys_do_table[syscall])(&args)
 /*********************************************************************************************************
 ** 用户空间程序定义
 *********************************************************************************************************/
+#else
+#include <stdio.h>
+#include <unistd.h>
+#include <pthread.h>
+
 typedef int (*sys_do_t)();
 
 /*
@@ -93,16 +98,10 @@ typedef struct {
     void *arg9;
 } syscall_args_t;
 
-static sys_do_t             sys_do_table[1];
-
-#define arch_in_kernel()    0
-
 #define debug               printf
 
-#include <stdio.h>
-#include <unistd.h>
-
-#include <pthread.h>
+#define syscall_enter()     \
+            return arch_kernel_enter(&args, syscall)
 
 #define fork                syscall_fork
 #define waitpid             syscall_waitpid
@@ -155,77 +154,68 @@ extern _ssize_t _write_r _PARAMS ((struct _reent *, int, const void *, size_t));
 /*********************************************************************************************************
 ** 系统调用号
 *********************************************************************************************************/
-#define  SYSCALL_EXIT       0
-#define  SYSCALL_MSLEEP     1
-#define  SYSCALL_SCHEDULE   2
-#define  SYSCALL_PAUSE      3
-#define  SYSCALL_BAD        4
-#define  SYSCALL_SIGNAL     5
-#define  SYSCALL_SIGPROCMASK 6
-#define  SYSCALL_SIGSUSPEND 7
-#define  SYSCALL_GETTIME    10
-#define  SYSCALL_GETPID     11
-#define  SYSCALL_SETPINFO   12
-#define  SYSCALL_KILL       13
-#define  SYSCALL_ALARM      14
-#define  SYSCALL_OPEN       20
-#define  SYSCALL_READ       21
-#define  SYSCALL_WRITE      22
-#define  SYSCALL_FCNTL      23
-#define  SYSCALL_ISATTY     24
-#define  SYSCALL_FSTAT      25
-#define  SYSCALL_LSEEK      26
-#define  SYSCALL_CLOSE      27
-#define  SYSCALL_IOCTL      28
-#define  SYSCALL_SELECT     29
-#define  SYSCALL_RENAME     30
-#define  SYSCALL_UNLINK     31
-#define  SYSCALL_LINK       32
-#define  SYSCALL_STAT       33
-#define  SYSCALL_MKDIR      34
-#define  SYSCALL_RMDIR      35
-#define  SYSCALL_DUP        36
-#define  SYSCALL_DUP2       37
-#define  SYSCALL_PIPE       38
-#define  SYSCALL_OPENDIR    40
-#define  SYSCALL_READDIR    41
-#define  SYSCALL_SEEKDIR    42
-#define  SYSCALL_REWINDDIR  43
-#define  SYSCALL_TELLDIR    44
-#define  SYSCALL_CLOSEDIR   45
-#define  SYSCALL_GETCWD     50
-#define  SYSCALL_CHDIR      51
-#define  SYSCALL_SOCKET     60
-#define  SYSCALL_BIND       61
-#define  SYSCALL_ACCEPT     62
-#define  SYSCALL_CONNECT    63
-#define  SYSCALL_LISTEN     64
-#define  SYSCALL_RECV       65
-#define  SYSCALL_RECVFROM   66
-#define  SYSCALL_SENDTO     67
-#define  SYSCALL_GETSOCKOPT 68
-#define  SYSCALL_SEND       69
-#define  SYSCALL_SHUTDOWN   70
-#define  SYSCALL_SETSOCKOPT 71
-#define  SYSCALL_GETSOCKNAME 72
-#define  SYSCALL_GETPEERNAME 73
-#define  SYSCALL_GETHOSTBYNAME   74
-#define  SYSCALL_GETHOSTBYNAME_R 75
-#define  SYSCALL_FREEADDRINFO    76
-#define  SYSCALL_GETADDRINFO     77
-#define  SYSCALL_DLOPEN     90
-#define  SYSCALL_DLSYM      91
-#define  SYSCALL_DLCLOSE    92
-#define  SYSCALL_NR         100                                         /*  系统调用数                  */
-/*********************************************************************************************************
-** 系统调用代码
-*********************************************************************************************************/
-#define syscall_enter()                                 \
-        if (arch_in_kernel()) {                         \
-            return (sys_do_table[syscall])(&args);      \
-        } else {                                        \
-            return arch_kernel_enter(&args, syscall);   \
-        }
+#define  SYSCALL_EXIT               0
+#define  SYSCALL_MSLEEP             1
+#define  SYSCALL_SCHEDULE           2
+#define  SYSCALL_PAUSE              3
+#define  SYSCALL_BAD                4
+#define  SYSCALL_SIGNAL             5
+#define  SYSCALL_SIGPROCMASK        6
+#define  SYSCALL_SIGSUSPEND         7
+#define  SYSCALL_GETTIME            10
+#define  SYSCALL_GETPID             11
+#define  SYSCALL_SETPINFO           12
+#define  SYSCALL_KILL               13
+#define  SYSCALL_ALARM              14
+#define  SYSCALL_OPEN               20
+#define  SYSCALL_READ               21
+#define  SYSCALL_WRITE              22
+#define  SYSCALL_FCNTL              23
+#define  SYSCALL_ISATTY             24
+#define  SYSCALL_FSTAT              25
+#define  SYSCALL_LSEEK              26
+#define  SYSCALL_CLOSE              27
+#define  SYSCALL_IOCTL              28
+#define  SYSCALL_SELECT             29
+#define  SYSCALL_RENAME             30
+#define  SYSCALL_UNLINK             31
+#define  SYSCALL_LINK               32
+#define  SYSCALL_STAT               33
+#define  SYSCALL_MKDIR              34
+#define  SYSCALL_RMDIR              35
+#define  SYSCALL_DUP                36
+#define  SYSCALL_DUP2               37
+#define  SYSCALL_PIPE               38
+#define  SYSCALL_OPENDIR            40
+#define  SYSCALL_READDIR            41
+#define  SYSCALL_SEEKDIR            42
+#define  SYSCALL_REWINDDIR          43
+#define  SYSCALL_TELLDIR            44
+#define  SYSCALL_CLOSEDIR           45
+#define  SYSCALL_GETCWD             50
+#define  SYSCALL_CHDIR              51
+#define  SYSCALL_SOCKET             60
+#define  SYSCALL_BIND               61
+#define  SYSCALL_ACCEPT             62
+#define  SYSCALL_CONNECT            63
+#define  SYSCALL_LISTEN             64
+#define  SYSCALL_RECV               65
+#define  SYSCALL_RECVFROM           66
+#define  SYSCALL_SENDTO             67
+#define  SYSCALL_GETSOCKOPT         68
+#define  SYSCALL_SEND               69
+#define  SYSCALL_SHUTDOWN           70
+#define  SYSCALL_SETSOCKOPT         71
+#define  SYSCALL_GETSOCKNAME        72
+#define  SYSCALL_GETPEERNAME        73
+#define  SYSCALL_GETHOSTBYNAME      74
+#define  SYSCALL_GETHOSTBYNAME_R    75
+#define  SYSCALL_FREEADDRINFO       76
+#define  SYSCALL_GETADDRINFO        77
+#define  SYSCALL_DLOPEN             90
+#define  SYSCALL_DLSYM              91
+#define  SYSCALL_DLCLOSE            92
+#define  SYSCALL_NR                 100                                 /*  系统调用数                  */
 /*********************************************************************************************************
 ** Function name:           _exit
 ** Descriptions:            exit 桩函数
@@ -1198,7 +1188,7 @@ int    dlclose(void *mod)
  */
 void *_sbrk_r(struct _reent *reent, ptrdiff_t incr)
 {
-    debug("can't call %s()!, kill process %d\n", __func__, getpid());
+    debug("can't call %s()!, kill task %d\n", __func__, getpid());
 
     abort();
 }
@@ -1208,7 +1198,7 @@ void *_sbrk_r(struct _reent *reent, ptrdiff_t incr)
  */
 int _fork_r(struct _reent *reent)
 {
-    debug("can't call %s()!, kill process %d\n", __func__, getpid());
+    debug("can't call %s()!, kill task %d\n", __func__, getpid());
 
     abort();
 }
@@ -1218,7 +1208,7 @@ int _fork_r(struct _reent *reent)
  */
 _CLOCK_T_ _times_r(struct _reent *reent, struct tms *buf)
 {
-    debug("can't call %s()!, kill process %d\n", __func__, getpid());
+    debug("can't call %s()!, kill task %d\n", __func__, getpid());
 
     abort();
 }
@@ -1228,7 +1218,7 @@ _CLOCK_T_ _times_r(struct _reent *reent, struct tms *buf)
  */
 int _wait_r(struct _reent *reent, int *status)
 {
-    debug("can't call %s()!, kill process %d\n", __func__, getpid());
+    debug("can't call %s()!, kill task %d\n", __func__, getpid());
 
     abort();
 }
@@ -1238,7 +1228,7 @@ int _wait_r(struct _reent *reent, int *status)
  */
 int _execve_r(struct _reent *reent, const char *path, char *const *argv, char *const *env)
 {
-    debug("can't call %s()!, kill process %d\n", __func__, getpid());
+    debug("can't call %s()!, kill task %d\n", __func__, getpid());
 
     abort();
 }

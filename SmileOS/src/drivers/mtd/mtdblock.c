@@ -49,14 +49,14 @@
 *********************************************************************************************************/
 typedef struct {
     VFS_DEVICE_MEMBERS;
-    long                start;                          /* Start block we're allowed to use             */
-    long                end;                            /* End block we're allowed to use               */
-    long                reserved;                       /* We want this tuneable so that we can reduce  */
-    bool_t              readonly;
-    struct mtd_info    *mtd;
+    long                    start;                      /* Start block we're allowed to use             */
+    long                    end;                        /* End block we're allowed to use               */
+    long                    reserved;                   /* We want this tuneable so that we can reduce  */
+    bool_t                  readonly;
+    struct mtd_info        *mtd;
 } privinfo_t;
 
-static mutex_t          mtd_lock;
+static mutex_t              mtd_lock;
 /*********************************************************************************************************
 ** Function name:           mtdblock_open
 ** Descriptions:            ´ò¿ª mtdblock

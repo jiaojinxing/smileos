@@ -53,44 +53,44 @@
 /*********************************************************************************************************
 ** 配置
 *********************************************************************************************************/
-#define NFS_HOST_NAME_LEN               NAME_MAX                        /*  HOST_NAME 的长度            */
-#define NFS_EXPORT_PATH_LEN             PATH_MAX                        /*  EXPORT_PATH 的长度          */
-#define NFS_BLOCK_SIZE                  8192                            /*  块的大小                    */
+#define NFS_HOST_NAME_LEN   NAME_MAX                                    /*  HOST_NAME 的长度            */
+#define NFS_EXPORT_PATH_LEN PATH_MAX                                    /*  EXPORT_PATH 的长度          */
+#define NFS_BLOCK_SIZE      8192                                        /*  块的大小                    */
 /*********************************************************************************************************
 ** 移植
 *********************************************************************************************************/
-#define NFS_MALLOC(x)   kmalloc(x, GFP_KERNEL)
-#define NFS_FREE(x)     kfree(x)
-#define NFS_DEBUG       printk
-#define NFS_STRDUP      strdup
+#define NFS_MALLOC(x)       kmalloc(x, GFP_KERNEL)
+#define NFS_FREE(x)         kfree(x)
+#define NFS_STRDUP          strdup
+#define NFS_DEBUG           printk
 /*********************************************************************************************************
 ** 网络文件系统
 *********************************************************************************************************/
 typedef struct {
-    CLIENT             *client;                                         /*  客户端                      */
-    CLIENT             *mount_client;                                   /*  挂载客户端                  */
-    nfs_fh3            *rootdir_filehandle;                             /*  根目录的文件句柄            */
-    char                host[NFS_HOST_NAME_LEN];                        /*  HOST_NAME 主机名            */
-    char                export[NFS_EXPORT_PATH_LEN];                    /*  EXPORT_PATH 输出路径        */
+    CLIENT                 *client;                                     /*  客户端                      */
+    CLIENT                 *mount_client;                               /*  挂载客户端                  */
+    nfs_fh3                *rootdir_filehandle;                         /*  根目录的文件句柄            */
+    char                    host[NFS_HOST_NAME_LEN];                    /*  HOST_NAME 主机名            */
+    char                    export[NFS_EXPORT_PATH_LEN];                /*  EXPORT_PATH 输出路径        */
 } nfs_fs;
 /*********************************************************************************************************
 ** 网络文件
 *********************************************************************************************************/
 typedef struct {
-    nfs_fh3            *filehandle;                                     /*  文件句柄                    */
-    size_t              offset;                                         /*  文件的读写位置              */
-    size_t              size;                                           /*  文件的大小                  */
-    int                 oflag;                                          /*  文件的打开方式              */
-    bool_t              eof;                                            /*  文件是否结束                */
+    nfs_fh3                *filehandle;                                 /*  文件句柄                    */
+    size_t                  offset;                                     /*  文件的读写位置              */
+    size_t                  size;                                       /*  文件的大小                  */
+    int                     oflag;                                      /*  文件的打开方式              */
+    bool_t                  eof;                                        /*  文件是否结束                */
 
     /*
      * 目录才会使用以下的成员变量
      */
-    cookie3             cookie;
-    cookieverf3         cookieverf;
-    entry3             *entry;
-    READDIR3res         res;
-    struct dirent       dirent;
+    cookie3                 cookie;
+    cookieverf3             cookieverf;
+    entry3                 *entry;
+    READDIR3res             res;
+    struct dirent           dirent;
 } nfs_file;
 /*********************************************************************************************************
 ** Function name:           __nfs_dup_filehandle
@@ -101,7 +101,7 @@ typedef struct {
 *********************************************************************************************************/
 static nfs_fh3 *__nfs_dup_filehandle(const nfs_fh3 *filehandle)
 {
-    u_int    data_len  = filehandle->data.data_len;                     /*  数据的长度                  */
+    u_int    data_len = filehandle->data.data_len;                      /*  数据的长度                  */
     nfs_fh3 *new_fh = (nfs_fh3 *)NFS_MALLOC(sizeof(nfs_fh3) + data_len);/*  分配 nfs_fh3 与数据存放空间 */
 
     if (new_fh != NULL) {
