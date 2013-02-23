@@ -43,6 +43,7 @@
 #include "arch/arm920t/mmu.h"
 #include "arch/arm920t/arm.h"
 #include <signal.h>
+#include <string.h>
 /*********************************************************************************************************
 ** Function name:           print_regs
 ** Descriptions:            ´òÓ¡¼Ä´æÆ÷×é

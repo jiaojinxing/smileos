@@ -127,7 +127,7 @@ int hash_tbl_insert(hash_tbl_t *tbl, unsigned int key, void *data)
     hash_node_t *node;
 
     if (tbl == NULL) {
-        return NULL;
+        return -1;
     }
 
     node = (hash_node_t *)kzalloc(sizeof(hash_node_t), GFP_KERNEL);

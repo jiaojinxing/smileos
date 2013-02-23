@@ -1403,6 +1403,8 @@ static int do_getaddrinfo(syscall_args_t *args)
 }
 #endif
 
+#if CONFIG_MODULE_EN > 0
+#include "module/module.h"
 static void  *do_dlopen(syscall_args_t *args)
 {
     const char *path;
@@ -1454,6 +1456,7 @@ static int    do_dlclose(syscall_args_t *args)
 
     return ret;
 }
+#endif
 /*********************************************************************************************************
   系统调用处理表
 *********************************************************************************************************/
@@ -1623,9 +1626,15 @@ sys_do_t sys_do_table[] = {
         NULL,
         NULL,
         NULL,
+#if CONFIG_MODULE_EN > 0
         (sys_do_t)do_dlopen,
         (sys_do_t)do_dlsym,
         (sys_do_t)do_dlclose,
+#else
+        NULL,
+        NULL,
+        NULL,
+#endif
 };
 /*********************************************************************************************************
 ** END FILE

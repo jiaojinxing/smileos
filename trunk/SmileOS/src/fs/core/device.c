@@ -214,7 +214,7 @@ int device_create(const char *dev_name, const char *drv_name, void *ctx)
     strlcpy(dev->name, dev_name, sizeof(dev->name));
     dev->drv   = drv;
     dev->ctx   = ctx;
-    dev->devno = bkdr_hash(dev_name);
+    dev->devno = 0;
     atomic_set(&dev->ref, 0);
     device_install(dev);
     mutex_unlock(&device_lock);
