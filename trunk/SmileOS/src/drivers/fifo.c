@@ -320,9 +320,9 @@ int fifo_create(const char *path, size_t size)
 *********************************************************************************************************/
 int pipe_create(int fds[2])
 {
-    char path[PATH_MAX];
-    int err;
+    static char path[NAME_MAX];
     static int key = 0;
+    int err;
     int _key;
     reg_t reg;
 
@@ -335,11 +335,7 @@ int pipe_create(int fds[2])
 
     reg = interrupt_disable();
     _key = key++;
-    interrupt_resume(reg);
-
-    snprintf(path, sizeof(PATH_MAX), "/dev/pipe%d", _key);
-
-    reg = interrupt_disable();
+    snprintf(path, sizeof(NAME_MAX), "/dev/pipe%d", _key);
 
     if (fifo_create(path, 4 * KB) < 0) {
         interrupt_resume(reg);
